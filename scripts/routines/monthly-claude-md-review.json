@@ -1,0 +1,18 @@
+{
+  "id": "monthly-claude-md-review",
+  "description": "Run the CLAUDE.md improver on the first Monday of each month.",
+  "schedule": {
+    "cron": "0 9 1-7 * MON"
+  },
+  "skill": "jstack:skill-creator/improve-claude-md",
+  "args": ["--output=json"],
+  "post_processing": [
+    {
+      "type": "notion_post",
+      "target": "private_scratchpad",
+      "title": "CLAUDE.md improvements — {date}",
+      "fallback": "stdout"
+    }
+  ],
+  "config_gate": "claude_md_improver.enabled"
+}
