@@ -1,0 +1,21 @@
+{
+  "description": "Canonical top-level domain orchestrators (jstack skills that route to children). Used by generate-skill-evals and router-matrix scenario coverage.",
+  "routers": [
+    "jira",
+    "notion",
+    "federated-search",
+    "meetings",
+    "research",
+    "reports",
+    "self",
+    "knowledge",
+    "review",
+    "session",
+    "metrics",
+    "routines",
+    "workflows",
+    "incident",
+    "sop",
+    "sprint"
+  ]
+}

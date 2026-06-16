@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>jstack skill eval</title>
+  <!-- jstack:eval-favicon -->
+  <!-- /jstack:eval-favicon -->
+  <style>
+    .jstack-plain-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+      color: #64748b;
+    }
+    .jstack-plain-brand-svg {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      display: block;
+    }
+    .jstack-plain-brand-text {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #334155;
+    }
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem 0.6rem; text-align: left; }
+    th { background: #f4f4f4; }
+    pre { background: #f8f8f8; padding: 1rem; overflow: auto; font-size: 0.85rem; }
+    .pass { color: #0a0; }
+    .fail { color: #c00; }
+  </style>
+  <script>
+/*__EMBEDDED_DATA__*/
+  </script>
+</head>
+<body>
+  <!-- jstack:eval-brand -->
+  <!-- /jstack:eval-brand -->
+  <h1>Skill eval report</h1>
+  <div id="app"></div>
+  <script>
+    (function () {
+      var data = typeof EMBEDDED_DATA !== "undefined" ? EMBEDDED_DATA : { summary: null, skill_name: "unknown" };
+      var s = data.summary;
+      var app = document.getElementById("app");
+      if (!app) return;
+      while (app.firstChild) app.removeChild(app.firstChild);
+      if (!s) {
+        app.appendChild(document.createTextNode("No summary embedded."));
+        return;
+      }
+      var ok = s.pass_rate >= 80;
+      var p1 = document.createElement("p");
+      p1.appendChild(document.createTextNode(
+        String(data.skill_name || s.skill_name) + " — " + s.total_passed + "/" + s.total_criteria + " criteria (" + s.pass_rate + "%)"
+      ));
+      app.appendChild(p1);
+      var p2 = document.createElement("p");
+      p2.className = ok ? "pass" : "fail";
+      p2.appendChild(document.createTextNode(
+        "Pass rate " + (ok ? "meets" : "below") + " typical 80% bar (adjust threshold as needed)."
+      ));
+      app.appendChild(p2);
+      var table = document.createElement("table");
+      var thead = document.createElement("thead");
+      var hr = document.createElement("tr");
+      ["#", "Case", "Status", "Criteria"].forEach(function (h) {
+        var th = document.createElement("th");
+        th.appendChild(document.createTextNode(h));
+        hr.appendChild(th);
+      });
+      thead.appendChild(hr);
+      table.appendChild(thead);
+      var tbody = document.createElement("tbody");
+      (s.results || []).forEach(function (r, i) {
+        var tr = document.createElement("tr");
+        [String(i + 1), r.name, r.status, r.criteria_passed + "/" + r.criteria_total].forEach(function (cell) {
+          var td = document.createElement("td");
+          td.appendChild(document.createTextNode(cell));
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      app.appendChild(table);
+      var h2 = document.createElement("h2");
+      h2.appendChild(document.createTextNode("Raw JSON"));
+      app.appendChild(h2);
+      var pre = document.createElement("pre");
+      pre.appendChild(document.createTextNode(JSON.stringify(s, null, 2)));
+      app.appendChild(pre);
+    })();
+  </script>
+</body>
+</html>

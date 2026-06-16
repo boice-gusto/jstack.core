@@ -1,0 +1,188 @@
+# One structural scenario per top-level domain router (see evals/router-skills.json).
+# Validate coverage: bun run eval:routers
+# Run (LLM): bun run eval:scenarios --pack router-matrix
+# Each scenario uses `targets` so only that router skill receives its case (see evals/scenario-pack.ts).
+id: router-matrix
+name: Top-level router matrix (routing smoke)
+description: One prompt per canonical orchestrator; validates pack wiring and optional semantic routing checks.
+strict_grader_default: false
+default_threshold: 65
+default_timeout: 120
+default_targets:
+  - jira
+  - notion
+  - federated-search
+  - meetings
+  - research
+  - reports
+  - self
+  - knowledge
+  - review
+  - session
+  - metrics
+  - routines
+  - workflows
+  - incident
+  - sop
+  - sprint
+
+scenarios:
+  - id: jira
+    name: "Router — Jira domain intake"
+    targets: [jira]
+    prompt: |
+      User (informal): "Something's broken in checkout and I need tickets for the team."
+      You are the **jstack:jira** orchestrator. Respond with how you route: name the **child** skill or folder under `skills/jira/` you would use first, or **one** clarifying question. No live API claims. Under ~200 words.
+    criteria:
+      - "Mentions a concrete child route under jira/ or asks one focused question"
+      - "Does not invent Jira issue keys or verified board state"
+
+  - id: notion
+    name: "Router — Notion domain intake"
+    targets: [notion]
+    prompt: |
+      User: "Can you draft a sprint retro page for the team?"
+      As **jstack:notion**, state which **child** under `skills/notion/` you route to first or ask one clarifying question. No live Notion IDs. Under ~200 words.
+    criteria:
+      - "Names a child skill path or one clarifying question"
+      - "Does not present fake page URLs or database IDs as verified"
+
+  - id: federated-search
+    name: "Router — Federated search domain intake"
+    targets: [federated-search]
+    prompt: |
+      User: "Search everywhere for how we handle refunds — Jira, Notion, and the wiki."
+      As **jstack:federated-search**, state how you pick providers and merge results (see `skills/federated-search/`), or ask one clarifying question. No fake credentials or live IDs. Under ~200 words.
+    criteria:
+      - "Names provider selection or merge behavior or one clarifying question"
+      - "Does not invent MCP connectivity or verified hits"
+
+  - id: meetings
+    name: "Router — Meetings domain intake"
+    targets: [meetings]
+    prompt: |
+      User: "Turn yesterday's standup notes into follow-ups."
+      As **jstack:meetings**, which **child** under `skills/meetings/` first, or one question? No recording URLs as if fetched. Under ~200 words.
+    criteria:
+      - "Names a meetings/* route or one clarifying question"
+      - "Avoids fabricated meeting transcripts"
+
+  - id: research
+    name: "Router — Research domain intake"
+    targets: [research]
+    prompt: |
+      User: "Compare three vendors for internal chat bots."
+      As **jstack:research**, which **child** under `skills/research/` do you open first, or one scoping question? Under ~200 words.
+    criteria:
+      - "Names a research/* route or one clarifying question"
+      - "Does not cite fake studies as verified sources"
+
+  - id: reports
+    name: "Router — Reports domain intake"
+    targets: [reports]
+    prompt: |
+      User: "I need a manager summary for my director."
+      As **jstack:reports**, which **child** under `skills/reports/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a reports/* route or one clarifying question"
+      - "Does not output fabricated metrics as real"
+
+  - id: self
+    name: "Router — Self domain intake"
+    targets: [self]
+    prompt: |
+      User: "Help me prep for my performance self-review."
+      As **jstack:self**, which **child** under `skills/self/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a self/* route or one clarifying question"
+      - "Does not invent HR policy text as official"
+
+  - id: knowledge
+    name: "Router — Knowledge domain intake"
+    targets: [knowledge]
+    prompt: |
+      User: "Where do we document runbooks?"
+      As **jstack:knowledge**, which **child** under `skills/knowledge/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a knowledge/* route or one clarifying question"
+      - "Does not claim gbrain/Notion state without tools"
+
+  - id: review
+    name: "Router — Review domain intake"
+    targets: [review]
+    prompt: |
+      User: "Can you review this announcement before I post?"
+      As **jstack:review**, which **child** under `skills/review/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a review/* route or one clarifying question"
+      - "Does not pretend the announcement text was already loaded if not provided"
+
+  - id: session
+    name: "Router — Session domain intake"
+    targets: [session]
+    prompt: |
+      User: "Start my jstack session for today."
+      As **jstack:session**, which **child** under `skills/session/` first (`init` vs `end`), or one question? Under ~200 words.
+    criteria:
+      - "Names session/init, session/end, or a clarifying question"
+      - "Does not claim session state was persisted without config"
+
+  - id: metrics
+    name: "Router — Metrics domain intake"
+    targets: [metrics]
+    prompt: |
+      User: "Show me my team's throughput this sprint."
+      As **jstack:metrics**, which **child** under `skills/metrics/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a metrics/* route or one clarifying question"
+      - "Does not output fake numbers as live dashboards"
+
+  - id: routines
+    name: "Router — Routines domain intake"
+    targets: [routines]
+    prompt: |
+      User: "What's my morning standup routine in jstack?"
+      As **jstack:routines**, which **child** under `skills/routines/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a routines/* route or one clarifying question"
+      - "Does not invent schedule data"
+
+  - id: workflows
+    name: "Router — Workflows domain intake"
+    targets: [workflows]
+    prompt: |
+      User: "Automate our weekly status rollup."
+      As **jstack:workflows**, which **child** under `skills/workflows/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a workflows/* route or one clarifying question"
+      - "Does not claim automations ran"
+
+  - id: incident
+    name: "Router — Incident domain intake"
+    targets: [incident]
+    prompt: |
+      User: "We might have an outage; what do I do first?"
+      As **jstack:incident**, which **child** under `skills/incident/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names an incident/* route or one clarifying question"
+      - "Does not fabricate Sev levels or pager events as verified"
+
+  - id: sop
+    name: "Router — SOP domain intake"
+    targets: [sop]
+    prompt: |
+      User: "Where is our deploy rollback SOP?"
+      As **jstack:sop**, which **child** under `skills/sop/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a sop/* route or one clarifying question"
+      - "Does not invent document titles as found in repo"
+
+  - id: sprint
+    name: "Router — Sprint domain intake"
+    targets: [sprint]
+    prompt: |
+      User: "Close out the sprint and prep the next one."
+      As **jstack:sprint**, which **child** under `skills/sprint/` first, or one question? Under ~200 words.
+    criteria:
+      - "Names a sprint/* route or one clarifying question"
+      - "Does not claim Jira sprint IDs without tools"
