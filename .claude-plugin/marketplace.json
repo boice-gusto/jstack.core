@@ -1,0 +1,16 @@
+{
+  "name": "jstack-local",
+  "metadata": {
+    "description": "Local marketplace for jstack: team operations toolkit plugin."
+  },
+  "owner": {
+    "name": "local"
+  },
+  "plugins": [
+    {
+      "name": "jstack",
+      "source": "./",
+      "description": "Team operations toolkit: project management, sprint ops, engineering metrics, incident response, knowledge management, session lifecycle, personal productivity, JIRA/Notion CRUD, reports, GitHub metrics, browser workflow automation, scheduled routines, research, meetings, MCP discovery, evals, and telemetry."
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "jstack",
+  "version": "0.1.0",
+  "description": "Team operations toolkit: project management, sprint ops, engineering metrics, incident response, knowledge management, session lifecycle, personal productivity (diary/remember/focus/9-grid-eval), JIRA CRUD with enforcement rules, Notion CRUD with templates, reports, GitHub metrics, browser workflow automation, scheduled routines, research, meetings, MCP discovery, evals, and telemetry (opt-in).",
+  "author": { "name": "jstack contributors" },
+  "keywords": [
+    "team-ops",
+    "project-management",
+    "sprint",
+    "engineering",
+    "incident",
+    "knowledge",
+    "routines",
+    "workflows",
+    "jira",
+    "notion",
+    "session",
+    "metrics",
+    "reports",
+    "research",
+    "meetings",
+    "mcp",
+    "evals",
+    "telemetry",
+    "skill-authoring",
+    "workflow-design"
+  ],
+  "userConfig": {
+    "team_name": {
+      "type": "string",
+      "title": "Team Name",
+      "description": "Your team or org name",
+      "required": true
+    },
+    "timezone": {
+      "type": "string",
+      "title": "Default timezone",
+      "description": "IANA timezone (e.g. America/Los_Angeles)",
+      "required": false
+    },
+    "telemetry_opt_in": {
+      "type": "boolean",
+      "title": "Anonymous telemetry",
+      "description": "Send anonymous usage metrics (skill name, tokens, latency). No PII.",
+      "required": false,
+      "default": false
+    }
+  }
+}

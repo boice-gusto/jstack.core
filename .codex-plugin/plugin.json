@@ -1,0 +1,48 @@
+{
+  "name": "jstack",
+  "version": "0.1.0",
+  "description": "Team operations toolkit: project management, sprint ops, engineering metrics, incident response, knowledge management, session lifecycle, personal productivity, JIRA/Notion CRUD, reports, GitHub metrics, browser workflow automation, scheduled routines, research, meetings, MCP discovery, evals, and telemetry (opt-in).",
+  "author": {
+    "name": "jstack contributors"
+  },
+  "homepage": "https://github.com/jstack-team/jstack",
+  "license": "MIT",
+  "keywords": [
+    "team-ops",
+    "project-management",
+    "sprint",
+    "engineering",
+    "incident",
+    "knowledge",
+    "routines",
+    "workflows",
+    "jira",
+    "notion",
+    "session",
+    "metrics",
+    "reports",
+    "research",
+    "meetings",
+    "mcp",
+    "evals",
+    "telemetry"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "jstack",
+    "shortDescription": "Team operations toolkit for AI-assisted workflows",
+    "longDescription": "Modular plugin for team operations: JIRA/Notion/Slack workflows, recon, reports, research, meetings, session lifecycle, self-skills, routines, browser workflows, evals, and opt-in telemetry.",
+    "developerName": "jstack contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Run my morning standup prep",
+      "Scan Slack and Jira for action items",
+      "Generate a weekly team digest"
+    ]
+  }
+}

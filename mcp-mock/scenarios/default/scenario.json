@@ -1,0 +1,157 @@
+{
+  "tools": [
+    {
+      "name": "slack_read_stub",
+      "description": "Legacy Slack-style stub (keep for smoke scripts)",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "channel": { "type": "string" } }
+      }
+    },
+    {
+      "name": "echo",
+      "description": "Echo arguments as JSON (no canned response needed)",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_slack_channels_list",
+      "description": "Representative Slack MCP: list channels",
+      "inputSchema": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "jstack_stub_slack_chat_post_message",
+      "description": "Representative Slack MCP: post message result",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": { "type": "string" },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "jstack_stub_jira_search_issues",
+      "description": "Representative Atlassian/Jira MCP: JQL search",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "jql": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_jira_get_issue",
+      "description": "Representative Jira MCP: get issue by key",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "issue_key": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_datadog_logs_query",
+      "description": "Representative Datadog MCP: logs query snapshot",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "query": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_datadog_metric_query",
+      "description": "Representative Datadog MCP: metric/query series",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "query": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_dx_snapshot",
+      "description": "Representative GetDX MCP: engineering health snapshot",
+      "inputSchema": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "jstack_stub_gdrive_list_files",
+      "description": "Representative Google Drive MCP: list files",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "q": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_gcal_events_list",
+      "description": "Representative Google Calendar MCP: list events",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "calendar_id": { "type": "string" },
+          "time_min": { "type": "string" },
+          "time_max": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "jstack_stub_gdocs_get_document",
+      "description": "Representative Google Docs MCP: document excerpt",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "document_id": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_gsheets_get_values",
+      "description": "Representative Google Sheets MCP: range values",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "spreadsheet_id": { "type": "string" },
+          "range": { "type": "string" }
+        }
+      }
+    },
+    {
+      "name": "jstack_stub_glean_search",
+      "description": "Representative Glean MCP: enterprise search hits",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "query": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_notion_search",
+      "description": "Representative Notion MCP: workspace search",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "query": { "type": "string" } }
+      }
+    },
+    {
+      "name": "jstack_stub_github_search_issues",
+      "description": "Representative GitHub MCP: issue search",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "owner": { "type": "string" },
+          "repo": { "type": "string" },
+          "q": { "type": "string" }
+        }
+      }
+    }
+  ],
+  "responses": {
+    "slack_read_stub": "{\"ok\":true,\"messages\":[{\"text\":\"jstack mock MCP\",\"channel\":\"stub\"}]}",
+    "jstack_stub_slack_channels_list": "{\"ok\":true,\"channels\":[{\"id\":\"CSTUB01\",\"name\":\"#mock-general\"},{\"id\":\"CSTUB02\",\"name\":\"#mock-incidents\"}]}",
+    "jstack_stub_slack_chat_post_message": "{\"ok\":true,\"channel\":\"CSTUB01\",\"ts\":\"1234567890.000001\",\"message\":{\"text\":\"stub\"}}",
+    "jstack_stub_jira_search_issues": "{\"issues\":[{\"key\":\"MOCK-42\",\"fields\":{\"summary\":\"Stub bug\",\"status\":{\"name\":\"To Do\"},\"assignee\":null}}],\"total\":1}",
+    "jstack_stub_jira_get_issue": "{\"key\":\"MOCK-42\",\"fields\":{\"summary\":\"Stub bug\",\"description\":\"Canned body\",\"issuetype\":{\"name\":\"Bug\"}}}",
+    "jstack_stub_datadog_logs_query": "{\"status\":\"ok\",\"logs\":[{\"message\":\"stub log line\",\"service\":\"mock-api\",\"timestamp\":\"2026-04-27T12:00:00Z\"}]}",
+    "jstack_stub_datadog_metric_query": "{\"series\":[{\"metric\":\"trace.mock.latency\",\"points\":[[1714219200,12.3]]}]}",
+    "jstack_stub_dx_snapshot": "{\"satisfaction\":4.2,\"lead_time_hours\":18,\"deployment_frequency\":\"daily\",\"mock\":true}",
+    "jstack_stub_gdrive_list_files": "{\"files\":[{\"id\":\"gdrive_stub_1\",\"name\":\"Mock Doc\",\"mimeType\":\"application/vnd.google-apps.document\"}]}",
+    "jstack_stub_gcal_events_list": "{\"items\":[{\"id\":\"evt_stub_1\",\"summary\":\"Mock standup\",\"start\":{\"dateTime\":\"2026-04-27T15:00:00Z\"},\"end\":{\"dateTime\":\"2026-04-27T15:30:00Z\"}}]}",
+    "jstack_stub_gdocs_get_document": "{\"documentId\":\"gdoc_stub_1\",\"title\":\"Mock PRD\",\"body\":{\"content\":[{\"paragraph\":{\"elements\":[{\"textRun\":{\"content\":\"Stub paragraph.\"}}]}}]}}",
+    "jstack_stub_gsheets_get_values": "{\"range\":\"Sheet1!A1:B2\",\"majorDimension\":\"ROWS\",\"values\":[[\"Metric\",\"Value\"],[\"coverage\",\"92\"]]}",
+    "jstack_stub_glean_search": "{\"results\":[{\"title\":\"Runbook: Mock service\",\"url\":\"https://example.invalid/mock\",\"snippet\":\"Stub snippet\"}]}",
+    "jstack_stub_notion_search": "{\"results\":[{\"object\":\"page\",\"id\":\"notion_stub_1\",\"title\":[{\"plain_text\":\"Mock page\"}]}]}",
+    "jstack_stub_github_search_issues": "{\"total_count\":1,\"items\":[{\"number\":99,\"title\":\"Mock issue\",\"state\":\"open\",\"html_url\":\"https://github.com/mock/repo/issues/99\"}]}"
+  }
+}

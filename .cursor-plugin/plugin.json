@@ -1,0 +1,52 @@
+{
+  "name": "jstack",
+  "displayName": "jstack",
+  "version": "0.1.0",
+  "description": "Team operations toolkit: project management, sprint ops, engineering metrics, incident response, knowledge management, session lifecycle, personal productivity, JIRA/Notion CRUD, reports, GitHub metrics, browser workflow automation, scheduled routines, research, meetings, MCP discovery, evals, and telemetry (opt-in).",
+  "author": {
+    "name": "jstack contributors"
+  },
+  "homepage": "https://github.com/jstack-team/jstack",
+  "license": "MIT",
+  "keywords": [
+    "team-ops",
+    "project-management",
+    "sprint",
+    "engineering",
+    "incident",
+    "knowledge",
+    "routines",
+    "workflows",
+    "jira",
+    "notion",
+    "session",
+    "metrics",
+    "reports",
+    "research",
+    "meetings",
+    "mcp",
+    "evals",
+    "telemetry"
+  ],
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json",
+  "userConfig": {
+    "team_name": {
+      "type": "string",
+      "title": "Team Name",
+      "description": "Your team or org name"
+    },
+    "timezone": {
+      "type": "string",
+      "title": "Default timezone",
+      "description": "IANA timezone (e.g. America/Los_Angeles)"
+    },
+    "telemetry_opt_in": {
+      "type": "boolean",
+      "title": "Anonymous telemetry",
+      "description": "Send anonymous usage metrics (skill name, tokens, latency). No PII."
+    }
+  }
+}
