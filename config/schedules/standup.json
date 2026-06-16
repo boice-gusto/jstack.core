@@ -1,0 +1,8 @@
+{
+  "id": "standup",
+  "name": "Daily standup",
+  "cron": "0 9 * * 1-5",
+  "enabled": false,
+  "chain": ["jstack:recon", "jstack:announcements"],
+  "description": "Scan blockers and prep standup summary"
+}

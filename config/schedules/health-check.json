@@ -1,0 +1,8 @@
+{
+  "id": "health-check",
+  "name": "Health check",
+  "cron": "0 */4 * * *",
+  "enabled": false,
+  "chain": ["jstack:recon"],
+  "description": "Periodic recon / health scan"
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jstack.local/schemas/reports/report-payload-v1.json",
+  "title": "ReportPayload",
+  "type": "object",
+  "required": ["schema_version", "meta"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "meta": {
+      "type": "object",
+      "required": ["title", "generated_at"],
+      "properties": {
+        "title": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "team": { "type": "string" },
+        "subtitle": { "type": "string", "description": "Optional subtitle (e.g. week range) for UI shells." },
+        "report_kind": {
+          "type": "string",
+          "description": "Aligns with templates/reports/*.md names (for dashboard badge and routing).",
+          "enum": [
+            "team-weekly",
+            "engineer-weekly",
+            "manager-rollup",
+            "project-status",
+            "sprint-summary",
+            "incident-retro",
+            "eval-report",
+            "self-report",
+            "generic"
+          ]
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "body_markdown": { "type": "string" },
+          "chart": { "$ref": "#/$defs/ReportChart" }
+        },
+        "anyOf": [
+          { "required": ["body_markdown"] },
+          { "required": ["chart"] }
+        ],
+        "additionalProperties": true
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "ReportChartDataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "data"],
+      "properties": {
+        "label": { "type": "string" },
+        "data": { "type": "array", "items": { "type": "number" } },
+        "backgroundColor": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "borderColor": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "fill": { "type": "boolean" }
+      }
+    },
+    "ReportChart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "labels", "datasets"],
+      "properties": {
+        "type": { "type": "string", "enum": ["bar", "line", "doughnut"] },
+        "title": { "type": "string" },
+        "labels": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "datasets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/ReportChartDataset" }
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stacked": { "type": "boolean" },
+            "y_axis_begin_at_zero": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

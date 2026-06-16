@@ -1,0 +1,382 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://jstack.dev/schema/config.json",
+  "title": "jstack.config.json",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Config format / distribution version string."
+    },
+    "onboarding": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional readiness: complete flag, wizard metadata, required_integrations checked by validate-config.",
+      "properties": {
+        "complete": { "type": "boolean" },
+        "wizard_last_run": { "type": "string" },
+        "required_integrations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Logical ids: jira, slack, notion, github, gcal, sheets, gbrain_team, gbrain_personal."
+        },
+        "notes": { "type": "string" }
+      }
+    },
+    "team": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Team identity, roster, business hours, canonical group — see config-schema.md"
+    },
+    "sprint": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Sprint cadence, ceremonies, capacity metric, velocity window."
+    },
+    "approval_chains": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Template id and named approval chains (string[] per action)."
+    },
+    "knowledge_base": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Local roots, globs, doc URLs, GitHub scope, retrieval prompt, optional gbrain include.",
+      "properties": {
+        "roots": { "type": "array", "items": { "type": "string" } },
+        "include_globs": { "type": "array", "items": { "type": "string" } },
+        "exclude_globs": { "type": "array", "items": { "type": "string" } },
+        "doc_urls": { "type": "array", "items": { "type": "string" } },
+        "github": { "type": "object", "additionalProperties": true },
+        "retrieval": { "type": "object", "additionalProperties": true },
+        "gbrain": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "include": { "type": "boolean" },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "knowledge_storage": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Disk fallback and team/personal Git remotes for persisted knowledge.",
+      "properties": {
+        "disk_fallback_root": { "type": "string" },
+        "team": { "type": "object", "additionalProperties": true },
+        "personal": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "integrations": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "jira, slack, notion, github, gcal, sheets, share_html, google_drive, transcripts — see config-schema.md"
+    },
+    "mcp_servers": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "MCP server registry; values often { command, args, env } — see integration-guide.md"
+    },
+    "gbrain": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Team vs personal GBrain base URLs, trust_policy, provenance envelope for writes.",
+      "properties": {
+        "team": { "$ref": "#/definitions/gbrainTarget" },
+        "personal": { "$ref": "#/definitions/gbrainTarget" },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "config_label": { "type": "string" },
+            "entry_fields": { "type": "array", "items": { "type": "string" } },
+            "resolve_slack_from_team_members": { "type": "boolean" },
+            "identity": { "type": "object", "additionalProperties": true }
+          }
+        }
+      }
+    },
+    "session": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "default_gbrain_target, session id, auto_end, metrics, diary prompt.",
+      "properties": {
+        "default_gbrain_target": {
+          "type": "string",
+          "description": "Typically team or personal — routes GBrain writes."
+        },
+        "current_session_id": { "type": "string" },
+        "auto_end": { "type": "boolean" },
+        "metrics_on_end": { "type": "boolean" },
+        "diary_auto_prompt": { "type": "boolean" }
+      }
+    },
+    "jira_rules": { "type": "object", "additionalProperties": true },
+    "notion_defaults": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Notion routing: parent_pages, post_targets, private_vault, team_notion (incl. teamspace_anchor_page_id + setup_complete), database_ids, template_pages, and the template catalog system (template_set + template_catalog_path).",
+      "properties": {
+        "template_set": {
+          "type": "string",
+          "description": "Active template catalog set id (e.g. 'official', 'alternative_sentele', or a custom id). Resolved against templates/notion/catalog/<id>.json."
+        },
+        "template_catalog_path": {
+          "type": "string",
+          "description": "Plugin-relative directory containing catalog set JSON files. Defaults to 'templates/notion/catalog'."
+        },
+        "surface_routing": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Maps a logical surface (team_hub | private_vault | one_on_ones) to the config block that owns it (team_notion | private_vault). Skills use this to know which root to land pages under.",
+          "properties": {
+            "team_hub": { "type": "string" },
+            "private_vault": { "type": "string" },
+            "one_on_ones": { "type": "string" }
+          }
+        },
+        "private_vault": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "root_parent_page_key": { "type": "string" },
+            "setup_complete": { "type": "boolean" }
+          }
+        },
+        "team_notion": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "root_parent_page_key": { "type": "string" },
+            "setup_complete": { "type": "boolean" },
+            "teamspace_anchor_page_id": {
+              "type": "string",
+              "description": "Required for team_hub creation: the Notion API has no teamspace_id parent type. The user creates one empty page inside the target teamspace via Notion UI and pastes its id here. jstack-notion-setup uses this id as the parent for the team-side tree."
+            }
+          }
+        },
+        "parent_pages": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Page id per logical key. Keys include: team_hub, private_root, one_on_ones, pe_index, team_people, team_metrics, team_notes, product_strategy, product_wiki, knowledge_base, sops, ops_dashboard, private_scratchpad, private_notes, private_data, private_transcripts, private_projects, private_sprints. Empty string means not configured."
+        },
+        "database_ids": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Database / data source ids. Convention: '<key>' for the database id, '<key>_data_source' for the collection id (used by query/update tools). Common keys: tasks, calendar, intake, contacts, documents, product_tasks, projects, performance_reviews."
+        },
+        "template_pages": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Runtime template page ids — duplicated by the matching skill (e.g. /jstack:notion standup duplicates template_pages.standup per standup). Keys: standup, team_report, performance, one_on_one, meeting_notes, plus any catalog-defined page_template entries."
+        },
+        "golden_pages": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Setup-time golden source pages. Convention: key = catalog template id (e.g. 'kanban', 'company_team_page'). When non-empty, jstack-notion-setup duplicates from that page instead of creating from the catalog's markdown/SQL — preserves visually-rich layouts (configured DB views, embedded blocks, gallery layouts) that the API can't easily reproduce. Empty value falls back to the catalog content_path / schema."
+        },
+        "post_targets": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Maps an artifact kind (scratchpad, transcript, standup, etc.) to a parent_pages key. Resolves at posting time."
+        },
+        "default_tags": { "type": "array", "items": { "type": "string" } },
+        "auto_backlink": { "type": "boolean" }
+      }
+    },
+    "one_on_one_cycle": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "1:1 prepare/after from transcripts; Lattice vs Notion; see meetings/one-on-one-transcript/references/config-shape.md"
+    },
+    "policies": { "type": "object", "additionalProperties": true },
+    "tones": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Runtime overrides for prompts/tones/*.md"
+    },
+    "personas": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Runtime overrides for prompts/personas/*.md"
+    },
+    "channels": { "type": "object", "additionalProperties": true },
+    "debug": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Verbose traces and optional MCP test fixtures. Use debug.enabled as the canonical boolean for debug mode (not a top-level debug: true alias).",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Canonical debug/trace toggle for tooling and future logging hooks."
+        },
+        "mock_mcp": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, operators expect the jstack MCP mock registered in .mcp.json; jstack doctor warns if wiring or scenario is missing."
+        },
+        "mock_mcp_scenario": {
+          "type": "string",
+          "description": "Scenario id (subdirectory under mcp-mock/scenarios, default when empty). Sets JSTACK_MCP_SCENARIO when adding jstack-mock preset."
+        },
+        "log_level": { "type": "string" },
+        "trace_skills": { "type": "array" },
+        "trace_chains": { "type": "boolean" }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Per-skill overrides plus optional machine-readable output policy for CLI/MCP/automation — see skills/_core/references/output-formats.md",
+      "properties": {
+        "machine_readable": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Policy for --output=json|yaml style responses; hosts should read this before auto-injecting structured-output flags.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "When false, wrappers must not auto-append --output=json or --output=yaml; users may still request JSON in natural language."
+            },
+            "require_schema_ref": {
+              "type": "boolean",
+              "description": "When true, structured payloads should include a top-level $schema URI matching the skill schema file $id (strict pipelines)."
+            }
+          }
+        }
+      }
+    },
+    "skill_defaults": { "type": "object", "additionalProperties": true },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "update_check, version_url, github core/gusto repos, plugin_pr deny globs"
+    },
+    "pe": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Performance engineering / reporting window — see defaults.json"
+    },
+    "ingest_all": {
+      "type": "array",
+      "description": "Optional ingest-all pipeline entries",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "reports": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Report branding colors, typography — see defaults.json"
+    },
+    "claude_md_improver": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "CLAUDE.md improver knobs — see skills/skill-creator/improve-claude-md/SKILL.md",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "transcript_lookback_days": { "type": "integer", "minimum": 1 },
+        "commit_lookback_count": { "type": "integer", "minimum": 1 },
+        "min_priority": { "type": "number" },
+        "persona_threshold": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "report_path": { "type": "string" },
+        "patch_path": { "type": "string" },
+        "high_correction_session_threshold": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "cross_plugins": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "gstack, superpowers, gbrain plugin skill lists; gbrain.enabled requires non-empty skills[]"
+    },
+    "routines": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "standup, weekly_digest, sprint_close, health_check — each: enabled, cron, chain (skill ids)",
+      "properties": {
+        "standup": { "$ref": "#/definitions/routineSlot" },
+        "weekly_digest": { "$ref": "#/definitions/routineSlot" },
+        "sprint_close": { "$ref": "#/definitions/routineSlot" },
+        "health_check": { "$ref": "#/definitions/routineSlot" }
+      }
+    },
+    "workflows": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Workflow runner: default_output (e.g. screenshots), artifacts_dir",
+      "properties": {
+        "default_output": { "type": "string" },
+        "artifacts_dir": { "type": "string" }
+      }
+    },
+    "telemetry": { "type": "object", "additionalProperties": true },
+    "evals": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Eval gates: auto_gate, token_budgets, latency_thresholds_ms, required_fields",
+      "properties": {
+        "auto_gate": { "type": "boolean" },
+        "token_budgets": { "type": "object", "additionalProperties": true },
+        "latency_thresholds_ms": { "type": "object", "additionalProperties": true },
+        "required_fields": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "team_context": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional team-owned markdown slices (paths only); see config-schema.md"
+    },
+    "levels_and_expectations": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "IC/EM ladder file or canonical URL; user-maintained"
+    },
+    "org_context": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional org handbook, ethics, HR-safe docs, coaching, review rubrics; local paths, Notion/Drive ids, MCP hints — see skills/_core/references/org-context.md"
+    },
+    "kickoff_workflows": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Executable morning-kickoff: morning.path, state_path, optional definitions[]",
+      "properties": {
+        "morning": { "type": "object", "additionalProperties": true },
+        "state_path": { "type": "string" },
+        "definitions": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+      }
+    },
+    "impact": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "impact.framework, custom_rubric_path, org_priorities_file"
+    },
+    "brag": { "type": "object", "additionalProperties": true },
+    "impact_prep": { "type": "object", "additionalProperties": true },
+    "standup": { "type": "object", "additionalProperties": true },
+    "weekly_digest": { "type": "object", "additionalProperties": true },
+    "silo_scan": { "type": "object", "additionalProperties": true },
+    "engineering_health": { "type": "object", "additionalProperties": true },
+    "code_review": { "type": "object", "additionalProperties": true }
+  },
+  "definitions": {
+    "gbrainTarget": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "url": { "type": "string" },
+        "trust_policy": { "type": "string" }
+      }
+    },
+    "routineSlot": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "cron": { "type": "string" },
+        "chain": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

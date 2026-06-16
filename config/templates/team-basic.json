@@ -1,0 +1,5 @@
+{
+  "$schema": "../schema.json",
+  "team": { "name": "Example Team", "timezone": "UTC" },
+  "integrations": { "jira": { "base_url": "https://example.atlassian.net", "project_key": "ENG" } }
+}

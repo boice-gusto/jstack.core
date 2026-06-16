@@ -1,0 +1,16 @@
+{
+  "_comment": "Copy to jstack.personal.json (e.g. ~/.config/jstack/jstack.personal.json). Merge on top of team jstack.config.json if the host supports layered config; otherwise keep personal-only keys here.",
+  "gbrain": {
+    "personal": { "url": "", "trust_policy": "read_write" },
+    "provenance": {
+      "config_label": "personal-laptop",
+      "identity": { "slack_handle": "", "slack_user_id": "", "display_name": "" }
+    }
+  },
+  "knowledge_storage": {
+    "personal": {
+      "git_remote": "https://github.com/YOU/private-jstack-kb.git",
+      "local_checkout": "personal-knowledge"
+    }
+  }
+}

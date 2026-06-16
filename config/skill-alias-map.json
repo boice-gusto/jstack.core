@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "mirrors": [
+    {
+      "gateId": "jstack:jira/create",
+      "coreRelPath": "jstack.core/skills/jira/create/SKILL.md",
+      "gustoRelPath": "jstack.gusto/skills/gusto-jira/create-jira-ticket/SKILL.md",
+      "requireIdentical": false,
+      "notes": "Gusto-specific Jira creation overlay; content intentionally diverges."
+    }
+  ]
+}
