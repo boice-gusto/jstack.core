@@ -1,0 +1,13 @@
+name: Skill smoke — ingest-all chain (no live APIs)
+prompt: >-
+  You are applying **jstack-ingest-all** (`knowledge/ingest-all`). User pasted nothing; config has
+  **`ingest_all`: []** (empty).
+
+  Explain what you would do next (check config, suggest templates, do not run Drive). Mention
+  **`meetings/transcripts-ingest`** as the typical entry for new transcript files. Under ~200 words.
+criteria:
+  - States that empty ingest_all requires user/org setup or templates
+  - References transcripts-ingest or equivalent meetings ingest path
+  - Does not claim files were listed from Google Drive
+expect_skill: true
+timeout: 120

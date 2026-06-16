@@ -1,0 +1,3 @@
+# Optional overrides; global gate for jstack:recon still merges from evals/gate-evals.json
+pass_threshold: 75
+timeout: 120

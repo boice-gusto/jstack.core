@@ -1,0 +1,7 @@
+name: Negative — minimal reply (no full skill run)
+prompt: 'Reply with only the single word: pong'
+criteria:
+  - Response is very short (roughly one word or a tiny phrase, optionally with light punctuation)
+  - Does not produce a long multi-section report, checklist, or workflow as the main content
+expect_skill: false
+timeout: 90

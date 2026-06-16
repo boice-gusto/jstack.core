@@ -1,0 +1,13 @@
+name: Skill smoke — sprint prep outline
+prompt: >-
+  You are applying **jstack-sprint-prep** (`sprint/prep`).
+
+  User request: Outline outputs for curating a refinement queue vs sprint goals. Under ~300 words.
+  Do not claim live Jira calls.
+
+criteria:
+  - Includes queue table or ordered list concept and stale-ticket idea
+  - Mentions handoff to refinement
+  - Avoids inventing velocity numbers as facts
+expect_skill: true
+timeout: 120

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Self"
+  short_description: "Route personal productivity requests: diary, lookback, focus, eval, or tasks."

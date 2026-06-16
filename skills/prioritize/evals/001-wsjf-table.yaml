@@ -1,0 +1,13 @@
+name: WSJF-style ranking
+prompt: |
+  Rank these three items using a simple value/effort table (scores 1–5). Show a table and state the top pick.
+
+  1) Fix login timeout bug (customer reports)
+  2) Dark mode polish for settings page
+  3) Tech debt: migrate legacy auth module
+criteria:
+  - "Includes a markdown table with items and scores or rationale"
+  - "Declares a single top-ranked item or cutline"
+  - "Labels subjective scoring as judgment or similar if used"
+expect_skill: true
+timeout: 120

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="editorial-newsprint">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Sample — report (technical)</title>
+<link rel="stylesheet" href="../themes.css"/>
+<style>
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) 12rem;gap:1.5rem;max-width:56rem;margin:0 auto;padding:1.25rem}
+  @media (max-width:720px){.wrap{grid-template-columns:1fr}}
+  aside{font-size:.78rem;color:hsl(var(--muted-foreground));position:sticky;top:1rem;height:fit-content;border:1px solid hsl(var(--border));border-radius:var(--radius);padding:.65rem;background:hsl(var(--card))}
+  aside strong{display:block;margin-bottom:.4rem;color:hsl(var(--foreground));font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+  aside ol{margin:.25rem 0;padding-left:1.15rem}
+  article h1{font-size:1.45rem;margin:0 0 .75rem;line-height:1.2;color:hsl(var(--foreground))}
+  article h2{font-size:1.05rem;margin:1.25rem 0 .5rem;border-bottom:1px solid hsl(var(--border));padding-bottom:.25rem}
+  article p, article li{font-size:.88rem;line-height:1.6;color:hsl(var(--foreground))}
+  pre{font-size:.78rem;background:hsl(var(--muted));padding:.65rem;border-radius:calc(var(--radius) - 2px);overflow:auto;border:1px solid hsl(var(--border))}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <article>
+    <h1>Hardening the ingest pipeline</h1>
+    <p>This document describes remediation for duplicate events observed in regional partitions during peak load windows.</p>
+    <h2>1 Background</h2>
+    <p>Workers use at-least-once delivery; idempotency keys are mandatory for downstream writers.</p>
+    <h2>2 Appendix: sample policy</h2>
+    <pre>retry:
+  max: 5
+  backoff: exponential
+idempotency_key: headers["Idempotency-Key"]</pre>
+    <ol>
+      <li>Enable DLQ alerting &gt; 0.5% throughput.</li>
+      <li>Replay only after compaction checkpoint.</li>
+    </ol>
+  </article>
+  <aside>
+    <strong>On this page</strong>
+    <ol style="counter-reset:l">
+      <li><a href="#" style="color:hsl(var(--primary))">Background</a></li>
+      <li><a href="#" style="color:hsl(var(--primary))">Appendix</a></li>
+    </ol>
+  </aside>
+</div>
+</body>
+</html>

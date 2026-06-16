@@ -1,0 +1,3 @@
+interface:
+  display_name: "Reports"
+  short_description: "Route report requests: team, engineer, manager, project, self, or eval."

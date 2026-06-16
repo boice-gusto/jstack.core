@@ -1,0 +1,12 @@
+name: Skill smoke — refinement five questions
+prompt: >-
+  You are applying **jstack-sprint-refinement** (`sprint/refinement`).
+
+  User request: List the five refinement questions (short labels only) and what “sprint-ready” means in one sentence.
+  Under ~200 words.
+
+criteria:
+  - Lists five distinct questions or themes
+  - Mentions capacity or readiness without inventing team size as fact
+expect_skill: true
+timeout: 120

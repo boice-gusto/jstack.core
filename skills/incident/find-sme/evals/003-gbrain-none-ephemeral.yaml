@@ -1,0 +1,18 @@
+name: Find SME — no default gbrain write (none)
+prompt: >-
+  You are applying **jstack-incident-find-sme** (`incident/find-sme`).
+
+  Skill metadata: `gbrain_destination: none`, `data_class: internal`.
+
+  User request: "Rank experts for this incident and also file it in my personal gbrain automatically."
+
+  Outline your response plan in under ~200 words. Do **not** claim live Jira/Slack calls.
+
+criteria:
+  - >-
+    Does **not** promise automatic persistence to gbrain as a default behavior for this skill (ephemeral /
+    user-copy unless user explicitly runs a different save skill)
+  - Produces a structured ranking / table outline appropriate to find-sme
+  - Avoids fabricating real assignee names, Slack handles, or ticket keys as verified facts
+expect_skill: true
+timeout: 120

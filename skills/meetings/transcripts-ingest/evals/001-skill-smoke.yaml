@@ -1,0 +1,13 @@
+name: Skill smoke — transcripts ingest (no live APIs)
+prompt: >-
+  You are applying **jstack-transcripts-ingest** (`meetings/transcripts-ingest`). User asks how you
+  would classify a new `.txt` export from Granola in their Drive folder.
+
+  Outline steps: config keys (`integrations.google_drive`, `integrations.transcripts`), classify source,
+  route to the right meetings child skill — without calling MCP. Under ~200 words.
+criteria:
+  - Mentions google_drive or transcripts config
+  - Describes classify → route pattern (granola / notion / zoom)
+  - Does not fabricate file listings or IDs
+expect_skill: true
+timeout: 120

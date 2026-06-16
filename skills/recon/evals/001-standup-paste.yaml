@@ -1,0 +1,16 @@
+name: Recon from user paste
+prompt: |
+  Summarize this for standup using the recon skill shape. Source: user paste.
+
+  ## #eng-alerts (paste)
+  - sam: Anyone seen the replica lag dashboard?
+  - jordan: Looking now — might be cache warmup after deploy.
+
+  Window: last 24h. Depth: list. No live API.
+criteria:
+  - "Output includes a '## Recon summary' heading"
+  - "Output includes an '## Action items' section with checklist items"
+  - "Output includes a line matching action_items: <n> where n is a non-negative integer"
+  - "Says that data is from user paste or does not claim to have searched Slack live"
+expect_skill: true
+timeout: 120

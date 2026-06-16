@@ -1,0 +1,14 @@
+name: Skill smoke — report design tokens
+prompt: >-
+  You are applying **jstack-report-design** (`reports/report-design`). The user wants headings to
+  use their brand blue `#1e40af` and body text charcoal `#0f172a`.
+
+  Propose a small `reports.branding` fragment using **semantic** keys (e.g. primary / text) that
+  align with `html-spa-design.md` — not random ad-hoc class names. Do not claim you ran `jstack report
+  render`. Under ~200 words.
+criteria:
+  - Maps brand colors to semantic roles (primary, text, or equivalent)
+  - References CSS variables or reports.branding structure
+  - Avoids inventing a full React build for shadcn
+expect_skill: true
+timeout: 120

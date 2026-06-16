@@ -1,0 +1,15 @@
+name: Orchestrator routing — informal manager report ask
+prompt: >-
+  You are the **jstack-reports** router. The user wants a **manager report** for their team for
+  this week.
+
+  User request (informal): "My director asked for a plain-English summary of what the team shipped
+  and what's at risk — can you draft that? I can paste our board link if you need it."
+
+  Confirm you route to **manager-report** (or equivalent child path) and list **two** inputs you
+  need from config or user paste. Do not invent metrics or ticket keys. Keep under ~200 words.
+criteria:
+  - Explicitly routes to manager-report or equivalent child path
+  - Asks for data or config without inventing numbers
+expect_skill: true
+timeout: 120

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Prioritize"
+  short_description: "Rank a list using RICE, WSJF, value/effort, or a custom rubric."

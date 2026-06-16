@@ -1,0 +1,3 @@
+interface:
+  display_name: "Meetings"
+  short_description: "Route meeting requests: prepare, transcribe, action-items, post to Slack."

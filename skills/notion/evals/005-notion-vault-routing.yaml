@@ -1,0 +1,23 @@
+name: Notion vault routing — config and format refs
+prompt: >-
+  You are applying the jstack skill **jstack-notion** (path: `notion`).
+
+  User request: Explain how you would post a **meeting transcript summary** and a **team standup**
+  page to Notion using **jstack config only** (no invented page or database ids). Cover: (1)
+  **`notion_defaults.parent_pages`** vs **`post_targets`**, (2) **private vault** vs **team_notion**
+  surfaces, (3) what you do when a resolved parent id is empty, (4) **one** sentence pointing to
+  format/eval expectations (titles, properties, no fake URLs). Keep under ~350 words. Do not claim
+  you called the Notion API.
+
+criteria:
+  - >-
+    Mentions resolving parents via `post_targets` mapping to `parent_pages` keys (or equivalent
+    phrasing)
+  - >-
+    Distinguishes private/manager vault routing from team-visible routing (e.g. transcripts vs
+    standup)
+  - >-
+    States that empty or missing ids require setup or user-provided URLs — not invented ids
+  - References formatting, checklist, eval, or `notion-page-format-rules` style expectations
+expect_skill: true
+timeout: 120

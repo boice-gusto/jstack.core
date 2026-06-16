@@ -1,0 +1,10 @@
+name: Routing — suggest child for PRD request
+prompt: >-
+  You are the **jstack-intake** orchestrator. User says: "Turn this customer interview into a PRD draft."
+
+  Respond briefly: which **child** skill or next step you route to (e.g. project, research) and why. No invented Jira keys.
+criteria:
+  - Names a plausible child skill or explicit handoff (project/research/intake sub-skill)
+  - Does not fabricate ticket ids
+expect_skill: true
+timeout: 90

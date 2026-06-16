@@ -1,0 +1,33 @@
+name: Skill smoke — outline a CLAUDE.md improvement scan
+prompt: >-
+  You are applying the jstack skill **jstack-improve-claude-md** (path:
+  `skill-creator/improve-claude-md`).
+
+  Category: skill-creator.
+
+  Skill description: Audit a project's CLAUDE.md against commits, session transcripts, and
+  working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply
+  is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same
+  thing, or as a monthly hygiene routine.
+
+  User request: Outline what you would produce for a **hypothetical** project where the user
+  reports CLAUDE.md feels out of date. Include the five pipeline stages
+  (collect → detect → propose → review → render) and **one example detector finding** per stage
+  where applicable. Do **not** claim to have actually scanned a real project; say what
+  configuration (`claude_md_improver.enabled`, transcript directory presence) the skill needs from
+  config or the user if required.
+
+  Keep the response under ~400 words.
+criteria:
+  - Names at least three of the five pipeline stages (collect, detect, propose, review, render)
+  - >-
+    Mentions reading inputs (CLAUDE.md, recent commits, session transcripts, lockfiles, README)
+    rather than inventing rules
+  - >-
+    States that the default behavior is read-only and that --apply is opt-in (or equivalent
+    safety language)
+  - >-
+    Does not present fictional commit hashes, session IDs, or file paths as verified facts;
+    labels them as illustrative or assumed
+expect_skill: true
+timeout: 120

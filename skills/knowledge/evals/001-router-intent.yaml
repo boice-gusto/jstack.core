@@ -1,0 +1,10 @@
+name: Router — search vs intake
+prompt: |
+  The user said: "Find whether we documented our on-call rotation in the team KB paths from config."
+  You are the jstack-knowledge router skill. What is the single best child skill to handle this next, and what one clarifying question do you ask if needed?
+criteria:
+  - "Points toward search/lookup behavior (e.g. jstack-knowledge-search or knowledge search) rather than storing new notes as the first action"
+  - "Does not fabricate specific Notion page IDs or URLs"
+  - "Asks at most one clarifying question OR states none is needed with a brief reason"
+expect_skill: true
+timeout: 120

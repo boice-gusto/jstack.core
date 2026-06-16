@@ -1,0 +1,16 @@
+name: Orchestrator routing — informal recon request
+prompt: >-
+  You are applying the jstack skill **jstack-recon** (path: `recon`) — read-oriented sweep across
+  configured integrations.
+
+  User request (informal, no skill names): "Before my 1:1 with the platform team, what blew up in
+  Slack and Jira this week that I should mention — nothing fancy, just the hot spots."
+
+  Respond with: (1) how you would **scope** the recon (sources, time window) and which **child** or
+  follow-up skill applies first, **or** (2) **one** clarifying question. Do not invent message ids or
+  assignee names. Keep under ~250 words.
+criteria:
+  - Describes a read-first path and/or names a plausible child or jira-get follow-up
+  - Does not invent ticket keys or verified Slack timestamps
+expect_skill: true
+timeout: 120

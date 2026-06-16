@@ -1,0 +1,13 @@
+name: Skill smoke — task-intake
+prompt: >-
+  You are applying **jstack-task-intake**.
+
+  Config-driven task intake wizard — from idea to ticket, sizing, prioritization, and optional announcements.
+
+  In under ~300 words, outline how you would run this skill **without** live API calls or real production identifiers. List concrete steps and guardrails.
+criteria:
+  - Names at least one step aligned with the skill purpose
+  - Mentions caution about hypothetical or offline work, or avoids claiming verified external results
+  - Does not assert specific real ticket IDs, page IDs, or customer data as verified
+expect_skill: true
+timeout: 120

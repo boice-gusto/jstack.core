@@ -1,0 +1,13 @@
+name: Skill smoke — scaffold
+prompt: >-
+  You are applying **jstack-scaffold**.
+
+  Scaffold a new skill or plugin using org conventions and checklists.
+
+  In under ~300 words, outline how you would run this skill **without** live API calls or real production identifiers. List concrete steps and guardrails.
+criteria:
+  - Names at least one step aligned with the skill purpose
+  - Mentions caution about hypothetical or offline work, or avoids claiming verified external results
+  - Does not assert specific real ticket IDs, page IDs, or customer data as verified
+expect_skill: true
+timeout: 120

@@ -1,0 +1,15 @@
+name: Orchestrator routing — informal feature request
+prompt: >-
+  You are applying the jstack skill **jstack-intake** (path: `intake`) — a **domain orchestrator**.
+  Child skills live under `skills/intake/`.
+
+  User request (informal, no skill names): "Someone filed three bugs that are really the same theme.
+  Can you help me turn that into one ticket with acceptance criteria?"
+
+  Respond with: (1) the **single** child skill or handoff you would route to first **or** (2) **one**
+  clarifying question. Do not invent Jira keys. Keep under ~250 words.
+criteria:
+  - Names a concrete child route, handoff to project/research/jira, or one focused clarifying question
+  - Does not fabricate ticket ids or channel names
+expect_skill: true
+timeout: 120

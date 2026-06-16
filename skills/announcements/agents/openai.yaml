@@ -1,0 +1,3 @@
+interface:
+  display_name: "Announcements"
+  short_description: "Draft channel-ready or email-ready announcements from rough notes."

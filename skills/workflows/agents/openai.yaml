@@ -1,0 +1,3 @@
+interface:
+  display_name: "Workflows"
+  short_description: "Route workflow requests to builder, runner, recorder, or viewer."

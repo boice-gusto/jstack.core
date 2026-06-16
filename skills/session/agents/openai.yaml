@@ -1,0 +1,3 @@
+interface:
+  display_name: "Session"
+  short_description: "Route to session init or end."

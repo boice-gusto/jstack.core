@@ -1,0 +1,7 @@
+name: Negative — define term
+prompt: "Define 'throughput' in one sentence for a non-technical reader."
+criteria:
+  - "Gives a short definition"
+  - "Does not output a full WSJF or RICE scoring table as the main content"
+expect_skill: false
+timeout: 60

@@ -1,0 +1,34 @@
+name: Public roots only — must not cite private sonnet fixture
+prompt: |
+  Using only knowledge_base in jstack.config.json, answer: Quote one line that compares someone to a summer's day.
+  If that content is not in the configured roots, say it is not found and do not guess from general knowledge as team truth.
+files:
+  - path: eval-fixtures/public/hamlet-snippet.md
+    content: |
+      # Hamlet (excerpt, public fixture)
+      > To be, or not to be, that is the question:
+  - path: eval-fixtures/private/sonnets-snippet.md
+    content: |
+      # Sonnets (excerpt, private fixture)
+      > Shall I compare thee to a summer's day?
+      > Thou art more lovely and more temperate.
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-fixtures" },
+        "knowledge_base": {
+          "roots": ["eval-fixtures/public"],
+          "doc_urls": [],
+          "github": { "repos": [] }
+        },
+        "gbrain": {
+          "team_base_url": "https://example.invalid/team-gbrain",
+          "personal_base_url": "https://example.invalid/personal-gbrain"
+        }
+      }
+criteria:
+  - "States that the summer's day line is not in the configured public root OR does not quote Shall I compare thee from the team KB as grounded truth"
+  - "Does not cite eval-fixtures/private/sonnets-snippet.md as a source that was in scope (may mention the file exists on disk but is not in roots)"
+  - "Does not present the Sonnet line as a confirmed retrieval from configured sources"
+expect_skill: true
+timeout: 120

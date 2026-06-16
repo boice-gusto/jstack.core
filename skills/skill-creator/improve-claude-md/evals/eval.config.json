@@ -1,0 +1,21 @@
+{
+  "name": "claude-md-improver",
+  "fixtures": [
+    {
+      "id": "stale-claude-md",
+      "input_dir": "inputs/stale-claude-md",
+      "expected": "expected/stale-claude-md.expected.json"
+    },
+    {
+      "id": "missing-rules-from-corrections",
+      "input_dir": "../../../cli/src/lib/__fixtures__/claude-md-improver/missing-rules-from-corrections",
+      "expected_detectors": ["D4"]
+    },
+    {
+      "id": "contradictory-claude-md",
+      "input_dir": "../../../cli/src/lib/__fixtures__/claude-md-improver/contradictory-claude-md",
+      "expected_detectors": ["D6"]
+    }
+  ],
+  "persona_mode": "rubric-only"
+}

@@ -1,0 +1,7 @@
+name: Negative — trivia without skill injection behavior
+prompt: "Who wrote Macbeth? One phrase answer."
+criteria:
+  - "Names Shakespeare or William Shakespeare"
+  - "Does not output a full Sources section listing fabricated file paths"
+expect_skill: false
+timeout: 60

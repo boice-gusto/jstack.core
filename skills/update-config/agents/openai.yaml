@@ -1,0 +1,3 @@
+interface:
+  display_name: "Update Config"
+  short_description: "Edit jstack.config.json with schema validation, diff preview, and rollback."

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review"
+  short_description: "Route review requests to project, announcement, or counsel review."

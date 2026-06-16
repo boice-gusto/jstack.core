@@ -1,0 +1,21 @@
+name: Graded rubric + programmatic assert
+prompt: >-
+  You are applying the jstack skill **jstack-reports-project-report** (path:
+  `reports/project-report`).
+
+
+  User: In 2–4 short bullet points, say what this skill is for, who it helps, and one limitation or
+  thing it does *not* do. Under ~200 words. Do not claim to have run external tools or APIs.
+grading:
+  rubric:
+    - description: Identifies a purpose, audience, or primary use of the skill
+      pass_if: response states what the skill is for, when to use it, or which role it helps
+    - description: Names a boundary, limitation, prerequisite, or non-goal
+      pass_if: response mentions a constraint, what is out of scope, or what the user must provide
+  pass_threshold: 1
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 15
+expect_skill: true
+timeout: 120

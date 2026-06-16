@@ -1,0 +1,3 @@
+interface:
+  display_name: "Project"
+  short_description: "Cross-surface project status: RAG health, risks, asks, and milestone table."

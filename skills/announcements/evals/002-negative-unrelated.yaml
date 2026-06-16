@@ -1,0 +1,7 @@
+name: Negative — trivia
+prompt: "In one sentence, who wrote Romeo and Juliet?"
+criteria:
+  - "Names Shakespeare or William Shakespeare"
+  - "Does not read like a corporate product announcement"
+expect_skill: false
+timeout: 60

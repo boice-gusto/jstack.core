@@ -1,0 +1,3 @@
+interface:
+  display_name: "Incident"
+  short_description: "Route incident requests to the commander flow or retro sub-skill."

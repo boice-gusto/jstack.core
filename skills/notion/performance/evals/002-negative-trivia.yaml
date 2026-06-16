@@ -1,0 +1,7 @@
+name: Negative — minimal reply
+prompt: 'Reply with only: pong'
+criteria:
+  - Very short response
+  - Does not produce a long workflow
+expect_skill: false
+timeout: 90

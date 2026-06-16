@@ -1,0 +1,3 @@
+interface:
+  display_name: "Jira"
+  short_description: "Route Jira requests to the right sub-skill: get, create, update, or transition."

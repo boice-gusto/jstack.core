@@ -1,0 +1,10 @@
+name: Internal Slack draft
+prompt: |
+  Draft a short internal Slack message (not posted) announcing a **planned** maintenance window Saturday 06:00–08:00 UTC.
+  Audience: engineers. No @here unless I say so. Flag legal review if needed (should not be needed here).
+criteria:
+  - "Framed as a draft for approval, not claiming the message was posted"
+  - "Includes the maintenance time window in UTC"
+  - "Tone appropriate for internal engineering channel (concise)"
+expect_skill: true
+timeout: 120

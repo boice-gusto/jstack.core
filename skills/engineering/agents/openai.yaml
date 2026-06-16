@@ -1,0 +1,3 @@
+interface:
+  display_name: "Engineering"
+  short_description: "Summarize engineering health: CI status, PR queue, flaky tests, revert risk."

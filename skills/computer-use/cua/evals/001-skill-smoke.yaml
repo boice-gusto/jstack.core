@@ -1,0 +1,21 @@
+name: Skill smoke — computer-use CUA lifecycle outline
+prompt: >-
+  You are applying the jstack skill **jstack-computer-use-cua**
+  (path: `computer-use/cua`).
+
+  Category: computer-use.
+
+  Skill description: Cua Driver, CuaBot, sandboxes — setup, test, execute, status, restart, destroy.
+
+  User request: For a **hypothetical** run on macOS, outline when you would choose **Cua Driver** vs **CuaBot** vs **sandboxes**,
+  and list the **verbs** (setup, test, execute, status, restart, destroy) with one line each for Driver only.
+  Mention **daemon-first TCC** in one sentence. Keep under ~400 words. Do **not** claim to have run real `cua-driver` or cloud APIs.
+
+criteria:
+  - Names Cua Driver as appropriate for native/this-Mac background automation (or equivalent)
+  - Contrasts isolated VM/container path with host driver (CuaBot or sandboxes) in at least one sentence
+  - Mentions TCC, permissions, or daemon-first in context of Driver
+  - Lists or alludes to multiple lifecycle verbs (not only "install")
+  - Does not assert verified sandbox IDs, real PIDs, or successful MCP registration
+expect_skill: true
+timeout: 120

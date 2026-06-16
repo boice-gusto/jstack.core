@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="noir-metrics">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Sample — dashboard</title>
+<link rel="stylesheet" href="../themes.css"/>
+<style>
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;padding:.65rem 1rem;border-bottom:1px solid hsl(var(--border));background:hsl(var(--card));position:sticky;top:0;z-index:1}
+  .brand{font-weight:700;font-size:.92rem}
+  .shell{padding:1rem;max-width:72rem;margin:0 auto}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;margin-bottom:1rem}
+  @media (max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .stat{border:1px solid hsl(var(--border));border-radius:var(--radius);padding:.7rem;background:hsl(var(--secondary))}
+  .stat span:first-child{font-size:.65rem;color:hsl(var(--muted-foreground));text-transform:uppercase}
+  .stat .big{font-size:1.25rem;font-weight:700;margin:.2rem 0}
+  .grid{display:grid;grid-template-columns:2fr 1fr;gap:.75rem}
+  @media (max-width:700px){.grid{grid-template-columns:1fr}}
+  .panel{border:1px solid hsl(var(--border));border-radius:var(--radius);min-height:12rem;display:flex;align-items:center;justify-content:center;color:hsl(var(--muted-foreground));font-size:.82rem;background:hsl(var(--card))}
+</style>
+</head>
+<body>
+  <header class="bar"><span class="brand">Pulse · Metrics</span><span style="font-size:.78rem;color:hsl(var(--muted-foreground))">Last sync 2 min ago</span></header>
+  <div class="shell">
+    <div class="kpis">
+      <div class="stat"><span>Error budget</span><div class="big">94%</div><span style="font-size:.7rem;color:hsl(var(--muted-foreground))">7d rolling</span></div>
+      <div class="stat"><span>p99 API</span><div class="big">142ms</div><span style="font-size:.7rem;color:hsl(var(--muted-foreground))">-12ms WoW</span></div>
+      <div class="stat"><span>Deploys</span><div class="big">38</div><span style="font-size:.7rem;color:hsl(var(--muted-foreground))">this sprint</span></div>
+      <div class="stat"><span>Open P1</span><div class="big" style="color:hsl(var(--destructive))">0</div><span style="font-size:.7rem;color:hsl(var(--muted-foreground))">clear</span></div>
+    </div>
+    <div class="grid">
+      <div class="panel">ChartWrap · ResizeObserver-ready</div>
+      <div class="panel">Breakdown<br />compact table zone</div>
+    </div>
+  </div>
+</body>
+</html>

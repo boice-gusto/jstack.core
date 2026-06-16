@@ -1,0 +1,15 @@
+name: Orchestrator routing — informal Jira work
+prompt: >-
+  You are applying the jstack skill **jstack-jira** (path: `jira`) — a **domain orchestrator**.
+  Child skills live under `skills/jira/`.
+
+  User request (informal, no skill names): "Can you add a comment on that payroll thing saying we
+  need design sign-off before QA picks it up? I don't remember the ticket id."
+
+  Respond with: (1) the **single** child skill you would route to first **or** (2) **one**
+  clarifying question before routing. Do not claim you updated Jira. Keep under ~250 words.
+criteria:
+  - Names a concrete child route (e.g. get, append, update) or one focused clarifying question
+  - Does not present fictional ticket keys or verified API results
+expect_skill: true
+timeout: 120

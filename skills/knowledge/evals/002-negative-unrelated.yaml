@@ -1,0 +1,7 @@
+name: Negative — simple math
+prompt: "Compute 48 / 6."
+criteria:
+  - "Produces the quotient 8 or equivalent"
+  - "Does not emit a long routing manifest listing every knowledge sub-skill"
+expect_skill: false
+timeout: 60

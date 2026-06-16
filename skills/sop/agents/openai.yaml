@@ -1,0 +1,3 @@
+interface:
+  display_name: "SOP"
+  short_description: "Route SOP requests to expectations or resources sub-skill."

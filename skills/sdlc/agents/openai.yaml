@@ -1,0 +1,3 @@
+interface:
+  display_name: "SDLC"
+  short_description: "Map SDLC stages to evidence and produce gate checklists."
