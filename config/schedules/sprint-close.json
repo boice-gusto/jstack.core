@@ -1,0 +1,8 @@
+{
+  "id": "sprint-close",
+  "name": "Sprint close",
+  "cron": "",
+  "enabled": false,
+  "chain": ["jstack:sprint", "jstack:project-report", "jstack:announcements"],
+  "description": "End-of-sprint pipeline"
+}

@@ -1,0 +1,634 @@
+{
+  "version": "0.1.0",
+  "onboarding": {
+    "complete": false,
+    "wizard_last_run": "",
+    "required_integrations": [],
+    "notes": "Optional readiness gate: list logical ids in required_integrations (jira, slack, notion, github, gcal, sheets, gbrain_team, gbrain_personal). jstack validate-config warns when those blocks are still empty; set JSTACK_STRICT_INTEGRATIONS=1 to fail the check. Per-surface setup flags (e.g. Notion vault) stay under notion_defaults.*"
+  },
+  "team": {
+    "name": "",
+    "timezone": "UTC",
+    "business_hours": {
+      "start": "09:00",
+      "end": "17:00",
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri"
+      ]
+    },
+    "members": [],
+    "canonical_group": {
+      "mode": "manual_list",
+      "slack_user_group_id": "",
+      "slack_handle": "",
+      "google_group_email": "",
+      "display_name": ""
+    }
+  },
+  "sprint": {
+    "cadence_weeks": 2,
+    "current": "",
+    "ceremonies": [
+      "planning",
+      "retro"
+    ],
+    "capacity_metric": "story_points",
+    "velocity_window": 3
+  },
+  "approval_chains": {
+    "template": "",
+    "chains": {
+      "default": [
+        "author"
+      ]
+    }
+  },
+  "knowledge_base": {
+    "roots": [
+      "docs",
+      "README.md"
+    ],
+    "include_globs": [
+      "**/*.md",
+      "**/*.mdx"
+    ],
+    "exclude_globs": [
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/dist/**"
+    ],
+    "doc_urls": [],
+    "github": {
+      "repos": [],
+      "search_issues": false,
+      "prefer_readme": true
+    },
+    "retrieval": {
+      "system_prompt": "Answer using the configured local paths, URLs, and GitHub scope. Cite the file path, URL, or repo location for every non-obvious claim. If a fact is not in those sources, say you do not have it in the knowledge base."
+    },
+    "gbrain": {
+      "include": false,
+      "note": "Set true to also use team/personal GBrain memory in addition to the sources above; GBrain is not a substitute for listing docs/repos here."
+    }
+  },
+  "knowledge_storage": {
+    "disk_fallback_root": "/tmp/knowledgebase",
+    "team": {
+      "git_remote": "",
+      "local_checkout": "",
+      "note": "Shared team GitHub repo: clone to local_checkout (path relative to workspace), add that path to knowledge_base.roots, commit/push with git. If git_remote or local_checkout is unset, intake may write markdown under disk_fallback_root/team/…"
+    },
+    "personal": {
+      "git_remote": "",
+      "local_checkout": "",
+      "note": "Personal repo (often private): same pattern. Prefer a personal config overlay for git_remote. Unconfigured → disk_fallback_root/personal/…"
+    }
+  },
+  "integrations": {
+    "jira": {
+      "base_url": "",
+      "project_key": "",
+      "board_id": ""
+    },
+    "slack": {
+      "public_channel": "",
+      "private_channel": "",
+      "webhook_url": ""
+    },
+    "notion": {
+      "workspace_id": "",
+      "databases": {}
+    },
+    "github": {
+      "org": "",
+      "default_repo": ""
+    },
+    "gcal": {
+      "primary_calendar_id": ""
+    },
+    "sheets": {
+      "default_spreadsheet_id": ""
+    },
+    "share_html": {
+      "output_dir": "/tmp",
+      "mcp_url": "",
+      "public_base_url": "",
+      "default_slug": "",
+      "default_owner_key": "",
+      "access_password": "",
+      "password_argument_name": "password",
+      "report_shell": "",
+      "cdn_profile": "tailwind3",
+      "branding": {}
+    },
+    "google_drive": {
+      "transcripts_folder_id": "",
+      "note": "Optional: Google Drive folder for transcript ingest; use MCP + integration-guide."
+    },
+    "transcripts": {
+      "sources": {
+        "granola": true,
+        "notion": true,
+        "zoom": true
+      },
+      "notion_database_id": "",
+      "zoom_default_folder": ""
+    }
+  },
+  "mcp_servers": {},
+  "gbrain": {
+    "team": {
+      "url": "",
+      "trust_policy": "read_write"
+    },
+    "personal": {
+      "url": "",
+      "trust_policy": "read_write"
+    },
+    "provenance": {
+      "config_label": "",
+      "entry_fields": [
+        "jstack_session_id",
+        "gbrain_target",
+        "config_label",
+        "slack_user_id",
+        "slack_handle",
+        "display_name",
+        "source_skill",
+        "team_name",
+        "written_at",
+        "host"
+      ],
+      "resolve_slack_from_team_members": true,
+      "identity": {
+        "slack_user_id": "",
+        "slack_handle": "",
+        "display_name": ""
+      }
+    }
+  },
+  "session": {
+    "default_gbrain_target": "team",
+    "current_session_id": "",
+    "auto_end": false,
+    "metrics_on_end": true,
+    "diary_auto_prompt": false
+  },
+  "jira_rules": {
+    "required_fields": [
+      "summary",
+      "description"
+    ],
+    "transitions": {},
+    "naming_conventions": {},
+    "auto_assign": false,
+    "max_story_points": 21,
+    "labels_required": false,
+    "sprint_required_for_progress": false,
+    "custom_rules": []
+  },
+  "notion_defaults": {
+    "template_set": "official",
+    "template_catalog_path": "templates/notion/catalog",
+    "surface_routing": {
+      "team_hub": "team_notion",
+      "private_vault": "private_vault",
+      "one_on_ones": "team_notion"
+    },
+    "database_ids": {
+      "tasks": "",
+      "tasks_data_source": "",
+      "calendar": "",
+      "calendar_data_source": "",
+      "intake": "",
+      "intake_data_source": "",
+      "contacts": "",
+      "contacts_data_source": "",
+      "documents": "",
+      "documents_data_source": "",
+      "product_tasks": "",
+      "product_tasks_data_source": "",
+      "projects": "",
+      "projects_data_source": "",
+      "performance_reviews": "",
+      "performance_reviews_data_source": ""
+    },
+    "default_tags": [],
+    "auto_backlink": true,
+    "private_vault": {
+      "root_parent_page_key": "private_root",
+      "setup_complete": false
+    },
+    "team_notion": {
+      "root_parent_page_key": "team_hub",
+      "setup_complete": false,
+      "teamspace_anchor_page_id": ""
+    },
+    "post_targets": {
+      "scratchpad": "private_scratchpad",
+      "transcript": "private_transcripts",
+      "transcript_summary": "private_transcripts",
+      "meeting_notes": "private_notes",
+      "project": "private_projects",
+      "sprint": "private_sprints",
+      "one_on_one_prep": "one_on_ones",
+      "one_on_one_after": "one_on_ones",
+      "pe_note": "pe_index",
+      "standup": "team_hub",
+      "team_report": "team_hub",
+      "team_metrics_snapshot": "team_metrics",
+      "team_wiki_note": "team_notes"
+    },
+    "template_pages": {
+      "standup": "",
+      "team_report": "",
+      "performance": "",
+      "one_on_one": "",
+      "meeting_notes": ""
+    },
+    "golden_pages": {
+      "company_team_page": "",
+      "kanban": "",
+      "product_strategy": "",
+      "product_wiki": "",
+      "calendar": "",
+      "intake": "",
+      "contacts": "",
+      "documents": "",
+      "product_tasks": "",
+      "meeting_notes": "",
+      "one_on_ones_hub": "",
+      "one_on_one_template": "",
+      "private_root": "",
+      "private_scratchpad": "",
+      "private_notes": "",
+      "private_data": "",
+      "private_transcripts": "",
+      "private_projects": "",
+      "private_sprints": "",
+      "sprints_dashboard": "",
+      "meetings_dashboard": "",
+      "transcriptions_dashboard": "",
+      "documents_dashboard": "",
+      "intake_dashboard": "",
+      "team_dashboard": "",
+      "about_page": "",
+      "management_dashboard": "",
+      "onboarding_dashboard": "",
+      "engineering_dashboard": "",
+      "oncall_dashboard": ""
+    },
+    "parent_pages": {
+      "team_hub": "",
+      "pe_index": "",
+      "one_on_ones": "",
+      "private_root": "",
+      "private_scratchpad": "",
+      "private_notes": "",
+      "private_data": "",
+      "private_transcripts": "",
+      "private_projects": "",
+      "private_sprints": "",
+      "team_people": "",
+      "team_metrics": "",
+      "team_notes": "",
+      "product_strategy": "",
+      "product_wiki": "",
+      "knowledge_base": "",
+      "sops": "",
+      "ops_dashboard": "",
+      "sprints_dashboard": "",
+      "meetings_dashboard": "",
+      "transcriptions_dashboard": "",
+      "documents_dashboard": "",
+      "intake_dashboard": "",
+      "team_dashboard": "",
+      "about_page": "",
+      "management_dashboard": "",
+      "onboarding_dashboard": "",
+      "engineering_dashboard": "",
+      "oncall_dashboard": ""
+    }
+  },
+  "one_on_one_cycle": {
+    "transcript_sources": [],
+    "primary_storage": "notion",
+    "lattice": {
+      "enabled": false,
+      "mcp_server_label": "",
+      "note": "When enabled and the host exposes Lattice MCP tools, use those for 1:1 prepare/after; read tool schemas first. If tools are missing, fall back to Notion."
+    },
+    "notion": {
+      "parent_page_key": "one_on_ones",
+      "private_pe_parent_key": "pe_index",
+      "default_template_page_key": "one_on_one",
+      "note": "Parent page IDs: notion_defaults.parent_pages.<key>. Prefer pe_index for private performance/management notes when org policy requires it. Per-direct-report pages: set team.members[].notion (one_on_one_parent_page_id, optional template_page_id). When template_page_id is empty, duplicate from notion_defaults.template_pages[default_template_page_key]. See skills/meetings/one-on-one-transcript/references/config-shape.md."
+    },
+    "ai_attribution": {
+      "append_to_generated_notes": true,
+      "footer_markdown": "---\n_Generated with AI assistance from configured transcript(s). Human review required before sharing outside the manager-report line._"
+    },
+    "prepare_vs_after": {
+      "prepare_title_suffix": "Prep",
+      "after_title_suffix": "After",
+      "link_transcript_paths_in_body": true
+    }
+  },
+  "policies": {
+    "review": {
+      "required_approvals": 1,
+      "counsel_roles": [
+        "ceo",
+        "designer",
+        "engineer",
+        "qa"
+      ]
+    },
+    "announcements": {
+      "approval_required": true,
+      "channels": []
+    },
+    "incidents": {
+      "severity_levels": [
+        "sev4",
+        "sev3",
+        "sev2",
+        "sev1"
+      ],
+      "escalation": {}
+    },
+    "sdlc": {
+      "stages": [
+        "plan",
+        "build",
+        "test",
+        "release"
+      ],
+      "gates": {}
+    }
+  },
+  "tones": {},
+  "personas": {},
+  "channels": {
+    "routing": {}
+  },
+  "debug": {
+    "enabled": false,
+    "mock_mcp": false,
+    "mock_mcp_scenario": "",
+    "log_level": "info",
+    "trace_skills": [],
+    "trace_chains": false
+  },
+  "skills": {
+    "machine_readable": {
+      "enabled": true,
+      "require_schema_ref": false
+    }
+  },
+  "skill_defaults": {
+    "reports": {
+      "default_audience": "team",
+      "html_theme": "default",
+      "include_raw_tables": false,
+      "redact_ic_names": false
+    },
+    "self_eval": {
+      "org_context_slices": ["self_review_rubric"],
+      "notes": "org_context_slices: keys under org_context.local.files; add ethics, engineering_handbook, etc. Include string \"levels\" to also load levels_and_expectations.markdown_path. See skills/_core/references/org-context.md."
+    },
+    "advice": {
+      "org_context_slices": ["ethics", "coaching"]
+    }
+  },
+  "distribution": {
+    "update_check": true,
+    "version_url": "",
+    "github": {
+      "core": {
+        "owner": "",
+        "repo": "",
+        "default_branch": "main"
+      },
+      "gusto": {
+        "owner": "",
+        "repo": "",
+        "default_branch": "main"
+      }
+    },
+    "plugin_pr": {
+      "path_deny_globs": [
+        "**/.claude/settings.local.json",
+        "**/settings.json",
+        "**/.mcp.json",
+        "**/.env",
+        "**/.env.*"
+      ]
+    }
+  },
+  "pe": {
+    "configured": false,
+    "teams": [],
+    "projects": [],
+    "jira_project_keys": [],
+    "notion_parent_keys": [],
+    "reporting_window_days": 14,
+    "note": "Populate via jstack setup or jstack.config.json. Core ships no real team/project identifiers."
+  },
+  "ingest_all": [],
+  "reports": {
+    "branding": {
+      "colors": {
+        "main": "#0f172a",
+        "primary": "#2563eb",
+        "secondary": "#64748b",
+        "background": "#f8fafc",
+        "surface": "#ffffff",
+        "text": "#0f172a",
+        "textMuted": "#64748b",
+        "border": "#e2e8f0",
+        "buttonPrimaryBg": "#2563eb",
+        "buttonPrimaryText": "#ffffff",
+        "buttonSecondaryBg": "#e2e8f0",
+        "buttonSecondaryText": "#0f172a",
+        "link": "#2563eb"
+      },
+      "radiusMd": "0.5rem",
+      "fontSans": "system-ui, sans-serif",
+      "density": "comfortable"
+    }
+  },
+  "team_context": {
+    "base_path": "",
+    "files": {}
+  },
+  "levels_and_expectations": {
+    "markdown_path": "",
+    "canonical_url": ""
+  },
+  "org_context": {
+    "notes": "Org-wide slices for ethics, handbook, HR-safe coaching, review rubrics. Prefer local markdown under local.base_path; use notion_pages / google_drive_folders + MCP when live. See skills/_core/references/org-context.md.",
+    "local": {
+      "base_path": "",
+      "files": {
+        "org_structure": "",
+        "ethics": "",
+        "engineering_handbook": "",
+        "hr_public": "",
+        "coaching": "",
+        "self_review_rubric": "",
+        "critical_review_rubric": ""
+      }
+    },
+    "notion_pages": {},
+    "google_drive_folders": {},
+    "people": {
+      "notes": "Resolve roster rows from team.members; use MCP (Slack/Jira) only for live lookups when configured.",
+      "prefer_team_members": true
+    },
+    "mcp_labels": {
+      "documents": [],
+      "people": []
+    }
+  },
+  "kickoff_workflows": {
+    "morning": {
+      "path": ""
+    },
+    "state_path": ""
+  },
+  "impact": {
+    "custom_rubric_path": "",
+    "org_priorities_file": ""
+  },
+  "brag": {
+    "default_mode": "daily",
+    "dimensions_file": "",
+    "level": "",
+    "google_doc_id": ""
+  },
+  "impact_prep": {
+    "rubrics_file": ""
+  },
+  "standup": {
+    "jira_comments": false,
+    "side_work_thresholds": {}
+  },
+  "weekly_digest": {
+    "window_days": 14,
+    "notion_parent_page_id": "",
+    "dual_audience": false
+  },
+  "silo_scan": {
+    "confidence_threshold": 0.6,
+    "comment_marker": "",
+    "jira_lookback_days": 120
+  },
+  "engineering_health": {
+    "stale_pr_days": 3
+  },
+  "code_review": {},
+  "claude_md_improver": {
+    "enabled": true,
+    "transcript_lookback_days": 30,
+    "commit_lookback_count": 100,
+    "min_priority": 5.0,
+    "persona_threshold": 3,
+    "report_path": ".jstack/claude-md-improvements-{date}.md",
+    "patch_path": ".jstack/claude-md-improvements-{date}.patch",
+    "high_correction_session_threshold": 5
+  },
+  "cross_plugins": {
+    "gstack": {
+      "enabled": true,
+      "skills": [
+        "investigate",
+        "browse",
+        "ship",
+        "review",
+        "health",
+        "cso",
+        "retro",
+        "learn"
+      ]
+    },
+    "superpowers": {
+      "enabled": true,
+      "skills": [
+        "writing-plans",
+        "dispatching-parallel-agents",
+        "systematic-debugging",
+        "requesting-code-review",
+        "test-driven-development",
+        "brainstorming"
+      ]
+    },
+    "gbrain": {
+      "enabled": false,
+      "skills": [
+        "plan-review",
+        "code-review",
+        "qa",
+        "shipping",
+        "security-audit"
+      ],
+      "note": "When enabled, jstack doctor --json should verify gbrain:* skills resolve (host-dependent)."
+    }
+  },
+  "routines": {
+    "standup": {
+      "enabled": false,
+      "cron": "0 9 * * 1-5",
+      "chain": [
+        "recon",
+        "announcements"
+      ]
+    },
+    "weekly_digest": {
+      "enabled": false,
+      "cron": "0 16 * * 5",
+      "chain": [
+        "reports",
+        "announcements"
+      ]
+    },
+    "sprint_close": {
+      "enabled": false,
+      "cron": "",
+      "chain": [
+        "sprint",
+        "reports",
+        "announcements"
+      ]
+    },
+    "health_check": {
+      "enabled": false,
+      "cron": "0 */4 * * *",
+      "chain": [
+        "recon"
+      ]
+    }
+  },
+  "workflows": {
+    "default_output": "screenshots",
+    "artifacts_dir": "artifacts/workflows"
+  },
+  "telemetry": {
+    "enabled": false,
+    "endpoint": "",
+    "satisfaction_enabled": false,
+    "satisfaction_frequency": 20,
+    "batch_size": 25,
+    "flush_interval_ms": 60000
+  },
+  "evals": {
+    "auto_gate": false,
+    "token_budgets": {},
+    "latency_thresholds_ms": {},
+    "required_fields": {}
+  }
+}
