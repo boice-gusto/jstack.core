@@ -1,0 +1,20 @@
+{
+  "name": "jstack-local",
+  "interface": {
+    "displayName": "jstack"
+  },
+  "plugins": [
+    {
+      "name": "jstack",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "INSTALLED_BY_DEFAULT",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
