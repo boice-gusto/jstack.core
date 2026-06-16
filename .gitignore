@@ -1,0 +1,54 @@
+# jstack.core — standalone Git repo (Bun/TS + Python helpers + Next dashboard)
+
+# Dependencies
+node_modules/
+
+# Builds & caches
+dist/
+build/
+out/
+.next/
+.vercel/
+*.tsbuildinfo
+
+# Python (e.g. scripts/apply_detailed_skills.py)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Secrets & machine-local config (templates stay tracked)
+.env
+.env.*
+!.env.example
+jstack.config.json
+jstack.personal.json
+**/jstack.personal.json
+.mcp.json
+
+# Local scratch / workflow captures
+.scratchpad/
+.tmp/
+artifacts/workflows/
+
+# Brainstorming companion (mockups + state) — see skills/brainstorming
+.superpowers/
+
+# Setup recovery + lockfile (created by jstack setup)
+.jstack/
+
+# Skill eval LLM artifacts
+evals/.workspace/
+evals/.reports/
+
+# Dashboard local persistence (server JSON)
+.dashboard-data/
+
+# Editors
+.idea/
+*.swp
+*.swo
