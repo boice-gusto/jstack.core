@@ -1,0 +1,13 @@
+name: Skill smoke — skill finder (no live APIs)
+prompt: >-
+  You are applying **jstack-skill-finder** (`knowledge/skill-finder`). User asks: "How do I publish
+  a read-only HTML report for my team?"
+
+  Respond with 1–3 candidate jstack skills, why each fits, and mention that **`jstack skills index`**
+  can list skills when a shell is available. Do not claim you ran the CLI. Under ~250 words.
+criteria:
+  - Names at least one plausible jstack report or share-html related skill or router
+  - Mentions CLI skills index or show as optional discovery
+  - Does not invent secret URLs or API results
+expect_skill: true
+timeout: 120

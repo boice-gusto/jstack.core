@@ -1,0 +1,20 @@
+name: Skill smoke — outline without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-sop-resources** (path: `sop/resources`).
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+  section headings or a short numbered plan and **one example bullet** per section. Do **not** claim
+  to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from config or
+  the user if required.
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Explicitly avoids presenting fictional ticket IDs, channel IDs, customer names, or real URLs as
+    verified facts
+  - >-
+    Mentions configuration, user approval, pasted context, or tool limits where the skill would need
+    them, OR states assumptions clearly
+expect_skill: true
+timeout: 120

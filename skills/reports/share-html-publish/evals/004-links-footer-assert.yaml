@@ -1,0 +1,14 @@
+name: Links footer — share-html publish guidance
+prompt: >-
+  You are helping apply **jstack-share-html-publish**. The user just published HTML and the API returned a public URL https://reports.example.com/p/abc.
+
+  Write a 2–3 sentence summary and end with a markdown **## Links** section containing that URL. No other sections after Links.
+criteria:
+  - Ends with a Links heading and includes the example URL
+  - Does not claim credentials or private tokens
+expect_skill: true
+timeout: 90
+assert:
+  response_match_regex:
+    - "## Links"
+    - "https://reports\\.example\\.com/p/abc"

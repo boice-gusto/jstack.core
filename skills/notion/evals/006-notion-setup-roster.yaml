@@ -1,0 +1,21 @@
+name: Notion setup — roster, 1:1 wiring, canonical group
+prompt: >-
+  You are applying the jstack skill **jstack-notion-setup** (path: `notion/setup`).
+
+  User request: Summarize how a **setup wizard** should record **team members** (with level/role),
+  wire **per-person 1:1 Notion pages** and **templates**, and set **`team.canonical_group.mode`**
+  for Slack user group vs Google Group vs manual roster. Mention **`one_on_one_cycle.notion.default_template_page_key`**
+  and that **no Notion or Slack ids** should be invented. Under ~320 words. Do not claim you called APIs.
+
+criteria:
+  - >-
+    Describes `team.members` or per-person roster fields (e.g. id, name, level) and Notion ids for
+    1:1 section/template or equivalent
+  - >-
+    Mentions `team.canonical_group` with a **mode** (Slack user group / Google Group / manual / none)
+    or equivalent
+  - >-
+    States that empty ids require user paste or setup — do not invent ids
+  - References vault/routing, team-canonical-identity, or `notion-vault-and-routing` style docs
+expect_skill: true
+timeout: 120

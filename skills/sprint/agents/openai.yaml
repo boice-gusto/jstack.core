@@ -1,0 +1,3 @@
+interface:
+  display_name: "Sprint"
+  short_description: "Sprint-level orchestrator: planning and mid-sprint re-plan from capacity."

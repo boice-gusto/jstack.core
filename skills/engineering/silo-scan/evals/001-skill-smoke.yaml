@@ -1,0 +1,13 @@
+name: Skill smoke — silo scan outline
+prompt: >-
+  You are applying **jstack-engineering-silo-scan** (`engineering/silo-scan`).
+
+  User request: Describe how you would scan hypothetical ticket PROJ-100 for overlapping work. Under ~300 words.
+  Do not claim live Jira/GitHub calls.
+
+criteria:
+  - Mentions file paths, similarity, or confidence threshold concept
+  - Does not fabricate real colleague names as verified assignees
+  - Notes read-only or approval before posting comments
+expect_skill: true
+timeout: 120

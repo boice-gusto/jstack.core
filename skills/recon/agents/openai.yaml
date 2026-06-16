@@ -1,0 +1,3 @@
+interface:
+  display_name: "Recon"
+  short_description: "Sweep Slack, Jira, and integrations to surface what needs attention."

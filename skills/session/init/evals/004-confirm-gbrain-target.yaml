@@ -1,0 +1,23 @@
+name: Session init — confirm GBrain target when user says personal but default is team
+prompt: |
+  Start my jstack session for **my personal notes** today. I want to work in my own space, not the team board.
+
+  Use session/init behavior: load config, set session context. Do not claim you called external APIs.
+files:
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-team" },
+        "session": { "default_gbrain_target": "team", "current_session_id": "" },
+        "gbrain": {
+          "team": { "url": "https://example.invalid/team", "trust_policy": "read_write" },
+          "personal": { "url": "https://example.invalid/personal", "trust_policy": "read_write" }
+        },
+        "knowledge_base": { "roots": ["docs"], "gbrain": { "include": false } }
+      }
+criteria:
+  - "Does not silently proceed as team-only without addressing the user's personal vs team wording"
+  - "Names or implies session.default_gbrain_target from config (team) as a proposed default and asks for confirmation or clarifies personal vs team before treating target as final"
+  - "Does not claim to have written session state to GBrain or disk unless describing a hypothetical next step after user confirm"
+expect_skill: true
+timeout: 120

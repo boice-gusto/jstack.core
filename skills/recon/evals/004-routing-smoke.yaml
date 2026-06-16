@@ -1,0 +1,10 @@
+name: Routing — deep dive handoff
+prompt: >-
+  You are **jstack-recon**. User wants a one-ticket deep dive on ENG-999 without pasting the ticket.
+
+  What do you do first (read-only path) and what skill might follow? Under 100 words.
+criteria:
+  - Suggests jstack-jira-get or read-only fetch before narrative
+  - Does not invent assignee or status for ENG-999
+expect_skill: true
+timeout: 90

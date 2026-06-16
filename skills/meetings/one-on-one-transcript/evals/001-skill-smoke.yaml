@@ -1,0 +1,26 @@
+name: Skill smoke — 1:1 transcript cycle outline
+prompt: >-
+  You are applying the jstack skill **jstack-meetings-one-on-one-transcript**
+  (path: `meetings/one-on-one-transcript`).
+
+  Category: meetings.
+
+  Skill description: Paired 1:1 prep and after-meeting notes from configured transcript sources;
+  prefer Lattice MCP when enabled, else Notion private PE or 1:1 parent pages; always append AI attribution.
+
+  User request: For a **hypothetical** run, outline how you would handle **prepare** vs **after**,
+  including where `one_on_one_cycle` fits, when you would choose Lattice vs Notion, and how you would
+  append AI attribution. Keep under ~450 words. Do **not** claim to have called real APIs or loaded
+  real transcripts.
+
+criteria:
+  - Distinguishes prepare (pre-meeting) from after (post-meeting) in more than one sentence
+  - >-
+    Mentions config (`one_on_one_cycle`, `notion_defaults.parent_pages`, or Lattice MCP) OR clearly
+    states what would be missing before a real run
+  - >-
+    States that AI-generated content must be labeled or footered (attribution / human review), or
+    equivalent
+  - Does not assert verified Notion page URLs, Lattice IDs, or real employee names
+expect_skill: true
+timeout: 120

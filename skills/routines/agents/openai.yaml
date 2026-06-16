@@ -1,0 +1,3 @@
+interface:
+  display_name: "Routines"
+  short_description: "Route to the right routine: standup, weekly-digest, sprint-close, or custom."

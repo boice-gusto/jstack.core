@@ -1,0 +1,31 @@
+name: Team-scoped config — knowledge_base plus gbrain.include labels sources
+prompt: |
+  Using jstack.config.json in this workspace: answer what line opens the Hamlet soliloquy in the configured roots.
+  If knowledge_base.gbrain.include is true, add a short labeled note explaining that a live GBrain pass would be separate and is not simulated here — do not invent GBrain excerpts.
+files:
+  - path: eval-fixtures/public/hamlet-snippet.md
+    content: |
+      # Hamlet (excerpt)
+      > To be, or not to be, that is the question:
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-team" },
+        "session": { "default_gbrain_target": "team" },
+        "knowledge_base": {
+          "roots": ["eval-fixtures/public"],
+          "doc_urls": [],
+          "github": { "repos": [] },
+          "gbrain": { "include": true }
+        },
+        "gbrain": {
+          "team_base_url": "https://example.invalid/team-gbrain",
+          "personal_base_url": "https://example.invalid/personal-gbrain"
+        }
+      }
+criteria:
+  - "Quotes or paraphrases 'To be, or not to be' from the file-backed public root"
+  - "If it mentions GBrain, clearly separates file/URL sources from a hypothetical or non-simulated GBrain retrieval (no fake GBrain quotes)"
+  - "Does not treat personal_base_url as the active target when session.default_gbrain_target is team (may mention both exist in config)"
+expect_skill: true
+timeout: 120

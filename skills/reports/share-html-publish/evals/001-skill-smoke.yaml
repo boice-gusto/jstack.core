@@ -1,0 +1,16 @@
+name: Skill smoke — publish flow without live host
+prompt: >-
+  You are applying the jstack skill **jstack-share-html-publish** (path: `reports/share-html-publish`).
+
+  User request: Describe how you would **save HTML to a config output directory**, then **publish** via MCP
+  and **curl fallback**, and **download** the live page — all using placeholders for `slug`, `owner_key`,
+  and URLs. Mention optional **password** in the JSON arguments when config supplies it. Do **not** print
+  real secrets, owner keys, or production URLs; use `example.com` or `<REDACTED>`.
+
+  Keep the response under ~350 words.
+criteria:
+  - Names writing HTML to disk before curl, and using json.dumps / file read for HTML_CONTENT
+  - Mentions integrations.share_html or config keys (output_dir, mcp_url, public_base_url)
+  - Does not present fictional credentials as real
+expect_skill: true
+timeout: 120

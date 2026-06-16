@@ -1,0 +1,13 @@
+name: Skill smoke — engineering health outline
+prompt: >-
+  You are applying **jstack-engineering-health** (`engineering/health`).
+
+  User request: Outline what you would report for a hypothetical multi-repo health check. Under ~350 words.
+  Do not claim live API calls.
+
+criteria:
+  - Covers CI, PR queue, and at least one other health signal or explicit gap
+  - Avoids fictional repo names as verified facts; may use placeholders
+  - Mentions config or integration limits
+expect_skill: true
+timeout: 120

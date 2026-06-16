@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="slate-wireframe">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>JStack visual library — themes · shadcn-style primitives · samples</title>
+<link rel="stylesheet" href="themes.css"/>
+<style>
+  main{max-width:72rem;margin:0 auto;padding:1.25rem}
+  section{margin-block:2rem}
+  h2{font-size:1rem;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));margin:0 0 .75rem;font-weight:600}
+  .sub{font-size:.88rem;color:hsl(var(--muted-foreground));margin:-.35rem 0 .75rem;line-height:1.45}
+  h3.lab{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:hsl(var(--muted-foreground));margin:1rem 0 .5rem;font-weight:600}
+  nav a{color:hsl(var(--primary));margin-right:1rem;font-size:.9rem;text-decoration:none}nav a:hover{text-decoration:underline}
+  .theme-row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+  .sw{display:flex;flex-direction:column;font-size:.65rem;color:hsl(var(--muted-foreground));text-align:center;min-width:4rem}
+  .sw b{display:block;width:100%;aspect-ratio:1;border-radius:.25rem;margin-bottom:.25rem;border:1px solid hsl(var(--border))}.sw span{word-break:break-all}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+  .delivery-card{border:1px solid hsl(var(--border));border-radius:var(--radius);background:hsl(var(--card));color:hsl(var(--card-foreground));padding:1rem;display:flex;flex-direction:column;gap:.35rem}
+  .delivery-card h3{margin:0;font-size:.95rem}
+  .delivery-card p{margin:0;font-size:.82rem;line-height:1.4;color:hsl(var(--muted-foreground))}
+
+  .toolbar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1rem;padding:.75rem 1.25rem;background:hsl(var(--background));border-bottom:1px solid hsl(var(--border));backdrop-filter:saturate(1.5) blur(8px)}
+  .toolbar h1{margin:0;font-size:1.05rem;font-weight:600}
+  .toolbar label{font-size:.8rem;color:hsl(var(--muted-foreground))}
+  select{background:hsl(var(--card));color:hsl(var(--foreground));border:1px solid hsl(var(--input));border-radius:var(--radius);padding:.35rem .5rem;font:inherit}
+  footer{font-size:.75rem;color:hsl(var(--muted-foreground));padding:2rem 1.25rem;border-top:1px solid hsl(var(--border));text-align:center}
+  code{font-family:ui-monospace,Menlo,monospace;background:hsl(var(--muted));padding:.1rem .35rem;border-radius:.2rem;font-size:.85em}
+
+  /* Mirrors component-catalog.md + shadcn/ui semantics (static HTML — no Radix). */
+  .sh-slot{display:flex;flex-direction:column;gap:1rem}
+  .strip{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;padding:1rem;border:1px dashed hsl(var(--border));border-radius:var(--radius);background:hsl(var(--accent)/25%)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:.375rem .9rem;font-size:.8125rem;font-weight:500;border-radius:calc(var(--radius) - .05rem);border:1px solid transparent;cursor:default;text-decoration:none;transition:opacity .15s;line-height:1.25;height:2.25rem;box-sizing:border-box}
+  .btn-p{background:hsl(var(--primary));color:hsl(var(--primary-foreground));box-shadow:0 1px 2px hsl(var(--foreground)/8%)}
+  .btn-s{background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));border-color:hsl(var(--border))}
+  .btn-o{background:hsl(var(--background));color:hsl(var(--foreground));border-color:hsl(var(--input));box-shadow:0 1px 1px hsl(var(--foreground)/5%)}
+  .btn-g{background:transparent;color:hsl(var(--foreground));padding-left:.65rem;padding-right:.65rem}
+  .btn-d{background:hsl(var(--destructive));color:hsl(var(--destructive-foreground))}
+  .btn-sm{height:2rem;padding:.25rem .65rem;font-size:.75rem}
+  .btn-lg{height:2.65rem;padding:.5rem 1.25rem;font-size:.9rem}
+  .badge{display:inline-flex;padding:.125rem .5rem;font-size:.75rem;font-weight:600;line-height:1;border-radius:calc(var(--radius) - .1rem);border:1px solid transparent}
+  .badge-d{background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));border-color:transparent}
+  .badge-o{background:hsl(var(--muted)/50%);border-color:hsl(var(--border));color:hsl(var(--foreground))}
+  .badge-a{background:hsl(var(--accent));color:hsl(var(--accent-foreground))}
+  .badge-m{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}
+  .sh-sep{width:100%;height:1px;background:hsl(var(--border));margin:.25rem 0}
+  .sh-card{border:1px solid hsl(var(--border));border-radius:var(--radius);background:hsl(var(--card));color:hsl(var(--card-foreground));box-shadow:0 1px 2px hsl(var(--foreground)/4%)}
+  .sh-ch{padding:.75rem 1rem;display:flex;flex-direction:column;gap:.35rem;padding-bottom:.5rem}
+  .sh-ct{font-size:.875rem;font-weight:600;line-height:1.2;letter-spacing:-.01em;margin:0}
+  .sh-cd{font-size:.875rem;color:hsl(var(--muted-foreground));margin:0;line-height:1.35}
+  .sh-cc{padding:0 1rem 1rem;font-size:.875rem;line-height:1.5}
+  .sh-cf{display:flex;align-items:center;border-top:1px solid hsl(var(--border));padding:.65rem 1rem;gap:.5rem}
+  .alert{display:flex;gap:.65rem;padding:.85rem 1rem;border-radius:var(--radius);border:1px solid hsl(var(--border));font-size:.875rem;line-height:1.45;background:hsl(var(--background))}
+  .alert-ic{font-size:1rem;flex-shrink:0;line-height:1}
+  .alert-def{border-left:3px solid hsl(var(--primary))}
+  .alert-des{background:hsl(var(--destructive)/0.12);border-color:hsl(var(--destructive)/0.35);color:hsl(var(--foreground))}
+
+  /* Tabs — radio pattern */
+  .tabs{display:flex;flex-direction:column;gap:.5rem;max-width:28rem;border:1px solid hsl(var(--border));border-radius:var(--radius);overflow:hidden;background:hsl(var(--card))}
+  .tab-h{display:flex;border-bottom:1px solid hsl(var(--border));background:hsl(var(--muted)/40%)}
+  .tabs input{position:absolute;opacity:0;pointer-events:none}
+  .tab-h label{padding:.5rem .9rem;font-size:.8125rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:hsl(var(--muted-foreground))}
+  .tabs #t1:checked ~ .tab-h label[for="t1"],.tabs #t2:checked ~ .tab-h label[for="t2"],.tabs #t3:checked ~ .tab-h label[for="t3"]{color:hsl(var(--foreground));border-bottom-color:hsl(var(--primary));font-weight:600}
+  .tab-p{padding:.75rem 1rem;display:none;font-size:.8125rem;color:hsl(var(--muted-foreground))}
+  .tabs #t1:checked ~ .panels .p1,.tabs #t2:checked ~ .panels .p2,.tabs #t3:checked ~ .panels .p3{display:block}
+  .panels{padding:0 0 .65rem}
+
+  .field{display:flex;flex-direction:column;gap:.35rem;max-width:18rem}
+  .label{font-size:.8125rem;font-weight:500;line-height:1}
+  .hint{font-size:.75rem;color:hsl(var(--muted-foreground))}
+  input.in, textarea.in,select.sel{font:inherit;width:100%;padding:.35rem .6rem;font-size:.875rem;border-radius:calc(var(--radius) - .1rem);border:1px solid hsl(var(--input));background:hsl(var(--background));color:hsl(var(--foreground));box-shadow:0 1px hsl(var(--foreground)/4%) inset}
+  input.in:focus,textarea.in:focus,.sel:focus{outline:2px solid hsl(var(--ring));outline-offset:1px}
+  textarea.in{min-height:4rem;resize:vertical}
+  .row{display:flex;align-items:flex-start;gap:.5rem;font-size:.875rem}
+  .chk{width:1rem;height:1rem;margin-top:.15rem;border-radius:calc(var(--radius) - 4px);border:1px solid hsl(var(--primary));accent-color:hsl(var(--primary));cursor:pointer}
+  .switch-w{display:flex;align-items:center;gap:.5rem}
+  .switch{appearance:none;width:2.65rem;height:1.35rem;background:hsl(var(--input));border-radius:999px;position:relative;cursor:pointer;transition:.2s;border:1px solid hsl(var(--border))}
+  .switch::after{content:"";position:absolute;width:1.05rem;height:1.05rem;background:hsl(var(--background));border-radius:50%;top:.125rem;left:.125rem;box-shadow:0 1px 2px hsl(var(--foreground)/20%);transition:.2s}
+  .switch:checked{background:hsl(var(--primary));border-color:hsl(var(--primary))}
+  .switch:checked::after{left:calc(100% - 1.175rem)}
+  table.sh{font-size:.8125rem;border-collapse:collapse;width:100%;border-radius:var(--radius);overflow:hidden;border:1px solid hsl(var(--border))}
+  table.sh thead{background:hsl(var(--muted));color:hsl(var(--muted-foreground))}
+  table.sh th,table.sh td{padding:.45rem .75rem;text-align:left;border-bottom:1px solid hsl(var(--border))}
+  table.sh tr:last-child td{border-bottom:none}
+  table.sh tbody tr:hover{background:hsl(var(--muted)/35%)}
+
+  .sk{display:flex;flex-direction:column;gap:.4rem;width:min(280px,100%)}
+  .sk-line{height:.65rem;background:linear-gradient(90deg,hsl(var(--muted)),hsl(var(--accent)));border-radius:4px;animation:sk 1.2s ease-in-out infinite;background-size:200% 100%}
+  .sk-line.w60{width:60%}.sk-line.w80{width:80%}
+  @keyframes sk{0%{background-position:100% 0}100%{background-position:-100% 0}}
+  .av{width:2.25rem;height:2.25rem;border-radius:50%;background:hsl(var(--muted));border:1px solid hsl(var(--border));display:flex;align-items:center;justify-content:center;font-size:.72rem;color:hsl(var(--muted-foreground));font-weight:600}
+
+  .ifr-wrap{border:1px solid hsl(var(--border));border-radius:var(--radius);overflow:hidden;background:hsl(var(--card));margin-top:.5rem}
+  .ifr{width:100%;height:clamp(220px,42vw,360px);border:0;display:block;background:hsl(var(--background))}
+
+  table{font-size:.8rem;border-collapse:collapse;width:min(640px,100%)}
+  th,td{padding:.4rem .6rem;text-align:left;border:1px solid hsl(var(--border))}
+  th{background:hsl(var(--muted));font-weight:600}
+  tr:nth-child(even){background:hsl(var(--foreground)/0.03)}
+  .kpi{border:1px solid hsl(var(--border));border-radius:var(--radius);padding:.75rem;min-width:10rem;background:hsl(var(--card))}
+  .kpi .lbl{font-size:.7rem;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:.04em}.kpi .num{font-size:1.35rem;font-weight:700;color:hsl(var(--foreground));margin:.15rem 0}
+
+  /* Two-column shad playground */
+  .play{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+  @media (min-width:900px){.play-wide{grid-template-columns:2fr 1fr}}
+
+
+
+</style>
+</head>
+<body>
+<header class="toolbar">
+  <div style="flex:1;min-width:12rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+    <h1>JStack visual library</h1>
+    <nav>
+      <a href="#themes">Themes</a>
+      <a href="#styles">Styles</a>
+      <a href="#shadcn">shadcn-style</a>
+      <a href="#samples">Samples</a>
+      <a href="#mockups">Mockups</a>
+    </nav>
+  </div>
+  <div>
+    <label for="thr">Live theme&nbsp;</label>
+    <select id="thr" aria-label="Pick data-theme preset">
+      <option value="slate-wireframe">slate-wireframe</option>
+      <option value="solar-flare">solar-flare</option>
+      <option value="noir-metrics">noir-metrics</option>
+      <option value="editorial-newsprint">editorial-newsprint</option>
+      <option value="keynote-soft">keynote-soft</option>
+    </select>
+  </div>
+</header>
+<main>
+  <p style="margin:0 0 1rem;font-size:.9rem;color:hsl(var(--muted-foreground));max-width:58ch;line-height:1.45;">
+    Offline catalog for <strong>visual-single-page-html</strong>: shared tokens live in <code>themes.css</code> (<code>data-theme</code> names align with <code>references/themes.md</code>). The blocks below mirror <strong>shadcn/ui</strong> file names (<code>Card</code>, <code>Button</code>, <code>Alert</code>, …) as static markup — not React/Radix. Embedded <strong>samples</strong> reuse the same stylesheet so previews track the toolbar theme.
+  </p>
+
+  <section id="themes">
+    <h2>Token swatches (current)</h2>
+    <div class="theme-row" aria-hidden="true">
+      <div class="sw"><b style="background:hsl(var(--background));"></b><span>background</span></div>
+      <div class="sw"><b style="background:hsl(var(--foreground));"></b><span>foreground</span></div>
+      <div class="sw"><b style="background:hsl(var(--primary));"></b><span>primary</span></div>
+      <div class="sw"><b style="background:hsl(var(--card));"></b><span>card</span></div>
+      <div class="sw"><b style="background:hsl(var(--muted));"></b><span>muted</span></div>
+      <div class="sw"><b style="background:hsl(var(--accent));"></b><span>accent</span></div>
+      <div class="sw"><b style="background:hsl(var(--destructive));"></b><span>destructive</span></div>
+      <div class="sw"><b style="background:hsl(var(--border));"></b><span>border</span></div>
+      <div class="sw"><b style="outline:2px solid hsl(var(--ring))"></b><span>ring hue</span></div>
+    </div>
+    <p style="font-size:.82rem;color:hsl(var(--muted-foreground));margin:.75rem 0 0">Radius token: <code>--radius</code> on <code>:root</code> varies per theme preset.</p>
+  </section>
+
+  <section id="styles">
+    <h2>Deliverable styles</h2>
+    <p class="sub">Higher-level layouts you pair with primitives; detailed matrix in <code>references/style-catalog.md</code>.</p>
+    <div class="cards">
+      <article class="delivery-card"><h3>landing</h3><p>Hero · features · footer CTA. Charts sparse; airy density.</p></article>
+      <article class="delivery-card"><h3>dashboard</h3><p>Top bar · KPI strip · responsive grid · Chart.js-friendly.</p></article>
+      <article class="delivery-card"><h3>report</h3><p>Doc column · optional sticky TOC · balanced cadence.</p></article>
+      <article class="delivery-card"><h3>report-exec</h3><p>Short TL;DR · few sections · thumbnails over raw tables.</p></article>
+      <article class="delivery-card"><h3>report-technical</h3><p>Numbered headings · glossary · appendix-heavy · code fences.</p></article>
+      <article class="delivery-card"><h3>presentation</h3><p>One primary idea per viewport; keynote-soft pairing common.</p></article>
+    </div>
+  </section>
+
+  <section id="shadcn">
+    <h2>shadcn-style primitives (static HTML)</h2>
+    <p class="sub">Analogous to shadcn/ui components — semantic tokens only, CDN-friendly per <code>references/component-catalog.md</code>. Quick strip + fuller patterns.</p>
+
+    <h3 class="lab">Button variants</h3>
+    <div class="strip">
+      <button type="button" class="btn btn-p">Primary</button>
+      <button type="button" class="btn btn-s">Secondary</button>
+      <button type="button" class="btn btn-o">Outline</button>
+      <button type="button" class="btn btn-g">Ghost</button>
+      <button type="button" class="btn btn-d">Destructive</button>
+      <span class="sh-sep" style="width:1px;align-self:stretch;min-height:2rem;height:auto"></span>
+      <button type="button" class="btn btn-p btn-sm">Small</button>
+      <button type="button" class="btn btn-p btn-lg">Large</button>
+    </div>
+
+    <h3 class="lab">Badge · Separator · Avatar · Skeleton</h3>
+    <div class="strip">
+      <span class="badge badge-d">Secondary</span>
+      <span class="badge badge-o">Outline</span>
+      <span class="badge badge-a">Accent</span>
+      <span class="badge badge-m">Muted</span>
+      <span class="badge" style="background:hsl(var(--destructive));color:hsl(var(--destructive-foreground))">Destructive</span>
+      <div class="sh-sep" style="width:1px;align-self:stretch;min-height:1.75rem;height:auto;background:hsl(var(--border))"></div>
+      <div class="av">YO</div>
+      <div class="sk" aria-hidden="true"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line" style="width:95%"></div></div>
+    </div>
+
+    <div class="play play-wide" style="margin-top:.75rem">
+      <div class="sh-slot">
+        <h3 class="lab" style="margin-top:0">Card · CardHeader · CardTitle · CardDescription · CardContent · CardFooter</h3>
+        <div class="sh-card" style="max-width:34rem">
+          <div class="sh-ch">
+            <h4 class="sh-ct">Quarterly rollup</h4>
+            <p class="sh-cd">Usage growth in EU requires cache partition tuning before Black Friday traffic.</p>
+          </div>
+          <div class="sh-cc">Migration window: nights only. Rollback runbook pinned in Slack #platform.</div>
+          <div class="sh-cf"><button type="button" class="btn btn-o btn-sm">View runbook</button><button type="button" class="btn btn-p btn-sm">Acknowledge</button></div>
+        </div>
+      </div>
+      <div class="sh-slot">
+        <h3 class="lab" style="margin-top:0">Alert — default vs destructive</h3>
+        <div style="display:flex;flex-direction:column;gap:.65rem">
+          <div class="alert alert-def"><span class="alert-ic">&#9432;</span><div><strong class="heading">FYI</strong><br/><span style="opacity:.92">Staging deploy auto-runs nightly.</span></div></div>
+          <div class="alert alert-des"><span class="alert-ic" style="color:hsl(var(--destructive))">&#9888;</span><div><strong>Action needed</strong><br/><span>Egress cap exceeded in <code>us-west-2</code> — paging on-call.</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="play" style="margin-top:.75rem">
+      <div>
+        <h3 class="lab" style="margin-top:0">Tabs · Input · Switch · Checkbox</h3>
+        <div class="tabs">
+          <input type="radio" name="tg" id="t1" checked/>
+          <input type="radio" name="tg" id="t2"/>
+          <input type="radio" name="tg" id="t3"/>
+          <div class="tab-h"><label for="t1">Scope</label><label for="t2">Filters</label><label for="t3">Export</label></div>
+          <div class="panels"><div class="tab-p p1">Team scope ships with role defaults restored each Monday.</div><div class="tab-p p2">Saved filters persist in local workspace only.</div><div class="tab-p p3">CSV and Parquet exporters share the same quota.</div></div>
+        </div>
+        <div class="field" style="margin-top:.85rem"><span class="label">Label</span><input class="in" placeholder="workspace-key" autocomplete="off"/><span class="hint">Helper beneath the control.</span></div>
+        <div class="switch-w" style="margin-top:.75rem"><input type="checkbox" class="switch" id="sw"/><label for="sw" style="font-size:.875rem">Enable anomaly digest email</label></div>
+        <div class="row" style="margin-top:.65rem"><input type="checkbox" class="chk" id="c1"/><label for="c1">I agree to purge temp buckets after QA sign-off.</label></div>
+      </div>
+      <div>
+        <h3 class="lab" style="margin-top:0">Select · Textarea · Table</h3>
+        <div class="field"><span class="label">Region</span><select class="sel" aria-label="Region"><option>us-east-1</option><option>eu-west-1</option><option>ap-southeast-2</option></select></div>
+        <div class="field" style="margin-top:.65rem"><span class="label">Notes</span><textarea class="in" placeholder="Risk or dependency…"></textarea></div>
+        <table class="sh" style="margin-top:.85rem"><thead><tr><th>Service</th><th>p99</th><th>Risk</th></tr></thead><tbody><tr><td>Ingest API</td><td>138ms</td><td><span class="badge badge-a">Low</span></td></tr><tr><td>Worker</td><td>412ms</td><td><span class="badge" style="background:hsl(var(--destructive));color:hsl(var(--destructive-foreground))">High</span></td></tr></tbody></table>
+      </div>
+    </div>
+
+    <h3 class="lab">Legacy primitive strip</h3>
+    <p class="sub" style="margin-top:0">Original minimal row + DataTable-lite + KPI tile (still valid for dashboards).</p>
+    <div class="strip">
+      <button type="button" class="btn btn-p">Primary</button>
+      <button type="button" class="btn btn-s">Secondary</button>
+      <button type="button" class="btn btn-g">Ghost</button>
+      <span class="badge badge-m">muted</span><span class="badge badge-a">Accent</span>
+    </div>
+    <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">
+      <div><table><thead><tr><th>Name</th><th>Role</th></tr></thead><tbody><tr><td>KPI</td><td>compact</td></tr><tr><td>ChartWrap</td><td>responsive</td></tr><tr><td>Metric</td><td>trend-safe</td></tr></tbody></table></div>
+      <div class="kpi"><span class="lbl">Sample stat block</span><div class="num">127.4%</div><small style="color:hsl(var(--muted-foreground))">YoY</small></div>
+    </div>
+  </section>
+
+  <section id="samples">
+    <h2>Sample layouts (iframes)</h2>
+    <p class="sub">Standalone pages under <code>library/samples/</code> — identical token file <code>themes.css</code>. Toolbar theme pushes into each frame (same-origin file or http).</p>
+
+    <h3 class="lab">report-exec · report (technical) · dashboard</h3>
+    <div style="display:grid;gap:1rem;margin-top:.5rem">
+      <figure class="ifr-wrap"><figcaption style="padding:.35rem .75rem;font-size:.75rem;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border))"><code>samples/sample-report-exec.html</code> — KPI · TL;DR · chart placeholders</figcaption><iframe class="ifr sample-frame" title="Executive report preview" src="samples/sample-report-exec.html"></iframe></figure>
+      <figure class="ifr-wrap"><figcaption style="padding:.35rem .75rem;font-size:.75rem;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border))"><code>samples/sample-report.html</code> — sticky TOC · prose · appendix</figcaption><iframe class="ifr sample-frame" title="Technical report preview" src="samples/sample-report.html"></iframe></figure>
+      <figure class="ifr-wrap"><figcaption style="padding:.35rem .75rem;font-size:.75rem;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--border))"><code>samples/sample-dashboard.html</code> — noir-metrics default paint inside frame</figcaption><iframe class="ifr sample-frame" title="Dashboard preview" src="samples/sample-dashboard.html"></iframe></figure>
+    </div>
+    <p style="margin:.75rem 0 0;font-size:.8125rem;color:hsl(var(--muted-foreground))">Open frames directly when debugging paths: they expect <code>../themes.css</code> beside <code>library/</code>.</p>
+  </section>
+
+  <section id="mockups">
+    <h2>Vote-ready mockups (/tmp)</h2>
+    <div class="delivery-card" style="max-width:54ch;background:hsl(var(--accent)/22%);border-style:dashed;">
+      <h3 style="margin:0;font-size:.95rem">Winner ballots</h3>
+      <p style="margin:0;font-size:.82rem;line-height:1.45;color:hsl(var(--muted-foreground));">Save exploratory HTML under <strong><code>/tmp/jstack-mockup-&lt;slug&gt;-YYYYMMDD.html</code></strong>. TTL cleanup scripts and reviewer metadata: <code>references/mockup-workflow.md</code>. Starter: <code>library/templates/mockup-blank.html</code>.</p>
+    </div>
+  </section>
+</main>
+<footer>
+  skill: jstack-visual-single-page-html — <code>library/themes.css</code> · <code>references/themes.md</code>
+</footer>
+<script>
+(function(){
+  var s=document.getElementById('thr'); if(!s) return;
+
+  function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme',theme);
+    document.querySelectorAll('iframe.sample-frame').forEach(function(f){
+      try{
+        var w=f.contentWindow;
+        var d=w&&w.document||f.contentDocument;
+        if(d&&d.documentElement) d.documentElement.setAttribute('data-theme',theme);
+      }catch(err){}
+    });
+  }
+
+  function initSel(){
+    if(!document.documentElement.getAttribute('data-theme')) document.documentElement.setAttribute('data-theme','slate-wireframe');
+    s.value=document.documentElement.getAttribute('data-theme')||'slate-wireframe';
+  }
+
+  initSel();
+  applyTheme(s.value);
+  s.addEventListener('change',function(){ applyTheme(s.value); });
+
+  document.querySelectorAll('iframe.sample-frame').forEach(function(f){
+    f.addEventListener('load',function(){
+      applyTheme(document.documentElement.getAttribute('data-theme')||s.value||'slate-wireframe');
+    });
+  });
+})();
+</script>
+</body>
+</html>
+

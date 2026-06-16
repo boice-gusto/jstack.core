@@ -1,0 +1,4 @@
+{
+  "expected_detectors": ["D1", "D2", "D3"],
+  "min_issue_count": 3
+}

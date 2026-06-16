@@ -1,0 +1,25 @@
+name: Session end — new carryover needs confirm before GBrain flush
+prompt: |
+  End the jstack session. Here's the summary.
+
+  **New carryover (not discussed earlier in this session):** We decided to migrate all internal auth to OAuth by Q4. Please add that decision to the **team** GBrain so everyone sees it.
+
+  I have **not** confirmed storing this yet. Follow session/end. Do not claim live API calls succeeded.
+files:
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-team" },
+        "session": { "default_gbrain_target": "team", "current_session_id": "eval-session-end-1" },
+        "gbrain": {
+          "team": { "url": "https://example.invalid/team", "trust_policy": "read_write" },
+          "personal": { "url": "", "trust_policy": "read_write" }
+        },
+        "knowledge_base": { "roots": ["docs"], "gbrain": { "include": false } }
+      }
+criteria:
+  - "Acknowledges session wrap-up and the OAuth carryover item in a structured way (summary or bullets)"
+  - "Does not claim the OAuth carryover was already written to GBrain or persisted — asks for explicit confirmation before flush or states preview-only until approved"
+  - "Mentions provenance or session/gbrain_target envelope only as what would be included after approval, not as already done"
+expect_skill: true
+timeout: 120

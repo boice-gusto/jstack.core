@@ -1,0 +1,3 @@
+interface:
+  display_name: "Team"
+  short_description: "Team snapshot: roster, on-call, sprint goal, and dependencies."

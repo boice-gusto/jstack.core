@@ -1,0 +1,114 @@
+{
+  "name": "task-intake-wizard",
+  "version": "1.0.0",
+  "_comment": "Auth is handled entirely by MCP servers. This config only stores behavioral preferences and optional defaults. Any blank default will prompt the user during the wizard run.",
+
+  "steps": {
+    "intake": {
+      "enabled": true,
+      "required": true,
+      "order": 1,
+      "file": "steps/01-intake.md"
+    },
+    "context": {
+      "enabled": true,
+      "required": true,
+      "order": 2,
+      "file": "steps/02-context.md"
+    },
+    "research": {
+      "enabled": true,
+      "required": false,
+      "order": 3,
+      "file": "steps/03-research.md"
+    },
+    "ticket": {
+      "enabled": true,
+      "required": false,
+      "order": 4,
+      "file": "steps/04-ticket.md"
+    },
+    "sizing": {
+      "enabled": true,
+      "required": false,
+      "order": 5,
+      "file": "steps/05-sizing.md"
+    },
+    "prioritize": {
+      "enabled": true,
+      "required": false,
+      "order": 6,
+      "file": "steps/06-prioritize.md"
+    },
+    "schedule": {
+      "enabled": false,
+      "required": false,
+      "order": 7,
+      "file": "steps/07-schedule.md"
+    },
+    "announce": {
+      "enabled": false,
+      "required": false,
+      "order": 8,
+      "file": "steps/08-announce.md"
+    }
+  },
+
+  "preferences": {
+    "jira": {
+      "projectKey": "",
+      "issueTypeName": "Story",
+      "defaultLabels": [],
+      "defaultComponents": []
+    },
+    "slack": {
+      "announceChannels": [],
+      "crossPostChannels": [],
+      "draftMode": true,
+      "mentionRequestor": true
+    },
+    "notion": {
+      "enabled": false
+    },
+    "confluence": {
+      "enabled": false
+    }
+  },
+
+  "sizing": {
+    "scale": "tshirt",
+    "options": {
+      "XS": { "label": "XS — Less than 2 hours", "points": 1 },
+      "S": { "label": "S — 2 to 4 hours", "points": 2 },
+      "M": { "label": "M — 1 to 2 days", "points": 3 },
+      "L": { "label": "L — 3 to 5 days", "points": 5 },
+      "XL": { "label": "XL — 1 to 2 weeks", "points": 8 },
+      "XXL": { "label": "XXL — 2+ weeks, needs decomposition", "points": 13 }
+    }
+  },
+
+  "priority": {
+    "scale": ["P0-Critical", "P1-High", "P2-Medium", "P3-Low"],
+    "factors": [
+      { "id": "business_impact", "label": "Business Impact", "weight": 3 },
+      { "id": "urgency", "label": "Urgency / Time Sensitivity", "weight": 3 },
+      { "id": "dependencies", "label": "Blocking Dependencies", "weight": 2 },
+      { "id": "risk", "label": "Technical Risk", "weight": 1 },
+      { "id": "effort", "label": "Implementation Effort", "weight": 1 }
+    ]
+  },
+
+  "templates": {
+    "ticket": "templates/ticket.md",
+    "announcement": "templates/announcement.md",
+    "summary": "templates/summary.md"
+  },
+
+  "announcements": {
+    "includeTicketLink": true,
+    "includeSizing": true,
+    "includePriority": true,
+    "includeAssignee": true,
+    "footer": "Created via Task Intake Wizard"
+  }
+}

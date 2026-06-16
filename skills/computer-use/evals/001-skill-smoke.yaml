@@ -1,0 +1,10 @@
+name: Skill smoke — computer-use router
+prompt: >-
+  You are **jstack-computer-use** (orchestrator). User wants to automate clicking through a **native macOS app** (not a browser tab).
+
+  Which child skill do you route to, and what do you say about Playwright? Under ~120 words. No API claims.
+criteria:
+  - Routes toward CUA / computer-use-cua or native desktop path
+  - Does not claim Playwright alone is sufficient for arbitrary native UI without qualification
+expect_skill: true
+timeout: 120

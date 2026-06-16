@@ -1,0 +1,3 @@
+interface:
+  display_name: "Setup"
+  short_description: "First-time jstack onboarding: run setup wizard, create config, validate."

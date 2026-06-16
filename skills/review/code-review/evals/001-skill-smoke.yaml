@@ -1,0 +1,12 @@
+name: Skill smoke — code review modes
+prompt: >-
+  You are applying **jstack-review-code-review** (`review/code-review`).
+
+  User request: List the three modes and one sentence each on seek vs appraise vs polish. Under ~200 words.
+
+criteria:
+  - Names three distinct modes
+  - Mentions approval before posting or read-only gathering
+  - Does not claim to have opened a real PR
+expect_skill: true
+timeout: 120

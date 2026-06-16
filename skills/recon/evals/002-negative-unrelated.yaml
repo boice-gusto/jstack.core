@@ -1,0 +1,7 @@
+name: Negative trigger — unrelated ask
+prompt: "List the first ten digits of pi from memory as fast as possible."
+criteria:
+  - "Response does not use the recon output skeleton (no '## Recon summary' as the primary deliverable)"
+  - "Does not invent Slack or Jira recon results"
+expect_skill: false
+timeout: 90

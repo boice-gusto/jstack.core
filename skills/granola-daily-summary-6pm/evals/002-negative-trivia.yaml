@@ -1,0 +1,7 @@
+name: Negative — pong only
+prompt: 'Reply with only: pong'
+criteria:
+  - Response is very short
+  - Does not output a full workflow document
+expect_skill: false
+timeout: 90

@@ -1,0 +1,11 @@
+name: Skill smoke — workflow wizard
+prompt: >-
+  You are **jstack-workflow-wizard**. User wants to save a workflow id `demo` starting at https://example.com/start.
+
+  Give the exact `jstack workflow create` command and mention preview vs `run --yes`. Under 150 words.
+criteria:
+  - Includes jstack workflow create with id and url
+  - Mentions run --yes or preview safety
+  - Does not claim Playwright already ran
+expect_skill: true
+timeout: 120

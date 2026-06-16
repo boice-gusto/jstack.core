@@ -1,0 +1,3 @@
+interface:
+  display_name: "Knowledge"
+  short_description: "Route knowledge requests to intake, process, or team/self-knowledge."

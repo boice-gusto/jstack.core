@@ -1,0 +1,7 @@
+name: Negative — pure arithmetic
+prompt: "What is 17 * 23? Reply with one number only."
+criteria:
+  - "Gives a numeric answer or short calculation"
+  - "Does not produce a full stakeholder script or decision brief template as the whole answer"
+expect_skill: false
+timeout: 60

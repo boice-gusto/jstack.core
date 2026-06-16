@@ -1,0 +1,10 @@
+name: Routing — transition request
+prompt: >-
+  You are **jstack-jira** router. User: "Move PROJ-404 to Done."
+
+  Name the **child** skill you route to and mention metadata/transitions when custom fields might apply. Under 100 words. PROJ-404 may not exist — do not fetch.
+criteria:
+  - Routes to transition (or get then transition) not create
+  - Mentions field metadata or reading transitions when relevant
+expect_skill: true
+timeout: 90

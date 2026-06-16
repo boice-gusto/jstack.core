@@ -1,0 +1,3 @@
+interface:
+  display_name: "Notion"
+  short_description: "Route Notion requests to the right sub-skill: ADR, article, sprint, or report."

@@ -1,0 +1,13 @@
+name: Skill smoke — outline without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-figma-handoff** (path: `design/figma-handoff`).
+
+  User request: Outline what you would do for a **hypothetical** internal request in under ~350 words.
+  Do not claim to have called external APIs; say what you need from config or user paste.
+
+criteria:
+  - More than one section or numbered step
+  - Mentions config, limitations, or assumptions
+  - Does not present fictional IDs as verified
+expect_skill: true
+timeout: 120

@@ -1,0 +1,10 @@
+name: Decision brief shape
+prompt: |
+  We can either (A) ship a dark-launch feature flag this week or (B) delay one sprint to add metrics.
+  Constraints: small team, exec wants a date. Give a decision brief with 2–3 options and a recommendation.
+criteria:
+  - "Uses markdown with a clear recommendation section (e.g. '## Recommendation' or bold Recommendation)"
+  - "Lists at least two real options with tradeoffs or pros/cons"
+  - "Does not invent company-specific facts (no fake revenue numbers)"
+expect_skill: true
+timeout: 120

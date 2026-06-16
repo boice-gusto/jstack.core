@@ -1,0 +1,33 @@
+name: Shakespeare public KB — Hamlet excerpt
+prompt: |
+  Using only the configured knowledge_base roots in jstack.config.json in this workspace, answer:
+  What famous opening line about "being" appears in the Hamlet excerpt?
+  Cite the file path you used.
+files:
+  - path: eval-fixtures/public/hamlet-snippet.md
+    content: |
+      # Hamlet (excerpt, public fixture)
+
+      > To be, or not to be, that is the question:
+      > Whether 'tis nobler in the mind to suffer
+      > The slings and arrows of outrageous fortune,
+      > Or to take arms against a sea of troubles
+      > And by opposing end them.
+
+      This file is a synthetic public corpus for jstack evals (Shakespeare, public domain).
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-fixtures" },
+        "knowledge_base": {
+          "roots": ["eval-fixtures/public"],
+          "doc_urls": [],
+          "github": { "repos": [] }
+        }
+      }
+criteria:
+  - "Answer references 'To be, or not to be' or clearly quotes the opening of the soliloquy"
+  - "Includes a Sources section or cites eval-fixtures/public/hamlet-snippet.md"
+  - "Does not claim to have queried live GBrain or external APIs unless labeled as hypothetical"
+expect_skill: true
+timeout: 120

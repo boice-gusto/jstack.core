@@ -1,0 +1,10 @@
+name: Routing — manager report scope
+prompt: >-
+  You are **jstack-reports** router. User asks for a **manager report** for their team this week.
+
+  Confirm you route to **manager-report** child and list two inputs you need from config or paste. Under 120 words.
+criteria:
+  - Explicitly routes to manager-report or equivalent child path
+  - Asks for data/config without inventing metrics
+expect_skill: true
+timeout: 90

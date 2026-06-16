@@ -1,0 +1,130 @@
+/*
+  Shared CSS variables for visual-single-page-html library + samples.
+  Match names in references/themes.md; pair with references/style-catalog.md.
+*/
+*, *::before, *::after { box-sizing: border-box; }
+
+:root,
+html {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  transition: background 0.2s, color 0.2s;
+}
+
+html[data-theme="slate-wireframe"],
+:root:not([data-theme]) {
+  color-scheme: light;
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 214 32% 91%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 221 83% 53%;
+  --radius: 0.5rem;
+}
+
+html[data-theme="solar-flare"] {
+  color-scheme: light;
+  --background: 43 74% 97%;
+  --foreground: 26 83% 14%;
+  --card: 43 74% 100%;
+  --card-foreground: 26 83% 14%;
+  --primary: 37 92% 50%;
+  --primary-foreground: 26 83% 14%;
+  --secondary: 43 74% 90%;
+  --secondary-foreground: 26 83% 14%;
+  --muted: 43 40% 90%;
+  --muted-foreground: 28 37% 40%;
+  --accent: 39 92% 90%;
+  --accent-foreground: 26 83% 14%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 36 53% 85%;
+  --input: 36 53% 85%;
+  --ring: 37 92% 50%;
+  --radius: 0.625rem;
+}
+
+html[data-theme="noir-metrics"] {
+  color-scheme: dark;
+  --background: 224 71% 4%;
+  --foreground: 210 40% 98%;
+  --card: 217 33% 11%;
+  --card-foreground: 210 40% 98%;
+  --primary: 263 85% 75%;
+  --primary-foreground: 224 71% 4%;
+  --secondary: 217 33% 18%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 18%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 263 56% 30%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 217 33% 20%;
+  --input: 217 33% 20%;
+  --ring: 263 85% 75%;
+  --radius: 0.375rem;
+}
+
+html[data-theme="editorial-newsprint"] {
+  color-scheme: light;
+  --background: 43 63% 95%;
+  --foreground: 228 43% 19%;
+  --card: 43 53% 99%;
+  --card-foreground: 228 43% 19%;
+  --primary: 228 43% 32%;
+  --primary-foreground: 43 63% 98%;
+  --secondary: 228 33% 90%;
+  --secondary-foreground: 228 43% 19%;
+  --muted: 43 42% 90%;
+  --muted-foreground: 220 21% 40%;
+  --accent: 228 53% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 70% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 228 31% 86%;
+  --input: 228 31% 86%;
+  --ring: 228 43% 32%;
+  --radius: 0.25rem;
+}
+
+html[data-theme="keynote-soft"] {
+  color-scheme: light;
+  --background: 267 73% 99%;
+  --foreground: 274 82% 20%;
+  --card: 267 73% 100%;
+  --card-foreground: 274 82% 20%;
+  --primary: 274 71% 45%;
+  --primary-foreground: 267 73% 99%;
+  --secondary: 274 71% 92%;
+  --secondary-foreground: 274 82% 20%;
+  --muted: 274 71% 95%;
+  --muted-foreground: 274 43% 40%;
+  --accent: 279 71% 90%;
+  --accent-foreground: 274 82% 20%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 274 51% 90%;
+  --input: 274 51% 90%;
+  --ring: 274 71% 45%;
+  --radius: 1rem;
+}

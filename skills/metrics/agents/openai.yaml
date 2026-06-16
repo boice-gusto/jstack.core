@@ -1,0 +1,3 @@
+interface:
+  display_name: "Metrics"
+  short_description: "Route metrics requests to my-metrics or team-metrics."

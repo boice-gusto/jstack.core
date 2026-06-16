@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="slate-wireframe">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Sample — report-exec</title>
+<link rel="stylesheet" href="../themes.css"/>
+<style>
+  .sheet{max-width:48rem;margin:0 auto;padding:1.25rem}
+  .eyebrow{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--muted-foreground))}
+  .h1{font-size:1.5rem;font-weight:700;margin:.25rem 0 1rem;line-height:1.25}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.75rem;margin:1rem 0}
+  .sep{height:1px;background:hsl(var(--border));margin:1.25rem 0}
+  .thumb{aspect-ratio:16/10;border-radius:var(--radius);border:1px solid hsl(var(--border));background:linear-gradient(135deg,hsl(var(--muted)),hsl(var(--accent)));display:flex;align-items:center;justify-content:center;font-size:.75rem;color:hsl(var(--muted-foreground))}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+  @media (max-width:520px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <p class="eyebrow">Executive summary · Q2</p>
+  <h1 class="h1">Revenue trajectory holds; watch churn in SMB</h1>
+  <div class="kpis">
+    <div style="border:1px solid hsl(var(--border));border-radius:var(--radius);padding:.85rem;background:hsl(var(--card))"><div style="font-size:.68rem;color:hsl(var(--muted-foreground));text-transform:uppercase">ARR</div><div style="font-size:1.35rem;font-weight:700">$42.1M</div><div style="font-size:.75rem;color:hsl(var(--muted-foreground))">+12% YoY</div></div>
+    <div style="border:1px solid hsl(var(--border));border-radius:var(--radius);padding:.85rem;background:hsl(var(--card))"><div style="font-size:.68rem;color:hsl(var(--muted-foreground));text-transform:uppercase">NRR</div><div style="font-size:1.35rem;font-weight:700">118%</div><div style="font-size:.75rem;color:hsl(var(--muted-foreground))">steady</div></div>
+    <div style="border:1px solid hsl(var(--border));border-radius:var(--radius);padding:.85rem;background:hsl(var(--card))"><div style="font-size:.68rem;color:hsl(var(--muted-foreground));text-transform:uppercase">Churn</div><div style="font-size:1.35rem;font-weight:700">4.2%</div><div style="font-size:.75rem;color:hsl(var(--destructive))">+0.4pp vs plan</div></div>
+  </div>
+  <div class="sep"></div>
+  <p style="margin:0 0 .75rem;font-size:.85rem;line-height:1.55;color:hsl(var(--card-foreground))">Three priorities: stabilize onboarding in EU, unblock enterprise pipeline, ship usage-based pricing pilot in August.</p>
+  <div class="grid2">
+    <div class="thumb">Chart placeholder</div>
+    <div class="thumb">Mix / segment</div>
+  </div>
+</div>
+</body>
+</html>

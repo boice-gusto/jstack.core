@@ -1,0 +1,15 @@
+name: Skill smoke — PE report context (no live APIs)
+prompt: >-
+  You are applying the jstack skill **jstack-pe-report-context** (path: `pe/report-context`).
+
+  User request: Outline what you would produce for a **hypothetical** PE snapshot. Include section
+  headings and **one example bullet** per section. Do **not** claim to have called Jira, Notion,
+  or HR APIs; mention `pe.configured` and JSON schema validation.
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section or labeled step
+  - Does not present fictional metrics as verified facts
+  - Mentions config, schema, or user-supplied JSON where relevant
+expect_skill: true
+timeout: 120
