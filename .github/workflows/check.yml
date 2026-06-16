@@ -1,0 +1,21 @@
+# Runs when jstack.core is the repository root (standalone jstack.core repo).
+name: check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install
+      - name: hooks smoke, CLI matrix, then validate-config + eval + typecheck
+        run: bun run verify
