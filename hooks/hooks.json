@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'test -f jstack.config.json || echo \"[jstack] Run: jstack setup or /jstack:setup\" >&2'",
+            "statusMessage": "jstack config check"
+          },
+          {
+            "type": "command",
+            "command": "node -e \"const fs=require('fs');const p='jstack.config.json';if(!fs.existsSync(p))process.exit(0);let j;try{j=JSON.parse(fs.readFileSync(p,'utf8'));}catch(e){process.exit(0);}const id=String(j.session&&j.session.current_session_id||'').trim();if(!id)console.error('[jstack] No session id in jstack.config.json — run session init (e.g. jstack:init-session) when you start work.');\"",
+            "statusMessage": "jstack session hint"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc '$CLAUDE_PLUGIN_ROOT/hooks/claude-md-correction-detector.sh'",
+            "statusMessage": "claude-md correction detector"
+          }
+        ]
+      }
+    ]
+  }
+}
