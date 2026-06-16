@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Self report — Q2 2026 (partial)",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Infrastructure",
+    "report_kind": "self-report",
+    "subtitle": "Period through 2026-04-28"
+  },
+  "sections": [
+    {
+      "id": "outcomes",
+      "title": "Outcomes",
+      "body_markdown": "- **Delivered** **regional failover** playbook to production — exercised in **game day** with **0** customer-visible errors.\n- **Unblocked** **API** team on **cert rotation** design — RFC merged with **2** follow-up tickets (**INF-440**, **INF-441**)."
+    },
+    {
+      "id": "collaboration",
+      "title": "Collaboration",
+      "body_markdown": "- **Reviewed** **24** PRs (median latency under **4h**); **paired** **3h** on incident hotfix **INC-1820**.\n- **Authored** deploy rollback runbook updates adopted by **SRE** (link in **Links**)."
+    },
+    {
+      "id": "growth",
+      "title": "Growth",
+      "body_markdown": "- Deeper in **Kubernetes** networking — completed targeted module; next: shadow **on-call** primary in **June**.\n- **Public:** internal **lunch & learn** on **circuit breakers** (recording in Drive — internal only)."
+    },
+    {
+      "id": "asks",
+      "title": "Asks",
+      "body_markdown": "- **1 day** in next sprint for **spike** on **ingress cost model** — flagged in **1:1** with EM (**approved**).\n- **Access** to **staging** project **vendor-sandbox** for integration tests — ticket **IT-99** opened."
+    }
+  ],
+  "links": [
+    { "label": "Deploy runbook", "url": "https://wiki.example.com/runbooks/deploy" },
+    { "label": "RFC: cert rotation", "url": "https://wiki.example.com/rfc/cert-rotation" }
+  ]
+}

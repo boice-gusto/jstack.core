@@ -1,0 +1,9 @@
+{
+  "issue_type": "Spike",
+  "fields": {
+    "summary": "",
+    "description": "",
+    "timebox_hours": 8
+  },
+  "required": ["summary", "timebox_hours"]
+}

@@ -1,0 +1,8 @@
+# Slack channels (team context)
+
+| Channel id or name | Purpose | include_in_standup | include_in_oncall |
+|--------------------|---------|---------------------|-------------------|
+| `#eng-team` | Primary team | yes | no |
+| `#eng-alerts` | On-call alerts | no | yes |
+
+Replace with your workspace. Do not commit real IDs if this file is public.

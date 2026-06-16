@@ -1,0 +1,63 @@
+{
+  "version": "0.1.0",
+  "team": {
+    "name": "My Team",
+    "timezone": "America/Los_Angeles",
+    "business_hours": { "start": "09:00", "end": "17:00", "days": ["mon", "tue", "wed", "thu", "fri"] },
+    "members": []
+  },
+  "sprint": {
+    "cadence_weeks": 2,
+    "current": "",
+    "ceremonies": ["planning", "retro"],
+    "capacity_metric": "story_points",
+    "velocity_window": 3
+  },
+  "approval_chains": {
+    "template": "scaleup",
+    "chains": {
+      "default": ["author"],
+      "external_comms": ["author", "PM", "marketing"],
+      "incident_external": ["IC", "EM", "legal"],
+      "deploy_prod": ["author", "reviewer", "EM"],
+      "policy_change": ["author", "EM", "VP"],
+      "pricing_terms": ["PM", "legal", "CFO"]
+    }
+  },
+  "integrations": {
+    "jira": { "base_url": "", "project_key": "", "board_id": "" },
+    "slack": { "public_channel": "", "private_channel": "", "webhook_url": "" },
+    "notion": { "workspace_id": "", "databases": {} },
+    "github": { "org": "", "default_repo": "" },
+    "gcal": { "primary_calendar_id": "" },
+    "sheets": { "default_spreadsheet_id": "" }
+  },
+  "mcp_servers": {},
+  "policies": {
+    "review": { "required_approvals": 1, "counsel_roles": ["ceo", "designer", "engineer", "qa"] },
+    "announcements": { "approval_required": true, "channels": [] },
+    "incidents": {
+      "severity_levels": ["sev4", "sev3", "sev2", "sev1"],
+      "escalation": {
+        "sev1": { "ack_minutes": 15, "update_cadence_minutes": 30, "retro_required": true },
+        "sev2": { "ack_minutes": 60, "update_cadence_minutes": 120, "retro_required": true },
+        "sev3": { "ack_minutes": 1440, "update_cadence_minutes": null, "retro_required": false }
+      }
+    },
+    "sdlc": {
+      "stages": ["plan", "build", "test", "release"],
+      "gates": {
+        "build": { "requires": ["ticket_with_ac"] },
+        "test": { "requires": ["pr_approved", "unit_tests_pass"] },
+        "release": { "requires": ["qa_signoff", "feature_flag_ready", "monitoring_configured"] }
+      }
+    }
+  },
+  "routines": {
+    "standup": { "enabled": true, "cron": "0 9 * * 1-5", "chain": ["recon", "announcements"] },
+    "weekly_digest": { "enabled": true, "cron": "0 16 * * 5", "chain": ["reports", "announcements"] },
+    "sprint_close": { "enabled": true, "cron": "", "chain": ["sprint", "reports", "announcements"] },
+    "health_check": { "enabled": false, "cron": "0 */4 * * *", "chain": ["recon"] }
+  },
+  "debug": { "enabled": false, "log_level": "info", "trace_skills": [], "trace_chains": false }
+}

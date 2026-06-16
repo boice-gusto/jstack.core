@@ -1,0 +1,6 @@
+# GitHub (team context)
+
+- **Org / repos:** `myorg/api`, `myorg/web`
+- **Default branch:** `main`
+- **Protected branches:** `main`, `release/*`
+- **Team slug (review rotation):** `myorg/team-slug`

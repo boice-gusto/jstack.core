@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Manager rollup — Core platform",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Core platform",
+    "report_kind": "manager-rollup",
+    "subtitle": "Period ending 2026-04-28"
+  },
+  "sections": [
+    {
+      "id": "team_health",
+      "title": "Team health",
+      "body_markdown": "Morale is steady; load is sustainable this sprint. On-call rotations are balanced across **@jamie**, **@sam**, **@river**.\n\n- **Risk:** payments subsystem still has **bus factor 1**; mitigation: pairing plan plus doc sprint **week of June 1**."
+    },
+    {
+      "id": "delivery",
+      "title": "Delivery",
+      "body_markdown": "- **Milestone M3** on track for **May 30**; dependency on **team B** API freeze **May 10** — confirmed.\n- **Slipped:** “Reports export” by one sprint — **scope cut** to CSV-only; full XLS in follow-up epic."
+    },
+    {
+      "id": "people",
+      "title": "People / hiring",
+      "body_markdown": "- **Open:** 1 senior backend — **2 onsite** interviews next week; target offer by **EOM**.\n- **New start:** @alex ramping; buddy **@jamie**; 30-60-90 plan in Notion."
+    },
+    {
+      "id": "exec_asks",
+      "title": "Top 3 exec asks",
+      "body_markdown": "1. **Approve** budget for load-testing vendor (quote in packet) — need **CFO** sign-off by **May 5**.\n2. **Align** with product on **Q3** priority of mobile vs. API — one-slide decision **May 12**.\n3. **Escalation:** cross-team dependency on **org Y**; need **Sponsor Z** in weekly sync."
+    }
+  ],
+  "links": [
+    { "label": "Program board", "url": "https://jira.example.com/program" }
+  ]
+}

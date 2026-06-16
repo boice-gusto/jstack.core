@@ -1,0 +1,6 @@
+# PagerDuty (team context)
+
+- **Primary schedule id:** `{schedule_id}`
+- **Secondary / backup:** `{schedule_id}`
+- **Escalation:** link or summary to internal runbook
+- **Service directory:** link to service catalog

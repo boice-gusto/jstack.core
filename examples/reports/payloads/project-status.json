@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Project status — Acme integration",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Integrations",
+    "report_kind": "project-status",
+    "subtitle": "RAG: Yellow — integration risk with system B"
+  },
+  "sections": [
+    {
+      "id": "exec",
+      "title": "Executive summary",
+      "body_markdown": "**Yellow:** On track for **GA Sept 1** with scoped MVP; primary risk is **real-time sync** with **system B**. Mitigation is **batch-first** GA with streaming in **Q4**. Steering committee locked **scope cut** on batch mode **April 15**.\n\nStakeholders: **product**, **sales**, **legal** (vendor DPA signed)."
+    },
+    {
+      "id": "milestones",
+      "title": "Milestones",
+      "body_markdown": "| Milestone | Target | Status | Notes |\n|-----------|--------|--------|-------|\n| Design sign-off | May 1 | Done | Figma linked below |\n| API beta | June 15 | In progress | 3/5 pilot clients integrated |\n| GA | Sept 1 | On track | Load test window July |\n| Streaming GA | Dec 1 | Planning | Depends on GA stability |"
+    },
+    {
+      "id": "risks",
+      "title": "Risks & mitigations",
+      "body_markdown": "| Risk | L / I | Mitigation | Owner |\n|------|-------|------------|-------|\n| Partner API breaking change | M / H | Version pin + contract tests | @dana |\n| Key engineer OOO July | L / M | Cross-train + runbook | @eli |"
+    },
+    {
+      "id": "leadership",
+      "title": "Needs from leadership",
+      "body_markdown": "- **Decision by June 1:** fund second contractor for **integration** hardening or slip GA by **4 weeks**.\n- **Sponsor** for vendor negotiation — intro to **Acme** enterprise account team.\n- **Air cover** if we pause **nice-to-have** UI polish until beta completes."
+    }
+  ],
+  "links": [
+    { "label": "Project hub (Notion)", "url": "https://notion.example.com/acme-integration" },
+    { "label": "Design files", "url": "https://figma.example.com/file/acme" }
+  ]
+}

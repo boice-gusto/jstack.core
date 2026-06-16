@@ -1,0 +1,67 @@
+{
+  "version": "0.1.0",
+  "team": {
+    "name": "My Team",
+    "timezone": "UTC",
+    "business_hours": { "start": "09:00", "end": "17:00", "days": ["mon", "tue", "wed", "thu", "fri"] },
+    "members": []
+  },
+  "sprint": {
+    "cadence_weeks": 2,
+    "current": "",
+    "ceremonies": ["planning", "retro", "demo", "grooming"],
+    "capacity_metric": "story_points",
+    "velocity_window": 5
+  },
+  "approval_chains": {
+    "template": "enterprise",
+    "chains": {
+      "default": ["author", "manager"],
+      "external_comms": ["author", "PM", "legal", "comms"],
+      "incident_external": ["IC", "EM", "legal", "VP", "comms"],
+      "deploy_prod": ["author", "reviewer", "EM", "change_board"],
+      "policy_change": ["author", "EM", "VP", "legal"],
+      "pricing_terms": ["PM", "legal", "CFO", "board"],
+      "hiring": ["EM", "VP", "HR", "finance"],
+      "data_export": ["author", "DPO", "legal"]
+    }
+  },
+  "integrations": {
+    "jira": { "base_url": "", "project_key": "", "board_id": "" },
+    "slack": { "public_channel": "", "private_channel": "", "webhook_url": "" },
+    "notion": { "workspace_id": "", "databases": {} },
+    "github": { "org": "", "default_repo": "" },
+    "gcal": { "primary_calendar_id": "" },
+    "sheets": { "default_spreadsheet_id": "" }
+  },
+  "mcp_servers": {},
+  "policies": {
+    "review": { "required_approvals": 2, "counsel_roles": ["ceo", "designer", "engineer", "qa"] },
+    "announcements": { "approval_required": true, "channels": [] },
+    "incidents": {
+      "severity_levels": ["sev4", "sev3", "sev2", "sev1"],
+      "escalation": {
+        "sev1": { "ack_minutes": 5, "update_cadence_minutes": 15, "retro_required": true, "exec_notify": true },
+        "sev2": { "ack_minutes": 30, "update_cadence_minutes": 60, "retro_required": true, "exec_notify": false },
+        "sev3": { "ack_minutes": 240, "update_cadence_minutes": 480, "retro_required": false, "exec_notify": false },
+        "sev4": { "ack_minutes": 1440, "update_cadence_minutes": null, "retro_required": false, "exec_notify": false }
+      }
+    },
+    "sdlc": {
+      "stages": ["plan", "build", "test", "stage", "release"],
+      "gates": {
+        "build": { "requires": ["ticket_with_ac", "design_doc_approved"] },
+        "test": { "requires": ["pr_approved", "unit_tests_pass", "lint_clean"] },
+        "stage": { "requires": ["integration_tests_pass", "qa_signoff", "load_test"] },
+        "release": { "requires": ["feature_flag_ready", "monitoring_configured", "runbook_updated", "rollback_tested", "change_board_approval"] }
+      }
+    }
+  },
+  "routines": {
+    "standup": { "enabled": true, "cron": "0 9 * * 1-5", "chain": ["recon", "announcements"] },
+    "weekly_digest": { "enabled": true, "cron": "0 16 * * 5", "chain": ["reports", "announcements"] },
+    "sprint_close": { "enabled": true, "cron": "", "chain": ["sprint", "reports", "announcements"] },
+    "health_check": { "enabled": true, "cron": "0 */4 * * *", "chain": ["recon"] }
+  },
+  "debug": { "enabled": false, "log_level": "warn", "trace_skills": [], "trace_chains": true }
+}

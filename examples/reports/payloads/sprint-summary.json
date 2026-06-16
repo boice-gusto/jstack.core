@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Sprint SP-42 summary",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Growth",
+    "report_kind": "sprint-summary",
+    "subtitle": "Goal: Ship saved views to all workspaces"
+  },
+  "sections": [
+    {
+      "id": "completed",
+      "title": "Completed",
+      "body_markdown": "- **FOO-100** — Saved views shipped to **100%** of workspaces; adoption dashboard live.\n- **BAR-22** — Incident workflow: on-call can ack from mobile behind org flag `mobile_ack_v1`."
+    },
+    {
+      "id": "not_completed",
+      "title": "Not completed / carryover",
+      "body_markdown": "- **FOO-110** (export PDF): descoped; **CSV** shipped instead — product agreed **day 3**.\n- **BAR-30**: blocked on **legal** copy review — carry to **SP-43**; interim tooltip shipped."
+    },
+    {
+      "id": "velocity",
+      "title": "Velocity / throughput",
+      "body_markdown": "- **Committed:** 32 pts; **delivered:** 28 pts. **2** items rolled — see above.\n- **Throughput** stable vs. rolling average; **unplanned** work **4 pts** (hotfix) — within policy (**≤15%**)."
+    },
+    {
+      "id": "retro",
+      "title": "Retro themes",
+      "body_markdown": "- **Estimates** were optimistic on **third-party** integrations — default **spike** ticket when vendor unknown.\n- **Code review** latency — agreed **WIP cap 2** per author next sprint.\n- **Celebrate:** zero rollbacks this sprint; shout-out in **#announcements**."
+    }
+  ],
+  "links": [
+    { "label": "Sprint retro notes", "url": "https://notion.example.com/sp42-retro" }
+  ]
+}

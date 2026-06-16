@@ -1,0 +1,12 @@
+# Critical self-review / pre-mortem rubric
+
+Replace with structured prompts for honest critique: risks missed, tradeoffs, what could break next quarter. Use for skills that ask for **self-critical** reflection, not blame.
+
+## Pre-mortem prompts
+
+- If this initiative failed, what would the top causes be?
+- …
+
+## Assumptions to test
+
+- …
