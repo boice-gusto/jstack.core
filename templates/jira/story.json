@@ -1,0 +1,10 @@
+{
+  "issue_type": "Story",
+  "fields": {
+    "summary": "",
+    "description": "",
+    "labels": [],
+    "components": []
+  },
+  "required": ["summary", "description"]
+}

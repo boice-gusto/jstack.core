@@ -1,0 +1,10 @@
+{
+  "issue_type": "Bug",
+  "fields": {
+    "summary": "",
+    "description": "",
+    "priority": "Medium",
+    "labels": []
+  },
+  "required": ["summary", "description"]
+}

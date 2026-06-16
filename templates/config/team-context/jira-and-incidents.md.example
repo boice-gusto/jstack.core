@@ -1,0 +1,6 @@
+# Jira and incidents (team context)
+
+- **Project keys:** `PROJ`, `OPS`
+- **Incident / ops project (if different):** `OPS`
+- **Example JQL (active sprint):** `project = PROJ AND sprint in openSprints()`
+- **Priority meanings:** P0 = page on-call; P1 = same business day; …

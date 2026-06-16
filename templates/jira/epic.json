@@ -1,0 +1,5 @@
+{
+  "issue_type": "Epic",
+  "fields": { "summary": "", "description": "", "labels": [] },
+  "required": ["summary"]
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Quarterly planning — engineering priorities",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Engineering",
+    "report_kind": "generic",
+    "subtitle": "Draft for leadership review · not approval-gated"
+  },
+  "sections": [
+    {
+      "id": "summary",
+      "title": "Summary",
+      "body_markdown": "This **generic** layout uses the same **ReportPayload** shell as named report kinds: sections carry **markdown** bodies and optional **charts**. Use it when your narrative does not map cleanly to **team-weekly**, **sprint-summary**, etc.\n\n**Focus next quarter:** reliability investments (**SLO** burn reduction), **developer velocity** (CI + templates), and **security** baseline (**SSDF** checklist)."
+    },
+    {
+      "id": "priorities",
+      "title": "Priority themes",
+      "body_markdown": "| Theme | Why now | Success signal |\n|-------|---------|----------------|\n| Reliability | Burn alerts trending up | Error budget green **4** weeks straight |\n| Velocity | Onboarding time high | **TTHW** median **−30%** |\n| Security | Audit findings aging | **0** critical older than **90d** |"
+    },
+    {
+      "id": "investment_mix",
+      "title": "Illustrative allocation",
+      "body_markdown": "Example **doughnut** chart for stakeholder scans — swap for **bar** or **line** when trends matter more than mix.",
+      "chart": {
+        "type": "doughnut",
+        "title": "Planned engineering capacity (example)",
+        "labels": ["Roadmap", "Tech debt", "Incidents / support", "Learning / spikes"],
+        "datasets": [
+          {
+            "label": "Share",
+            "data": [55, 20, 15, 10],
+            "backgroundColor": [
+              "rgba(14, 165, 233, 0.65)",
+              "rgba(234, 179, 8, 0.65)",
+              "rgba(239, 68, 68, 0.55)",
+              "rgba(147, 51, 234, 0.55)"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "links": [
+    { "label": "Source spreadsheet", "url": "https://docs.example.com/q2-planning" }
+  ]
+}

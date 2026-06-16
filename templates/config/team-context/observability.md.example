@@ -1,0 +1,5 @@
+# Observability (team context)
+
+- **Dashboard links:** `https://example.com/dashboards/service-x`
+- **Service / env tags:** `service:api`, `env:production`
+- **SLO / error budget:** link or “see runbook”

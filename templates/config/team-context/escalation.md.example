@@ -1,0 +1,5 @@
+# Escalation protocol (team context)
+
+- **Severity definitions:** SEV1 … SEV4 (link to policy doc)
+- **Comms channels:** internal incident room, exec notification rule
+- **Customer-visible:** status page owner and approval chain

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Evaluation — Jordan Kim — H1 2026",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Core platform",
+    "report_kind": "eval-report",
+    "subtitle": "Mid-cycle review · calibration packet ref CP-2026-04"
+  },
+  "sections": [
+    {
+      "id": "grid",
+      "title": "9-grid placement",
+      "body_markdown": "- **Performance:** **Meets** — sustained delivery with low rework; evidence in next section.\n- **Potential:** **High** — repeatedly stretches into cross-team design and mentoring without dropping commitments."
+    },
+    {
+      "id": "evidence",
+      "title": "Evidence",
+      "body_markdown": "- **Led** migration of **auth** to new provider — **0** Sev1; **2** runbooks updated; staff review from **@principal**.\n- **Mentored** **@newhire** on **billing service**; PR quality improved per review dashboard **(internal link)**.\n- **Incident** response: owned comms for **INC-1701**; customer-facing timeline praised by CS leadership."
+    },
+    {
+      "id": "development_plan",
+      "title": "Development plan",
+      "body_markdown": "1. **System design at scale** — own design doc for **Q3** reliability program; staff review by **Aug 1**.\n2. **Communication** in cross-team forums — lead **2** RFC discussions next half; measure via RFC closure dates.\n3. **Delegation** — distribute **on-call** shadowing so bench depth improves by **Q4**."
+    },
+    {
+      "id": "manager_comments",
+      "title": "Manager comments",
+      "body_markdown": "Summary: Jordan sustains **strong** delivery and **raises** the bar for operational discipline. Recommended **comp** banding per **calibration** packet **CP-2026-04**; no formal concerns.\n\nCalibration: aligned with peer managers on **scope** and **impact**; documentation attached to HR folder."
+    }
+  ],
+  "links": [
+    { "label": "Calibration packet", "url": "https://hr.example.com/calibration/CP-2026-04" }
+  ]
+}

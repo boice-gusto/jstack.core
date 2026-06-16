@@ -1,0 +1,92 @@
+{
+  "id": "private_vault",
+  "name": "Private Vault",
+  "description": "Manager-only / personal scratchpad surface. Always loaded alongside the active team set. Lands at workspace-root (private) — never inside a teamspace. Same shape across teams/orgs. All entries use the gray theme to visually distinguish from team-side surfaces.",
+  "source": "jstack-builtin",
+  "templates": [
+    {
+      "id": "private_root",
+      "kind": "page_dashboard",
+      "title": "Private Vault",
+      "icon": "🔒",
+      "cover": "https://www.notion.so/images/page-cover/gradients_5.png",
+      "header_color": "gray",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_root",
+      "content_kind": "static",
+      "content_path": "private_vault/private_root.md"
+    },
+    {
+      "id": "private_scratchpad",
+      "kind": "page_hub",
+      "title": "Scratchpad",
+      "icon": "✏️",
+      "cover": "https://www.notion.so/images/page-cover/gradients_5.png",
+      "header_color": "gray",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_scratchpad",
+      "content_kind": "static",
+      "content_path": "private_vault/private_scratchpad.md"
+    },
+    {
+      "id": "private_notes",
+      "kind": "page_hub",
+      "title": "Notes",
+      "icon": "🗒️",
+      "cover": "https://www.notion.so/images/page-cover/gradients_5.png",
+      "header_color": "gray",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_notes",
+      "content_kind": "static",
+      "content_path": "private_vault/private_notes.md"
+    },
+    {
+      "id": "private_data",
+      "kind": "page_hub",
+      "title": "Data",
+      "icon": "🗄️",
+      "cover": "https://www.notion.so/images/page-cover/gradients_5.png",
+      "header_color": "gray",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_data",
+      "content_kind": "static",
+      "content_path": "private_vault/private_data.md"
+    },
+    {
+      "id": "private_transcripts",
+      "kind": "page_hub",
+      "title": "Transcripts",
+      "icon": "🎤",
+      "cover": "https://www.notion.so/images/page-cover/gradients_4.png",
+      "header_color": "purple",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_transcripts",
+      "content_kind": "static",
+      "content_path": "private_vault/private_transcripts.md"
+    },
+    {
+      "id": "private_projects",
+      "kind": "page_hub",
+      "title": "Projects",
+      "icon": "📦",
+      "cover": "https://www.notion.so/images/page-cover/gradients_5.png",
+      "header_color": "gray",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_projects",
+      "content_kind": "static",
+      "content_path": "private_vault/private_projects.md"
+    },
+    {
+      "id": "private_sprints",
+      "kind": "page_hub",
+      "title": "Sprints",
+      "icon": "🏃",
+      "cover": "https://www.notion.so/images/page-cover/gradients_2.png",
+      "header_color": "orange",
+      "surface": "private_vault",
+      "config_key": "parent_pages.private_sprints",
+      "content_kind": "static",
+      "content_path": "private_vault/private_sprints.md"
+    }
+  ]
+}

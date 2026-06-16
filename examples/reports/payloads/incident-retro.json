@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Incident retro — INC-1847",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Platform",
+    "report_kind": "incident-retro",
+    "subtitle": "Checkout elevated errors · Sev2 · 2026-04-22"
+  },
+  "sections": [
+    {
+      "id": "timeline",
+      "title": "Timeline",
+      "body_markdown": "**All times UTC.**\n\n- **T+0** — Pager: elevated error rate on **checkouts** (`POST /api/v1/checkout`) — **@oncall** paged.\n- **T+12m** — **Rollback** completed to `release/1.2.0`; error rate returned to baseline.\n- **T+45m** — Customer comms in **#incidents-2026-04-22**; status page updated.\n- **T+3h** — Blameless retro scheduled; postmortem owner **@eli**."
+    },
+    {
+      "id": "root_cause",
+      "title": "Root cause",
+      "body_markdown": "- **RC:** **Null** in tax calculation when `region` missing — defensive guard omitted in **PR-789**.\n- **Contributing:** **E2E** did not cover **empty region**; **canary** traffic sample too narrow to catch edge store configs."
+    },
+    {
+      "id": "went_well",
+      "title": "What went well",
+      "body_markdown": "- **Rollback** completed within **SLO**; runbook steps matched production.\n- **Comms** lead rotated daily summary without duplicating on-call triage.\n- **Customer impact** contained to **EU** stores during low-traffic window."
+    },
+    {
+      "id": "improve",
+      "title": "What to improve",
+      "body_markdown": "- **Canary** gating: add **synthetic** checkout with empty `region` before 100% promote.\n- **On-call** runbook: add **one-click** link to last known good deploy artifact."
+    },
+    {
+      "id": "actions",
+      "title": "Action items",
+      "body_markdown": "| Item | Owner | Due |\n|------|-------|-----|\n| Add E2E for empty `region` | @dana | 2026-05-05 |\n| Update canary gate checklist | @sam | 2026-05-02 |\n| Publish blameless retro notes | @eli | 2026-05-01 |"
+    }
+  ],
+  "links": [
+    { "label": "Incident doc", "url": "https://wiki.example.com/incidents/INC-1847" },
+    { "label": "Postmortem PR", "url": "https://github.com/org/repo/pull/920" }
+  ]
+}

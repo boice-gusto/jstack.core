@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "title": "Engineer weekly — Alex Chen",
+    "generated_at": "2026-04-28T12:00:00Z",
+    "team": "Core platform",
+    "report_kind": "engineer-weekly",
+    "subtitle": "Week of 2026-04-21"
+  },
+  "sections": [
+    {
+      "id": "shipped",
+      "title": "Shipped",
+      "body_markdown": "- Merged **PR-456**: pagination fix for list endpoint; behind flag `list_v2` (off by default).\n- Released **hotfix 1.2.3** for null ref in checkout flow; monitored 24h with no regression spike."
+    },
+    {
+      "id": "in_progress",
+      "title": "In progress",
+      "body_markdown": "- **Auth refresh** (**ABC-90**): ~80% complete; open question on token lifetime — sync with **security Friday**.\n- **Spike** on queue migration: notes in `docs/queue-spike.md`; go/no-go scheduled next week."
+    },
+    {
+      "id": "blockers",
+      "title": "Blockers",
+      "body_markdown": "**None** — staging Redis resize approved Monday."
+    },
+    {
+      "id": "learnings",
+      "title": "Learnings",
+      "body_markdown": "- Learned **Vendor X** rate limits are **per API key**, not per account — updated client wrapper tests.\n- Tuesday deploy postmortem: adding a **smoke check** step before promoting canary."
+    }
+  ],
+  "links": [
+    { "label": "PR-456", "url": "https://github.com/org/repo/pull/456" }
+  ]
+}

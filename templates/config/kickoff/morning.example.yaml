@@ -1,0 +1,21 @@
+# Copy to your workspace (e.g. config/kickoff/morning.yaml) and reference from jstack.config.json:
+# "kickoff_workflows": { "morning": { "path": "./config/kickoff/morning.yaml" } }
+#
+# skill: logical id = YAML frontmatter `name` of the target SKILL.md (e.g. jstack-recon).
+
+id: morning-default
+steps:
+  - id: recon
+    skill: jstack-recon
+    prompt: "Last 24h, team channels + Jira from config. Depth: list only."
+    required: true
+    on_fail: stop
+  - id: standup
+    skill: jstack-standup
+    prompt: "Draft only; yesterday / today / blockers."
+    required: true
+    on_fail: ask
+  - id: prioritize
+    skill: jstack-prioritize
+    required: false
+    on_fail: continue

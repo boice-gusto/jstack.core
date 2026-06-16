@@ -1,0 +1,45 @@
+{
+  "version": "0.1.0",
+  "team": {
+    "name": "My Team",
+    "timezone": "America/Los_Angeles",
+    "business_hours": { "start": "09:00", "end": "17:00", "days": ["mon", "tue", "wed", "thu", "fri"] },
+    "members": []
+  },
+  "sprint": {
+    "cadence_weeks": 1,
+    "current": "",
+    "ceremonies": ["planning"],
+    "capacity_metric": "tickets",
+    "velocity_window": 3
+  },
+  "approval_chains": {
+    "template": "startup",
+    "chains": {
+      "default": ["author"],
+      "external_comms": ["author", "PM"],
+      "incident_external": ["IC", "founder"],
+      "deploy_prod": ["author", "reviewer"],
+      "policy_change": ["author", "founder"]
+    }
+  },
+  "integrations": {
+    "jira": { "base_url": "", "project_key": "", "board_id": "" },
+    "slack": { "public_channel": "", "private_channel": "", "webhook_url": "" },
+    "notion": { "workspace_id": "", "databases": {} },
+    "github": { "org": "", "default_repo": "" },
+    "gcal": { "primary_calendar_id": "" },
+    "sheets": { "default_spreadsheet_id": "" }
+  },
+  "mcp_servers": {},
+  "policies": {
+    "review": { "required_approvals": 1, "counsel_roles": ["engineer"] },
+    "announcements": { "approval_required": false, "channels": [] },
+    "incidents": { "severity_levels": ["sev3", "sev2", "sev1"], "escalation": {} },
+    "sdlc": { "stages": ["build", "test", "release"], "gates": {} }
+  },
+  "routines": {
+    "standup": { "enabled": false, "cron": "", "chain": [] }
+  },
+  "debug": { "enabled": false, "log_level": "info", "trace_skills": [], "trace_chains": false }
+}

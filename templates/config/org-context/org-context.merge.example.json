@@ -1,0 +1,42 @@
+{
+  "levels_and_expectations": {
+    "markdown_path": "config/org/levels-expectations.md",
+    "canonical_url": ""
+  },
+  "org_context": {
+    "local": {
+      "base_path": "config/org",
+      "files": {
+        "org_structure": "org-structure.md",
+        "ethics": "ethics.md",
+        "engineering_handbook": "engineering-handbook.md",
+        "hr_public": "hr-public.md",
+        "coaching": "coaching.md",
+        "self_review_rubric": "self-review-rubric.md",
+        "critical_review_rubric": "critical-review-rubric.md"
+      }
+    },
+    "notion_pages": {},
+    "google_drive_folders": {},
+    "people": {
+      "prefer_team_members": true
+    },
+    "mcp_labels": {
+      "documents": [],
+      "people": []
+    }
+  },
+  "skill_defaults": {
+    "self_eval": {
+      "org_context_slices": [
+        "ethics",
+        "engineering_handbook",
+        "self_review_rubric",
+        "levels"
+      ]
+    },
+    "advice": {
+      "org_context_slices": ["ethics", "coaching", "levels"]
+    }
+  }
+}
