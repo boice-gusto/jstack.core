@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# jstack-update-check — compare local VERSION to remote (gstack-compatible output).
+# Prints one line: JUST_UPGRADED old new | UPGRADE_AVAILABLE old new | nothing
+#
+# Env: JSTACK_DIR, JSTACK_REMOTE_URL, JSTACK_STATE_DIR (~/.jstack), JSTACK_UPDATE_CHECK=false to disable
+set -euo pipefail
+
+JSTACK_DIR="${JSTACK_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+STATE_DIR="${JSTACK_STATE_DIR:-$HOME/.jstack}"
+CACHE_FILE="$STATE_DIR/last-update-check"
+MARKER_FILE="$STATE_DIR/just-upgraded-from"
+SNOOZE_FILE="$STATE_DIR/update-snoozed"
+VERSION_FILE="$JSTACK_DIR/VERSION"
+REMOTE_URL="${JSTACK_REMOTE_URL:-https://raw.githubusercontent.com/gusto/jstack.core/main/VERSION}"
+
+if [ "${JSTACK_UPDATE_CHECK:-}" = "false" ]; then
+  exit 0
+fi
+
+if [ "${1:-}" = "--force" ]; then
+  rm -f "$CACHE_FILE" "$SNOOZE_FILE" 2>/dev/null || true
+fi
+
+check_snooze() {
+  local remote_ver="$1"
+  [ ! -f "$SNOOZE_FILE" ] && return 1
+  local sv sl se
+  sv="$(awk '{print $1}' "$SNOOZE_FILE" 2>/dev/null || true)"
+  sl="$(awk '{print $2}' "$SNOOZE_FILE" 2>/dev/null || true)"
+  se="$(awk '{print $3}' "$SNOOZE_FILE" 2>/dev/null || true)"
+  [ -z "$sv" ] || [ -z "$sl" ] || [ -z "$se" ] && return 1
+  [ "$sv" != "$remote_ver" ] && return 1
+  case "$sl" in *[!0-9]*) return 1 ;; esac
+  case "$se" in *[!0-9]*) return 1 ;; esac
+  local now duration expires
+  now="$(date +%s)"
+  case "$sl" in
+    1) duration=86400 ;;
+    2) duration=172800 ;;
+    *) duration=604800 ;;
+  esac
+  expires=$(( se + duration ))
+  [ "$now" -lt "$expires" ] && return 0
+  return 1
+}
+
+LOCAL=""
+if [ -f "$VERSION_FILE" ]; then
+  LOCAL="$(cat "$VERSION_FILE" 2>/dev/null | tr -d '[:space:]')"
+fi
+[ -z "$LOCAL" ] && exit 0
+
+if [ -f "$MARKER_FILE" ]; then
+  OLD="$(cat "$MARKER_FILE" 2>/dev/null | tr -d '[:space:]')"
+  rm -f "$MARKER_FILE" "$SNOOZE_FILE" 2>/dev/null || true
+  if [ -n "$OLD" ]; then
+    echo "JUST_UPGRADED $OLD $LOCAL"
+  fi
+fi
+
+if [ -f "$CACHE_FILE" ]; then
+  CACHED="$(cat "$CACHE_FILE" 2>/dev/null || true)"
+  case "$CACHED" in
+    UP_TO_DATE*)
+      CACHED_VER="$(echo "$CACHED" | awk '{print $2}')"
+      STALE=$(find "$CACHE_FILE" -mmin +60 2>/dev/null || true)
+      if [ -z "$STALE" ] && [ "$CACHED_VER" = "$LOCAL" ]; then
+        exit 0
+      fi
+      ;;
+    UPGRADE_AVAILABLE*)
+      CACHED_OLD="$(echo "$CACHED" | awk '{print $2}')"
+      CACHED_NEW="$(echo "$CACHED" | awk '{print $3}')"
+      STALE=$(find "$CACHE_FILE" -mmin +720 2>/dev/null || true)
+      if [ -z "$STALE" ] && [ "$CACHED_OLD" = "$LOCAL" ]; then
+        if check_snooze "$CACHED_NEW"; then
+          exit 0
+        fi
+        echo "$CACHED"
+        exit 0
+      fi
+      ;;
+  esac
+fi
+
+mkdir -p "$STATE_DIR"
+REMOTE=""
+REMOTE="$(curl -sf --max-time 5 "$REMOTE_URL" 2>/dev/null || true)"
+REMOTE="$(echo "$REMOTE" | tr -d '[:space:]')"
+
+if ! echo "$REMOTE" | grep -qE '^[0-9]+\.[0-9.]+$'; then
+  echo "UP_TO_DATE $LOCAL" > "$CACHE_FILE"
+  exit 0
+fi
+
+if [ "$LOCAL" = "$REMOTE" ]; then
+  echo "UP_TO_DATE $LOCAL" > "$CACHE_FILE"
+  exit 0
+fi
+
+echo "UPGRADE_AVAILABLE $LOCAL $REMOTE" > "$CACHE_FILE"
+if check_snooze "$REMOTE"; then
+  exit 0
+fi
+echo "UPGRADE_AVAILABLE $LOCAL $REMOTE"
