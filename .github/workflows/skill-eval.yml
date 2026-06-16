@@ -1,0 +1,27 @@
+# Path-scoped: validate + quick (no LLM). Full check: check.yml
+name: skill-eval
+
+on:
+  pull_request:
+    paths:
+      - "skills/**"
+      - "evals/**"
+      - "package.json"
+      - "bun.lock"
+  push:
+    branches: [main, master]
+    paths:
+      - "skills/**"
+      - "evals/**"
+
+jobs:
+  eval-yaml-and-quick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run eval:validate
+      - run: bun run eval:quick
