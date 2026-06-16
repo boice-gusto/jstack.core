@@ -1,0 +1,7 @@
+{
+  "version": "0.1.0",
+  "team": { "name": "Mock", "timezone": "UTC" },
+  "integrations": {},
+  "mcp_servers": {},
+  "telemetry": { "enabled": false }
+}

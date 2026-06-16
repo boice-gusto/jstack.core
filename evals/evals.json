@@ -1,0 +1,388 @@
+{
+  "evals": [
+    {
+      "skill": "advice"
+    },
+    {
+      "skill": "adr"
+    },
+    {
+      "skill": "announcements"
+    },
+    {
+      "skill": "computer-use"
+    },
+    {
+      "skill": "computer-use/cua"
+    },
+    {
+      "skill": "design/figma-handoff"
+    },
+    {
+      "skill": "engineering"
+    },
+    {
+      "skill": "engineering/health"
+    },
+    {
+      "skill": "engineering/silo-scan"
+    },
+    {
+      "skill": "incident"
+    },
+    {
+      "skill": "incident/find-sme"
+    },
+    {
+      "skill": "incident/oncall-summary"
+    },
+    {
+      "skill": "incident/retro"
+    },
+    {
+      "skill": "intake"
+    },
+    {
+      "skill": "jira"
+    },
+    {
+      "skill": "jira/append"
+    },
+    {
+      "skill": "jira/create"
+    },
+    {
+      "skill": "jira/get"
+    },
+    {
+      "skill": "jira/intake"
+    },
+    {
+      "skill": "jira/notify"
+    },
+    {
+      "skill": "jira/transition"
+    },
+    {
+      "skill": "jira/update"
+    },
+    {
+      "skill": "knowledge"
+    },
+    {
+      "skill": "knowledge/ingest-all"
+    },
+    {
+      "skill": "knowledge/intake"
+    },
+    {
+      "skill": "knowledge/process"
+    },
+    {
+      "skill": "knowledge/search"
+    },
+    {
+      "skill": "knowledge/self-knowledge"
+    },
+    {
+      "skill": "knowledge/shortcuts"
+    },
+    {
+      "skill": "knowledge/skill-finder"
+    },
+    {
+      "skill": "knowledge/team-knowledge"
+    },
+    {
+      "skill": "meetings"
+    },
+    {
+      "skill": "meetings/action-items"
+    },
+    {
+      "skill": "meetings/granola-highlights"
+    },
+    {
+      "skill": "meetings/notion-highlights"
+    },
+    {
+      "skill": "meetings/one-on-one-transcript"
+    },
+    {
+      "skill": "meetings/post-slack"
+    },
+    {
+      "skill": "meetings/prepare"
+    },
+    {
+      "skill": "meetings/store-note"
+    },
+    {
+      "skill": "meetings/store-note/personal"
+    },
+    {
+      "skill": "meetings/store-note/team"
+    },
+    {
+      "skill": "meetings/transcribe"
+    },
+    {
+      "skill": "meetings/transcripts-ingest"
+    },
+    {
+      "skill": "metrics"
+    },
+    {
+      "skill": "metrics/my-metrics"
+    },
+    {
+      "skill": "metrics/team-metrics"
+    },
+    {
+      "skill": "notion"
+    },
+    {
+      "skill": "notion/adr"
+    },
+    {
+      "skill": "notion/article"
+    },
+    {
+      "skill": "notion/knowledge-base"
+    },
+    {
+      "skill": "notion/one-on-one"
+    },
+    {
+      "skill": "notion/performance"
+    },
+    {
+      "skill": "notion/planning"
+    },
+    {
+      "skill": "notion/project"
+    },
+    {
+      "skill": "notion/report"
+    },
+    {
+      "skill": "notion/setup"
+    },
+    {
+      "skill": "notion/sprint"
+    },
+    {
+      "skill": "notion/standup"
+    },
+    {
+      "skill": "notion/team-note"
+    },
+    {
+      "skill": "notion/team-report"
+    },
+    {
+      "skill": "notion/update"
+    },
+    {
+      "skill": "pe/report-context"
+    },
+    {
+      "skill": "plugin/create-plugin-pr"
+    },
+    {
+      "skill": "prioritize"
+    },
+    {
+      "skill": "project"
+    },
+    {
+      "skill": "recon"
+    },
+    {
+      "skill": "reports"
+    },
+    {
+      "skill": "reports/engineer-report"
+    },
+    {
+      "skill": "reports/eval-report"
+    },
+    {
+      "skill": "reports/manager-report"
+    },
+    {
+      "skill": "reports/project-report"
+    },
+    {
+      "skill": "reports/report-design"
+    },
+    {
+      "skill": "reports/self-report"
+    },
+    {
+      "skill": "reports/share-html-publish"
+    },
+    {
+      "skill": "reports/team-report"
+    },
+    {
+      "skill": "research"
+    },
+    {
+      "skill": "research/competitive"
+    },
+    {
+      "skill": "research/explain-codebase"
+    },
+    {
+      "skill": "research/spike"
+    },
+    {
+      "skill": "research/technical"
+    },
+    {
+      "skill": "research/user"
+    },
+    {
+      "skill": "review"
+    },
+    {
+      "skill": "review/announcement-review"
+    },
+    {
+      "skill": "review/code-review"
+    },
+    {
+      "skill": "review/counsel-review"
+    },
+    {
+      "skill": "review/project-review"
+    },
+    {
+      "skill": "routines"
+    },
+    {
+      "skill": "routines/custom"
+    },
+    {
+      "skill": "routines/health-check"
+    },
+    {
+      "skill": "routines/morning-kickoff"
+    },
+    {
+      "skill": "routines/sprint-close"
+    },
+    {
+      "skill": "routines/standup"
+    },
+    {
+      "skill": "routines/weekly-digest"
+    },
+    {
+      "skill": "sdlc"
+    },
+    {
+      "skill": "self"
+    },
+    {
+      "skill": "self/brag"
+    },
+    {
+      "skill": "self/diary"
+    },
+    {
+      "skill": "self/eval"
+    },
+    {
+      "skill": "self/explain"
+    },
+    {
+      "skill": "self/focus"
+    },
+    {
+      "skill": "self/impact-prep"
+    },
+    {
+      "skill": "self/lookback"
+    },
+    {
+      "skill": "self/remember"
+    },
+    {
+      "skill": "self/tasks"
+    },
+    {
+      "skill": "session"
+    },
+    {
+      "skill": "session/end"
+    },
+    {
+      "skill": "session/init"
+    },
+    {
+      "skill": "setup"
+    },
+    {
+      "skill": "shortcuts/ceo-brainstorm"
+    },
+    {
+      "skill": "shortcuts/executive-research-brief"
+    },
+    {
+      "skill": "skill-creator"
+    },
+    {
+      "skill": "sop"
+    },
+    {
+      "skill": "sop/expectations"
+    },
+    {
+      "skill": "sop/resources"
+    },
+    {
+      "skill": "sprint"
+    },
+    {
+      "skill": "sprint/planning"
+    },
+    {
+      "skill": "sprint/prep"
+    },
+    {
+      "skill": "sprint/refinement"
+    },
+    {
+      "skill": "team"
+    },
+    {
+      "skill": "update-config"
+    },
+    {
+      "skill": "workflow-builder"
+    },
+    {
+      "skill": "workflows"
+    },
+    {
+      "skill": "workflows/builder"
+    },
+    {
+      "skill": "workflows/execute"
+    },
+    {
+      "skill": "workflows/recorder"
+    },
+    {
+      "skill": "workflows/runner"
+    },
+    {
+      "skill": "workflows/viewer"
+    },
+    {
+      "skill": "workflows/workflow-wizard"
+    }
+  ]
+}

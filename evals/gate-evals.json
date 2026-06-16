@@ -1,0 +1,11 @@
+{
+  "gates": [
+    {
+      "skill": "jstack:recon",
+      "max_tokens": 500000,
+      "max_latency_ms": 120000,
+      "required_output_fields": ["action_items"],
+      "forbidden_patterns": ["<script"]
+    }
+  ]
+}

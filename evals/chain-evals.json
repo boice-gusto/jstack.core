@@ -1,0 +1,21 @@
+{
+  "chains": [
+    {
+      "name": "intake-to-prioritize",
+      "steps": ["jstack:intake", "jstack:prioritize"]
+    },
+    {
+      "name": "meeting-to-jira",
+      "steps": ["jstack:meetings/action-items", "jstack:jira/create"]
+    },
+    {
+      "name": "workflow-core-skills-present",
+      "steps": [
+        "jstack:scaffold",
+        "jstack:granola-daily-summary",
+        "jstack:granola-daily-summary-6pm",
+        "jstack:task-intake"
+      ]
+    }
+  ]
+}
