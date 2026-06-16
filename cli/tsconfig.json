@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["bun-types"],
+    "baseUrl": ".",
+    "paths": {
+      "@jstack/constants/*": ["../constants/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "../constants/**/*.ts", "../scripts/docs-data-shared.ts"]
+}
