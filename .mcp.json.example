@@ -1,0 +1,38 @@
+{
+  "mcpServers": {
+    "jstack-placeholder": {
+      "command": "echo",
+      "args": [
+        "Copy this file to .mcp.json, remove placeholders, set env in your host — see skills/_core/references/integration-guide.md"
+      ]
+    },
+    "glean": {
+      "command": "npx",
+      "args": ["-y", "@gleanwork/mcp-server"],
+      "env": {
+        "GLEAN_INSTANCE": "<your-glean-instance-name>",
+        "GLEAN_API_TOKEN": "<user-scoped-token-with-search-and-chat-scopes>"
+      }
+    },
+    "gdrive": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"]
+    },
+    "lattice": {
+      "command": "node",
+      "args": ["/absolute/path/to/lattice-mcp/dist/index.js"],
+      "env": {
+        "LATTICE_API_KEY": "<lattice-api-key>",
+        "LATTICE_REGION": "us"
+      }
+    },
+    "dx-mcp": {
+      "command": "dx-mcp-server",
+      "args": ["run"],
+      "env": {
+        "DB_URL": "<postgres-url-from-dx-data-cloud>",
+        "WEB_API_TOKEN": "<dx-web-api-token>"
+      }
+    }
+  }
+}
