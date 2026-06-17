@@ -36,11 +36,17 @@ function isRecordJson(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x);
 }
 
+const _defaultsCache = new Map<string, Record<string, unknown>>();
+
 export function loadDefaults(pluginRoot: string): Record<string, unknown> {
+  const cached = _defaultsCache.get(pluginRoot);
+  if (cached) return cached;
   const p = defaultsPath(pluginRoot);
   if (!existsSync(p)) return {};
   const raw: unknown = JSON.parse(readFileSync(p, ENCODING_UTF8));
-  return isRecordJson(raw) ? raw : {};
+  const result = isRecordJson(raw) ? raw : {};
+  _defaultsCache.set(pluginRoot, result);
+  return result;
 }
 
 export function readConfig(root: string): JstackConfig {
