@@ -2,6 +2,8 @@
 name: jstack-weeklydigest
 description: Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.
 category: routines
+effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->

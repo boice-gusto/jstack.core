@@ -2,6 +2,7 @@
 name: jstack-self-report
 description: Generate a self-authored accomplishments narrative for performance context. User-editable voice.
 category: reports
+effort: low
 ---
 
 <!-- Chain Contract -->

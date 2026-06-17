@@ -2,6 +2,7 @@
 name: jstack-sprint-prep
 description: Pre-refinement prep — curate needs-refinement queue vs sprint goals, flag stale work, suggest new tickets for gaps, priority order draft.
 category: sprint
+effort: high
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,7 @@
 name: jstack-announcement-review
 description: Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.
 category: review
+effort: high
 ---
 
 <!-- Chain Contract -->

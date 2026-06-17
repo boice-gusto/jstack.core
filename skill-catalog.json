@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-28T08:24:24.197Z",
-  "count": 134,
+  "generatedAt": "2026-06-17T03:25:45.805Z",
+  "count": 135,
   "skills": [
     {
       "id": "adr",
@@ -243,6 +243,17 @@
       "whenToUse": "",
       "category": "Routines",
       "categoryKey": "routines"
+    },
+    {
+      "id": "skill-creator-improve-claude-md",
+      "name": "jstack-improve-claude-md",
+      "path": "skills/skill-creator/improve-claude-md/SKILL.md",
+      "relPath": "skills/skill-creator/improve-claude-md/SKILL.md",
+      "gateId": "jstack:skill-creator/improve-claude-md",
+      "description": "Audit a project's CLAUDE.md against commits, session transcripts, and working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or as a monthly hygiene routine.",
+      "whenToUse": "",
+      "category": "Skill Creator",
+      "categoryKey": "skill-creator"
     },
     {
       "id": "incident",

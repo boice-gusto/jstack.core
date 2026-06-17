@@ -2,6 +2,9 @@
 name: jstack-research-technical
 description: Structured technical investigation: architecture options, tradeoff matrix, recommendation with migration/operability risks.
 category: research
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->

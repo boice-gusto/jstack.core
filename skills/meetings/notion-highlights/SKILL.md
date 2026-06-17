@@ -2,6 +2,8 @@
 name: jstack-meetings-notion-highlights
 description: Insert meeting highlights into a Notion DB with title, date, participants, and transcript link.
 category: meetings
+effort: low
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,7 @@
 name: jstack-self-impact-prep
 description: IC impact prep — Growth Check-in (quick) or Quarterly sweep with artifact gather, gap questions, config rubrics; personal gbrain default.
 category: self
+effort: high
 ---
 
 <!-- Chain Contract -->

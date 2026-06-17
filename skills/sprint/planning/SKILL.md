@@ -2,6 +2,7 @@
 name: jstack-sprint-planning
 description: Sprint planning: capacity, commit vs goal, spill from last sprint with root causes.
 category: sprint
+effort: high
 ---
 
 <!-- Chain Contract -->

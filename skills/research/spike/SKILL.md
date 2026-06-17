@@ -2,6 +2,9 @@
 name: jstack-research-spike
 description: Time-boxed technical spike: hypothesis, method, go/no-go criteria up front. Report findings even if spike fails.
 category: research
+context: fork
+agent: Explore
+effort: max
 ---
 
 <!-- Chain Contract -->

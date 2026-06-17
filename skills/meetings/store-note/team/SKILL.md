@@ -2,6 +2,7 @@
 name: jstack-meetings-store-team
 description: Save meeting notes to team gbrain or Notion per config. Follow team storage rules.
 category: meetings
+effort: low
 ---
 
 <!-- Chain Contract -->

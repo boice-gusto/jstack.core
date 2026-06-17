@@ -2,6 +2,7 @@
 name: jstack-workflow-recorder
 description: Record user browser actions into a workflow definition. Add stability notes (selectors) before promoting to CI.
 category: workflows
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

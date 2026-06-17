@@ -2,6 +2,7 @@
 name: jstack-self-remember
 description: Store a durable personal fact or decision in gbrain. Refuse or rotate if the user pastes a secret.
 category: self
+effort: low
 ---
 
 <!-- Chain Contract -->

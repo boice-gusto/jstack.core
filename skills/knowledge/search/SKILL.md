@@ -2,6 +2,9 @@
 name: jstack-knowledge-search
 description: Look up answers from configured knowledge sources (local paths, doc URLs, GitHub repos) using jstack.config.json knowledge_base — cite sources; do not guess from general knowledge when a source list exists. For storing notes use knowledge-intake, not this skill.
 category: knowledge
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->

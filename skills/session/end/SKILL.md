@@ -2,6 +2,7 @@
 name: jstack-end-session
 description: End the current session: summarize, flush carryover items, optionally run eval hooks.
 category: session
+effort: low
 ---
 
 <!-- Chain Contract -->

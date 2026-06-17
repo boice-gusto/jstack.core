@@ -2,6 +2,9 @@
 name: jstack-jira-transition
 description: Move a Jira issue between workflow states after validating the transition is legal and required fields are set.
 category: jira
+disable-model-invocation: true
+arguments: [ticket_id, status]
+argument-hint: [PROJ-123] [Done|In Progress|etc]
 ---
 
 <!-- Chain Contract -->

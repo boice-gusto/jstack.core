@@ -2,6 +2,7 @@
 name: jstack-retro
 description: Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.
 category: incident
+effort: high
 ---
 
 <!-- Chain Contract -->
