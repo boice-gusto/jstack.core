@@ -2,6 +2,7 @@
 name: jstack-meetings-prepare
 description: Build a 1-page meeting prep brief from calendar context, Jira in-progress items, and blockers for attendees.
 category: meetings
+effort: high
 ---
 
 <!-- Chain Contract -->

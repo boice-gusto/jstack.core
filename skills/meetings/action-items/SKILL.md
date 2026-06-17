@@ -2,6 +2,7 @@
 name: jstack-meetings-action-items
 description: Extract action items with owner + due date from meeting notes. Output a checklist for Jira intake.
 category: meetings
+effort: medium
 ---
 
 <!-- Chain Contract -->

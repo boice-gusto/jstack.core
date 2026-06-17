@@ -2,6 +2,7 @@
 name: jstack-project-review
 description: Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.
 category: review
+effort: high
 ---
 
 <!-- Chain Contract -->

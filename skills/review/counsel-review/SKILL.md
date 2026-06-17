@@ -2,6 +2,7 @@
 name: jstack-counsel-review
 description: Multi-persona review (CEO/design/eng/QA) with synthesis and tensions. Not vote-counting by title.
 category: review
+effort: high
 ---
 
 <!-- Chain Contract -->

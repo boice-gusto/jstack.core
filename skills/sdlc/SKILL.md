@@ -2,6 +2,7 @@
 name: jstack-sdlc
 description: Map SDLC stages to evidence (tests, sign-offs, flags, migrations). Produce gate checklists, not Jira state changes.
 category: sdlc
+effort: high
 ---
 
 <!-- Chain Contract -->

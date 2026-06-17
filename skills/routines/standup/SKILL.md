@@ -2,6 +2,8 @@
 name: jstack-standup
 description: Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.
 category: routines
+effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,7 @@
 name: jstack-meetings-store-note
 description: Route meeting notes to personal or team storage based on session gbrain target.
 category: meetings
+effort: low
 ---
 
 <!-- Chain Contract -->

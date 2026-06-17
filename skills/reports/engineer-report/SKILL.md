@@ -2,6 +2,7 @@
 name: jstack-engineer-report
 description: Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics.
 category: reports
+effort: high
 ---
 
 <!-- Chain Contract -->

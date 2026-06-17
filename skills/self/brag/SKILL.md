@@ -2,6 +2,7 @@
 name: jstack-self-brag
 description: Daily or weekly activity brag from Slack, GitHub, and Jira mapped to config-defined impact dimensions; parallel gather; tiered PR labels; personal gbrain by default.
 category: self
+effort: high
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,7 @@
 name: jstack-notion-report
 description: Create a long-form report page or DB row in Notion. Set Status to Draft until user reviews.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

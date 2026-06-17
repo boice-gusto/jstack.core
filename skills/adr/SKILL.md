@@ -1,6 +1,7 @@
 ---
 name: jstack-adr
 description: Create or update a local markdown Architecture Decision Record (ADR) with typed context (engineering, design, team, codebase, org), discovery of adr/docs/adr folders, intake questions, and numbered filenames — writes only after confirmation.
+effort: high
 ---
 
 # Local Markdown ADR
@@ -15,7 +16,54 @@ Produce **Architecture Decision Records as `.md` files in the repo** (or path th
 
 ## Procedure
 
-1. **Classify kind** — Ask or infer: engineering | design | team | codebase | org (see `references/adr-types.md`).
+1. **Classify kind** — Infer from `$ARGUMENTS` if possible. If the kind is ambiguous, use **AskUserQuestion** before gathering context:
+
+   ```
+   question: "What kind of decision is this?"
+   header: "ADR kind"
+   options:
+     - label: "Engineering"
+       description: "Systems, APIs, data flows, reliability, performance."
+       preview: |
+         # ADR-NNN: [Title]
+         **Status:** Proposed
+         **Context:** [Technical forcing function]
+         **Decision:** [What we're doing]
+         **Constraints:** latency / cost / compliance
+         **Failure modes & rollback:** ...
+         **Migration path from current state:** ...
+     - label: "Design"
+       description: "UX patterns, accessibility, content strategy, design system."
+       preview: |
+         # ADR-NNN: [Title]
+         **Status:** Proposed
+         **Context:** [User problem or design gap]
+         **Decision:** [Pattern or component chosen]
+         **User scenarios:** ...
+         **Accessibility / localization:** ...
+         **Alternatives rejected on UX grounds:** ...
+     - label: "Team"
+       description: "Ways of working, review gates, ownership, ceremonies."
+       preview: |
+         # ADR-NNN: [Title]
+         **Status:** Proposed
+         **Context:** [Process friction or gap]
+         **Decision:** [New norm or gate]
+         **Decision authority:** [Who decides exceptions]
+         **Review cadence:** ...
+     - label: "Org / Policy"
+       description: "Vendor, compliance, legal stance, multi-team norms."
+       preview: |
+         # ADR-NNN: [Title]
+         **Status:** Proposed
+         **Context:** [Policy or legal forcing function]
+         **Decision:** [Stance or constraint adopted]
+         **Stakeholder sign-off:** ...
+         **Review date:** YYYY-MM-DD
+         **Exceptions process:** ...
+   ```
+
+   See `references/adr-types.md` for full kind descriptions.
 2. **Resolve output location** — Follow `references/discovery.md`: explicit path wins; else scan; else propose `docs/adr/` after user confirms.
 3. **Gather context** — Use intake below; skim sibling ADRs in the chosen folder for tone, numbering, and cross-links.
 4. **Draft** — Fill `references/template.md`; include **Supersedes / Superseded by** when replacing an older ADR.

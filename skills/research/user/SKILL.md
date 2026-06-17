@@ -2,6 +2,9 @@
 name: jstack-research-user
 description: Synthesize user interview themes with verbatim quotes (permission-aware). Distinguish frequent vs loud users.
 category: research
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->

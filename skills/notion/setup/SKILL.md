@@ -2,6 +2,7 @@
 name: jstack-notion-setup
 description: Build a Notion team HQ + private vault tree from the typed template catalog. Surface-aware: team-side artifacts must land inside a Notion teamspace (via anchor page), private vault stays workspace-private. Wires all ids back into jstack.config.json.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

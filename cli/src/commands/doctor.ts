@@ -31,6 +31,7 @@ import {
   resolveDependencies,
 } from "../lib/dependency-resolver.js";
 import { REPAIR_CONSENT_DEFAULT } from "../lib/repair-consent.js";
+import { setAt } from "../lib/path-utils.js";
 import { JstackConfigSchema } from "../types/config.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 
@@ -241,22 +242,6 @@ function formatRepair(r: RepairAction): string {
   }
 }
 
-function setAtPath(obj: Record<string, unknown>, path: string[], value: unknown): void {
-  if (path.length === 0) return;
-  let cur: Record<string, unknown> = obj;
-  for (let i = 0; i < path.length - 1; i++) {
-    const seg = path[i] as string;
-    const next = cur[seg];
-    if (next && typeof next === "object" && !Array.isArray(next)) {
-      cur = next as Record<string, unknown>;
-    } else {
-      const fresh: Record<string, unknown> = {};
-      cur[seg] = fresh;
-      cur = fresh;
-    }
-  }
-  cur[path[path.length - 1] as string] = value;
-}
 
 async function applyRepairsInteractive(
   issues: DependencyIssue[],
@@ -321,7 +306,7 @@ async function applyRepairsInteractive(
     if (handleCancel(ok)) exitCancelled();
     if (ok) {
       const draft: Record<string, unknown> = JSON.parse(JSON.stringify(cfg));
-      for (const s of setConfig) setAtPath(draft, s.path, s.value);
+      for (const s of setConfig) setAt(draft, s.path, s.value);
       try {
         const parsed = JstackConfigSchema.parse(draft);
         writeConfig(projectRoot, parsed);

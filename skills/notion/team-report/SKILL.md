@@ -2,6 +2,7 @@
 name: jstack-notion-team-report
 description: Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack:reports-team-report.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

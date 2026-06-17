@@ -2,6 +2,7 @@
 name: jstack-review-code-review
 description: PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch).
 category: review
+effort: high
 ---
 
 <!-- Chain Contract -->

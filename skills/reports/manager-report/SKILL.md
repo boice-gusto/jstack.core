@@ -2,6 +2,7 @@
 name: jstack-manager-report
 description: Generate a manager rollup across teams without stack-ranking individuals.
 category: reports
+effort: high
 ---
 
 <!-- Chain Contract -->

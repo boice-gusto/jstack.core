@@ -2,6 +2,7 @@
 name: jstack-notion-teamnote
 description: Create a lightweight team note in Notion. Suggest ADR for binding decisions instead.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,7 @@
 name: jstack-meetings-post-slack
 description: Draft a meeting summary for a Slack channel with tone from prompts/tones/. Do not post without user approval.
 category: meetings
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

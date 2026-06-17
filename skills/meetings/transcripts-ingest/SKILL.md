@@ -5,6 +5,8 @@ category: meetings
 gbrain_destination: team
 data_class: internal
 when_to_use: New meeting transcripts arrived in Drive or user pastes a file; route to highlights, transcribe, or action-items flows.
+effort: low
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,9 @@
 name: jstack-team-knowledge
 description: Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages.
 category: knowledge
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->
