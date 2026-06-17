@@ -2,6 +2,7 @@
 name: jstack-notion-planning
 description: Create or update a roadmap / OKR planning page in Notion, linking to Jira epics when ids are available.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

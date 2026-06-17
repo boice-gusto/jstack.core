@@ -2,6 +2,8 @@
 name: jstack-custom
 description: Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.
 category: routines
+effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->

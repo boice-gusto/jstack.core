@@ -2,6 +2,7 @@
 name: jstack-sprintclose
 description: Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.
 category: routines
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

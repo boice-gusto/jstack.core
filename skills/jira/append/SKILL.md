@@ -2,6 +2,9 @@
 name: jstack-jira-append
 description: Append structured content (meeting notes, checklist, update block) to an existing Jira issue description or comment.
 category: jira
+disable-model-invocation: true
+arguments: [ticket_id]
+argument-hint: [PROJ-123]
 ---
 
 <!-- Chain Contract -->

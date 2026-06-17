@@ -2,6 +2,9 @@
 name: jstack-jira-notify
 description: Draft a Slack or email notification about a Jira event (status change, assignment, comment) for user approval.
 category: jira
+disable-model-invocation: true
+arguments: [ticket_id]
+argument-hint: [PROJ-123]
 ---
 
 <!-- Chain Contract -->

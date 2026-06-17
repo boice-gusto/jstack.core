@@ -2,6 +2,9 @@
 name: jstack-research-competitive
 description: Competitive analysis with comparison table. Treat public info as potentially stale; never claim private competitor metrics.
 category: research
+context: fork
+agent: Explore
+effort: max
 ---
 
 <!-- Chain Contract -->

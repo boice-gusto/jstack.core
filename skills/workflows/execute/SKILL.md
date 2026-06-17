@@ -5,6 +5,7 @@ category: workflows
 gbrain_destination: inherit
 data_class: internal
 when_to_use: After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior.
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

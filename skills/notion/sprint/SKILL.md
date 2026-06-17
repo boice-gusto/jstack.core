@@ -2,6 +2,7 @@
 name: jstack-notion-sprint
 description: Create or update a sprint page in Notion with goal, scope, and Jira sprint id when provided.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

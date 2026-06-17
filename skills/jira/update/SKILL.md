@@ -2,6 +2,9 @@
 name: jstack-jira-update
 description: Update fields or add comments on an existing Jira issue. Confirm before sensitive field changes.
 category: jira
+disable-model-invocation: true
+arguments: [ticket_id]
+argument-hint: [PROJ-123]
 ---
 
 <!-- Chain Contract -->

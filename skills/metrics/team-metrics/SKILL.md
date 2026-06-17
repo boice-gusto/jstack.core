@@ -2,6 +2,7 @@
 name: jstack-team-metrics
 description: Team DORA-style signals with caveats for sample size. Separate unplanned work % when labels exist.
 category: metrics
+effort: max
 ---
 
 <!-- Chain Contract -->

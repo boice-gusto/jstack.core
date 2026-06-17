@@ -2,6 +2,8 @@
 name: jstack-jira-create
 description: Create a Jira issue from user input or intake payload, with dup-check and template pre-fill from config.
 category: jira
+disable-model-invocation: true
+argument-hint: [issue-summary or paste intake payload]
 ---
 
 <!-- Chain Contract -->

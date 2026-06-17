@@ -2,6 +2,9 @@
 name: jstack-self-knowledge
 description: Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.
 category: knowledge
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->

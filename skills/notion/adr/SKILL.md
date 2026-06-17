@@ -2,6 +2,7 @@
 name: jstack-notion-adr
 description: Create or update an Architecture Decision Record in Notion with numbering, status, and superseded links.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

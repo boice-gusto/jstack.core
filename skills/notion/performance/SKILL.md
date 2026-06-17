@@ -4,6 +4,7 @@ description: Create or update a performance cycle page in Notion (goals, impact,
 category: notion
 data_class: people_performance
 gbrain_destination: personal
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

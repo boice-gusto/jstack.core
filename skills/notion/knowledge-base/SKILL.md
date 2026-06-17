@@ -2,6 +2,7 @@
 name: jstack-notion-knowledgebase
 description: Add or update a knowledge-base entry in Notion with tags, deduplicating on title+topic.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

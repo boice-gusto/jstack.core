@@ -2,6 +2,7 @@
 name: jstack-meetings-transcribe
 description: Convert meeting audio/video to text via approved transcription patterns. Mark [inaudible] and redact PII for public summaries.
 category: meetings
+effort: medium
 ---
 
 <!-- Chain Contract -->

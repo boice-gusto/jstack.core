@@ -2,6 +2,8 @@
 name: jstack-healthcheck
 description: Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.
 category: routines
+effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->

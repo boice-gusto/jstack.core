@@ -5,6 +5,8 @@ category: workflows
 gbrain_destination: team
 data_class: internal
 when_to_use: "Automated or scheduled daily summary workflow."
+effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,9 @@
 name: jstack-research-explaincodebase
 description: Map a codebase top-down: entry file, packages, main flows, then one deep dive the user requested.
 category: research
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->
