@@ -70,7 +70,7 @@
     "agents-check": "bun run scripts/agents-check.ts",
     "check": "bun run validate-config && bun run agents-check && bun run validate-chains && bun run validate:alias-drift --strict && bun run eval:validate && bun run eval:scenarios-validate && bun run eval:routers && bun run eval:quick && bun run test:cli && bun run typecheck:cli && bun run typecheck:dashboard"
   },
-  "workspaces": ["cli"],
+  "workspaces": ["cli", "dashboard"],
   "dependencies": {
     "js-yaml": "^4.1.1",
     "zod": "^3.23.8"
