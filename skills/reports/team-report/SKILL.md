@@ -2,6 +2,7 @@
 name: jstack-team-report
 description: Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.
 category: reports
+effort: high
 ---
 
 <!-- Chain Contract -->

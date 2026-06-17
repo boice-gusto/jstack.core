@@ -2,6 +2,7 @@
 name: jstack-my-metrics
 description: Personal throughput and review latency from GitHub/Jira. No peer comparison unless user is a people manager.
 category: metrics
+effort: low
 ---
 
 <!-- Chain Contract -->

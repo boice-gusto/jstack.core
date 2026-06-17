@@ -2,6 +2,7 @@
 name: jstack-ceo-brainstorm
 description: "Alias jstack:ceo-brainstorm — CEO persona + executive tone, then superpowers:brainstorming. Use when the user wants exec-lens ideation."
 category: knowledge
+effort: high
 ---
 
 <!-- Chain Contract -->

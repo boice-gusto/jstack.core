@@ -2,6 +2,7 @@
 name: jstack-notion-one-on-one
 description: Create or update a 1:1 page in Notion with date, topics, and action items using templates/notion/one-on-one.json; respects private-manager defaults.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,7 @@
 name: jstack-notion-project
 description: Create or update a Notion project profile page: stakeholders, RAG status, and links to Jira/comms.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

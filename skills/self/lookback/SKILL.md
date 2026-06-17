@@ -2,6 +2,7 @@
 name: jstack-self-lookback
 description: Review last N days of personal gbrain + calendar and surface patterns. Gentle, not therapeutic.
 category: self
+effort: high
 ---
 
 <!-- Chain Contract -->

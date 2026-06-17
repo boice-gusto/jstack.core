@@ -2,6 +2,8 @@
 name: jstack-jira-get
 description: Fetch Jira issues by key or JQL filter and return a structured table of status, assignee, priority, and links.
 category: jira
+arguments: [ticket_id]
+argument-hint: [PROJ-123]
 ---
 
 <!-- Chain Contract -->

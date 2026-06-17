@@ -1,4 +1,5 @@
 {
   "defaultModel": "inherit",
+  "skillListingBudgetFraction": 0.02,
   "notes": "Optional plugin-level defaults for Claude Code hosts that read settings.json"
 }

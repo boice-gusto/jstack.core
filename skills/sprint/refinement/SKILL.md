@@ -2,6 +2,7 @@
 name: jstack-sprint-refinement
 description: Refinement ceremony — five questions per ticket, capacity snapshot, sprint-ready checklist; no bulk Jira writes without confirmation.
 category: sprint
+effort: high
 ---
 
 <!-- Chain Contract -->

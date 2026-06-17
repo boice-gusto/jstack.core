@@ -2,6 +2,7 @@
 name: jstack-init-session
 description: Start a jstack session: set gbrain target (personal vs team), load sprint/timezone context, confirm integrations.
 category: session
+effort: low
 ---
 
 <!-- Chain Contract -->

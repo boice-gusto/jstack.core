@@ -2,6 +2,8 @@
 name: jstack-notion-standup
 description: Create or update a standup page or database row in Notion using templates/notion/standup.json and optional gallery template page from config.
 category: notion
+effort: low
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

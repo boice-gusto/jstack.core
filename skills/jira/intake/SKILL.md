@@ -2,6 +2,8 @@
 name: jstack-jira-intake
 description: Convert raw text or a jstack:intake payload into Jira-ready fields (summary, description, AC, labels).
 category: jira
+arguments: [ticket_url]
+argument-hint: [URL or PROJ-123]
 ---
 
 <!-- Chain Contract -->

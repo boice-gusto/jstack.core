@@ -21,29 +21,6 @@ export function sessionTarget(cfg: Record<string, unknown>): string {
     .toLowerCase();
 }
 
-function knowledgeStorageTeamCheckout(cfg: Record<string, unknown>): string {
-  const ks = cfg.knowledge_storage as Record<string, unknown> | undefined;
-  const t = ks?.team as Record<string, unknown> | undefined;
-  return String(t?.local_checkout ?? "").trim();
-}
-
-function knowledgeStoragePersonalCheckout(cfg: Record<string, unknown>): string {
-  const ks = cfg.knowledge_storage as Record<string, unknown> | undefined;
-  const t = ks?.personal as Record<string, unknown> | undefined;
-  return String(t?.local_checkout ?? "").trim();
-}
-
-function knowledgeStorageTeamRemote(cfg: Record<string, unknown>): string {
-  const ks = cfg.knowledge_storage as Record<string, unknown> | undefined;
-  const t = ks?.team as Record<string, unknown> | undefined;
-  return String(t?.git_remote ?? "").trim();
-}
-
-function knowledgeStoragePersonalRemote(cfg: Record<string, unknown>): string {
-  const ks = cfg.knowledge_storage as Record<string, unknown> | undefined;
-  const t = ks?.personal as Record<string, unknown> | undefined;
-  return String(t?.git_remote ?? "").trim();
-}
 
 /** Config-shape warnings (knowledge_base roots, knowledge_storage, optional GBrain when merged search is on). */
 export function collectDoctorConfigWarnings(
@@ -67,10 +44,13 @@ export function collectDoctorConfigWarnings(
     }
   }
 
-  const ksTeamCo = knowledgeStorageTeamCheckout(cfg);
-  const ksPersonalCo = knowledgeStoragePersonalCheckout(cfg);
-  const ksTeamRem = knowledgeStorageTeamRemote(cfg);
-  const ksPersonalRem = knowledgeStoragePersonalRemote(cfg);
+  const ks = cfg.knowledge_storage as Record<string, unknown> | undefined;
+  const ksTeam = ks?.team as Record<string, unknown> | undefined;
+  const ksPersonal = ks?.personal as Record<string, unknown> | undefined;
+  const ksTeamCo = String(ksTeam?.local_checkout ?? "").trim();
+  const ksPersonalCo = String(ksPersonal?.local_checkout ?? "").trim();
+  const ksTeamRem = String(ksTeam?.git_remote ?? "").trim();
+  const ksPersonalRem = String(ksPersonal?.git_remote ?? "").trim();
 
   if (ksTeamRem && !ksTeamCo) {
     warnings.push(

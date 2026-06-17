@@ -637,12 +637,15 @@ export function render(input: RenderInput, format: "json" | "prose"): RenderOutp
   return { format: "prose", text: renderProse(input) };
 }
 
+const MINUTES_PER_CORRECTION = 2.5;
+const WEEKS_PER_MONTH = 4;
+
 export function confidenceWeight(c: Confidence): number {
   return c === "high" ? 1.0 : c === "medium" ? 0.7 : 0.4;
 }
 
 export function scoreIssue(issue: Issue): number {
-  const monthly = issue.estimated_corrections_avoided_per_week * 2.5 * 4;
+  const monthly = issue.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION * WEEKS_PER_MONTH;
   return monthly * confidenceWeight(issue.confidence);
 }
 
@@ -679,8 +682,8 @@ export function detect(
   const scored: ScoredIssue[] = filteredIssues
     .map((i) => ({
       ...i,
-      time_saved_min_per_week: i.estimated_corrections_avoided_per_week * 2.5,
-      monthly_savings_min: i.estimated_corrections_avoided_per_week * 2.5 * 4,
+      time_saved_min_per_week: i.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION,
+      monthly_savings_min: i.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION * WEEKS_PER_MONTH,
       priority_score: scoreIssue(i),
     }))
     .sort((a, b) => b.priority_score - a.priority_score);

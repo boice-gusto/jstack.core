@@ -2,6 +2,7 @@
 name: jstack-self-diary
 description: Write a single journal entry to personal gbrain. Never auto-post to team channels.
 category: self
+effort: low
 ---
 
 <!-- Chain Contract -->

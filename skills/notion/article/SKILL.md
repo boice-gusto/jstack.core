@@ -2,6 +2,7 @@
 name: jstack-notion-article
 description: Create a Notion article (blog/eng journal) with title, audience tag, and Draft status until approved.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

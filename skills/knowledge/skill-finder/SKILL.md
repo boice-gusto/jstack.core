@@ -5,6 +5,9 @@ category: knowledge
 gbrain_destination: inherit
 data_class: non_sensitive
 when_to_use: User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale.
+context: fork
+agent: Explore
+effort: medium
 ---
 
 <!-- Chain Contract -->

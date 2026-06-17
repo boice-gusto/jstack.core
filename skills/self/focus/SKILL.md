@@ -2,6 +2,7 @@
 name: jstack-self-focus
 description: Synthesize 2-3 focus blocks from tasks + gbrain, one explicit non-goal, and a timebox suggestion.
 category: self
+effort: low
 ---
 
 <!-- Chain Contract -->

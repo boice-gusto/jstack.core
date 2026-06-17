@@ -2,6 +2,9 @@
 name: jstack-recon
 description: Read-oriented sweep across configured Slack, Jira, and similar integrations to answer "what needs attention"—P1s, stale work, open questions, and standup-ready action items. Produces a bounded summary plus an explicit action_items count line for evals. Does not open tickets, post to Slack, or change external state unless a different skill is invoked after user approval.
 category: recon
+context: fork
+agent: Explore
+effort: max
 ---
 
 <!-- Chain Contract -->

@@ -2,6 +2,9 @@
 name: jstack-federated-search
 description: Multi-provider federated search — selects N backends (Jira, Notion, Slack, GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits, ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis. Reads jstack.config.json mcp_servers and integrations; does not invent credentials.
 category: research
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->

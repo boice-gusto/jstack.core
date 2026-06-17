@@ -5,6 +5,7 @@ category: plugin
 gbrain_destination: inherit
 data_class: internal
 when_to_use: Contributor has local changes and wants a PR against the configured core or gusto distribution repo.
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

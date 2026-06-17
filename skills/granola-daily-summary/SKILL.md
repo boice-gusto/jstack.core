@@ -5,6 +5,8 @@ category: workflows
 gbrain_destination: team
 data_class: internal
 when_to_use: "End-of-day summary from meeting notes or Granola exports."
+effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->

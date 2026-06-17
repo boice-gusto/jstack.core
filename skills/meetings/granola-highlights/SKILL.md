@@ -2,6 +2,7 @@
 name: jstack-meetings-granola
 description: Import Granola AI highlights and map bullets to Decisions, Open Questions, and Action Items.
 category: meetings
+effort: low
 ---
 
 <!-- Chain Contract -->

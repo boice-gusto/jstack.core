@@ -2,6 +2,9 @@
 name: jstack-engineering-health
 description: Summarize engineering health — CI status, PR queue, flaky tests, revert risk — from configured repos only.
 category: engineering
+context: fork
+agent: Explore
+effort: high
 ---
 
 <!-- Chain Contract -->

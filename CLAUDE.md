@@ -34,6 +34,31 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 - Every `SKILL.md` needs three frontmatter keys: `name` (kebab-case, prefixed `jstack-`), `description` (one to three sentences naming when to invoke and when not to), `category` (folder name). See `skills/_core/references/skill-conventions.md`.
 - Every `SKILL.md` should `!cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md` before its procedure, so config defaults are loaded.
 - Write skills in directives style — see `skills/skill-creator/references/anthropic-alignment.md` for the rubric.
+- Full frontmatter field reference with jstack conventions: `skills/_core/references/skill-frontmatter-guide.md`.
+
+### Key frontmatter rules
+
+- **`disable-model-invocation: true`** — Required on all write/operational skills (jira creates/updates, notion writes, announcements, sprint-close, workflow-execute). Prevents Claude from auto-triggering actions that change external state.
+- **`context: fork` + `agent: Explore`** — Add to pure read/research skills (recon, knowledge/search, research/*, engineering/health). Runs the skill in an isolated subagent, protecting the main context window.
+- **`effort:`** — Set on every skill. Tier: `low` for routines/automation, `high` for analysis/advice/review, `max` for recon and deep research. See `skills/_core/references/skill-frontmatter-guide.md` for the full table.
+- **`disallowed-tools: AskUserQuestion`** — Add to all routines and scheduled skills. Prevents blocking on interactive prompts in automated runs.
+- **`argument-hint:`** — Add whenever the skill takes a well-defined positional input (ticket ID, sprint ID, person name).
+- **`allowed-tools:`** — Declare MCP tools for Jira/Slack/Notion write skills to suppress per-call approval prompts.
+
+### AskUserQuestion with `preview:`
+
+When a skill has a meaningful intake choice that determines the output shape (tone, template, ADR kind, report format), use the **AskUserQuestion** tool with `preview:` on each option. The `preview:` field renders markdown side-by-side so users can see what they're choosing before committing.
+
+Pattern: instruct Claude in the body to call AskUserQuestion at intake time. See `skills/_core/references/ask-user-question-patterns.md` for full examples. Tier 1 skills with wizards:
+- `announcements` — tone selector (Executive / Internal / Formal)
+- `adr` — kind selector (Engineering / Design / Team / Org)
+- `advice` — format selector (Decision brief / Stakeholder script / Principle tradeoff)
+
+To add a wizard to a skill: replace the prose "ask once if unclear" pattern in the Intake/Step 1 section with an explicit AskUserQuestion call block.
+
+### Skill context budget
+
+`settings.json` sets `skillListingBudgetFraction: 0.02` (2% of model context). At 134 skills this is intentionally generous. If `/doctor` reports overflow: (1) trim `description` + `when_to_use` to ≤1,536 chars each; (2) add rarely-used background skills to `skillOverrides: "name-only"` in `.claude/settings.local.json`.
 
 ## Config-first
 

@@ -2,6 +2,7 @@
 name: jstack-notion-update
 description: Patch named properties on an existing Notion page. Return the view URL after update.
 category: notion
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

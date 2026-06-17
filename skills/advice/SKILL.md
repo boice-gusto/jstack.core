@@ -2,6 +2,7 @@
 name: jstack-advice
 description: Strategic and design counsel—stakeholder-aware options, tradeoffs, and a clear recommendation. Use for leadership/EM/product/design dilemmas, prioritization of principles, 1:1 or exec prep, or when the user wants named perspectives (not generic brainstorming). Grounds in team KB and gbrain when configured; never invents org policy.
 category: advice
+effort: high
 ---
 
 <!-- Chain Contract -->
@@ -59,7 +60,68 @@ Work through in order; **omit** sections in the final answer that add no value.
 6. **Next actions** — **Who does what** by when (even if the “who” is the user and “when” is “before Friday”). If a **follow-up doc** is needed, point to [Handoffs](#handoffs).
 7. **If gbrain or KB applies** — Cite the **principle** or **past decision** in one line (“aligns with ADR-12 on public IDs”); if nothing exists, **do not** invent; say “no recorded decision; recommend writing one via `jstack:adr` or knowledge path.”
 
-## Output formats (pick one; state which at the top)
+## Output formats
+
+If the user did not specify a format and the ask is not obviously one type, use **AskUserQuestion** after classifying the ask (Step 1 of Intake):
+
+```
+question: "Which output format fits best?"
+header: "Format"
+options:
+  - label: "Decision brief"
+    description: "Default. Options, recommendation, risks, next steps."
+    preview: |
+      ## Context
+      [One sentence framing the decision]
+
+      ## Options
+      1. **[Name]** — [1 line]
+         - Upside: …
+         - Downside: …
+      2. **[Name]** — …
+      3. (optional) Defer / do less
+
+      ## Recommendation
+      **[Option]** because [1–2 sentences].
+
+      ## Risks / unknowns
+      - …
+
+      ## Next steps
+      - …
+  - label: "Stakeholder script"
+    description: "For 1:1s, exec conversations, or difficult asks."
+    preview: |
+      ## Objective (60 sec)
+      [What you want from this conversation]
+
+      ## Opening
+      [1–2 lines of neutral framing]
+
+      ## Points to make (3 bullets max)
+      - …
+
+      ## Questions to ask
+      - …
+
+      ## Landmines to avoid
+      - …
+
+      | If they say… | Respond with… |
+      |--------------|---------------|
+      | … | … |
+  - label: "Principle tradeoff"
+    description: "For 'how should we think about X' asks. Names the tension."
+    preview: |
+      **Principles in tension:**
+      - [Principle A] vs [Principle B]
+
+      **Heuristic:** Lean toward A when [condition]; lean toward B when [condition].
+
+      **Applied to your case:** [1 sentence]
+
+      **What would change our mind:** [measurable signal or timebox]
+```
 
 ### A — Decision brief (default)
 

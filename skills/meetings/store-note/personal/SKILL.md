@@ -2,6 +2,7 @@
 name: jstack-meetings-store-personal
 description: Save meeting notes to personal gbrain. Never auto-post to team channels.
 category: meetings
+effort: low
 ---
 
 <!-- Chain Contract -->
