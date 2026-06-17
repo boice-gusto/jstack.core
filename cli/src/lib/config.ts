@@ -42,7 +42,10 @@ export function loadDefaults(pluginRoot: string): Record<string, unknown> {
   const cached = _defaultsCache.get(pluginRoot);
   if (cached) return cached;
   const p = defaultsPath(pluginRoot);
-  if (!existsSync(p)) return {};
+  if (!existsSync(p)) {
+    _defaultsCache.set(pluginRoot, {});
+    return {};
+  }
   const raw: unknown = JSON.parse(readFileSync(p, ENCODING_UTF8));
   const result = isRecordJson(raw) ? raw : {};
   _defaultsCache.set(pluginRoot, result);
