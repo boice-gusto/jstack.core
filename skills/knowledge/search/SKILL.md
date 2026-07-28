@@ -35,6 +35,28 @@ Read the setup preamble first:
 - For **private** GitHub repos, only use data the host can access (MCP, gh CLI, or user paste); do not assume read access.
 - For **public** `doc_urls`, use fetch or approved MCP; respect robots and rate limits.
 
+### Thresholds
+
+| Signal | Threshold | Source |
+|---|---|---|
+| Minimum grounding per claim | Every substantive claim traces to ≥1 cited path/URL/issue actually read this run | [Anthropic — Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations): ground responses in direct quotes, verify claims with citations |
+| `result_ok` gate | `true` only if ≥1 relevant source was consulted, or config was empty and the gap was explained; `false` if an answer was required and neither held | this skill's Output shape contract |
+| Large-document grounding | Extract exact quotes before synthesizing, rather than summarizing from a skim, once a source is long enough that recall could drift from the actual text | [Anthropic — Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations) |
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Fabricating a citation | A plausible-looking path or URL that was never actually read is worse than no citation — it launders a guess as verified fact | Cite only sources you actually opened this run; if you recall a path from general knowledge but didn't read it now, say so explicitly |
+| Answering from general knowledge when `knowledge_base` is configured | The user set up declared sources because they want the team's version of the truth, not the model's | Search the configured roots/URLs first; only fall back to general knowledge if asked, and label it as such |
+| Silent partial coverage | Summarizing "the docs say X" when only 2 of 5 configured roots were actually searched | State which roots/URLs were checked and which weren't — an empty `Gaps` section isn't optional if coverage was partial |
+| Treating GBrain and configured sources as interchangeable | They answer different questions (stored team memory vs. declared doc/repo scope); conflating them hides which is authoritative | Label GBrain findings separately per Step 3; note when they conflict |
+
+### Worked example
+
+- *Weak:* "According to the team docs, the API rate limit is 100 requests per minute."
+- *Sharp:* "Per `docs/api/limits.md` (read this run): 'the default rate limit is 100 requests per minute per API key.' No other configured source (2 `doc_urls`, 1 GitHub repo) states a different limit. Not found: whether this applies to the new v2 endpoints — `docs/api/limits.md` predates the v2 rollout mentioned in `CHANGELOG.md`."
+
 ## Config and references
 
 - `skills/_core/references/question-patterns.md` — open-ended clarifiers; `skills/_core/references/ask-user-question-patterns.md` — discrete source/scope pickers when the host supports it

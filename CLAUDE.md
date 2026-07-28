@@ -8,7 +8,7 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 - **Package manager:** `bun` (lockfile: `bun.lock`). Use `bun install`, `bun add`, `bun remove`. Do not use `npm`, `yarn`, or `pnpm`.
 - **Test runner:** `bun:test`. Tests live next to source as `*.test.ts` (e.g. `cli/src/lib/foo.test.ts`).
 - **Module system:** ESM. Imports of local TypeScript files use the `.js` suffix even though the source is `.ts` (e.g. `import { x } from "./foo.js"`). Match this in new files.
-- **Config schema:** Zod. JSON schema at `config/schema.json`; defaults at `config/defaults.json`.
+- **Config schema:** Zod, in `cli/src/types/config.ts` — this is the only schema any code enforces. `config/schema.json` is **documentation only** (no code loads it); `config/defaults.json` supplies runtime defaults.
 - **CLI framework:** `commander`. CLI entry: `cli/src/index.ts`.
 
 ## Commands you'll use most
@@ -30,8 +30,11 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 ## Skill authoring
 
 - Hand-maintained skills must be added to the `SKIP` set in `scripts/apply_detailed_skills.py`. Otherwise running `python3 scripts/apply_detailed_skills.py` regenerates the body and overwrites your work.
-- The current SKIP entries are: `advice`, `adr`, `recon`, `skill-creator` (+ `skill-creator/improve-claude-md`), `computer-use/cua`, `workflow-builder`, `knowledge/search`, `shortcuts/ceo-brainstorm`, `shortcuts/executive-research-brief`. Anything else is auto-regenerated.
-- Every `SKILL.md` needs three frontmatter keys: `name` (kebab-case, prefixed `jstack-`), `description` (one to three sentences naming when to invoke and when not to), `category` (folder name). See `skills/_core/references/skill-conventions.md`.
+- Read the current SKIP set from the source rather than a list here (it has gone stale repeatedly):
+  `python3 -c "import sys; sys.path.insert(0,'scripts'); from apply_detailed_skills import SKIP, SKILLS; print(sorted(str(p.relative_to(SKILLS).parent) for p in SKIP))"`
+  Everything not in that set is auto-regenerated.
+- Every `SKILL.md` needs: `name` (kebab-case, prefixed `jstack-`), `description` (one to three sentences naming when to invoke **and when not to**), `category` (folder name), and `effort`. See `skills/_core/references/skill-conventions.md`.
+- `category` is a jstack-internal field — the Claude Code platform ignores it. It drives `skill-catalog.json` and the docs site, so it still has to be right.
 - Every `SKILL.md` should `!cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md` before its procedure, so config defaults are loaded.
 - Write skills in directives style — see `skills/skill-creator/references/anthropic-alignment.md` for the rubric.
 - Full frontmatter field reference with jstack conventions: `skills/_core/references/skill-frontmatter-guide.md`.
@@ -43,7 +46,8 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 - **`effort:`** — Set on every skill. Tier: `low` for routines/automation, `high` for analysis/advice/review, `max` for recon and deep research. See `skills/_core/references/skill-frontmatter-guide.md` for the full table.
 - **`disallowed-tools: AskUserQuestion`** — Add to all routines and scheduled skills. Prevents blocking on interactive prompts in automated runs.
 - **`argument-hint:`** — Add whenever the skill takes a well-defined positional input (ticket ID, sprint ID, person name).
-- **`allowed-tools:`** — Declare MCP tools for Jira/Slack/Notion write skills to suppress per-call approval prompts.
+- **`allowed-tools:`** — **Not used in jstack.core, by design.** Core is integration-agnostic: no skill here names a concrete `mcp__*` tool (verify: `grep -rn "mcp__" skills --include=SKILL.md` returns nothing). Skills route through `mcp_servers` / `integrations` in `jstack.config.json` so each org can wire its own Jira/Notion/Slack servers. Declaring `allowed-tools` here would hardcode one org's server names into generic skills. This rule belongs in an **org overlay** (e.g. `jstack.gusto`, where 13 skills do name real servers such as `mcp__datadoggusto__*`) — there, declare the tools a skill actually calls to suppress per-call approval prompts.
+- **Frontmatter values must be inline scalars.** `read_front_matter` in `scripts/apply_detailed_skills.py` is line-based and keeps only lines containing `:`. A YAML block list is silently dropped — its `- item` lines vanish and the key round-trips empty. Write `allowed-tools: mcp__a__b, mcp__c__d`, never a multi-line list. Keys other than `name`, `description`, `category`, and `when_to_use` survive regeneration.
 
 ### AskUserQuestion with `preview:`
 
@@ -58,12 +62,12 @@ To add a wizard to a skill: replace the prose "ask once if unclear" pattern in t
 
 ### Skill context budget
 
-`settings.json` sets `skillListingBudgetFraction: 0.02` (2% of model context). At 134 skills this is intentionally generous. If `/doctor` reports overflow: (1) trim `description` + `when_to_use` to ≤1,536 chars each; (2) add rarely-used background skills to `skillOverrides: "name-only"` in `.claude/settings.local.json`.
+`settings.json` sets `skillListingBudgetFraction: 0.02` (2% of model context) — intentionally generous for a library this size. Get the current count with `find skills -name SKILL.md | wc -l` rather than trusting a number written here. If `/doctor` reports overflow: (1) trim `description` + `when_to_use` to ≤1,536 chars each; (2) add rarely-used background skills to `skillOverrides: "name-only"` in `.claude/settings.local.json`.
 
 ## Config-first
 
 - Org-specific values (sprint length, approvers, channels, integration ids) live in `jstack.config.json`. Never hardcode them in skill prose or TS source.
-- Schema lives in `config/schema.json` + `config/defaults.json` — keep them in sync. `bun run validate-config` enforces the parity.
+- `bun run validate-config` merges `config/defaults.json` with a project's `jstack.config.json` and checks integration keys. It does **not** read `config/schema.json` — nothing does. Keep `config/schema.json` updated as the human/agent-facing reference, but remember it enforces nothing; the enforced contract is the Zod schema in `cli/src/types/config.ts`, which today validates only a few sections deeply.
 - Skill defaults you want users to override go under `skill_defaults.<skill-id>`.
 
 ## Editing rules
@@ -75,8 +79,8 @@ To add a wizard to a skill: replace the prose "ask once if unclear" pattern in t
 
 ## Don't
 
-- Don't use `console.log` for CLI output that should be machine-parseable. Use `cliUi.ts` helpers (`renderTable`, `renderJson`, etc.) so `--output=json` continues to work.
-- Don't ship a new skill without an entry in `skill-catalog.json` — the file is regenerated by `bun run scripts/build-skill-catalog.mjs` (run after every skill add).
+- Don't interleave human-readable prose into `--json`/`--output=json` output. When a command supports a JSON mode, that mode must print only the JSON payload (e.g. `console.log(JSON.stringify(...))`) — no extra log lines on stdout — so it stays machine-parseable. `cli/src/lib/cliUi.ts` only has interactive-prompt helpers (`isInteractive`, `nonInteractiveHint`, `handleCancel`, `exitCancelled`); there is no shared `renderTable`/`renderJson` — don't invent calls to those.
+- Don't ship a new skill without an entry in `skill-catalog.json` — the file is regenerated by `bun run docs:generate` (`scripts/generate-docs-data.ts`), or `jstack docs generate` (run after every skill add).
 - Don't introduce a new third-party dependency without checking whether a sibling util in `cli/src/lib/` already covers it.
 - Don't auto-commit. Wait for the user to ask for a commit or PR.
 - Don't push to `main` directly. All work goes through a PR.

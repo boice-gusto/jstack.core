@@ -1,48 +1,43 @@
 # Tone: Internal
 
-> **Owner:** Team lead or EM. Edit this file to set the default voice for Slack posts, standup notes, and internal wiki updates.
+Use for team chat, standup notes, PR descriptions, and internal wiki updates.
+
+This file is injected verbatim into prompts. It asserts **no facts about your team** — do not
+invent channel names, teammates, or metrics. Use only what config or the conversation provides.
 
 ## Audience
 
-<!-- [CUSTOMIZE] Which channels and surfaces use this tone? -->
-Team Slack (#eng, #standup), internal wiki, PR descriptions, standup posts.
+Peers with full context on the work. They don't need the background; they need to know what
+changed, whether it affects them, and whether you're stuck.
 
-## Voice
+## Shape
 
-<!-- [CUSTOMIZE] Paste a real Slack message or standup that felt right for your team. -->
 ```
-Example: "Shipped the caching layer for search. Load time dropped from 1.2s 
-to 300ms on staging. Rolling to prod tomorrow after Ben's review. Blocked on: 
-nothing, but keeping an eye on memory usage."
+<What changed, past tense, specific.>
+<Effect, with a number if you have one.>
+<What's next, and when.>
+<Blocked on: X (owner, ETA) — or explicitly "nothing".>
 ```
 
-## Rules your team sets
+## Rules
 
-<!-- [CUSTOMIZE] These should reflect YOUR team's actual norms, not generic advice -->
-- **Brevity:** 3 bullets max for standup. If it needs more, it's a thread.
-- **@mentions:** Tag the person who needs to act. Don't @here unless it's blocking.
-- **Emoji:** <!-- [CUSTOMIZE] yes/no/sparingly? --> Sparingly — for status indicators (✅ ❌ 🔄), not decoration.
-- **Links over descriptions:** Paste the PR/ticket link instead of re-explaining what it does.
-- **Blockers are explicit:** "Blocked on X (owner: @name, ETA: unknown)" not "having some issues."
+- **Brevity.** Three bullets for a standup. More than that is a thread or a doc.
+- **Mention the person who needs to act.** Broadcast pings are for genuinely blocking issues.
+- **Emoji sparingly** — as status markers, not decoration.
+- **Link instead of re-explaining.** Paste the PR or ticket rather than summarizing what it does.
+- **Blockers are explicit and owned.** "Blocked on X (owner: name, ETA: unknown)" beats "having
+  some issues." Unknown ETA is fine; unstated ownership is not.
+- **Numbers over adjectives.** "300ms, down from 1.2s" carries information; "much faster" doesn't.
 
-## What your team avoids
+## Avoid
 
-<!-- [CUSTOMIZE] Add patterns your team has agreed to stop doing -->
-- Vague status updates ("making progress", "looking into it")
-- Multi-paragraph Slack messages that should be a doc
-- Passive voice for ownership ("it was decided" → "we decided" or "@name decided")
+- Vague status — "making progress", "looking into it."
+- Multi-paragraph chat messages that should be a document.
+- Passive voice hiding ownership: "it was decided" → say who decided.
+- Restating the ticket instead of reporting the delta since the last update.
 
-## Config hook
+## Adapting this file
 
-If `jstack.config.json` has a `tones.internal` block, those values override this file:
-```json
-{
-  "tones": {
-    "internal": {
-      "max_bullets": 3,
-      "emoji_policy": "status-only",
-      "channels": ["#eng", "#standup"]
-    }
-  }
-}
-```
+Edit this file directly to encode your team's real norms — channel conventions, emoji policy,
+standup format. There is no config-based override for tones; `jstack.config.json` does not drive
+this file.

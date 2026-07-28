@@ -3,7 +3,7 @@
 > **Read this first if the conversation was interrupted.** This document is the single entry-point for picking up where we left off. Links below resolve to the actual spec, plans, and decisions; this file just summarizes state.
 
 **Date created:** 2026-04-29
-**Owner:** Example User (`user@example.com`)
+**Owner:** (redacted)
 **Repo (monorepo):** `/Users/you/Documents/GitHub/jstack/` containing `jstack.core/` (agnostic) and `jstack.gusto/` (overlay)
 
 ---
@@ -33,7 +33,7 @@ Strengthening `jstack.gusto` falls out automatically: it ships its own `overlay.
 - [`2026-04-28-overlay-pr1-registry-cleanup.md`](./2026-04-28-overlay-pr1-registry-cleanup.md) — PR-1: overlay registry + L1–L9 contamination cleanup (18 tasks + Task 9b)
 - [`2026-04-28-overlay-pr2-probes-setup-auto.md`](./2026-04-28-overlay-pr2-probes-setup-auto.md) — PR-2: probe registry + `setup --auto` (Task 0 → Task 17)
 - [`2026-04-28-overlay-pr3-chain-config.md`](./2026-04-28-overlay-pr3-chain-config.md) — PR-3: chain config + `jstack chain` (10 tasks)
-- [`../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md`](../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md) — PR-4: jstack.gusto overlay manifest + probes/chains (14 tasks)
+- [`../../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md`](../../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md) — PR-4: jstack.gusto overlay manifest + probes/chains (14 tasks)
 
 ### Memory entries (Claude Code persistent memory)
 - `~/.claude/projects/-Users-you-Documents-GitHub-jstack/memory/MEMORY.md` — index
@@ -48,7 +48,7 @@ Strengthening `jstack.gusto` falls out automatically: it ships its own `overlay.
 - ✅ 4 implementation plans + coordination index written, task-by-task with concrete code blocks
 - ✅ Adversarial multi-stakeholder review (CEO / PM / Design / Eng / QA) iterated to **10/10 across all five personas in Round 4**
 - ✅ All Round 1–3 fixes applied inline to the plans (effort/rollback matrix, success metrics, `user.*` schema block, `migrateLegacyDistribution`, probe `withTimeout`, agent-shim seq numbers, snapshot/`--restore`, spinner/edit/empty-section/discuss UX, `findCoreAndOverlay` helper moved to PR-1, `sortDeep` for deterministic golden-file compare, malformed-overlay tests, allow-list-vs-marker bidirectional check)
-- ✅ **Live dry-run on 2026-04-29** against real Gusto MCPs (Github-Gusto, Slack-Gusto, Glean-Gusto, PagerDuty-Gusto, DX-Gusto, Notion-Gusto, GitHub team membership). Surfaced 5 calibration issues, all folded into PR-4 Task 9.5. Full report: [`../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md`](../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md).
+- ✅ **Live dry-run on 2026-04-29** against real Gusto MCPs (Github-Gusto, Slack-Gusto, Glean-Gusto, PagerDuty-Gusto, DX-Gusto, Notion-Gusto, GitHub team membership). Surfaced 5 calibration issues, all folded into PR-4 Task 9.5. Full report: [`../../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md`](../../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md).
 - ✅ Spec updated with §11 "Real-world calibration" insights
 - ✅ PR-4 plan updated with Task 9.5 (probe calibration with concrete code edits)
 - ✅ All artifacts committed to local main on both `jstack.core` and `jstack.gusto`

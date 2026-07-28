@@ -42,7 +42,7 @@ export const TELEMETRY_CLI = {
 
 /** Default raw URL for distribution VERSION when `distribution.version_url` is unset. */
 export const DISTRIBUTION_VERSION_DEFAULT_URL =
-  "https://raw.githubusercontent.com/gusto/jstack.core/main/VERSION" as const;
+  "https://raw.githubusercontent.com/boice-gusto/jstack.core/main/VERSION" as const;
 
 export type TelemetryCliAction =
   (typeof TELEMETRY_CLI.ACTIONS)[keyof typeof TELEMETRY_CLI.ACTIONS];

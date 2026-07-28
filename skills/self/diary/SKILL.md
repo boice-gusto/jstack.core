@@ -2,6 +2,7 @@
 name: jstack-self-diary
 description: Write a single journal entry to personal gbrain. Never auto-post to team channels.
 category: self
+disable-model-invocation: true
 effort: low
 ---
 
@@ -38,14 +39,14 @@ Write a single journal entry to personal gbrain. Never auto-post to team channel
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
 One session journal entry. gbrain personal target only unless user overrides.
 - No auto-post to team channels.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -69,7 +70,7 @@ Use a domain-appropriate heading, then:
 | User pastes a secret | Refuse to store; tell them to rotate immediately. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

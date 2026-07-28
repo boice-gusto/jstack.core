@@ -2,6 +2,7 @@
 name: jstack-self
 description: Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain).
 category: self
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -27,7 +28,6 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
-- **Org handbook / ethics / rubrics (when sub-skill needs them):** `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/org-context.md`
 - Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
 - Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
 - Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
@@ -43,13 +43,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/self/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

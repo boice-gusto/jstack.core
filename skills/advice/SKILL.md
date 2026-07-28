@@ -46,7 +46,17 @@ Read the setup preamble first:
    - If the user **already** gave all of the above, **do not** ask; proceed.
 
 3. **Anti-patterns**
-   - Do not default to a **three-paragraph essay** if they asked for a **single slide** or **Slack post**; match **length** to their implied medium (if unclear, offer **short** default + “say `long` for memo-style” in one line).
+
+| Anti-pattern | Why it's wrong | Instead |
+|---|---|---|
+| Wrong-medium length — a three-paragraph essay when they asked for a slide or a Slack post | Advice the recipient cannot use in the place they need it is not advice | Match length to the implied medium. If unclear, give the short version and offer `long` for memo-style in one line |
+| Options without a recommendation | Hands the decision back to the person who asked for help; neutrality here is abdication, not rigour | Recommend one, say why, and state what would change your mind |
+| Both-sides hedging when the evidence favours one side | Reads as balanced while withholding the actual judgement | Name the asymmetry. Hedge on confidence, never on the recommendation |
+| False three-way split | Inventing a third option to look thorough makes the real trade-off harder to see | Present only options someone would genuinely choose; two is a complete set when it is |
+| Mind-reading motive | Attributing intent you cannot observe invites the recipient to argue about your read of them rather than the decision | Describe the observable situation and its consequences |
+| Advice the recipient cannot act on | Recommending something outside their authority or budget wastes the exchange | Scope to what this person can actually decide, or name who must decide it |
+| Buried recommendation | If it appears after the analysis, a scanning reader never reaches it | Lead with the recommendation, then the reasoning |
+| Confidence unwarranted by evidence | Overstated certainty is what gets quoted back when it turns out wrong | State the confidence level and the assumption it rests on |
 
 ## How to think (internal checklist)
 
@@ -175,6 +185,14 @@ options:
 - **Principles in tension** (name two)
 - **Heuristic** — When to lean each way; **1 example** of applying it to their case
 - **What would change our mind** — measurable signal or timebox
+
+## Domain rules — advice
+
+1. **Recommend, don't just enumerate, when you have enough information to have an opinion.** Three options with no pick is a menu, not advice — if the evidence favors one path, say so with the one-sentence why (Step 4 already requires this); reserve "no pick" for genuine toss-ups where the deciding factor is the user's risk tolerance or politics, not a fact you could look up.
+2. **Never manufacture a false three-way split to look balanced.** If two options are real and the third is a strawman included only for the appearance of rigor, drop the strawman — it wastes the reader's attention and quietly signals the "safe" middle was predetermined.
+3. **Lead with the recommendation, not the reasoning.** A reader who stops after the first sentence should still know what you'd do; burying the pick under three paragraphs of context optimizes for the writer's thinking process, not the reader's decision speed.
+4. **Distinguish a values call from a facts call before recommending.** If the blocker is missing data, say what data and who supplies it (Step 5 already asks this) — don't dress up an unresolved factual question as "it depends on your priorities."
+5. **A recommendation with no stated confidence is not more useful for being confident-sounding — it's less auditable.** Say what would change your mind; a reader who later gets that information can act without re-opening the whole question.
 
 ## Handoffs (nested workflows)
 

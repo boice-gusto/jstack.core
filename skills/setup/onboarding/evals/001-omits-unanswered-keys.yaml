@@ -1,0 +1,18 @@
+name: Omits unanswered keys rather than writing empty strings
+prompt: |
+  Apply jstack-onboarding. My team is "Platform Engineering", timezone America/Los_Angeles.
+  We use Jira, project key PLT. We don't use Notion, Slack, Calendar, or Sheets, and I have no
+  knowledge base set up yet. Show me the config you'd write. Don't write it yet.
+criteria:
+  - "Proposed config includes team.name Platform Engineering and team.timezone America/Los_Angeles"
+  - "Includes a jira integration with project_key PLT"
+  - "Does NOT include notion, slack, gcal, or sheets keys set to empty strings or empty objects — those keys are absent entirely"
+  - "Does NOT include a knowledge_base or gbrain section populated with placeholder or invented values"
+  - "Includes an onboarding block with complete set to false"
+  - "Asks for confirmation before writing, and does not claim to have written the file"
+expect_skill: true
+timeout: 150
+assert:
+  response_match_regex:
+    - "Platform Engineering"
+    - "PLT"

@@ -3,6 +3,7 @@ name: jstack-notion-setup
 description: Build a Notion team HQ + private vault tree from the typed template catalog. Surface-aware: team-side artifacts must land inside a Notion teamspace (via anchor page), private vault stays workspace-private. Wires all ids back into jstack.config.json.
 category: notion
 disable-model-invocation: true
+effort: high
 ---
 
 <!-- Chain Contract -->
@@ -48,6 +49,25 @@ If `teamspace_anchor_page_id` is empty AND the user can't paste one, **stop**. D
 The user may reference Notion marketplace template URLs (e.g. company-pack, kanban-board). The API cannot duplicate marketplace pages. The catalog's `template_set` (default `official`) ships **functional equivalents** authored from scratch — they cover the same use cases but are not pixel-identical. The `marketplace_url` field on each template is reference-only.
 
 If the user wants the literal marketplace design, the only path is: user clicks "Duplicate" in the browser, pastes the resulting workspace URLs, this skill `notion-move-pages` them under the right parent.
+
+## Domain rules — notion-setup
+
+The binding rules are the **Hard rules** above (visual hard rules, teamspace anchor, marketplace limitation) — this section adds the anti-patterns and worked example the depth gate expects, without restating them.
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Silently falling back to workspace-private when no teamspace anchor exists | Leaks team-visible artifacts into private space — this is the exact failure mode from prior runs (Hard rule 2) | Stop and ask for an anchor page id; never auto-fallback |
+| Calling `notion-create-pages` with a catalog entry missing icon/cover/header_color | Ships an incomplete page that violates the "every page has icon+cover+canonical opening" hard rule | Pre-flight check every template; stop on that template, don't create it |
+| Treating a `golden_pages` marketplace URL as a duplicatable page id | Notion's API can't duplicate marketplace pages; the call fails or silently no-ops | Reject; ask the user to "Duplicate" into their workspace first, then paste the resulting page id |
+| Writing a placeholder fake UUID into config when the real id isn't known yet | A fake id looks configured but breaks every downstream skill that reads it | Leave the key as an empty string until the real id exists |
+| Overwriting existing `parent_pages`/`database_ids` keys without diffing first | Silently discards a prior manual configuration the user or another run set up | Diff current config against planned writes; ask before overwriting a non-empty key |
+
+### Worked example
+
+- *Weak:* "Created the team pages, all set!" — no ids shown, no confirmation of icon/cover, silently created under workspace-root because no anchor was given.
+- *Sharp:* "`team_notion.teamspace_anchor_page_id` was empty — stopped before creating any team-side page; ask the user to create one empty page in the target teamspace and paste its URL. Private vault (7 pages) created at workspace-root since it doesn't need the anchor; each has icon+cover+canonical opening per catalog metadata. Config written: `private_vault.setup_complete=true`; `team_notion.setup_complete` still `false` pending the anchor."
 
 ## Config and references
 

@@ -232,6 +232,142 @@ function checkRequiredIntegrations(input: ResolverInput, issues: DependencyIssue
   }
 }
 
+function checkNotionTemplateSet(input: ResolverInput, issues: DependencyIssue[]): void {
+  if (!input.pluginRoot) return;
+  const nd = asRecord(input.cfg.notion_defaults);
+  if (asString(nd?.template_set) !== "custom") return;
+  const catalogPath = join(input.pluginRoot, "templates/notion/catalog/custom.json");
+  if (!existsSync(catalogPath)) {
+    issues.push({
+      id: "notion-template-set-custom-missing",
+      configPath: ["notion_defaults", "template_set"],
+      severity: "warn",
+      message: `notion_defaults.template_set is "custom" but ${catalogPath} does not exist.`,
+      repairs: [{ kind: "write_file", path: catalogPath, content: '{"templates":[]}', ifMissing: true }],
+    });
+  }
+}
+
+function checkNotionParentPages(input: ResolverInput, issues: DependencyIssue[]): void {
+  const nd = asRecord(input.cfg.notion_defaults);
+  if (!nd) return;
+  const teamNotion = asRecord(nd.team_notion);
+  const privateVault = asRecord(nd.private_vault);
+  if (teamNotion?.setup_complete !== true && privateVault?.setup_complete !== true) return;
+  const parentPages = asRecord(nd.parent_pages);
+  for (const key of ["team_hub", "private_root", "one_on_ones"]) {
+    if (!asString(parentPages?.[key])) {
+      issues.push({
+        id: "notion-parent-pages-incomplete",
+        configPath: ["notion_defaults", "parent_pages", key],
+        severity: "warn",
+        message: `notion_defaults.parent_pages.${key} is empty but Notion setup is marked complete.`,
+        repairs: [
+          {
+            kind: "shell_hint",
+            cmd: "jstack setup --schema --section notion",
+            reason: "set parent page id",
+          },
+        ],
+      });
+    }
+  }
+}
+
+function checkMcpServerWiring(input: ResolverInput, issues: DependencyIssue[]): void {
+  const mcpServers = asRecord(input.cfg.mcp_servers);
+  if (!mcpServers || Object.keys(mcpServers).length === 0) return;
+  const mcpJsonPath = join(input.projectRoot, ".mcp.json");
+  if (!existsSync(mcpJsonPath)) return;
+  let registeredServers: Record<string, unknown> = {};
+  try {
+    const raw = JSON.parse(readFileSync(mcpJsonPath, "utf8")) as Record<string, unknown>;
+    registeredServers = asRecord(raw?.mcpServers) ?? {};
+  } catch {
+    return;
+  }
+  for (const [name, serverRaw] of Object.entries(mcpServers)) {
+    const server = asRecord(serverRaw);
+    const serverId = asString(server?.server_id);
+    if (!serverId) continue;
+    if (!(serverId in registeredServers)) {
+      issues.push({
+        id: "mcp-server-not-wired",
+        configPath: ["mcp_servers", name, "server_id"],
+        severity: "warn",
+        message: `mcp_servers["${name}"] has server_id "${serverId}" but it is not registered in .mcp.json.`,
+        repairs: [
+          {
+            kind: "shell_hint",
+            cmd: `jstack mcp add ${serverId}`,
+            reason: "register in .mcp.json",
+          },
+        ],
+      });
+    }
+  }
+}
+
+function checkApprovalChainMembers(input: ResolverInput, issues: DependencyIssue[]): void {
+  const ac = asRecord(input.cfg.approval_chains);
+  const chains = asRecord(ac?.chains);
+  if (!chains || Object.keys(chains).length === 0) return;
+  const team = asRecord(input.cfg.team);
+  const membersRaw = team?.members;
+  if (!Array.isArray(membersRaw) || membersRaw.length === 0) return;
+  const memberIds = new Set<string>();
+  for (const m of membersRaw) {
+    const id = asString(asRecord(m)?.id);
+    if (id) memberIds.add(id);
+  }
+  if (memberIds.size === 0) return;
+  for (const [chainName, chainRaw] of Object.entries(chains)) {
+    if (!Array.isArray(chainRaw)) continue;
+    for (const memberIdRaw of chainRaw) {
+      const memberId = asString(memberIdRaw);
+      if (!memberId || memberId === "author") continue;
+      if (!memberIds.has(memberId)) {
+        issues.push({
+          id: "approval-chain-member-unknown",
+          configPath: ["approval_chains", "chains", chainName],
+          severity: "warn",
+          message: `approval_chains.chains.${chainName} references unknown member id "${memberId}".`,
+          repairs: [
+            {
+              kind: "shell_hint",
+              cmd: "jstack setup --schema --section team",
+              reason: "add member or fix chain",
+            },
+          ],
+        });
+      }
+    }
+  }
+}
+
+function checkPeConfigured(input: ResolverInput, issues: DependencyIssue[]): void {
+  const pe = asRecord(input.cfg.pe);
+  if (pe?.configured !== true) return;
+  for (const field of ["jira_project_keys", "notion_parent_keys"]) {
+    const val = pe[field];
+    if (!Array.isArray(val) || val.length === 0) {
+      issues.push({
+        id: "pe-configured-incomplete",
+        configPath: ["pe", field],
+        severity: "warn",
+        message: `pe.configured is true but pe.${field} is empty.`,
+        repairs: [
+          {
+            kind: "shell_hint",
+            cmd: "jstack setup --pe",
+            reason: "populate field",
+          },
+        ],
+      });
+    }
+  }
+}
+
 function checkCrossPluginsGbrain(input: ResolverInput, issues: DependencyIssue[]): void {
   const cross = asRecord(input.cfg.cross_plugins);
   const gb = asRecord(cross?.gbrain);
@@ -262,5 +398,10 @@ export function resolveDependencies(input: ResolverInput): DependencyIssue[] {
   checkMockMcp(input, issues);
   checkRequiredIntegrations(input, issues);
   checkCrossPluginsGbrain(input, issues);
+  checkNotionTemplateSet(input, issues);
+  checkNotionParentPages(input, issues);
+  checkMcpServerWiring(input, issues);
+  checkApprovalChainMembers(input, issues);
+  checkPeConfigured(input, issues);
   return issues;
 }

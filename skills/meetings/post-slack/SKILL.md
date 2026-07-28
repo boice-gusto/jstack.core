@@ -3,6 +3,7 @@ name: jstack-meetings-post-slack
 description: Draft a meeting summary for a Slack channel with tone from prompts/tones/. Do not post without user approval.
 category: meetings
 disable-model-invocation: true
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -13,8 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route meeting requests to the most specific sub-skill: prepare, transcribe, action-items, post-slack, notion-highlights, or store-note.
-- **Out of scope:** Sending calendar invites or joining calls.
+Draft a meeting summary for a Slack channel using tone from `prompts/tones/`. Never post without explicit user approval.
+- **Out of scope:** Transcribing audio or extracting action items — those are separate upstream skills.
 
 ## Domain rules — meetings
 - Privacy: mark sensitive transcript segments; offer redacted summary for public channels.
@@ -38,14 +39,14 @@ Route meeting requests to the most specific sub-skill: prepare, transcribe, acti
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Confirm attribution before recording a decision as someone's — misattributing a commitment is the costly error here. Keep personal notes out of team stores. Distinguish what was decided from what was merely discussed.
 
 ### Step 3 — Execute
 Draft with tone from `prompts/tones/`. For @here, use only if user said important-level.
 - Thread vs channel per team habit — ask if ambiguous.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. Confirm personal content did not land in a shared store.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -69,7 +70,7 @@ Use a domain-appropriate heading, then:
 | PII in public summary | Redact and flag before posting; offer redacted vs full versions. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-meetings-granola` then `jstack-meetings-action-items`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

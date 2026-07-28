@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>jstack — onboarding wizard</title>
+    <!--
+      Self-contained. No server, no build, no network: open directly with file://.
+      Nothing here is transmitted anywhere — every answer stays in this page until you
+      copy or download the generated config.
+
+      Do NOT hardcode real org values, tokens, employee names, or internal URLs in this
+      file. It is committed to the repo. Placeholders only.
+    -->
+    <style>
+      :root {
+        --bg: #0f1115; --panel: #161a21; --panel-2: #1c2129; --line: #2a313c;
+        --ink: #e6e9ef; --ink-dim: #9aa4b2; --accent: #4f9cf9; --ok: #3fb950;
+        --warn: #d29922; --danger: #f85149; --radius: 10px;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f7f9; --panel: #fff; --panel-2: #f0f2f5; --line: #d8dde5;
+          --ink: #1b1f27; --ink-dim: #5b6472;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; background: var(--bg); color: var(--ink);
+        font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      header {
+        border-bottom: 1px solid var(--line); padding: 1rem 1.25rem;
+        display: flex; gap: .75rem; align-items: baseline; flex-wrap: wrap;
+      }
+      header h1 { font-size: 1.05rem; margin: 0; letter-spacing: .2px; }
+      header .sub { color: var(--ink-dim); font-size: .85rem; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 1.25rem; }
+      nav.tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--line); margin-bottom: 1.25rem; flex-wrap: wrap; }
+      nav.tabs button {
+        background: none; border: 0; border-bottom: 2px solid transparent; color: var(--ink-dim);
+        padding: .6rem .8rem; cursor: pointer; font: inherit; font-size: .9rem;
+      }
+      nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+      .steps { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+      .steps .pip {
+        font-size: .75rem; color: var(--ink-dim); border: 1px solid var(--line);
+        border-radius: 999px; padding: .15rem .55rem;
+      }
+      .steps .pip.done { color: var(--ok); border-color: var(--ok); }
+      .steps .pip.cur { color: var(--ink); border-color: var(--accent); }
+      section.card {
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: var(--radius); padding: 1.1rem 1.15rem; margin-bottom: 1rem;
+      }
+      h2 { font-size: 1rem; margin: 0 0 .35rem; }
+      p.hint { color: var(--ink-dim); font-size: .875rem; margin: .2rem 0 .9rem; }
+      label { display: block; font-size: .85rem; margin: .7rem 0 .25rem; color: var(--ink); }
+      input[type="text"], input[type="url"], select, textarea {
+        width: 100%; background: var(--panel-2); color: var(--ink);
+        border: 1px solid var(--line); border-radius: 8px; padding: .5rem .6rem; font: inherit;
+      }
+      textarea { min-height: 64px; resize: vertical; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+      @media (max-width: 620px) { .row { grid-template-columns: 1fr; } }
+      .check { display: flex; gap: .5rem; align-items: flex-start; margin: .45rem 0; }
+      .check input { margin-top: .25rem; }
+      .check .t { font-size: .875rem; }
+      .check .t small { display: block; color: var(--ink-dim); }
+      .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+      button.btn {
+        background: var(--accent); color: #06121f; border: 0; border-radius: 8px;
+        padding: .5rem .9rem; font: inherit; font-weight: 600; cursor: pointer;
+      }
+      button.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+      button.btn:disabled { opacity: .45; cursor: not-allowed; }
+      pre {
+        background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+        padding: .7rem .8rem; overflow: auto; font-size: .82rem; margin: .5rem 0;
+      }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .cmd { display: flex; gap: .5rem; align-items: center; margin: .35rem 0; }
+      .cmd code {
+        flex: 1; background: var(--panel-2); border: 1px solid var(--line);
+        border-radius: 6px; padding: .35rem .5rem; font-size: .82rem; overflow: auto; white-space: pre;
+      }
+      .cmd button { font-size: .75rem; padding: .3rem .5rem; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); cursor: pointer; }
+      .note { border-left: 3px solid var(--warn); padding: .5rem .75rem; background: var(--panel-2); border-radius: 0 8px 8px 0; font-size: .86rem; margin: .75rem 0; }
+      .note.danger { border-left-color: var(--danger); }
+      .note.ok { border-left-color: var(--ok); }
+      .hide { display: none !important; }
+      dl.faq dt { font-weight: 600; margin-top: .8rem; font-size: .9rem; }
+      dl.faq dd { margin: .2rem 0 0; color: var(--ink-dim); font-size: .875rem; }
+      .pillrow { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .4rem; }
+      .pillrow span { font-size: .72rem; border: 1px solid var(--line); border-radius: 999px; padding: .1rem .5rem; color: var(--ink-dim); }
+      footer { color: var(--ink-dim); font-size: .8rem; padding: 1rem 1.25rem 2rem; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>jstack onboarding</h1>
+      <span class="sub">Runs entirely in this page. Nothing is sent anywhere.</span>
+    </header>
+
+    <div class="wrap">
+      <nav class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="wizard">Wizard</button>
+        <button role="tab" aria-selected="false" data-tab="learn">How this repo works</button>
+        <button role="tab" aria-selected="false" data-tab="trouble">Troubleshooting</button>
+      </nav>
+
+      <!-- ================= WIZARD ================= -->
+      <div id="tab-wizard">
+        <div class="steps" id="pips"></div>
+
+        <!-- Step 1 -->
+        <section class="card step" data-step="0">
+          <h2>1 · Install and verify</h2>
+          <p class="hint">
+            This page can't run commands, so it gives you exact ones to paste. jstack is
+            <strong>bun-only</strong> — don't use npm, yarn, or pnpm anywhere in these repos.
+          </p>
+          <div id="cmds-install"></div>
+          <div class="note">
+            <strong>Layout:</strong> <code>jstack.core</code> (generic toolkit) and
+            <code>jstack.gusto</code> (org overlay) are two <em>separate</em> git repos, normally
+            cloned side by side under one plain parent folder. The parent is not itself a repo.
+            Install <code>jstack.core</code> first — the overlay expects it.
+          </div>
+        </section>
+
+        <!-- Step 2 -->
+        <section class="card step hide" data-step="1">
+          <h2>2 · Team basics</h2>
+          <p class="hint">Written to <code>team.*</code> in your config.</p>
+          <div class="row">
+            <div>
+              <label for="teamName">Team name <span style="color:var(--danger)">*</span></label>
+              <input id="teamName" type="text" placeholder="Platform Engineering" />
+            </div>
+            <div>
+              <label for="tz">Timezone (IANA)</label>
+              <input id="tz" type="text" placeholder="America/Los_Angeles" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="sprintLen">Sprint length (days)</label>
+              <select id="sprintLen">
+                <option value="">— leave default —</option>
+                <option>7</option><option selected>14</option><option>21</option><option>28</option>
+              </select>
+            </div>
+            <div>
+              <label for="profile">Who are you setting this up for?</label>
+              <select id="profile">
+                <option value="ic">Individual contributor</option>
+                <option value="lead">Team lead / manager</option>
+                <option value="shared">Shared team config (committed)</option>
+              </select>
+            </div>
+          </div>
+          <div class="note" id="profileNote"></div>
+        </section>
+
+        <!-- Step 3 -->
+        <section class="card step hide" data-step="2">
+          <h2>3 · Integrations</h2>
+          <p class="hint">
+            Pick only what you actually use. Skipping one leaves the key out entirely rather than
+            writing an empty string — skills then tell you it's unconfigured instead of inventing data.
+          </p>
+          <div id="integrationChecks"></div>
+          <div id="integrationFields"></div>
+          <div class="note danger">
+            <strong>Never put tokens or secrets in this config.</strong> jstack reads credentials from
+            environment variables or your secret store, and MCP servers handle their own auth. If you
+            have already pasted a token somewhere, rotate it.
+          </div>
+        </section>
+
+        <!-- Step 4 -->
+        <section class="card step hide" data-step="3">
+          <h2>4 · Knowledge base</h2>
+          <p class="hint">
+            Where durable notes get read from and written to. Local roots are globbed for markdown;
+            leave everything blank to skip.
+          </p>
+          <label for="kbRoots">Local knowledge roots (one path per line)</label>
+          <textarea id="kbRoots" placeholder="./docs&#10;./notes"></textarea>
+          <div class="row">
+            <div>
+              <label for="gbTeam">Team knowledge base URL</label>
+              <input id="gbTeam" type="url" placeholder="https://example.invalid/team" />
+            </div>
+            <div>
+              <label for="gbPersonal">Personal knowledge base URL</label>
+              <input id="gbPersonal" type="url" placeholder="https://example.invalid/personal" />
+            </div>
+          </div>
+          <label for="gbDefault">Default write target for a new session</label>
+          <select id="gbDefault">
+            <option value="">— leave default —</option>
+            <option value="team">team</option>
+            <option value="personal">personal</option>
+          </select>
+          <div class="note">
+            Personal URLs belong in a private overlay (<code>jstack.personal.json</code>), not in a
+            team config you commit. Choose "Shared team config" in step 2 and this wizard will keep
+            personal values out of the generated file.
+          </div>
+        </section>
+
+        <!-- Step 5 -->
+        <section class="card step hide" data-step="4">
+          <h2>5 · Routines and telemetry</h2>
+          <p class="hint">Recurring jobs are off unless you enable them.</p>
+          <div id="routineChecks"></div>
+          <hr style="border:0;border-top:1px solid var(--line);margin:1rem 0" />
+          <div class="check">
+            <input type="checkbox" id="telemetry" />
+            <span class="t">
+              <strong>Enable anonymous telemetry</strong>
+              <small>Off by default. Sends skill name, token count, latency. No prompt text, no PII. Opt-in only.</small>
+            </span>
+          </div>
+          <div class="check">
+            <input type="checkbox" id="debug" />
+            <span class="t">
+              <strong>Verbose debug logging</strong>
+              <small>Useful while setting up; noisy afterwards.</small>
+            </span>
+          </div>
+        </section>
+
+        <!-- Step 6 -->
+        <section class="card step hide" data-step="5">
+          <h2>6 · Review and save</h2>
+          <p class="hint">
+            This is your <code>jstack.config.json</code>. Only keys you actually answered are
+            included. Save it at the root of the project where you'll use jstack.
+          </p>
+          <div id="validation"></div>
+          <pre><code id="out">{}</code></pre>
+          <div class="actions">
+            <button class="btn" id="download">Download jstack.config.json</button>
+            <button class="btn ghost" id="copy">Copy to clipboard</button>
+            <button class="btn ghost" id="copyPersonal" title="Only shown when personal values were entered">Copy jstack.personal.json</button>
+          </div>
+          <h2 style="margin-top:1.25rem">Then verify</h2>
+          <div id="cmds-verify"></div>
+        </section>
+
+        <!-- Step 7 -->
+        <section class="card step hide" data-step="6">
+          <h2>7 · First real task</h2>
+          <p class="hint">Onboarding isn't done until you've used it once. Pick whichever fits today.</p>
+          <div id="firstTask"></div>
+          <div class="note ok">
+            Set <code>onboarding.complete: true</code> in your config once
+            <code>jstack doctor</code> is clean and you've run one skill. Some checks use it as a
+            readiness signal.
+          </div>
+        </section>
+
+        <div class="actions">
+          <button class="btn ghost" id="back">← Back</button>
+          <button class="btn" id="next">Next →</button>
+        </div>
+      </div>
+
+      <!-- ================= LEARN ================= -->
+      <div id="tab-learn" class="hide">
+        <section class="card">
+          <h2>The two-package model</h2>
+          <p class="hint">
+            <code>jstack.core</code> is the generic team-operations toolkit — it ships no
+            company-specific values and is the thing another org could adopt as-is.
+            <code>jstack.gusto</code> is an <em>overlay</em>: org-specific skills, real internal URLs,
+            org policy, and thin wrappers that layer on top of core skills. Anything naming a real
+            team, channel, ticket project, or internal host belongs in the overlay, never in core.
+          </p>
+          <div class="pillrow">
+            <span>core = generic, shippable</span><span>overlay = org-specific</span><span>install core first</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 style="color:var(--warn)">Most skill bodies are generated — read this before editing one</h2>
+          <p class="hint">
+            <code>scripts/apply_detailed_skills.py</code> regenerates the body of most
+            <code>skills/**/SKILL.md</code> files from dicts in
+            <code>scripts/apply_detailed_skills_data.py</code>. A handful of hand-maintained skills are
+            protected by a <code>SKIP</code> set in that script.
+          </p>
+          <div class="note danger">
+            If you hand-edit the body of a skill that is <strong>not</strong> in <code>SKIP</code>, your
+            work is silently destroyed the next time anyone regenerates. To change a generated skill,
+            edit the generator data — or add the skill to <code>SKIP</code> to take it over by hand.
+          </div>
+          <p class="hint">
+            Frontmatter is different: keys other than <code>name</code>, <code>description</code>,
+            <code>category</code>, and <code>when_to_use</code> survive regeneration. Note that
+            frontmatter must use <strong>inline scalars</strong> —
+            <code>allowed-tools: a, b</code>. A YAML block list (<code>- item</code>) is dropped by the
+            generator's line-based parser.
+          </p>
+        </section>
+
+        <section class="card">
+          <h2>Adding a skill, end to end</h2>
+          <pre><code>1. Create skills/&lt;category&gt;/&lt;name&gt;/SKILL.md
+2. Frontmatter: name, description (say when to use AND when not to), category, effort
+   - write/publish skill?  add disable-model-invocation: true
+   - pure read/research?   add context: fork  +  agent: Explore
+   - unattended routine?   add disallowed-tools: AskUserQuestion
+   - calls MCP tools?      add allowed-tools: mcp__x__y, mcp__x__z
+3. Add eval cases under skills/&lt;path&gt;/evals/*.yaml  (coverage is gated — see below)
+4. bun run agents-check      # validates frontmatter + every jstack:* token resolves
+5. bun run docs:generate     # refresh the catalog
+6. bun run check             # the full gate CI runs</code></pre>
+          <div class="note">
+            Eval coverage is enforced: <code>eval:quick</code> fails if any skill lacks semantic
+            evals. That's deliberate — a skill without evals can't be shown to still work. Override
+            for a single run with <code>JSTACK_EVAL_COVERAGE_MIN=90</code> if you must land a skill
+            ahead of its tests.
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>What leaves your machine</h2>
+          <p class="hint">
+            Nothing, unless you turn it on. Telemetry is opt-in and carries skill name, token count,
+            and latency only. MCP servers talk to whatever service you configured them for. Semantic
+            evals call the Claude API and cost money, which is why CI runs only the free structural
+            pass. Config files hold IDs and URLs — never tokens.
+          </p>
+        </section>
+      </div>
+
+      <!-- ================= TROUBLE ================= -->
+      <div id="tab-trouble" class="hide">
+        <section class="card">
+          <h2>Troubleshooting</h2>
+          <dl class="faq">
+            <dt><code>jstack doctor</code> reports <code>.mcp.json (optional)</code></dt>
+            <dd>Advisory, not a failure — it no longer affects the exit code. Copy
+              <code>.mcp.json.example</code> only if you actually want MCP servers.</dd>
+
+            <dt>Missing <code>jstack.config.json</code></dt>
+            <dd>Finish this wizard and save the file at your project root, or run
+              <code>jstack setup --schema</code>.</dd>
+
+            <dt><code>bun run check</code> fails on eval coverage</dt>
+            <dd>A skill has no eval cases. The error names the skills. Scaffold with
+              <code>bun run generate-skill-evals</code>, then replace the scaffold with cases that
+              would actually fail if the skill broke.</dd>
+
+            <dt>Chain validation fails</dt>
+            <dd>A <code>jstack:*</code> reference points at a skill that doesn't exist. Run
+              <code>bun run validate-chains</code> and <code>bun run agents-check</code>; compare
+              against the real <code>name:</code> values in <code>skills/**/SKILL.md</code>.</dd>
+
+            <dt>My skill edit disappeared</dt>
+            <dd>The body was regenerated. See "How this repo works" — edit the generator data or add
+              the skill to <code>SKIP</code>.</dd>
+
+            <dt>A skill says an integration isn't configured</dt>
+            <dd>Working as intended: skills refuse to invent IDs. Add the integration to your config
+              and re-run <code>jstack doctor</code>.</dd>
+
+            <dt>Semantic evals do nothing</dt>
+            <dd>They need <code>ANTHROPIC_API_KEY</code> and <code>claude</code> on
+              <code>PATH</code>. They are not run by CI because they cost money.</dd>
+          </dl>
+        </section>
+      </div>
+
+      <footer>Generated config stays in your browser until you save it. No network calls.</footer>
+    </div>
+
+    <script>
+      // ---------- tiny helpers ----------
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, props = {}, kids = []) => {
+        const n = Object.assign(document.createElement(tag), props);
+        kids.forEach((k) => n.append(k));
+        return n;
+      };
+      function cmdBlock(host, cmds) {
+        const box = $(host);
+        box.innerHTML = "";
+        cmds.forEach(([label, cmd]) => {
+          if (label) box.append(el("label", { textContent: label }));
+          const code = el("code", { textContent: cmd });
+          const btn = el("button", { textContent: "copy", type: "button" });
+          btn.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(cmd);
+              btn.textContent = "copied";
+            } catch {
+              // file:// without clipboard permission — select instead of failing silently.
+              const r = document.createRange();
+              r.selectNodeContents(code);
+              const s = getSelection();
+              s.removeAllRanges();
+              s.addRange(r);
+              btn.textContent = "selected";
+            }
+            setTimeout(() => (btn.textContent = "copy"), 1400);
+          };
+          box.append(el("div", { className: "cmd" }, [code, btn]));
+        });
+      }
+
+      // ---------- tabs ----------
+      document.querySelectorAll('nav.tabs button').forEach((b) => {
+        b.onclick = () => {
+          document.querySelectorAll('nav.tabs button').forEach((o) => o.setAttribute('aria-selected', String(o === b)));
+          ['wizard', 'learn', 'trouble'].forEach((t) => $('tab-' + t).classList.toggle('hide', t !== b.dataset.tab));
+        };
+      });
+
+      // ---------- static command blocks ----------
+      cmdBlock('cmds-install', [
+        ['Clone both repos side by side', 'git clone <core-repo-url> jstack.core\ngit clone <overlay-repo-url> jstack.gusto'],
+        ['Install deps (bun, not npm)', 'cd jstack.core && bun install'],
+        ['Register core as a plugin', 'claude plugin marketplace add "$PWD" --scope user\nclaude plugin install jstack@jstack-local --scope user'],
+        ['Confirm it registered', 'claude plugin list'],
+      ]);
+      cmdBlock('cmds-verify', [
+        ['Validate your config', './cli/bin/jstack doctor'],
+        ['Machine-readable form', './cli/bin/jstack doctor --json'],
+        ['See proposed repairs (dry run — writes nothing)', './cli/bin/jstack doctor --fix'],
+        ['Run the same gate CI runs', 'bun run check'],
+      ]);
+
+      // ---------- integrations ----------
+      const INTEGRATIONS = [
+        { id: 'jira', label: 'Jira', hint: 'tickets, sprints', fields: [['project_key', 'Project key', 'ABC'], ['base_url', 'Base URL', 'https://example.invalid']] },
+        { id: 'slack', label: 'Slack', hint: 'announcements, digests', fields: [['default_channel', 'Default channel', '#team-updates']] },
+        { id: 'notion', label: 'Notion', hint: 'docs, reports', fields: [['parent_page_id', 'Parent page id', '0123456789abcdef0123456789abcdef']] },
+        { id: 'github', label: 'GitHub', hint: 'PR and throughput metrics', fields: [['org', 'Org', 'your-org'], ['default_repo', 'Default repo', 'your-repo']] },
+        { id: 'gcal', label: 'Google Calendar', hint: 'meetings', fields: [] },
+        { id: 'sheets', label: 'Google Sheets', hint: 'metric exports', fields: [] },
+      ];
+      const ROUTINES = [
+        { id: 'standup', label: 'Daily standup digest' },
+        { id: 'weekly_digest', label: 'Weekly digest' },
+        { id: 'sprint_close', label: 'Sprint close summary' },
+        { id: 'health_check', label: 'Engineering health check' },
+      ];
+
+      (function buildIntegrations() {
+        const checks = $('integrationChecks'), fields = $('integrationFields');
+        INTEGRATIONS.forEach((it) => {
+          const cb = el('input', { type: 'checkbox', id: 'use_' + it.id });
+          const t = el('span', { className: 't' });
+          t.append(el('strong', { textContent: it.label }), el('small', { textContent: it.hint }));
+          checks.append(el('div', { className: 'check' }, [cb, t]));
+
+          const box = el('div', { id: 'fields_' + it.id, className: 'hide' });
+          if (it.fields.length) {
+            box.append(el('label', { textContent: it.label + ' details', style: 'margin-top:.9rem;font-weight:600' }));
+            const row = el('div', { className: 'row' });
+            it.fields.forEach(([key, label, ph]) => {
+              const w = el('div');
+              w.append(el('label', { textContent: label, htmlFor: `${it.id}_${key}` }));
+              w.append(el('input', { type: 'text', id: `${it.id}_${key}`, placeholder: ph }));
+              row.append(w);
+            });
+            box.append(row);
+          }
+          fields.append(box);
+          cb.onchange = () => { box.classList.toggle('hide', !cb.checked); render(); };
+        });
+        ROUTINES.forEach((r) => {
+          const cb = el('input', { type: 'checkbox', id: 'rt_' + r.id });
+          const t = el('span', { className: 't' });
+          t.append(el('strong', { textContent: r.label }));
+          $('routineChecks').append(el('div', { className: 'check' }, [cb, t]));
+          cb.onchange = render;
+        });
+      })();
+
+      // ---------- config build ----------
+      const val = (id) => ($(id)?.value ?? '').trim();
+      const on = (id) => !!$(id)?.checked;
+
+      function buildConfigs() {
+        const profile = val('profile') || 'ic';
+        const shared = profile === 'shared';
+        const cfg = {};
+        const personal = {};
+
+        const team = {};
+        if (val('teamName')) team.name = val('teamName');
+        if (val('tz')) team.timezone = val('tz');
+        if (Object.keys(team).length) cfg.team = team;
+
+        if (val('sprintLen')) cfg.sprint = { length_days: Number(val('sprintLen')) };
+
+        const integrations = {};
+        INTEGRATIONS.forEach((it) => {
+          if (!on('use_' + it.id)) return;
+          const o = {};
+          it.fields.forEach(([key]) => {
+            const v = val(`${it.id}_${key}`);
+            if (v) o[key] = v;
+          });
+          integrations[it.id] = o; // enabled with no detail fields is still meaningful
+        });
+        if (Object.keys(integrations).length) cfg.integrations = integrations;
+
+        const roots = val('kbRoots').split('\n').map((s) => s.trim()).filter(Boolean);
+        if (roots.length) cfg.knowledge_base = { roots };
+
+        const gbrain = {};
+        if (val('gbTeam')) gbrain.team = val('gbTeam');
+        // Personal URLs never go in a committed team config.
+        if (val('gbPersonal')) {
+          if (shared) personal.gbrain = { personal: val('gbPersonal') };
+          else gbrain.personal = val('gbPersonal');
+        }
+        if (Object.keys(gbrain).length) cfg.gbrain = gbrain;
+        if (val('gbDefault')) cfg.session = { default_gbrain_target: val('gbDefault') };
+
+        const routines = {};
+        ROUTINES.forEach((r) => { if (on('rt_' + r.id)) routines[r.id] = { enabled: true }; });
+        if (Object.keys(routines).length) cfg.routines = routines;
+
+        if (on('telemetry')) cfg.telemetry = { opt_in: true };
+        if (on('debug')) cfg.debug = { enabled: true };
+
+        const required = INTEGRATIONS.filter((it) => on('use_' + it.id)).map((it) => it.id);
+        if (val('gbTeam')) required.push('gbrain_team');
+        cfg.onboarding = {
+          complete: false,
+          wizard_last_run: new Date().toISOString(),
+          required_integrations: required,
+          notes: 'Generated by onboarding/wizard.html. Set complete:true once jstack doctor is clean.',
+        };
+
+        return { cfg, personal };
+      }
+
+      // Known credential shapes, checked against a normalized copy of the config blob.
+      // Kept as explicit high-confidence prefixes/formats (not a bare "long string"
+      // rule) so ordinary ids — e.g. a Notion database id, which is just 32 lowercase
+      // hex characters — are never flagged.
+      const SECRET_PATTERNS = [
+        /gh[pousr]_[A-Za-z0-9]{20,}/i, // GitHub: ghp_/gho_/ghu_/ghs_/ghr_
+        /github_pat_[A-Za-z0-9_]{20,}/i, // GitHub fine-grained PAT
+        /xox[baprs]-[A-Za-z0-9-]+/i, // Slack bot/user/app-level/config/refresh tokens
+        /xapp-[0-9]-[A-Za-z0-9-]+/i, // Slack app tokens
+        /ATATT[A-Za-z0-9_=-]{20,}/, // Atlassian API tokens
+        /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/, // AWS access key ids
+        /AIza[A-Za-z0-9_-]{35}/, // Google API keys
+        /sk-[A-Za-z0-9_-]{16,}/i, // OpenAI / Anthropic secret keys (sk-, sk-proj-, sk-ant-)
+        /-----BEGIN[ A-Z]*PRIVATE KEY-----/, // PEM private key blocks
+        /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, // JWT
+      ];
+
+      function looksLikeSecret(blob) {
+        // Normalize away things a paste can insert without changing what a human reads
+        // as "one token": actual whitespace, JSON-escaped \n/\r/\t sequences (what a
+        // pasted line break becomes once JSON.stringify escapes it), and zero-width
+        // characters. Otherwise a credential can be smuggled past a length-gated
+        // pattern (e.g. sk-...) just by splitting it across a line break.
+        const flat = blob.replace(/\\[nrt]/g, '').replace(/[\s\u200B-\u200D\uFEFF]/g, '');
+        if (SECRET_PATTERNS.some((re) => re.test(flat))) return true;
+
+        // Generic fallback: a long run of characters mixing upper case, lower case,
+        // and digits reads as a high-entropy secret regardless of prefix. Pure-hex
+        // runs are excluded so ids (Notion page/database ids, git SHAs, UUIDs without
+        // dashes) never trip this — they use one case only.
+        const candidates = flat.match(/[A-Za-z0-9_-]{40,}/g) || [];
+        return candidates.some(
+          (tok) => !/^[0-9a-fA-F]+$/.test(tok) && /[A-Z]/.test(tok) && /[a-z]/.test(tok) && /[0-9]/.test(tok),
+        );
+      }
+
+      function validate(cfg) {
+        const errs = [], warns = [];
+        if (!cfg.team?.name) errs.push('Team name is required (step 2).');
+        if (cfg.team?.timezone && !/^[A-Za-z]+\/[A-Za-z_\-+0-9]+$/.test(cfg.team.timezone)) {
+          warns.push(`Timezone "${cfg.team.timezone}" doesn't look like an IANA name (e.g. America/Los_Angeles).`);
+        }
+        for (const [k, v] of Object.entries(cfg.gbrain ?? {})) {
+          if (v && !/^https?:\/\//.test(v)) warns.push(`gbrain.${k} should be an http(s) URL.`);
+        }
+        if (cfg.session?.default_gbrain_target === 'team' && !cfg.gbrain?.team) {
+          warns.push('Default target is "team" but no team knowledge base URL was given — jstack doctor will flag this.');
+        }
+        if (cfg.session?.default_gbrain_target === 'personal' && !cfg.gbrain?.personal) {
+          warns.push('Default target is "personal" but the personal URL is going to a separate personal file.');
+        }
+        const blob = JSON.stringify(cfg);
+        if (looksLikeSecret(blob)) {
+          errs.push('That looks like a token. Remove it — credentials belong in env vars or a secret store, never in this file.');
+        }
+        return { errs, warns };
+      }
+
+      let current = 0;
+      const stepEls = () => Array.from(document.querySelectorAll('.step'));
+      const LAST = 6;
+
+      function render() {
+        const { cfg, personal } = buildConfigs();
+        $('out').textContent = JSON.stringify(cfg, null, 2);
+
+        const { errs, warns } = validate(cfg);
+        const v = $('validation');
+        v.innerHTML = '';
+        errs.forEach((e) => v.append(el('div', { className: 'note danger', textContent: e })));
+        warns.forEach((w) => v.append(el('div', { className: 'note', textContent: w })));
+        if (!errs.length && !warns.length) {
+          v.append(el('div', { className: 'note ok', textContent: 'Looks structurally sound. jstack doctor is the real check.' }));
+        }
+        $('download').disabled = errs.length > 0;
+        $('copyPersonal').classList.toggle('hide', Object.keys(personal).length === 0);
+
+        const p = val('profile');
+        $('profileNote').textContent =
+          p === 'shared'
+            ? 'Shared mode: personal knowledge-base URLs are split into a separate jstack.personal.json so they never land in a committed team config.'
+            : p === 'lead'
+            ? 'Lead mode: you will likely also want routines and the team knowledge base URL in later steps.'
+            : 'Individual mode: everything goes in one local config file.';
+
+        // step pips
+        const pips = $('pips');
+        pips.innerHTML = '';
+        ['Install', 'Team', 'Integrations', 'Knowledge', 'Routines', 'Review', 'First task'].forEach((label, i) => {
+          pips.append(el('span', {
+            className: 'pip ' + (i === current ? 'cur' : i < current ? 'done' : ''),
+            textContent: `${i + 1}. ${label}`,
+          }));
+        });
+
+        // first-task suggestions reflect what they actually enabled
+        const ft = $('firstTask');
+        ft.innerHTML = '';
+        const tasks = [];
+        if (cfg.integrations?.jira) tasks.push(['Shape a rough idea into a ticket-ready spec', 'jstack:jira-intake']);
+        if (cfg.integrations?.notion) tasks.push(['Draft a status report page', 'jstack:notion-report']);
+        if (cfg.knowledge_base?.roots?.length) tasks.push(['Search your own docs instead of guessing', 'jstack:knowledge-search']);
+        if (cfg.routines) tasks.push(['Dry-run a routine before it is scheduled', 'jstack:routines']);
+        tasks.push(['Get oriented in an unfamiliar repo', 'jstack:recon']);
+        tasks.push(['Record a decision as an ADR', 'jstack:adr']);
+        tasks.forEach(([why, skill]) => {
+          const d = el('div', { className: 'cmd' });
+          d.append(el('code', { textContent: skill }), el('span', { className: 't', textContent: why, style: 'font-size:.82rem;color:var(--ink-dim)' }));
+          ft.append(d);
+        });
+      }
+
+      function show(i) {
+        current = Math.max(0, Math.min(LAST, i));
+        stepEls().forEach((s) => s.classList.toggle('hide', Number(s.dataset.step) !== current));
+        $('back').disabled = current === 0;
+        $('next').textContent = current === LAST ? 'Done' : 'Next →';
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      $('next').onclick = () => { if (current < LAST) show(current + 1); };
+      $('back').onclick = () => show(current - 1);
+      document.addEventListener('input', render);
+
+      $('download').onclick = () => {
+        const { cfg } = buildConfigs();
+        const a = el('a', {
+          href: URL.createObjectURL(new Blob([JSON.stringify(cfg, null, 2) + '\n'], { type: 'application/json' })),
+          download: 'jstack.config.json',
+        });
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+      async function copyText(text, btn, label) {
+        try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; }
+        catch { btn.textContent = 'Copy blocked — select the JSON above'; }
+        setTimeout(() => (btn.textContent = label), 1800);
+      }
+      $('copy').onclick = (e) => copyText(JSON.stringify(buildConfigs().cfg, null, 2) + '\n', e.target, 'Copy to clipboard');
+      $('copyPersonal').onclick = (e) =>
+        copyText(JSON.stringify(buildConfigs().personal, null, 2) + '\n', e.target, 'Copy jstack.personal.json');
+
+      show(0);
+    </script>
+  </body>
+</html>

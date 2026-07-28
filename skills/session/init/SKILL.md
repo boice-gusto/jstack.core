@@ -39,15 +39,14 @@ Start a session: set gbrain target, load sprint and timezone from `jstack time`,
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Make init and end idempotent — re-running either must not duplicate state or double-write carryover. Read the existing session id before assigning one.
 
 ### Step 3 — Execute
-**GBrain target (explicit):** Do not assume team vs personal. State `session.default_gbrain_target` from config as the *proposed* default, then confirm with the user if there is any ambiguity (missing session state, conflicting request, or user said “my” vs “team” notes). Only after confirmation, treat the target as set for this session.
-Set or read `session.current_session_id` (opaque). Load team context. Echo sprint and timezone from `jstack time` if available.
+Set gbrain target. Set or read `session.current_session_id` (opaque). Load team context. Echo sprint and timezone from `jstack time` if available.
 - Do not end prior session silently — ask once if ambiguous.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm re-running would produce the same state — no duplicated session, no double-written carryover.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -70,7 +69,7 @@ Use a domain-appropriate heading, then:
 | Prior session still open | Ask once whether to end it or continue. Do not silently close. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-init-session` then `jstack-end-session`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

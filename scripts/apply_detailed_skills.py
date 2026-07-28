@@ -24,18 +24,26 @@ SKIP = {
     SKILLS / "computer-use" / "cua" / "SKILL.md",
     SKILLS / "workflow-builder" / "SKILL.md",
     SKILLS / "knowledge" / "search" / "SKILL.md",
+    SKILLS / "setup" / "onboarding" / "SKILL.md",
     SKILLS / "shortcuts" / "ceo-brainstorm" / "SKILL.md",
     SKILLS / "shortcuts" / "executive-research-brief" / "SKILL.md",
+    SKILLS / "notion" / "setup" / "SKILL.md",
+    SKILLS / "notion" / "one-on-one" / "SKILL.md",
+    SKILLS / "meetings" / "one-on-one-transcript" / "SKILL.md",
+    SKILLS / "meetings" / "transcripts-ingest" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from apply_detailed_skills_data import (
     CATEGORY_DEEP,
+    safe_path_for,
+    validation_for,
     CHAINS_TO,
     DESCRIPTIONS,
     FAILURE_EXTRAS,
     MISSIONS,
     WHEN_TO_USE,
+    chaining_example,
     path_extras,
 )
 
@@ -186,10 +194,10 @@ def build_body(key: str, fm: dict) -> str:
         "## Procedure\n"
         f"{step1}\n\n"
         "### Step 2 — Plan the safe path\n"
-        "Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.\n\n"
+        f"{safe_path_for(key, category)}\n\n"
         f"### Step 3 — Execute\n{step3_content}\n\n"
         "### Step 4 — Validate\n"
-        "Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.\n\n"
+        f"{validation_for(key, category)}\n\n"
         "### Step 5 — Summarize and hand off\n"
         "State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues."
     )
@@ -227,10 +235,11 @@ def build_body(key: str, fm: dict) -> str:
             "`suggested_next: <child-skill>` and stop."
         )
     else:
+        example = chaining_example(category)
+        example_clause = f" (e.g. {example})" if example else ""
         chaining = (
             "## Chaining\n"
-            "Complete the work here. If a natural follow-up exists "
-            "(e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: "
+            f"Complete the work here. If a natural follow-up exists{example_clause}, add one line: "
             "`suggested_next: <skill-name>` with a copy-paste handoff block. "
             "Do not auto-invoke without user intent or a defined chain in `prompts/chains/`."
         )

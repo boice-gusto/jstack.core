@@ -3,6 +3,7 @@ name: jstack-jira
 description: Route Jira requests to the right sub-skill (get, create, update, intake, transition, notify, append). Ask one question if ambiguous.
 when_to_use: Also when the user mentions tickets, issues, JQL, triage, filing bugs, sprint backlog, status transitions, or commenting on an issue.
 category: jira
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -32,7 +33,6 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 - Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
 - Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
 - Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
-- Field metadata (create / transition, Cloud vs DC): `${CLAUDE_PLUGIN_ROOT}/skills/jira/references/field-metadata.md`
 - Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
 ## Intake
@@ -45,13 +45,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Search before you create — a duplicate ticket is worse than a missing one. Read the issue's current status and its legal transitions before transitioning; do not assume a workflow. Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk change, show the count, the field diff, and a sample of affected keys, then wait for confirmation.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/jira/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

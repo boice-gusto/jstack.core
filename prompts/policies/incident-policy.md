@@ -1,36 +1,39 @@
 # Incident comms policy
 
-> **Owner:** EM, SRE lead, or on-call manager. Edit this file to match your actual incident process — severity definitions, SLAs, channels, and escalation paths.
+> **Maintainer:** EM, SRE lead, or on-call manager.
+
+This file is injected verbatim into prompts. It contains no invented SLA numbers, channel
+names, or escalation chains — treat any org-specific value not present in config or the
+conversation as unknown, and ask rather than assume.
 
 ## Severity definitions
 
-<!-- [CUSTOMIZE] Define what SEV1/2/3 mean in YOUR org. These should match your alerting thresholds. -->
+`policies.incidents.severity_levels` lists the levels in use (default: `sev4`, `sev3`, `sev2`, `sev1`, low to high). Generic definitions for the common four:
 
-| Severity | Definition | Response SLA | Update cadence |
-|----------|-----------|--------------|----------------|
-| **SEV1** | <!-- Example: >5% of requests failing, data loss risk, full outage --> | 15 min acknowledge | Every 30 min |
-| **SEV2** | <!-- Example: Degraded performance, partial outage, <5% error rate --> | 1 hour acknowledge | Every 2 hours |
-| **SEV3** | <!-- Example: Minor bug, cosmetic issue, workaround available --> | Next business day | At resolution |
+| Severity | Definition |
+|----------|-----------|
+| **SEV1** | Full outage, data loss risk, or a failure with no workaround affecting most users |
+| **SEV2** | Degraded performance or a partial outage with a workaround |
+| **SEV3** | Minor bug or cosmetic issue with a workaround, not urgent |
+| **SEV4** | Cosmetic or low-impact issue, no user-facing urgency |
+
+Acknowledge SLAs and update cadence per severity live in `policies.incidents.escalation` (empty by default). `templates/config/incident-templates.md` has three ready-to-use tiers (startup, standard, enterprise) with concrete ack-time and cadence numbers — copy one in rather than inventing numbers here.
 
 ## Communication channels
 
-<!-- [CUSTOMIZE] Map to your actual Slack channels, email lists, and tools -->
+Route by audience, not by a hardcoded channel name:
 
-| Audience | Channel | Tone | Approved by |
-|----------|---------|------|-------------|
-| Engineering | <!-- #incident or #sev1-war-room --> | Technical, specific | IC or on-call lead |
-| Company-wide | <!-- #general or all-hands email --> | Clear, non-technical | EM + comms |
-| Customer-facing | <!-- Status page URL, support email --> | Empathetic, outcome-focused | PM + legal review |
+| Audience | Tone | Approved by |
+|----------|------|-------------|
+| Engineering | Technical, specific | On-call lead or incident commander |
+| Company-wide | Clear, non-technical | EM, using `prompts/tones/internal.md` |
+| Customer-facing | Empathetic, outcome-focused | Resolve via `approval_chains.chains.incident_external` (fallback `default`); apply `prompts/tones/executive.md` or the tone appropriate to the channel |
+
+Actual channel names, status-page tools, and distribution lists aren't set here — ask the user or read them from the conversation.
 
 ## Escalation path
 
-<!-- [CUSTOMIZE] Who gets paged when? Replace with your actual rotation. -->
-
-```
-SEV1 path: On-call IC → On-call lead → EM → VP Eng → CTO (if >1h unresolved)
-SEV2 path: On-call IC → On-call lead → EM (if >4h unresolved)
-SEV3 path: Owner files ticket, no escalation
-```
+The chain of who gets paged and when is per-severity data, not prose in this file. It lives in `policies.incidents.escalation` — empty by default. If it's unset, ask the user for the actual on-call/escalation identities rather than guessing a chain of titles; don't fabricate a rotation. `templates/config/incident-templates.md` has concrete starter chains you can copy into config.
 
 ## Update template
 
@@ -42,33 +45,33 @@ Every incident update must include:
 
 ## Retro requirements
 
-<!-- [CUSTOMIZE] Your actual retro process -->
-- Mandatory for SEV1/SEV2 within <!-- [CUSTOMIZE] 48h? 72h? --> of resolution
-- Blameless — focus on systems, processes, and tooling
-- Must produce at least one action item with an owner and due date
-- Template location: <!-- [CUSTOMIZE] link to your retro template -->
+- Required whenever `policies.incidents.escalation.<severity>.retro_required` is `true` for the severity involved (the standard tier in `templates/config/incident-templates.md` sets this for SEV1/SEV2).
+- Schedule it while the incident is still fresh — same week, before details fade — rather than waiting for a fixed deadline; treat any specific SLA your team has agreed to as an override of this default.
+- Blameless — focus on systems, processes, and tooling.
+- Must produce at least one action item with an owner and due date. File it via `integrations.jira.project_key` if configured; otherwise ask where it should live.
 
 ## What to never include in comms
 
-<!-- [CUSTOMIZE] Add org-specific restrictions -->
 - Root cause speculation before investigation is complete
 - Individual names or blame
 - Promises of timeline without evidence
 - Internal tooling names in customer-facing comms
-- <!-- Add your own... -->
 
 ## Config hook
 
 ```json
 {
   "policies": {
-    "incident": {
-      "sev1_ack_minutes": 15,
-      "sev2_ack_minutes": 60,
-      "retro_deadline_hours": 48,
-      "incident_channel": "#incident",
-      "status_page_url": "https://status.yourcompany.com"
+    "incidents": {
+      "severity_levels": ["sev4", "sev3", "sev2", "sev1"],
+      "escalation": {}
     }
   }
 }
 ```
+
+Both keys are declared in `config/defaults.json` and match the defaults shown. `escalation` ships empty; populate it per severity (`ack_minutes`, `update_cadence_minutes`, `retro_required`, ...) using `templates/config/incident-templates.md` as a starting shape.
+
+## Adapting this file
+
+Edit this file directly for definitions, tone, and comms guardrails. Set `policies.incidents.severity_levels` and `policies.incidents.escalation` in `jstack.config.json` for the data this file deliberately doesn't hardcode.

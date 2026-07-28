@@ -39,6 +39,7 @@ import {
 import { runReportRender } from "./commands/report.js";
 import { cliRegistryJson } from "./types/cli-registry.js";
 import { registerClaudeMdCommand } from "./commands/claude-md.js";
+import { registerCrewCommand } from "./commands/crew.js";
 
 const program = new Command();
 program.name("jstack").description("jstack Team Operations CLI").version("0.1.0");
@@ -49,6 +50,7 @@ if (process.argv.includes("--help-json")) {
 }
 
 registerClaudeMdCommand(program);
+registerCrewCommand(program);
 
 program
   .command("setup")
@@ -144,8 +146,10 @@ doctorCmd
   .option("--apply", "with --fix: actually apply repairs (mkdir, write template, set_config) with consent per group", false)
   .option("--strict", "treat GBrain/knowledge_base warnings as failures", false)
   .option("--json", "machine-readable report (includes version / upgrade_available)", false)
+  .option("--save-repairs <path>", "write repair proposal JSON to <path> (use with --fix)")
+  .option("--apply-repairs <path>", "replay saved repair JSON non-interactively (requires --apply)")
   .action(async (o) => {
-    await runDoctor({ fix: o.fix, apply: o.apply, strict: o.strict, json: o.json });
+    await runDoctor({ fix: o.fix, apply: o.apply, strict: o.strict, json: o.json, saveRepairs: o.saveRepairs, applyRepairs: o.applyRepairs });
   });
 
 const sched = program.command("schedule").description("Manage routines");

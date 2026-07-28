@@ -2,8 +2,8 @@
 name: jstack-notion-standup
 description: Create or update a standup page or database row in Notion using templates/notion/standup.json and optional gallery template page from config.
 category: notion
-effort: low
 disable-model-invocation: true
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -14,8 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route Notion requests to the most specific sub-skill. Do not write pages directly from the orchestrator.
-- **Out of scope:** Workspace membership, public sharing, or export settings.
+Create or update a standup page or database row in Notion using the configured standup template and gallery page.
+- **Out of scope:** Posting the standup to Slack — use `jstack:meetings-post-slack` for that.
 
 ## Domain rules — Notion
 - Use `templates/notion/*.json` and property maps from team conventions. Never invent a `database_id` — require config or pasted URL.
@@ -40,13 +40,13 @@ Route Notion requests to the most specific sub-skill. Do not write pages directl
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
 Apply the `jstack-notion-standup` workflow using config and any applicable templates under `templates/notion/`.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not overwrite pre-existing content, and that it is still a draft unless the user asked to publish.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -70,7 +70,7 @@ Use a domain-appropriate heading, then:
 | Property type mismatch | Show expected vs actual type; suggest manual Notion fix or config update. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-notion-planning` then `jstack-notion-sprint`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

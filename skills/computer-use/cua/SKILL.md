@@ -7,6 +7,7 @@ description: >
   macOS desktop QA, Electron, native app automation, MCP desktop control, TCC, or debug/QA
   repro outside the browser. Parent router: jstack-computer-use.
 category: computer-use
+effort: high
 ---
 
 <!-- Chain Contract -->
@@ -486,6 +487,36 @@ async with Sandbox.ephemeral(Image.linux()) as sb:
 - **Computer-use** drives real or virtual desktops. Require **explicit user intent** before uninstall, `docker rm`, deleting cloud sandboxes, or destructive installers.
 - **macOS TCC**: Screen Recording and Accessibility must be granted to **Cua Driver**; use **daemon-first** `open -n -g -a CuaDriver --args serve` then `cua-driver check_permissions`. See [cua-driver-uninstall.md](${CLAUDE_PLUGIN_ROOT}/skills/computer-use/references/cua-driver-uninstall.md).
 - **Install lines** stay upstream (`bash`, `npm`, `pip`); this repo does not require wrapping in Bun unless a future thin script is added.
+
+## Domain rules — cua
+
+### Absolute rules
+
+1. **Daemon-first, always.** Trigger TCC and permission checks via `open -n -g -a CuaDriver --args serve` before `check_permissions` or any driver command — an IDE terminal can mis-report Screen Recording/Accessibility status because the grant attributes to the terminal, not to `CuaDriver.app`.
+2. **Re-verify UI state after every action, before issuing the next one.** An `element_index` or pixel coordinate is only valid for the snapshot it came from; a `click` followed immediately by another `click` with no `get_window_state` in between is driving blind.
+3. **Cua Driver observes and drives UI — it does not replace a debugger.** It has no stacks, watches, or step execution; use it to exercise UI and verify screenshots/AX state while a real debugger (lldb, IDE debugger) holds the breakpoint.
+4. **Never invent a CLI subcommand the docs haven't confirmed.** Where the public docs only document `create` (e.g. `cua sb create`) and not `delete`/`list`, run `--help` and copy only verified output into runbooks.
+5. **Destructive actions require explicit user confirmation.** Uninstall, `docker rm`, and cloud sandbox teardown act on a real or virtual desktop with no undo — never run them because a step "seems next."
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Blind pixel-clicking without re-snapshotting | UI state may have changed since the last snapshot; a stale coordinate clicks the wrong element | Element-indexed click, then `get_window_state` again to confirm before the next action |
+| Treating IDE-terminal permission status as ground truth | IDE terminals can mis-report TCC because the grant attributes to the terminal process | Daemon-first: `open -n -g -a CuaDriver --args serve` then `cua-driver check_permissions` |
+| Guessing an unverified CLI subcommand (e.g. `cua sb delete`) | Ships instructions the docs never confirmed; the command may not exist or may take different flags | Run `cua --help` / `cua sb --help` and document only verified output |
+| Using Cua Driver in place of a real debugger | A UI screenshot doesn't explain a null pointer three frames down the call stack | Keep the debugger attached; use Cua Driver only to drive/observe UI state |
+| Running a destroy verb (uninstall, `docker rm`, cloud sandbox delete) without explicit confirmation | No undo on a real or virtual desktop | Require explicit user confirmation before any destroy verb |
+
+### Worked example
+
+- *Weak:* Two `cua-driver click` calls back to back on the assumption the UI hasn't changed between them.
+- *Sharp:* `cua-driver get_window_state '{"pid":844,"window_id":10725}'` → read the returned `element_index` for the target control → `cua-driver click '{"pid":844,"window_id":10725,"element_index":14}'` → `cua-driver get_window_state '{"pid":844,"window_id":10725}'` again to confirm the click landed before issuing the next action.
+
+### What this skill must not do
+
+- Not a substitute for lldb / IDE debugger stack inspection — Cua Driver drives and observes UI only (Absolute rule 3).
+- Does not run destructive teardown without explicit user confirmation, regardless of how routine the cleanup seems.
 
 ## When to read which reference
 

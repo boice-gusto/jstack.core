@@ -2,10 +2,8 @@
 name: jstack-computer-use
 description: Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.
 when_to_use: >-
-  User mentions computer-use, desktop automation, native app UI, macOS accessibility automation,
-  ambiguous "automate my app", CUA, trycua, cua-driver, cuabot, sandbox, or choosing between
-  browser and non-browser automation. Use before picking jstack-workflows or jstack-computer-use-cua alone.
 category: computer-use
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -16,68 +14,54 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-
-**Orchestrator only** — pick the right automation surface. Do not duplicate workflow YAML orchestration (that is **`jstack-workflows`**). Do not invent a separate Chromium-API skill; web control goes through **Playwright MCP** (host) and/or **jstack workflow** runner.
-
-## Decision flow
-
-```mermaid
-flowchart TD
-  req[User goal]
-  req --> desktop[Native or desktop app on macOS]
-  req --> web[Web app in browser]
-  req --> scripted[Org jstack workflow YAML or recorded steps]
-  desktop --> cua[jstack-computer-use-cua]
-  web --> mcp[Playwright MCP if host enabled]
-  web --> workflows[jstack-workflows runner]
-  scripted --> workflows
-```
-
-## Routing matrix
-
-| Goal | Route | References |
-|------|--------|------------|
-| **Native macOS / Electron / desktop windows** (not a single browser tab) | **`jstack-computer-use-cua`** | `${CLAUDE_PLUGIN_ROOT}/skills/computer-use/cua/SKILL.md` |
-| **Web app** in a browser; DOM, navigation, org QA in Chromium | **Playwright MCP** in the host (e.g. `@playwright/mcp`) + optional **`jstack-workflows`** | `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md` (MCP tools) |
-| **Recorded / YAML workflow**, CI-parity browser flows, `jstack workflow` CLI | **`jstack-workflows`** (builder, runner, recorder, viewer, execute) | `${CLAUDE_PLUGIN_ROOT}/skills/workflows/SKILL.md` |
-| **Playwright patterns** in prose (selectors, fixtures) | Link only | `${CLAUDE_PLUGIN_ROOT}/skills/workflows/references/playwright-patterns.md` |
-| **browser_use** style agents / stubs | Link only | `${CLAUDE_PLUGIN_ROOT}/skills/workflows/references/browser-use-patterns.md` |
-
-Full link table and upstream URLs: `${CLAUDE_PLUGIN_ROOT}/skills/computer-use/references/tool-matrix.md`.
-
-## Cursor / IDE discovery
-
-**Canonical bodies** live under **`jstack.core/skills/computer-use/`** in the plugin tree. If your team mirrors skills into **`.cursor/skills/`** for Cursor-only hosts, keep a **thin pointer** there (or a symlink policy) — do not maintain two full copies of the CUA body; link back to **`jstack-computer-use-cua`**.
-
-Optional workspace-only helpers (e.g. **agent-browser**, **webapp-testing**) may complement web flows; **jstack product surface** for bundled automation remains **workflows + computer-use**.
+Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.
 
 ## Config and references
-
-- `jstack.config.json` — `mcp_servers`, integrations. Never hardcode.
-- Questions: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
-- Discrete choices: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
-- Integrations / MCP: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
+- `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
+- Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
+- Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
+- Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
 - Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
 ## Intake
+1. Parse `$ARGUMENTS` — note whether the user **pasted** data or is asking you to **query** a system.
+2. If a required id is missing, ask **one** focused question; otherwise use config defaults (label assumptions as `[assumption]`).
+3. If the request bundles multiple unrelated goals, handle the first and offer to continue.
 
-1. Parse `$ARGUMENTS` — is the target **in-browser**, **desktop app**, or **declarative workflow file**?
-2. If unclear, ask **one** question (e.g. "Is the UI inside a browser tab, or a native/desktop app?").
-3. Emit **`suggested_next`** with the single best child skill and stop unless the user asked for a full chain.
+## Procedure
+### Step 1 — Load config
+Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
+
+### Step 2 — Plan the safe path
+Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
+
+### Step 3 — Execute
+Apply the `jstack-computer-use` workflow using config and any applicable templates under `templates/computer-use/`.
+
+### Step 4 — Validate
+Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.
+
+### Step 5 — Summarize and hand off
+State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
 
 ## Output shape
-
-- **Routing decision** — one paragraph: **surface** (desktop CUA vs web vs workflow YAML) + **rationale** tied to the matrix.
-- **`suggested_next`** — single child skill name (e.g. `jstack-computer-use-cua`, `jstack-workflows`, or host Playwright MCP) — not a full runbook unless the user asked for execution.
-- **No fabricated tool results** — if Playwright MCP or CUA is not available, state the gap and link **integration-guide**.
+Use a domain-appropriate heading, then:
+- **Summary** (2–4 sentences)
+- **Details** (bullets, table, or structured fields)
+- **Next steps** with owner + timeline if known
+- **Limitations** (partial data, no write access, etc.)
+- For eval-gated skills, end with `result_ok: true` or `result_ok: false` + reason
 
 ## Failure modes
 
 | Symptom | Recovery |
 |---------|----------|
-| User needs web + desktop in one scenario | Split phases; web → workflows/MCP, desktop → **`jstack-computer-use-cua`**. |
-| Playwright MCP not enabled | Point to host MCP config + integration guide; do not pretend tools exist. |
-| User pastes workflow YAML | Route to **`jstack-workflows`** / runner or execute child. |
+| Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
+| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
+| Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
+
+## Chaining
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

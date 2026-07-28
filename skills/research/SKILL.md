@@ -2,6 +2,7 @@
 name: jstack-research
 description: Route research requests to the right sub-skill (technical, competitive, user, spike, explain-codebase).
 category: research
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -22,8 +23,6 @@ Route research requests to the right sub-skill (technical, competitive, user, sp
 ## Sub-skills (pick the most specific)
 **Under `skills/research/`:** technical, competitive, user, explain-codebase, spike
 
-**Related (top-level):** **`jstack-federated-search`** — same user question across **multiple** backends (Jira, Notion, Slack, GitHub, Glean, web search MCPs, KB, gbrain) via per-provider subagents + merged relevance. Use when the ask is **retrieve + combine**, not a single-domain research write-up.
-
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
 ## Config and references
@@ -43,13 +42,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+State which sources you searched and which you could not reach — silent partial coverage reads as completeness. Distinguish "not found" from "does not exist". Timestamp findings, because a stale answer presented as current is worse than no answer.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/research/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm every claim has a source and an as-of time, and that coverage gaps are stated rather than implied. No source, no claim.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

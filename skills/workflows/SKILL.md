@@ -1,8 +1,9 @@
 ---
 name: jstack-workflows
-description: Route workflow requests to builder, runner, recorder, viewer, **workflow-wizard** (interactive CLI command emit), or **execute** (confirmed `jstack workflow run`).
+description: Route workflow requests to builder, runner, recorder, or viewer.
 when_to_use: Also for Playwright-style flows, browser automation YAML/JSON, recording steps, running jstack workflow, or comparing two runs.
 category: workflows
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -13,7 +14,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route workflow requests to builder, runner, recorder, viewer, **workflow-wizard** (interactive CLI command emit), or **execute** (confirmed `jstack workflow run`).
+Route workflow requests to builder, runner, recorder, or viewer.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
@@ -21,7 +22,7 @@ Route workflow requests to builder, runner, recorder, viewer, **workflow-wizard*
 - Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/workflows/`:** builder, runner, recorder, viewer, **workflow-wizard**, **execute**
+**Under `skills/workflows/`:** builder, runner, recorder, viewer
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
@@ -42,13 +43,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/workflows/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

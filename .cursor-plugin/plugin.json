@@ -1,12 +1,12 @@
 {
   "name": "jstack",
   "displayName": "jstack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Team operations toolkit: project management, sprint ops, engineering metrics, incident response, knowledge management, session lifecycle, personal productivity, JIRA/Notion CRUD, reports, GitHub metrics, browser workflow automation, scheduled routines, research, meetings, MCP discovery, evals, and telemetry (opt-in).",
   "author": {
     "name": "jstack contributors"
   },
-  "homepage": "https://github.com/jstack-team/jstack",
+  "homepage": "https://github.com/boice-gusto/jstack.core",
   "license": "MIT",
   "keywords": [
     "team-ops",
@@ -26,12 +26,13 @@
     "meetings",
     "mcp",
     "evals",
-    "telemetry"
+    "telemetry",
+    "skill-authoring",
+    "workflow-design"
   ],
   "skills": "./skills/",
   "agents": "./agents/",
   "hooks": "./hooks/hooks.json",
-  "mcpServers": "./.mcp.json",
   "userConfig": {
     "team_name": {
       "type": "string",

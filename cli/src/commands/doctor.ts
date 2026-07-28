@@ -31,26 +31,39 @@ import {
   resolveDependencies,
 } from "../lib/dependency-resolver.js";
 import { REPAIR_CONSENT_DEFAULT } from "../lib/repair-consent.js";
-import { setAt } from "../lib/path-utils.js";
+import { resolveWithinRoots, setAt } from "../lib/path-utils.js";
 import { JstackConfigSchema } from "../types/config.js";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { serializeRepairs, deserializeRepairs } from "../lib/repair-serializer.js";
 
 export async function runDoctor(opts: {
   fix?: boolean;
   apply?: boolean;
   strict?: boolean;
   json?: boolean;
+  saveRepairs?: string;
+  applyRepairs?: string;
 }): Promise<void> {
   const root = findProjectRoot();
   const pluginRoot = findPluginRoot();
   let ok = true;
   const strict = opts.strict === true;
 
-  const check = (name: string, pass: boolean, hint?: string) => {
+  /**
+   * `optional: true` reports the check but never fails the run.
+   *
+   * Previously every failed check flipped `ok`, including `.mcp.json (optional)` —
+   * so plain `jstack doctor` exited 1 in any project without an `.mcp.json`, while
+   * `doctor --json` exited 0 for the same state (its `hardFail` never included
+   * `mcp_present`). The two output modes disagreed about health. Optional checks now
+   * render as a dim advisory in both.
+   */
+  const check = (name: string, pass: boolean, hint?: string, optional = false) => {
     if (opts.json) return;
-    console.log(pass ? chalk.green(`✔ ${name}`) : chalk.red(`✖ ${name}`));
+    const mark = pass ? chalk.green(`✔ ${name}`) : optional ? chalk.dim(`• ${name}`) : chalk.red(`✖ ${name}`);
+    console.log(mark);
     if (!pass) {
-      ok = false;
+      if (!optional) ok = false;
       if (hint) console.log(chalk.dim(`  ${hint}`));
     }
   };
@@ -139,11 +152,46 @@ export async function runDoctor(opts: {
     return;
   }
 
+  if (opts.applyRepairs) {
+    if (!opts.apply) {
+      console.log(chalk.red("--apply-repairs requires --apply to prevent accidental replay. Re-run with --apply."));
+      process.exitCode = 1;
+      return;
+    }
+    let savedIssues;
+    try {
+      savedIssues = deserializeRepairs(readFileSync(opts.applyRepairs, "utf8"));
+    } catch (err) {
+      console.log(chalk.red(`Failed to load repairs from ${opts.applyRepairs}: ${err instanceof Error ? err.message : String(err)}`));
+      process.exitCode = 1;
+      return;
+    }
+    const cfg = readConfigOptional(root);
+    if (!cfg) {
+      console.log(chalk.red("Cannot apply repairs: jstack.config.json missing or unparseable. Run `jstack setup --schema` first."));
+      process.exitCode = 1;
+      return;
+    }
+    console.log(chalk.bold(`\nReplaying ${savedIssues.length} saved repair proposal(s):`));
+    const applied = await applyRepairsInteractive(savedIssues, root, cfg as unknown as Record<string, unknown>, pluginRoot);
+    if (applied > 0) {
+      console.log(chalk.green(`\nApplied ${applied} repair(s).`));
+    } else {
+      console.log(chalk.dim("\nNo repairs applied."));
+    }
+    return;
+  }
+
   check("jstack.config.json", existsSync(join(root, JSTACK_CONFIG_FILE)), "jstack setup");
   check("plugin defaults", existsSync(join(pluginRoot, CONFIG_DIR, DEFAULTS_FILE)));
   check("skills/", existsSync(join(pluginRoot, SKILLS_DIR)));
   check("config parseable", !!cfg);
-  check(".mcp.json (optional)", existsSync(join(root, ".mcp.json")), "copy .mcp.json.example if needed");
+  check(
+    ".mcp.json (optional)",
+    existsSync(join(root, ".mcp.json")),
+    "copy .mcp.json.example if needed",
+    true,
+  );
 
   if (update?.upgrade_available && update.raw_line) {
     warn(`Plugin update: ${update.raw_line} — see jstack upgrade or release notes.`);
@@ -177,6 +225,10 @@ export async function runDoctor(opts: {
       projectRoot: root,
       pluginRoot,
     });
+    if (opts.saveRepairs) {
+      writeFileSync(opts.saveRepairs, serializeRepairs(issues), "utf8");
+      console.log(chalk.dim(`Repair proposals written to ${opts.saveRepairs}`));
+    }
     if (issues.length === 0) {
       console.log(chalk.green("No dependency issues detected."));
     } else {
@@ -193,6 +245,7 @@ export async function runDoctor(opts: {
           issues,
           root,
           cfg as unknown as Record<string, unknown>,
+          pluginRoot,
         );
         if (applied > 0) {
           console.log(chalk.green(`\nApplied ${applied} repair(s).`));
@@ -243,22 +296,51 @@ function formatRepair(r: RepairAction): string {
 }
 
 
-async function applyRepairsInteractive(
+export async function applyRepairsInteractive(
   issues: DependencyIssue[],
   projectRoot: string,
   cfg: Record<string, unknown>,
+  pluginRoot?: string,
 ): Promise<number> {
+  // Repair paths can come from config values resolved via `absolutize()` (which does
+  // no containment check by design — the resolver is read-only) or, for
+  // `--apply-repairs <file>`, from an arbitrary JSON file an attacker controls. Either
+  // way this is the point where paths actually get written to, so this is where
+  // containment must be enforced: every mkdir/write_file target must resolve inside
+  // the project root or the plugin root, never outside via `../` or an absolute path.
+  const allowedRoots = [projectRoot, ...(pluginRoot ? [pluginRoot] : [])];
+  const rejected: string[] = [];
+  const contain = (target: string): string | null => {
+    const resolved = resolveWithinRoots(target, allowedRoots);
+    if (!resolved) rejected.push(target);
+    return resolved;
+  };
+
   // Group repairs by kind so we ask for consent per category.
   const mkdirs = new Set<string>();
   const writes: Array<{ path: string; content: string }> = [];
   const setConfig: Array<{ path: string[]; value: unknown }> = [];
   for (const i of issues) {
     for (const r of i.repairs) {
-      if (r.kind === "mkdir") mkdirs.add(r.path);
-      else if (r.kind === "write_file") writes.push({ path: r.path, content: r.content });
-      else if (r.kind === "set_config") setConfig.push({ path: r.path, value: r.value });
+      if (r.kind === "mkdir") {
+        const abs = contain(r.path);
+        if (abs) mkdirs.add(abs);
+      } else if (r.kind === "write_file") {
+        const abs = contain(r.path);
+        if (abs) writes.push({ path: abs, content: r.content });
+      } else if (r.kind === "set_config") setConfig.push({ path: r.path, value: r.value });
       // shell_hint is informational; never executed automatically.
     }
+  }
+
+  if (rejected.length > 0) {
+    console.log(
+      chalk.red(
+        `Refusing ${rejected.length} repair(s) whose path escapes the project (${projectRoot})` +
+          (pluginRoot ? ` or plugin root (${pluginRoot}):` : ":"),
+      ),
+    );
+    for (const r of rejected) console.log(chalk.red(`  ✗ ${r}`));
   }
 
   if (!isInteractive()) {
@@ -306,8 +388,8 @@ async function applyRepairsInteractive(
     if (handleCancel(ok)) exitCancelled();
     if (ok) {
       const draft: Record<string, unknown> = JSON.parse(JSON.stringify(cfg));
-      for (const s of setConfig) setAt(draft, s.path, s.value);
       try {
+        for (const s of setConfig) setAt(draft, s.path, s.value);
         const parsed = JstackConfigSchema.parse(draft);
         writeConfig(projectRoot, parsed);
         applied += setConfig.length;

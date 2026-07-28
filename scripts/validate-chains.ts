@@ -65,6 +65,93 @@ function validateChainEvalsJson(errors: string[], suffixToRel: Map<string, strin
   }
 }
 
+/**
+ * Routine chains live in TWO places and neither was validated:
+ *   - `config/defaults.json` → `routines.<id>.chain` (bare slugs, read by `listRoutinesFromConfig`)
+ *   - `config/schedules/<id>.json` → `chain` (`jstack:`-prefixed, read by `loadScheduleFile`)
+ *
+ * Three failure modes were possible silently:
+ *   1. a chain step naming a skill that does not exist (fails only at run time),
+ *   2. the two sources disagreeing about which skills a routine actually runs,
+ *   3. a routine id (`weekly_digest`) never matching its schedule filename (`weekly-digest.json`),
+ *      so `loadScheduleFile` returns null for it.
+ */
+function validateRoutineChains(
+  errors: string[],
+  warnings: string[],
+  suffixToRel: Map<string, string>,
+): void {
+  const defaultsPath = join(root, "config", "defaults.json");
+  if (!existsSync(defaultsPath)) return;
+
+  let routines: Record<string, { chain?: unknown }> = {};
+  try {
+    const defaults = JSON.parse(readFileSync(defaultsPath, "utf8")) as Record<string, unknown>;
+    routines = (defaults.routines as Record<string, { chain?: unknown }>) ?? {};
+  } catch (e) {
+    errors.push(`config/defaults.json is unparseable: ${e instanceof Error ? e.message : String(e)}`);
+    return;
+  }
+
+  const normalize = (step: string) => (step.startsWith("jstack:") ? step : `jstack:${step}`);
+  const schedulesDir = join(root, "config", "schedules");
+
+  for (const [id, routine] of Object.entries(routines)) {
+    const configChain = Array.isArray(routine?.chain) ? (routine.chain as unknown[]).map(String) : [];
+
+    for (const step of configChain) {
+      if (!chainStepSkillExists(skillsRoot, normalize(step), suffixToRel)) {
+        errors.push(`config/defaults.json routines.${id}.chain references missing skill "${step}"`);
+      }
+    }
+
+    // `loadScheduleFile` looks up `config/schedules/<routine-id>.json` verbatim, so an id
+    // with underscores can never reach a hyphenated filename.
+    const exactPath = join(schedulesDir, `${id}.json`);
+    const hyphenId = id.replace(/_/g, "-");
+    const hyphenPath = join(schedulesDir, `${hyphenId}.json`);
+    if (!existsSync(exactPath) && existsSync(hyphenPath)) {
+      errors.push(
+        `routine id "${id}" cannot resolve its schedule file: loadScheduleFile() reads ` +
+          `config/schedules/${id}.json but the file on disk is ${hyphenId}.json. ` +
+          `Rename the file to ${id}.json, or rename the routine key to "${hyphenId}".`,
+      );
+    }
+
+    const schedulePath = existsSync(exactPath) ? exactPath : existsSync(hyphenPath) ? hyphenPath : null;
+    if (!schedulePath) continue;
+
+    let scheduleChain: string[] = [];
+    try {
+      const schedule = JSON.parse(readFileSync(schedulePath, "utf8")) as { chain?: unknown };
+      scheduleChain = Array.isArray(schedule.chain) ? (schedule.chain as unknown[]).map(String) : [];
+    } catch (e) {
+      errors.push(`${schedulePath} is unparseable: ${e instanceof Error ? e.message : String(e)}`);
+      continue;
+    }
+
+    for (const step of scheduleChain) {
+      if (!chainStepSkillExists(skillsRoot, normalize(step), suffixToRel)) {
+        errors.push(`${schedulePath} chain references missing skill "${step}"`);
+      }
+    }
+
+    // Both sources are live and read independently, so a divergence means the routine's
+    // behavior depends on which reader ran — that is a correctness problem, not cosmetics.
+    if (configChain.length > 0 && scheduleChain.length > 0) {
+      const a = configChain.map(normalize).join(" → ");
+      const b = scheduleChain.map(normalize).join(" → ");
+      if (a !== b) {
+        warnings.push(
+          `routine "${id}" chain differs between sources — defaults.json says [${a}] but ` +
+            `config/schedules/${hyphenId}.json says [${b}]. Both are read independently; ` +
+            `reconcile them so the routine runs the same steps either way.`,
+        );
+      }
+    }
+  }
+}
+
 function main(): void {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -118,6 +205,7 @@ function main(): void {
   }
 
   validateChainEvalsJson(errors, suffixToRel);
+  validateRoutineChains(errors, warnings, suffixToRel);
 
   for (const w of warnings) console.warn(`WARN ${w}`);
   if (errors.length) {

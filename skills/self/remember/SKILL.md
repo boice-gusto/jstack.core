@@ -2,6 +2,7 @@
 name: jstack-self-remember
 description: Store a durable personal fact or decision in gbrain. Refuse or rotate if the user pastes a secret.
 category: self
+disable-model-invocation: true
 effort: low
 ---
 
@@ -13,8 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route personal productivity requests to the right sub-skill. Session gbrain target (personal vs team) must be respected.
-- **Out of scope:** Therapy, HR advice, or storing other people's PII without redaction.
+Store a durable personal fact or decision in gbrain with full provenance attached. Refuse to store, and tell the user to rotate, anything that looks like a secret or credential.
+- **Out of scope:** Team-visible storage — this always writes to the personal gbrain target.
 
 ## Domain rules — self (personal)
 - Session target must match `session/init` — do not mix team pages into personal or vice versa.
@@ -38,14 +39,14 @@ Route personal productivity requests to the right sub-skill. Session gbrain targ
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
-Durable fact storage in gbrain. Attach provenance: `jstack_session_id`, `gbrain_target`, `config_label`, `slack_handle` if resolved, `source_skill: jstack:remember`, `written_at`. See `gbrain-entry-provenance.md`.
+Durable fact storage in gbrain. Attach provenance: `jstack_session_id`, `gbrain_target`, `config_label`, `slack_handle` if resolved, `source_skill: jstack-self-remember`, `written_at`. See `gbrain-entry-provenance.md`.
 - Rotate or refuse if the user pastes a secret.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -69,7 +70,7 @@ Use a domain-appropriate heading, then:
 | User pastes a secret | Refuse to store; tell them to rotate immediately. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

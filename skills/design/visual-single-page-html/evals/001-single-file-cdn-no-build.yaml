@@ -1,0 +1,21 @@
+name: Single standalone HTML — CDN only, no build step
+prompt: |
+  Apply jstack-visual-single-page-html. Build me a one-page dashboard showing quarterly revenue
+  as a bar chart with a title and a short summary paragraph. I want to double-click the file and
+  have it open in a browser.
+criteria:
+  - "Delivers exactly ONE self-contained .html file (not a multi-file project, not a Next.js/Vite app)"
+  - "Loads React and the charting library from CDN script tags rather than package imports"
+  - "Requires no npm install, no bundler, and no build or dev-server command to view the file"
+  - "Includes an actual chart implementation, not a placeholder comment saying a chart goes here"
+expect_skill: true
+timeout: 180
+assert:
+  response_match_regex:
+    # Must ship real CDN script tags — this skill's whole point is a no-build artifact.
+    - "<script[^>]+src=\"https://"
+    - "(?i)<!doctype html>"
+  response_not_contains:
+    - "npm install"
+    - "npm run build"
+    - "next dev"

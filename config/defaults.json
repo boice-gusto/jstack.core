@@ -80,12 +80,12 @@
     "team": {
       "git_remote": "",
       "local_checkout": "",
-      "note": "Shared team GitHub repo: clone to local_checkout (path relative to workspace), add that path to knowledge_base.roots, commit/push with git. If git_remote or local_checkout is unset, intake may write markdown under disk_fallback_root/team/…"
+      "note": "Shared team GitHub repo: clone to local_checkout (path relative to workspace), add that path to knowledge_base.roots, commit/push with git. If git_remote or local_checkout is unset, intake may write markdown under disk_fallback_root/team/\u2026"
     },
     "personal": {
       "git_remote": "",
       "local_checkout": "",
-      "note": "Personal repo (often private): same pattern. Prefer a personal config overlay for git_remote. Unconfigured → disk_fallback_root/personal/…"
+      "note": "Personal repo (often private): same pattern. Prefer a personal config overlay for git_remote. Unconfigured \u2192 disk_fallback_root/personal/\u2026"
     }
   },
   "integrations": {
@@ -343,9 +343,10 @@
       "required_approvals": 1,
       "counsel_roles": [
         "ceo",
-        "designer",
+        "pm",
         "engineer",
-        "qa"
+        "qa",
+        "designer"
       ]
     },
     "announcements": {
@@ -398,11 +399,16 @@
       "redact_ic_names": false
     },
     "self_eval": {
-      "org_context_slices": ["self_review_rubric"],
+      "org_context_slices": [
+        "self_review_rubric"
+      ],
       "notes": "org_context_slices: keys under org_context.local.files; add ethics, engineering_handbook, etc. Include string \"levels\" to also load levels_and_expectations.markdown_path. See skills/_core/references/org-context.md."
     },
     "advice": {
-      "org_context_slices": ["ethics", "coaching"]
+      "org_context_slices": [
+        "ethics",
+        "coaching"
+      ]
     }
   },
   "distribution": {
@@ -592,7 +598,7 @@
       "enabled": false,
       "cron": "0 16 * * 5",
       "chain": [
-        "reports",
+        "team-report",
         "announcements"
       ]
     },
@@ -601,7 +607,7 @@
       "cron": "",
       "chain": [
         "sprint",
-        "reports",
+        "project-report",
         "announcements"
       ]
     },

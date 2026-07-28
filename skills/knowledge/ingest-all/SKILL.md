@@ -1,85 +1,77 @@
 ---
 name: jstack-ingest-all
 description: Run configured ingest_all skill+prompt chain for new artifacts; finish with GBrain when configured.
-category: knowledge
-gbrain_destination: team
-data_class: internal
 when_to_use: User wants batch ingest of new transcripts/exports using the ordered ingest_all array in config.
+category: knowledge
+data_class: internal
+disable-model-invocation: true
+effort: low
+gbrain_destination: team
 ---
 
 <!-- Chain Contract -->
-<!-- inputs: user_request, ingest_all_config, jstack_config -->
-<!-- outputs: chain_results, gbrain_artifacts optional -->
-<!-- chains-to: per-entry skills in ingest_all, meetings/transcripts-ingest -->
+<!-- inputs: user_request, jstack_config -->
+<!-- outputs: structured_result -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
+Run configured ingest_all skill+prompt chain for new artifacts; finish with GBrain when configured.
 
-Execute the merged config array **`ingest_all`**: each entry `{ "skill": "jstack:…", "prompt": "…" }` in order for **new** items (transcripts, exports, dumps). Final steps may persist summaries per **`gbrain`** / session provenance. Align output with **`response-artifacts.md`**.
-
-## Out of scope
-
-- Defining new integration credentials (use **`jstack setup`**).
-- Running unrelated skills not listed in `ingest_all`.
-
-## Domain rules — ingest chains
-
-- **Order matters:** Run entries strictly in array order.
-- **New-only:** Use the same “new file” discovery as **`meetings/transcripts-ingest`** where applicable.
-- **Approvals:** In restrictive hosts, obtain user approval before each mutating sub-skill.
+## Domain rules — knowledge
+- **Lookup vs store:** `jstack:knowledge-search` answers from configured sources (`knowledge_base` in config). Intake/process store into gbrain/Notion. See `skills/knowledge/references/gbrain-patterns.md`.
+- Intake raw notes → process (tag, dedupe, link) → route to gbrain/Notion per config.
+- No invented hierarchy: if a page id is missing, return markdown the user can paste.
+- Deduplication: merge duplicates; keep the oldest decision link as canonical.
 
 ## Config and references
-
-- `ingest_all` — ordered steps in merged config.
-- `session.default_gbrain_target`, `gbrain.*` — see `jstack.core/docs/PE_AND_TEAM_CONFIG.md` and gbrain references when persisting.
-- `${CLAUDE_PLUGIN_ROOT}/skills/meetings/transcripts-ingest/SKILL.md` for discovery of new work.
-- `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/response-artifacts.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/gbrain-persistence-metadata.md` (if persisting)
-- `${CLAUDE_PLUGIN_ROOT}/docs/SKILL_SOURCES.md` (copy vs link policy for bundled trees)
+- `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
+- Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
+- Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
+- Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
+- Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
 ## Intake
-
-1. Load merged config; if **`ingest_all`** is empty, report that and point to templates under `config/workflows/` or `defaults.json` patterns.
-2. Confirm whether the run is **dry summary** or **full execute**.
+1. Parse `$ARGUMENTS` — note whether the user **pasted** data or is asking you to **query** a system.
+2. If a required id is missing, ask **one** focused question; otherwise use config defaults (label assumptions as `[assumption]`).
+3. If the request bundles multiple unrelated goals, handle the first and offer to continue.
 
 ## Procedure
+### Step 1 — Load config
+Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
-### Step 1 — Load and validate
+### Step 2 — Plan the safe path
+Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
-Read `ingest_all`; if malformed, stop with schema hint (array of objects with `skill` + `prompt`).
+### Step 3 — Execute
+Apply the `jstack-ingest-all` workflow using config and any applicable templates under `templates/knowledge/`.
 
-### Step 2 — Discover new work
+### Step 4 — Validate
+Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
 
-Use Drive manifest / user paste (see **transcripts-ingest**) to find **new** artifacts.
-
-### Step 3 — Run chain
-
-For each step, build handoff text from **`prompt`**, then invoke the named skill (or instruct the user to run it) in order.
-
-### Step 4 — GBrain and artifacts
-
-If configured, end with gbrain-appropriate summary and **## Links** for any published URLs or doc paths.
+### Step 5 — Summarize and hand off
+State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
 
 ## Output shape
-
-- **Summary** — What was new, which steps ran, and completion status.
-- **Per-step** — Skill id, one-line outcome, links if any.
-- **result_ok** — true/false for eval-gated hosts if applicable.
+Use a domain-appropriate heading, then:
+- **Summary** (2–4 sentences)
+- **Details** (bullets, table, or structured fields)
+- **Next steps** with owner + timeline if known
+- **Limitations** (partial data, no write access, etc.)
+- For eval-gated skills, end with `result_ok: true` or `result_ok: false` + reason
 
 ## Failure modes
 
 | Symptom | Recovery |
 |---------|----------|
-| Empty `ingest_all` | Suggest sample entries; do not invent skills. |
-| Sub-skill missing | Skip with error line or hand off to `jstack` doctor / setup. |
-| Partial batch failure | Report completed steps; list failures with next action. |
+| Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
+| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
+| Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
+| Duplicate entry detected | Show the existing canonical and ask: merge, update, or skip. |
 
 ## Chaining
-
-- Start-of-chain: **`jstack-transcripts-ingest`** when the batch is transcript-heavy.
-- `suggested_next:` last skill in chain or **knowledge/search** for verification queries.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-knowledge-intake` then `jstack-knowledge-process`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

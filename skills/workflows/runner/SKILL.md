@@ -2,6 +2,9 @@
 name: jstack-workflow-runner
 description: Execute a workflow with jstack workflow run. Capture log + screenshot paths. Abort on first assertion failure.
 category: workflows
+argument-hint: [workflow-name]
+disable-model-invocation: true
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -36,14 +39,14 @@ Execute a workflow with jstack workflow run. Capture log + screenshot paths. Abo
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
 
 ### Step 3 — Execute
 Execute with `jstack workflow run`. Capture log + screenshot paths if enabled.
 - Abort on first assertion failure with screenshot ref.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,7 +70,7 @@ Use a domain-appropriate heading, then:
 | Assertion failure | Abort with screenshot ref and suggest selector fix. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

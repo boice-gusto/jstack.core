@@ -1,6 +1,6 @@
 /**
  * Portable jstack mark (isometric stack + J): favicons and docs brand mark.
- * Report shells use `jstack.core/assets/logo-placeholder.png` (data URL) for the header mark.
+ * Report shells use `jstack.core/assets/logo.png` (data URL) for the header mark.
  *
  * When changing the SVG artwork, update consumers that paste a literal (search JSTACK_MARK_SVG).
  */
@@ -10,9 +10,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function coreLogoPlaceholderDataUrl(): string {
-  const abs = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "logo-placeholder.png");
+  const abs = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "logo.png");
   if (!existsSync(abs)) {
-    throw new Error(`Core logo-placeholder missing: ${abs}`);
+    throw new Error(`Core logo missing: ${abs}`);
   }
   const buf = readFileSync(abs);
   return `data:image/png;base64,${buf.toString("base64")}`;

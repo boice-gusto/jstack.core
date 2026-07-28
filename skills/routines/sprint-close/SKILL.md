@@ -3,6 +3,8 @@ name: jstack-sprintclose
 description: Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.
 category: routines
 disable-model-invocation: true
+disallowed-tools: AskUserQuestion
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -38,13 +40,13 @@ Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled job that fails silently goes unnoticed for weeks.
 
 ### Step 3 — Execute
 Velocity, spill, carry, retro hook. If demo links missing, do not fabricate.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -68,7 +70,7 @@ Use a domain-appropriate heading, then:
 | Routine failed mid-way | Report which steps succeeded and which failed; suggest re-run. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-standup` then `jstack-meetings-post-slack`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

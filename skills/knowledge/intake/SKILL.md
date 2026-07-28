@@ -2,6 +2,8 @@
 name: jstack-knowledge-intake
 description: Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage.
 category: knowledge
+disable-model-invocation: true
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -13,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage.
+Turn raw pasted or captured text into one structured record — title, body, tags, source, and as-of time — flagging PII or secrets before anything is stored.
+- **Out of scope:** Judging whether the knowledge is correct, and merging it against existing entries — dedupe and merge belong to `jstack:knowledge-process`. Never persist without confirmation.
 
 ## Domain rules — knowledge
 - **Lookup vs store:** `jstack:knowledge-search` answers from configured sources (`knowledge_base` in config). Intake/process store into gbrain/Notion. See `skills/knowledge/references/gbrain-patterns.md`.
@@ -38,21 +41,14 @@ Ingest raw text into a structured record (title, body, tags). Flag PII/secrets b
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
-
-### Persistence gate (before any write)
-Do **not** write to GBrain, Notion, or create/overwrite files under `knowledge_base.roots` until the user has **explicitly confirmed**:
-1. **Where** it will go: team vs personal **GBrain** (if URLs set), **Notion**, **`knowledge_storage.team.local_checkout` / `personal.local_checkout`** (git-tracked clone), or — if those are unset — **`knowledge_storage.disk_fallback_root`** (default `/tmp/knowledgebase`) under `{team|personal}/<category>/<file>.md`.
-2. **That the content is safe to store** (PII/secrets flagged or redacted; user approves the draft).
-
-Until then, output a **preview only** (structured title/body/tags in the message) and ask one focused confirm. If the user has not started a session, say so and point to session init for target selection. **Disk fallback is the default** when Git checkouts and GBrain destinations are not configured for that target.
+Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
 Raw text → title + body + tags. Flag PII/secret before storage.
 - gbrain target: team vs personal from session; see `gbrain-patterns.md`.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -75,7 +71,7 @@ Use a domain-appropriate heading, then:
 | Duplicate entry detected | Show the existing canonical and ask: merge, update, or skip. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-knowledge-intake` then `jstack-knowledge-process`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 
