@@ -1,8 +1,9 @@
 ---
 name: jstack-knowledge
-description: Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, shortcuts, skill-finder, or ingest-all.
+description: Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, or shortcuts.
 when_to_use: Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.
 category: knowledge
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -13,7 +14,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, shortcuts, **skill-finder** (“how do I…?” → jstack skill ids), or **ingest-all** (configured `ingest_all` chain).
+Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, or shortcuts.
 
 ## Domain rules — knowledge
 - **Lookup vs store:** `jstack:knowledge-search` answers from configured sources (`knowledge_base` in config). Intake/process store into gbrain/Notion. See `skills/knowledge/references/gbrain-patterns.md`.
@@ -22,7 +23,7 @@ Route knowledge requests to intake, process, search, self-knowledge, team-knowle
 - Deduplication: merge duplicates; keep the oldest decision link as canonical.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, shortcuts, **skill-finder**, **ingest-all**
+**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, shortcuts
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
@@ -43,13 +44,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/knowledge/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

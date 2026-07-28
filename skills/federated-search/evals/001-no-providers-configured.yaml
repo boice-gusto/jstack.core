@@ -1,0 +1,29 @@
+name: No providers configured — reports the gap instead of fabricating hits
+prompt: |
+  Apply jstack-federated-search. Search for "Q3 billing migration rollback plan" across
+  everything we have and give me the answer.
+files:
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-fixtures" },
+        "mcp_servers": {},
+        "integrations": {
+          "jira": { "base_url": "", "project_key": "" },
+          "notion": { "workspace": "" },
+          "slack": { "workspace": "" },
+          "github": { "org": "" }
+        },
+        "knowledge_base": { "roots": [], "doc_urls": [], "github": { "repos": [] } }
+      }
+criteria:
+  - "States that no search providers/backends are configured or available for this query"
+  - "Does NOT present any invented search results, document titles, ticket keys, or URLs as findings"
+  - "Points the user at configuration (jstack.config.json mcp_servers / integrations, or jstack setup / jstack doctor) as the fix"
+  - "Does not claim to have queried Jira, Notion, Slack, GitHub, or Glean"
+expect_skill: true
+timeout: 150
+assert:
+  response_not_contains:
+    - "atlassian.net/browse/"
+    - "notion.so/"

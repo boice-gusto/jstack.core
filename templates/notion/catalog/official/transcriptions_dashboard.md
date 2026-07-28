@@ -65,8 +65,10 @@ _Replace with `<mention-page>` blocks once transcripts exist._
 
 - `/jstack:meetings transcribe` — full capture flow
 - `/jstack:granola-daily-summary` — Granola digest
-- `whisper-transcribe` / `deepgram-stt` / `elevenlabs-stt` — capture
-- `gusto-one-on-one-transcript` — overlay (PE-privacy defaults)
+- `whisper-transcribe` / `deepgram-stt` / `elevenlabs-stt`* — capture
+- `gusto-one-on-one-transcript` — org overlay skill, ships with `jstack.gusto`, not jstack.core
+
+<sub>* Optional third-party skill, not bundled with jstack. Install separately if your workspace has it available.</sub>
 
 ---
 

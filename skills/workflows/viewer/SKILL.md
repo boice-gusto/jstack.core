@@ -2,6 +2,8 @@
 name: jstack-workflow-viewer
 description: Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pixel equality as pass/fail.
 category: workflows
+argument-hint: [run-id-1] [run-id-2]
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -12,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pixel equality as pass/fail.
+Summarize what a recorded run actually did: steps taken, assertions met, and the artifacts produced.
+- **Out of scope:** Re-running the workflow or editing the definition. Never report a pass for an assertion with no supporting artifact.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
@@ -36,14 +39,14 @@ Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pi
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
 
 ### Step 3 — Execute
 Diff two runs: timing, flakiness, visual diff summary when artifacts exist.
 - Do not assert pixel equality as pass/fail if threshold-based.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,7 +70,7 @@ Use a domain-appropriate heading, then:
 | Assertion failure | Abort with screenshot ref and suggest selector fix. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

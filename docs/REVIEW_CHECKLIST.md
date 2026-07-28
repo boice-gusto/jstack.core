@@ -19,10 +19,15 @@ Use this after changing skills, agents, examples, or operator docs.
 
 ## Prompt templates
 
-- [ ] Tones/personas/policies still have `<!-- [CUSTOMIZE] -->` markers on org-specific sections
-- [ ] Each customizable prompt has a **Config hook** section showing `jstack.config.json` keys
-- [ ] Example values in `<!-- [CUSTOMIZE] -->` sections are realistic placeholders, not real org data
-- [ ] Chains reference the correct skill names and policies
+Everything under `prompts/` is injected verbatim into model prompts, so review it as instructions, not documentation.
+
+- [ ] **No invented org facts.** No fabricated company/product names, employee names, metrics, competitors, compliance deadlines, or incident details. An unfilled prompt must degrade to a generic-but-useful lens, never to a fictional company. (The `<!-- [CUSTOMIZE] -->` convention was removed — it hid real guidance inside HTML comments and shipped fictional example data into prompts.)
+- [ ] **No real org data either.** Internal hostnames, channel IDs, Jira keys, and employee names belong in an org overlay, not in core.
+- [ ] **No blank content that looks like data.** No empty table cells or rows, and no section whose only content is a comment.
+- [ ] **Guidance is prose, not commented out.** If it should steer behavior, the model has to be able to read it.
+- [ ] Any config key a prompt cites actually exists in `config/defaults.json`, and is actually read by code. `personas` and `tones` are reserved-but-unimplemented — do not describe them as working overrides.
+- [ ] Personas stay mutually distinct: each states what it uniquely catches and what it explicitly does not own, so a multi-persona review yields different findings rather than one repeated shape.
+- [ ] Chains reference correct skill names and policies (`bun run validate-chains`).
 
 ## Config and privacy
 

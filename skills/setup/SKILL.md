@@ -3,6 +3,7 @@ name: jstack-setup
 description: First-time jstack onboarding: run jstack setup wizard, create config, validate with jstack doctor. No secrets in chat.
 when_to_use: Also for first-time install, onboarding, jstack doctor failures, MCP setup, or fixing missing jstack.config.json.
 category: setup
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -14,7 +15,6 @@ Read the setup preamble first:
 
 ## What this skill is for
 Walk the user through first-time onboarding: `jstack setup` wizard, config creation, `jstack doctor` validation, dashboard pointers.
-- **Skill catalog:** After `bun run docs:generate`, open `index.html` via a local server (see repo README). The **Setup guide** section mirrors this flow with CLI examples and advanced copy paths.
 - **Out of scope:** Writing secrets to markdown or logging tokens. If the user pastes a token, tell them to move it to an env/secret store and rotate.
 
 ## Domain rules — setup
@@ -28,8 +28,6 @@ Walk the user through first-time onboarding: `jstack setup` wizard, config creat
 - Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
 - Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
 - Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
-- **Links footer** (when creating/updating resources): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/response-artifacts.md`
-- **GBrain bridge:** when `cross_plugins.gbrain.enabled`, list non-empty `skills[]` (expected host skill ids); `jstack doctor` warns if misconfigured.
 - Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
 ## Intake
@@ -42,7 +40,7 @@ Walk the user through first-time onboarding: `jstack setup` wizard, config creat
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Show the full proposed config and get confirmation before writing. Validate against the schema. Omit a key the user skipped rather than writing an empty string. Never write a credential to a config file.
 
 ### Step 3 — Execute
 If `jstack.config.json` is missing, create it from `config/defaults.json` (or a template) after user confirm; if team wants a new git repo for shared config, outline `git init` + first commit of **team-only** keys.
@@ -53,7 +51,7 @@ Walk through `jstack setup` wizard steps: team name, GBrain team URL, integratio
 - Point to dashboard for visual confirmation if available.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Run `jstack doctor` and interpret the result for the user rather than pasting it. Confirm no secret was written and that skipped keys are absent rather than empty.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -76,7 +74,7 @@ Use a domain-appropriate heading, then:
 | User pastes token in chat | Tell them to move to env/secret store and rotate. Never log it. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

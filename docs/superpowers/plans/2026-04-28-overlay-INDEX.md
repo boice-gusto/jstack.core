@@ -15,7 +15,7 @@ This work ships in **four independent PRs**. Each PR has its own plan file, its 
 | **PR-1** | [`2026-04-28-overlay-pr1-registry-cleanup.md`](./2026-04-28-overlay-pr1-registry-cleanup.md) | `jstack.core` | (none) | yes — fixes L1–L9 contamination; existing users see no behavior change |
 | **PR-2** | [`2026-04-28-overlay-pr2-probes-setup-auto.md`](./2026-04-28-overlay-pr2-probes-setup-auto.md) | `jstack.core` | PR-1, schema-driven-setup spec | yes — `setup --auto` is opt-in; legacy `setup` unchanged |
 | **PR-3** | [`2026-04-28-overlay-pr3-chain-config.md`](./2026-04-28-overlay-pr3-chain-config.md) | `jstack.core` | PR-1 | yes — pure additive `jstack chain` command |
-| **PR-4** | [`../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md`](../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md) | `jstack.gusto` | PR-1, PR-2, PR-3 | yes — overlay self-describes; core unchanged |
+| **PR-4** | [`../../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md`](../../../../jstack.gusto/docs/superpowers/plans/2026-04-28-gusto-pr4-overlay-manifest.md) | `jstack.gusto` | PR-1, PR-2, PR-3 | yes — overlay self-describes; core unchanged |
 
 PR-1 must land before PR-2/PR-3/PR-4. PR-2 depends on PR-3 only if you want `chain run` to invoke `setup --auto` directly (out of scope in v1). PR-4 can be authored in parallel with PR-3 and merged after both PR-2 and PR-3 are green.
 

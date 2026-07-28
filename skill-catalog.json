@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-17T03:25:45.805Z",
-  "count": 135,
+  "generatedAt": "2026-07-27T08:10:43.673Z",
+  "count": 136,
   "skills": [
     {
       "id": "adr",
@@ -64,7 +64,7 @@
       "relPath": "skills/computer-use/SKILL.md",
       "gateId": "jstack:computer-use",
       "description": "Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.",
-      "whenToUse": "User mentions computer-use, desktop automation, native app UI, macOS accessibility automation, ambiguous \"automate my app\", CUA, trycua, cua-driver, cuabot, sandbox, or choosing between browser and non-browser automation. Use before picking jstack-workflows or jstack-computer-use-cua alone.",
+      "whenToUse": "",
       "category": "Computer Use",
       "categoryKey": "computer-use"
     },
@@ -85,7 +85,7 @@
       "path": "skills/review/counsel-review/SKILL.md",
       "relPath": "skills/review/counsel-review/SKILL.md",
       "gateId": "jstack:review/counsel-review",
-      "description": "Multi-persona review (CEO/design/eng/QA) with synthesis and tensions. Not vote-counting by title.",
+      "description": "Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"
@@ -217,8 +217,8 @@
       "path": "skills/granola-daily-summary/SKILL.md",
       "relPath": "skills/granola-daily-summary/SKILL.md",
       "gateId": "jstack:granola-daily-summary",
-      "description": "\"Summarize Granola (or meeting) notes into a daily digest.\"",
-      "whenToUse": "\"End-of-day summary from meeting notes or Granola exports.\"",
+      "description": "Summarize Granola (or meeting) notes into a daily digest.",
+      "whenToUse": "End-of-day summary from meeting notes or Granola exports.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -228,8 +228,8 @@
       "path": "skills/granola-daily-summary-6pm/SKILL.md",
       "relPath": "skills/granola-daily-summary-6pm/SKILL.md",
       "gateId": "jstack:granola-daily-summary-6pm",
-      "description": "\"Scheduled variant of daily Granola/meeting summary (6pm cadence).\"",
-      "whenToUse": "\"Automated or scheduled daily summary workflow.\"",
+      "description": "Scheduled variant of daily Granola/meeting summary (6pm cadence).",
+      "whenToUse": "Automated or scheduled daily summary workflow.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -415,7 +415,7 @@
       "path": "skills/knowledge/SKILL.md",
       "relPath": "skills/knowledge/SKILL.md",
       "gateId": "jstack:knowledge",
-      "description": "Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, shortcuts, skill-finder, or ingest-all.",
+      "description": "Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, or shortcuts.",
       "whenToUse": "Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
       "category": "Knowledge",
       "categoryKey": "knowledge"
@@ -767,7 +767,7 @@
       "path": "skills/notion/team-report/SKILL.md",
       "relPath": "skills/notion/team-report/SKILL.md",
       "gateId": "jstack:notion/team-report",
-      "description": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack:reports-team-report.",
+      "description": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack-team-report.",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -793,6 +793,17 @@
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
+    },
+    {
+      "id": "setup-onboarding",
+      "name": "jstack-onboarding",
+      "path": "skills/setup/onboarding/SKILL.md",
+      "relPath": "skills/setup/onboarding/SKILL.md",
+      "gateId": "jstack:setup/onboarding",
+      "description": "Conversational first-run onboarding — walks a new user from install to a validated jstack.config.json to their first real skill invocation, in one guided pass. Use for \"get me set up\", \"onboard me\", \"I just installed jstack\", or when jstack.config.json is missing. Not for editing an existing working config (use jstack:update-config) and not for diagnosing a specific doctor failure (use jstack:setup).",
+      "whenToUse": "",
+      "category": "Setup",
+      "categoryKey": "setup"
     },
     {
       "id": "pe-report-context",
@@ -998,8 +1009,8 @@
       "path": "skills/scaffold/SKILL.md",
       "relPath": "skills/scaffold/SKILL.md",
       "gateId": "jstack:scaffold",
-      "description": "\"Scaffold a new skill or plugin using org conventions and checklists.\"",
-      "whenToUse": "\"User wants to create a new skill pack or plugin structure.\"",
+      "description": "Scaffold a new skill or plugin using org conventions and checklists.",
+      "whenToUse": "User wants to create a new skill pack or plugin structure.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -1306,8 +1317,8 @@
       "path": "skills/task-intake/SKILL.md",
       "relPath": "skills/task-intake/SKILL.md",
       "gateId": "jstack:task-intake",
-      "description": "\"Config-driven task intake wizard — from idea to ticket, sizing, prioritization, and optional announcements.\"",
-      "whenToUse": "\"User asks to intake work, run a task wizard, size/prioritize, or announce a project.\"",
+      "description": "Config-driven task intake wizard — from idea to ticket, sizing, prioritization, and optional announcements.",
+      "whenToUse": "User asks to intake work, run a task wizard, size/prioritize, or announce a project.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -1471,7 +1482,7 @@
       "path": "skills/workflows/SKILL.md",
       "relPath": "skills/workflows/SKILL.md",
       "gateId": "jstack:workflows",
-      "description": "Route workflow requests to builder, runner, recorder, viewer, **workflow-wizard** (interactive CLI command emit), or **execute** (confirmed `jstack workflow run`).",
+      "description": "Route workflow requests to builder, runner, recorder, or viewer.",
       "whenToUse": "Also for Playwright-style flows, browser automation YAML/JSON, recording steps, running jstack workflow, or comparing two runs.",
       "category": "Workflows",
       "categoryKey": "workflows"

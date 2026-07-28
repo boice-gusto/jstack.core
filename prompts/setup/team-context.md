@@ -1,6 +1,6 @@
 # Team context (runtime template)
 
-> **Owner:** PM or team lead. This file documents which `jstack.config.json` keys provide team context so skills can resolve values silently instead of asking the user.
+> **Maintainer:** PM or team lead.
 
 **Privacy:** keys listed here are **team-safe**. Personal GBrain, diary paths, and session stores should **not** live in a shared team git config — see `skills/_core/references/repo-and-privacy.md`.
 

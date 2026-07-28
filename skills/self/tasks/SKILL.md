@@ -13,8 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route personal productivity requests to the right sub-skill. Session gbrain target (personal vs team) must be respected.
-- **Out of scope:** Therapy, HR advice, or storing other people's PII without redaction.
+Roll up personal tasks from Jira and gbrain TODOs into one deduplicated list, returning the top 5 with a parking lot for the rest.
+- **Out of scope:** Creating or updating Jira tickets — use the Jira skills for writes.
 
 ## Domain rules — self (personal)
 - Session target must match `session/init` — do not mix team pages into personal or vice versa.
@@ -38,13 +38,13 @@ Route personal productivity requests to the right sub-skill. Session gbrain targ
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
 Roll-up of Jira + gbrain TODOs. Deduplicate. If overload, return top 5 and a parking lot.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -68,7 +68,7 @@ Use a domain-appropriate heading, then:
 | User pastes a secret | Refuse to store; tell them to rotate immediately. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

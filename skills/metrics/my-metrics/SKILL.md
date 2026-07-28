@@ -37,14 +37,14 @@ Personal throughput and review latency from GitHub/Jira. No peer comparison unle
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+State the denominator and the time window before stating the number; a rate without either is unusable. Prefer percentiles to averages and say which you used. Note the data's freshness.
 
 ### Step 3 — Execute
 Personal throughput and review latency. If GitHub not linked, return import instructions and a manual table template.
 - No peer comparison unless user is a people manager.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm each number carries its denominator, window, and freshness, and that no average is hiding a distribution you should have shown as percentiles.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,7 +67,7 @@ Use a domain-appropriate heading, then:
 | GitHub/Jira not linked | Return import instructions and a manual table template. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

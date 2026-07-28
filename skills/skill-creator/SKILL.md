@@ -2,6 +2,8 @@
 name: jstack-skill-creator
 description: Create or revise jstack plugin skills (SKILL.md) using repo conventions, Anthropic-aligned directives, and config-first rules. Use when adding capabilities, forking a skill, or fixing discovery/failure coverage — not for running product workflows.
 category: skill-creator
+effort: high
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->
@@ -24,6 +26,30 @@ Read the setup preamble first:
 - Follow directives-style writing per `${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/references/anthropic-alignment.md`.
 - Jstack layout and variables: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/skill-conventions.md` and `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/markdown-authoring-guide.md`.
 - Org-specific values (sprint length, approvers, channels) belong in `jstack.config.json` and `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/config-schema.md` — not in prose.
+
+### Thresholds / gate
+
+| Signal | Threshold | Source |
+|---|---|---|
+| Frontmatter value shape | Must be an inline scalar; a YAML block list (`- item` lines) is silently dropped by the line-based parser | `scripts/apply_detailed_skills.py` `read_front_matter`; see `CLAUDE.md` "Frontmatter values must be inline scalars" |
+| Hand-maintained skill | Must be added to `SKIP` in `scripts/apply_detailed_skills.py` before the first hand-edit, or the next regeneration overwrites the body | `CLAUDE.md` "Skill authoring" |
+| `description` / `when_to_use` length | ≤1,536 chars each before `/doctor` reports skill-listing budget overflow | `CLAUDE.md` "Skill context budget" |
+| Chain reference validity | Every `<!-- chains-to: jstack:<slug> -->` must resolve to a live skill in the catalog. Use the `<slug>` form in prose — a concrete example token here would itself have to resolve | `bun run validate-chains` |
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Writing a multi-line YAML list in frontmatter (e.g. `allowed-tools:` as `- foo` / `- bar`) | `read_front_matter` is line-based; the list silently vanishes and the key round-trips empty — no error, just missing data | Write inline scalars: `allowed-tools: mcp__a__b, mcp__c__d` |
+| Hand-editing a generated (non-`SKIP`) skill body | The next `apply_detailed_skills.py` run overwrites the edit with no warning | Add the path to `SKIP`, or move the content into `apply_detailed_skills_data.py` / a `scripts/skill_deep/` module instead |
+| Vague `description` with no exclusion clause | Defeats model-invocation discovery — Claude can't tell when *not* to trigger the skill | Name concrete triggers and at least one explicit "not for X" case |
+| Declaring `allowed-tools: mcp__*` in jstack.core | Hardcodes one org's server name into a generic skill; jstack.core is integration-agnostic by design | Route through `mcp_servers` / `integrations` in `jstack.config.json`; reserve `allowed-tools` for org overlays |
+| Shipping a new skill with no `skill-catalog.json` entry | Skill exists on disk but is invisible to docs/routing tooling that reads the generated catalog | Run `bun run docs:generate` (or `jstack docs generate`) after adding a skill |
+
+### Worked example
+
+- *Weak description:* `description: Helps with meetings.`
+- *Sharp description:* `description: Paired 1:1 prep and after-meeting notes from configured transcript sources; prefer Lattice MCP when enabled, else Notion private PE or 1:1 parent pages; always append AI attribution.` — names the trigger, the data source, the routing logic, and a hard behavioral rule (copied from `skills/meetings/one-on-one-transcript/SKILL.md`), which is exactly what makes a skill discoverable and predictable.
 
 ## Config and references
 

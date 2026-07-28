@@ -2,6 +2,7 @@
 name: jstack-meetings
 description: Route meeting requests to the right sub-skill (prepare, transcribe, action-items, post-slack, etc.).
 category: meetings
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -12,7 +13,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route meeting requests to the most specific sub-skill: prepare, transcribe, action-items, post-slack, notion-highlights, **transcripts-ingest** (new files from Drive / paste → classify → route), one-on-one-transcript (paired 1:1 prep/after from transcripts), or store-note.
+Route meeting requests to the most specific sub-skill: prepare, transcribe, action-items, post-slack, notion-highlights, or store-note.
 - **Out of scope:** Sending calendar invites or joining calls.
 
 ## Domain rules — meetings
@@ -21,7 +22,7 @@ Route meeting requests to the most specific sub-skill: prepare, transcribe, acti
 - Not a calendar authority — suggest invite text, do not send unless a tool explicitly does.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/meetings/`:** prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, **transcripts-ingest**, **one-on-one-transcript**, store-note (team / personal)
+**Under `skills/meetings/`:** prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note (team / personal)
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
@@ -42,13 +43,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Confirm attribution before recording a decision as someone's — misattributing a commitment is the costly error here. Keep personal notes out of team stores. Distinguish what was decided from what was merely discussed.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/meetings/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. Confirm personal content did not land in a shared store.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

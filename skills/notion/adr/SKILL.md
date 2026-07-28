@@ -3,6 +3,7 @@ name: jstack-notion-adr
 description: Create or update an Architecture Decision Record in Notion with numbering, status, and superseded links.
 category: notion
 disable-model-invocation: true
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -39,14 +40,14 @@ Create or update an ADR page: sequential numbering, status tracking, superseded 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
 ADR numbering + Superseded links. If decision is rejected, keep status honest and point to the winning ADR.
 - Template: `templates/notion` + best-practices for ADR text.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not overwrite pre-existing content, and that it is still a draft unless the user asked to publish.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -70,7 +71,7 @@ Use a domain-appropriate heading, then:
 | Property type mismatch | Show expected vs actual type; suggest manual Notion fix or config update. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-notion-planning` then `jstack-notion-sprint`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

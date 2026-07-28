@@ -209,9 +209,9 @@ const skills: SkillDef[] = [
     path: "review/counsel-review",
     name: "jstack-counsel-review",
     category: "review",
-    description: "CEO/Designer/Engineer/QA perspectives using persona prompts.",
+    description: "CEO/PM/Engineer/QA/Designer perspectives using persona prompts.",
     when: "Counsel-style multi-lens feedback.",
-    extra: `Load personas from \`${PREAMBLE.replace("preamble.md", "../personas/")}\` (ceo, designer, engineer, qa).`,
+    extra: `Load personas from \`${PREAMBLE.replace("preamble.md", "../personas/")}\` (ceo, pm, engineer, qa, designer).`,
   },
   {
     path: "review/code-review",

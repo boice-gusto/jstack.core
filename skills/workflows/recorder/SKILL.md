@@ -3,6 +3,7 @@ name: jstack-workflow-recorder
 description: Record user browser actions into a workflow definition. Add stability notes (selectors) before promoting to CI.
 category: workflows
 disable-model-invocation: true
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -13,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Record user browser actions into a workflow definition. Add stability notes (selectors) before promoting to CI.
+Capture a live interaction as a replayable workflow definition, naming each step by role or label rather than a brittle selector.
+- **Out of scope:** Executing the recording, and hand-tuning it afterwards (`jstack:workflows-builder`). Never record against production data or capture a credential-entry step.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
@@ -37,13 +39,13 @@ Record user browser actions into a workflow definition. Add stability notes (sel
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
 
 ### Step 3 — Execute
 Record user actions → flow. Add stability notes (selectors) before promoting to CI.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,7 +69,7 @@ Use a domain-appropriate heading, then:
 | Assertion failure | Abort with screenshot ref and suggest selector fix. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

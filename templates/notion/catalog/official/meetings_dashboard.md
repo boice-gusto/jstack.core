@@ -97,7 +97,7 @@ _Replace with `<mention-page>` blocks once notes exist._
 - `/jstack:meetings prepare` — pre-meeting prep
 - `/jstack:meetings transcribe` — auto-transcript + summary
 - `/jstack:meetings action-items` — extract + assign actions
-- `/jstack:notion meeting-notes` — create from template
+- `/jstack:meetings store-note` — save populated notes to team/personal Notion from this template
 
 ---
 

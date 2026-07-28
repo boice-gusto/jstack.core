@@ -746,7 +746,7 @@ Each PR is independently revertable. Each ships with the relevant tests from §8
 
 ## 11. Real-world calibration (added 2026-04-29 after dry-run)
 
-A live dry-run against the user's actual Gusto MCPs revealed that 4 of 9 attempted probes worked end-to-end and 5 needed calibration. The full report is at [`../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md`](../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md). Five learnings are folded back into PR-2 / PR-4:
+A live dry-run against the user's actual Gusto MCPs revealed that 4 of 9 attempted probes worked end-to-end and 5 needed calibration. The full report is at [`../../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md`](../../../../jstack.gusto/docs/superpowers/plans/2026-04-29-pr4-probe-calibration-report.md). Five learnings are folded back into PR-2 / PR-4:
 
 1. **Response size cap is required.** Some Gusto MCPs (`pagerdutygusto.list_oncalls`, `dxgusto.listTeams`) ignore `limit` parameters and return 80–190KB. PR-4 Task 9.5 Step 6 adds a per-probe 256KB cap in the runner.
 2. **Glean is the keystone probe.** `gleangusto.employee_search` populates more fields (~30) than the next 5 probes combined. PR-4 calibration prioritizes its extract rules.

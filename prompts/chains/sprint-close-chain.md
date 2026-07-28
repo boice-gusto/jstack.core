@@ -1,6 +1,10 @@
 # Chain: Sprint close
 
-> **Owner:** Scrum master, EM, or PM. Edit this to match your actual sprint close workflow — metrics source, report audience, and where records live.
+> **Maintainer:** Scrum master, EM, or PM.
+
+This file is injected verbatim into prompts. It contains no invented velocity numbers or
+demo links — treat any org-specific value not present in config or the conversation as
+unknown, and use `[no data]` rather than filling in a plausible-looking placeholder.
 
 **Flow:** `jstack:routines-sprint-close` → `jstack:reports-team-report` → `jstack:notion-sprint`
 
@@ -16,30 +20,32 @@
 - If retro hook is configured, suggest scheduling the retro as the final step.
 - The Notion update happens last so it reflects the final, reviewed data.
 
-## Your customizations
+## Defaults and overrides
 
-<!-- [CUSTOMIZE] Adapt these to your team -->
-
-| Setting | Default | Your value |
-|---------|---------|------------|
-| Velocity metric | Story points completed | <!-- Points? Tickets? T-shirt sizes? --> |
-| Report audience | Team + EM | <!-- Who reads the sprint report? --> |
-| Report destination | Notion | <!-- Notion? Confluence? Google Docs? Slack post? --> |
-| Retro trigger | Automatic for every sprint | <!-- Every sprint? Only on spill? Manual? --> |
-| Sprint duration | 2 weeks | <!-- 1 week? 2 weeks? Monthly? --> |
+| Setting | Default | Configured via |
+|---------|---------|------------------|
+| Velocity metric | Story points completed | `sprint.capacity_metric` (default `"story_points"`) |
+| Report audience | Team + EM | `skill_defaults.reports.default_audience` (default `"team"`) |
+| Report destination | Notion | `notion_defaults.post_targets.sprint` (parent-page key, default `"private_sprints"`) |
+| Retro trigger | Automatic for every sprint | Runs when `"retro"` is in `sprint.ceremonies` (default: yes) |
+| Sprint duration | 2 weeks | `sprint.cadence_weeks` (default `2`) |
 
 ## Config hook
 
 ```json
 {
-  "chains": {
+  "routines": {
     "sprint_close": {
-      "velocity_metric": "story_points",
-      "report_audience": ["team", "EM"],
-      "report_destination": "notion",
-      "retro_trigger": "every_sprint",
-      "sprint_duration_weeks": 2
+      "enabled": false,
+      "cron": "",
+      "chain": ["sprint", "reports", "announcements"]
     }
   }
 }
 ```
+
+`routines.sprint_close` is declared in `config/defaults.json` and matches the defaults shown; set `enabled: true` and a `cron` to run this chain on a schedule instead of on demand. The per-setting keys in the table above (`sprint.*`, `skill_defaults.reports.default_audience`, `notion_defaults.post_targets.sprint`) are also declared there.
+
+## Adapting this file
+
+Edit this file directly to change step order or add a step. Set `sprint.capacity_metric`, `sprint.cadence_weeks`, `skill_defaults.reports.default_audience`, `notion_defaults.post_targets.sprint`, and `routines.sprint_close` in `jstack.config.json` for the values this file deliberately doesn't hardcode.

@@ -2,6 +2,7 @@
 name: jstack-knowledge-shortcuts
 description: Bridge to gstack/superpowers skills for planning and QA. Link to prompts/shortcuts/, do not duplicate.
 category: knowledge
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -40,13 +41,13 @@ Named aliases (`jstack:ceo-brainstorm`, `jstack:executive-research-brief`, …) 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
 Bridge to gstack/superpowers. Output which external skill to run, not a copy of that skill's body. Link to `prompts/shortcuts/gstack-bridge.md`, `prompts/shortcuts/superpowers-bridge.md`, and `prompts/shortcuts/composites.md` (persona + tone + target skill, e.g. `jstack:ceo-brainstorm`). Prefer `skills/shortcuts/` wrapper skills when the user uses a named alias.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -69,7 +70,7 @@ Use a domain-appropriate heading, then:
 | Duplicate entry detected | Show the existing canonical and ask: merge, update, or skip. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-knowledge-intake` then `jstack-knowledge-process`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

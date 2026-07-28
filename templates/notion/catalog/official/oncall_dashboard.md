@@ -108,8 +108,10 @@ Promote new runbooks via `/jstack:notion knowledge-base` (`Type = Runbook` in <m
 
 - `/jstack:incident` — incident commander
 - `/jstack:notion knowledge-base` — runbook authoring
-- `atlassian:triage-issue` — incident triage
-- `cso` — security incident audit
+- `atlassian:triage-issue`* — incident triage
+- `cso`* — security incident audit
+
+<sub>* Optional third-party skill, not bundled with jstack. Install separately if your workspace has it available.</sub>
 
 ---
 

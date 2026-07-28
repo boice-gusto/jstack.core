@@ -1,5 +1,7 @@
 # Skill inventory (stub/weakness triage)
 
+**Snapshot as of 2026-06-16 (last commit touching this file), not live.** Skill count, `sect_ok`, and `skip` columns drift as skills are added/edited; re-run the underlying audit rather than trusting this table for current state.
+
 **Sections:** `CC`=chain contract, `P`=preamble `!cat`, `O`=output shape, `F`=failure modes. **Skip**= `apply_detailed_skills.py` SKIP (core only). **Post-2026-04-27 pass:** P0 core thin skills, hand-skip shortcuts, `computer-use` / `recon` output shape, and all 9 Gusto overlays refreshed; line counts and `sect_ok` below reflect that pass.
 
 | area | path | lines | CC | P | O | F | sect_ok | skip |

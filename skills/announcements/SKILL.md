@@ -3,6 +3,7 @@ name: jstack-announcements
 description: Draft channel-ready or email-ready announcements from rough notes, respecting tone policies and internal/external distinction.
 category: announcements
 disable-model-invocation: true
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -39,49 +40,16 @@ Turn rough notes into channel-ready copy. Distinguish internal vs public; never 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Draft, get approval, then publish — in that order, always. Resolve the channel from `policies.announcements.channels`; if it is unset, ask rather than picking one. Never send to an external or unfamiliar destination without explicit confirmation of the audience.
 
 ### Step 3 — Execute
-
-If tone is **not** specified in `$ARGUMENTS` or inferable from the channel name, use **AskUserQuestion** before drafting:
-
-```
-question: "Which tone for this announcement?"
-header: "Tone"
-options:
-  - label: "Executive"
-    description: "Outcome-first, no jargon. VP+ / board / skip-level audience."
-    preview: |
-      ## [Initiative] — Update
-
-      We shipped X. This reduces Y by Z%.
-
-      **Next:** [One sentence — who acts, or what ships next.]
-  - label: "Internal / Eng"
-    description: "Bullets, technical context. Team Slack, #eng, internal wiki."
-    preview: |
-      ## Shipped: [Initiative]
-
-      **What:** [1 sentence]
-      **Why:** [1 sentence]
-      **Impact:** [metric or outcome]
-      **Next:** [owner + ETA or date]
-  - label: "Formal / External"
-    description: "Polished, policy-safe. Customer email, blog, or press."
-    preview: |
-      We are pleased to announce that [Initiative] is now available.
-
-      [One paragraph: what it is, why it matters to the customer.]
-
-      [CTA or next step.]
-```
-
-Then draft using the chosen tone from `prompts/tones/` and match channel norms (length, emoji, @here rules).
-If content touches legal, compliance, or pricing, flag for stakeholder review.
-Output a draft for user approval; never post directly.
+Classify audience (internal vs external) — ask once if unclear.
+- Apply tone from `prompts/tones/` and match channel norms (length, formatting, @here rules).
+- If content touches legal, compliance, or pricing, flag for stakeholder review.
+- Output a draft for user approval; never post directly.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the destination, the audience, and that approval was actually given before send — not assumed. Re-read the text for anything that should not leave the org.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -105,7 +73,7 @@ Use a domain-appropriate heading, then:
 | Legal/compliance content detected | Flag for stakeholder review; do not finalize. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

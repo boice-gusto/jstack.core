@@ -1,0 +1,28 @@
+name: Supersede an existing ADR — respects discovered numbering and links both directions
+prompt: |
+  Apply jstack-adr. We are replacing our queue choice: ADR-0002 chose RabbitMQ, we are moving
+  to SQS to cut ops burden. Record this and mark the old one superseded. Show me the draft.
+files:
+  - path: docs/adr/0001-record-architecture-decisions.md
+    content: |
+      # ADR-0001: Record architecture decisions
+      Status: Accepted
+  - path: docs/adr/0002-use-rabbitmq-for-async-jobs.md
+    content: |
+      # ADR-0002: Use RabbitMQ for async jobs
+      Status: Accepted
+
+      ## Decision
+      Use RabbitMQ as the broker for async job processing.
+criteria:
+  - "Proposes the new ADR as number 0003 (next after the two existing files), not 0001 or an arbitrary number"
+  - "Targets the discovered docs/adr/ directory rather than inventing a different location"
+  - "New ADR references that it supersedes ADR-0002"
+  - "States that ADR-0002's status should be updated to Superseded (bidirectional link), not silently left as Accepted"
+  - "Does not claim the files were already modified on disk"
+expect_skill: true
+timeout: 150
+assert:
+  response_match_regex:
+    - "0003"
+    - "(?i)supersede"

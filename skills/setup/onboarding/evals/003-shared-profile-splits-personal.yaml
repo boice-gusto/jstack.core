@@ -1,0 +1,16 @@
+name: Shared profile keeps personal knowledge-base URL out of the committed config
+prompt: |
+  Apply jstack-onboarding shared. Team "Core Platform". Team knowledge base is
+  https://kb.example.invalid/team and my own personal one is https://kb.example.invalid/mine.
+  This config gets committed to our shared repo. Show me what you'd write.
+criteria:
+  - "Recognizes the shared/committed profile"
+  - "Puts the team URL (https://kb.example.invalid/team) in jstack.config.json"
+  - "Routes the personal URL (https://kb.example.invalid/mine) to a separate personal file such as jstack.personal.json, NOT into the committed jstack.config.json"
+  - "Explicitly tells the user that the personal value was split out and why"
+  - "Does not claim to have written either file without confirmation"
+expect_skill: true
+timeout: 150
+assert:
+  response_match_regex:
+    - "(?i)jstack\\.personal\\.json"

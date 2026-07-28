@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import type { EvalCase } from "./eval-config.js";
@@ -139,7 +139,15 @@ export function executeCase(
   const workDir = mkdtempSync(join(tmpdir(), `jstack-eval-${caseDef.name.replace(/\s+/g, "-")}-`));
   try {
     for (const f of caseDef.files) {
+      // `f.path` comes from eval-case YAML (`files:` entries) — trusted-author input
+      // in the common case, but a `../` traversal here would write outside this
+      // disposable scratch dir entirely. Contain it: resolve and require the target
+      // to stay under `workDir`, refuse otherwise rather than silently escaping.
       const fp = join(workDir, f.path);
+      const relFromWorkDir = relative(workDir, fp);
+      if (relFromWorkDir.startsWith("..") || isAbsolute(relFromWorkDir)) {
+        throw new Error(`eval case "${caseDef.name}": files[].path escapes the case workspace: ${f.path}`);
+      }
       mkdirSync(dirname(fp), { recursive: true });
       writeFileSync(fp, f.content ?? "", "utf8");
     }

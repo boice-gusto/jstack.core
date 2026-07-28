@@ -38,6 +38,31 @@ Read the setup preamble first:
 
 **Rule:** **At most one** clarifying question. If the user gave **channel/project** ambiguously, prefer asking **which project key or channel** over asking about time.
 
+## Domain rules — recon
+
+### Absolute rules
+
+1. **State what you searched, not just what you found.** "No P1s" and "no P1s in the one channel I could reach" are different claims — recon's value is honesty about coverage, not the appearance of completeness. This is the same discipline that reduces fabrication in retrieval settings generally: allow "not found" or "not checked" instead of implying completeness you don't have ([Anthropic — Reduce hallucinations](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations)).
+2. **"Discussed" is not "done."** A Slack thread proposing a fix and a Jira ticket marked Done are different states — keep the tense straight (see `_core/best-practices/accuracy-rules.md`) rather than let an intention read as a completed action.
+3. **Partial visibility is disclosed at the point of the claim it affects, not buried in a footer.** If Slack rate-limited or a Jira filter only covered one project, say so **next to** the summary line it limits, not only in `## Notes / limitations`.
+4. **A paste is not a search.** If the user supplied static text, label the section `Source: user paste` — never imply the tool queried live data it didn't touch (Step 2 already requires this; treat it as load-bearing, not optional formatting).
+5. **Conflicting signals across sources are reported as a conflict, not silently resolved to whichever source you trust more.** Recon is a synthesis pass, not an arbiter — flag "Slack says P1, Jira says P2" and let the user or a follow-up skill resolve it.
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Overclaiming coverage ("no active incidents") | Silently means "no active incidents visible in the one channel I searched" — reads as a guarantee it isn't | State scope explicitly: channel/project searched, time window, and any pagination or rate-limit cutoff |
+| Treating a proposed fix as a resolved issue | Conflates intent with outcome; someone acts on stale information | Track status per source (open / in progress / claimed done) and say which |
+| Merging conflicting Jira and Slack signals into one confident line | Hides a real discrepancy the user needs to know exists | Report both signals and name the conflict explicitly |
+| Presenting a user paste as a live search result | Misleads the reader about how current or complete the data is | Label pasted content `Source: user paste` in the output |
+| Dumping 50+ raw items with no synthesis | Defeats the purpose of a recon pass — the reader still has to do the triage themselves | Cap at ~10 by urgency; state "N more; narrow by time or project" |
+
+### Worked example
+
+- *Weak:* "## Recon summary — Everything looks calm, no P1s, team is on track."
+- *Sharp:* "## Recon summary — No P1-labeled Jira issues in `PLAT` (filter: priority=P1, updated last 24h). Slack: `#eng-alerts` and `#eng-oncall` searched; `#platform-random` not included — an incident reported only there would be missed. One thread in `#eng-alerts` flagged a deploy rollback, resolved per the thread's last message at 10:20 UTC (not independently verified against a Jira ticket)."
+
 ## Output shape
 
 - **Default:** the markdown skeleton in **Step 4 — Output (required shape)** (summary, hot/urgent, stale, action items with `action_items: <N>`, limitations, suggested next).

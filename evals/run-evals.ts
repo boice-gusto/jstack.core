@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkGates, loadGateRules } from "./gate-runner.js";
+import { checkGates, evaluateSemanticSummaryGate, loadGateRules, normalizeGateSkillId } from "./gate-runner.js";
 import {
   discoverAllSkillRelativePaths,
   discoverEvalCases,
@@ -17,7 +17,7 @@ import {
   loadSkillEvalConfig,
   validateCases,
 } from "./discover.js";
-import { loadGlobalEvalEnv, mergeGateRule, skillGateId } from "./eval-config.js";
+import { loadGlobalEvalEnv, mergeGateRule, numberFromEnv, sanitizePassThreshold, skillGateId } from "./eval-config.js";
 import { executeCase, readSkillMd } from "./execute.js";
 import { gradeCase } from "./grade.js";
 import {
@@ -26,6 +26,7 @@ import {
   writeMultiReport,
   writeSemanticReportFiles,
 } from "./report.js";
+import type { CaseReport, SemanticSummary } from "./report.js";
 import type { EvalCase } from "./eval-config.js";
 import {
   expandPackForSkill,
@@ -119,12 +120,73 @@ function runChain(): { ok: number; total: number } {
   return { ok, total: chains.length };
 }
 
+/**
+ * Re-check gate rules against the metrics of a REAL prior semantic run.
+ *
+ * This command used to pass hard-coded `{tokens: 100, latency_ms: 100}` and the
+ * literal string "action_items: []" to checkGates(), which trivially satisfied
+ * every rule in gate-evals.json — the command could not fail regardless of what
+ * any skill actually did. It now loads the newest `*-semantic-*.json` summary
+ * written by `eval semantic` and gates on the recorded metrics, and refuses to
+ * report a pass when there is no real run to judge.
+ */
 function runGate(skillFilter?: string): boolean {
   const rules = loadGateRules(pluginRoot);
-  const skill = skillFilter ?? rules[0]?.skill ?? "jstack:setup";
-  const res = checkGates(rules, skill, { tokens: 100, latency_ms: 100 }, "action_items: []");
-  console.log(JSON.stringify(res, null, 2));
-  return res.passed;
+  if (!rules.length) {
+    console.error("No gate rules defined in evals/gate-evals.json — nothing to enforce.");
+    return false;
+  }
+  const skill = skillFilter ? normalizeGateSkillId(skillFilter) : rules[0]?.skill ?? "jstack:setup";
+
+  const summary = loadLatestSemanticSummary(reportsDir, skill);
+  if (!summary) {
+    console.error(
+      `No semantic run found in ${reportsDir} to gate against.\n` +
+        `Gates score a real invocation's tokens/latency/output — they cannot be checked from static files.\n` +
+        `Run: bun run eval semantic --skill ${stripSkillPrefix(skill)}`,
+    );
+    return false;
+  }
+
+  const { passed, failures, casesChecked } = evaluateSemanticSummaryGate(rules, skill, summary);
+
+  const result = {
+    skill,
+    source_report: summary.__sourcePath,
+    ran_at: summary.timestamp,
+    cases_checked: casesChecked,
+    passed,
+    failures,
+  };
+  console.log(JSON.stringify(result, null, 2));
+  return result.passed;
+}
+
+function stripSkillPrefix(skill: string): string {
+  return skill.startsWith("jstack:") ? skill.slice("jstack:".length) : skill;
+}
+
+/** Newest `*-semantic-*.json` summary in reportsDir, preferring one matching `skill`. */
+function loadLatestSemanticSummary(
+  dir: string,
+  skill: string,
+): (SemanticSummary & { __sourcePath: string; results: (CaseReport & { response?: string })[] }) | null {
+  if (!existsSync(dir)) return null;
+  const slug = stripSkillPrefix(skill).replaceAll("/", "-");
+  const candidates = readdirSync(dir)
+    .filter((f) => f.endsWith(".json") && f.includes("-semantic-"))
+    .sort()
+    .reverse();
+  const ordered = [...candidates.filter((f) => f.startsWith(slug)), ...candidates.filter((f) => !f.startsWith(slug))];
+  for (const f of ordered) {
+    try {
+      const parsed = JSON.parse(readFileSync(join(dir, f), "utf8"));
+      if (Array.isArray(parsed?.results)) return { ...parsed, __sourcePath: join(dir, f) };
+    } catch {
+      // Unreadable/partial report — try the next newest rather than silently passing.
+    }
+  }
+  return null;
 }
 
 function runValidate(): { errors: string[]; skillsChecked: number } {
@@ -271,7 +333,7 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
 
   const label = summarySkillName ?? skillRel;
   const summary = buildSemanticSummary(label, cases, execResults, gradings, gateFailuresPerCase);
-  const thresh = passThresholdOverride ?? skillCfg?.pass_threshold ?? defaultPassThreshold;
+  const thresh = passThresholdOverride ?? sanitizePassThreshold(skillCfg?.pass_threshold, defaultPassThreshold);
   const allGatesOk = gateFailuresPerCase.every((g) => g.length === 0);
   const passed = summary.pass_rate >= thresh && allGatesOk;
 
@@ -635,7 +697,26 @@ if (cmd === "quick") {
     ) + "\n",
   );
   console.log(`\nWrote ${quickPath}`);
-  const exitCode = u.ok === u.total && c.ok === c.total && v.errors.length === 0 ? 0 : 1;
+
+  // Coverage now GATES. It used to be printed and discarded: runCoverage()'s result
+  // never reached the exit code, so coverage could fall to 0/135 and `eval:quick`
+  // still exited 0. Floor is a percentage; override with JSTACK_EVAL_COVERAGE_MIN
+  // (e.g. 90) when intentionally landing a skill ahead of its evals.
+  const covFloor = numberFromEnv(process.env.JSTACK_EVAL_COVERAGE_MIN, 100);
+  const covWith = cov.filter((r) => r.hasEvals).length;
+  const covPct = cov.length ? (covWith / cov.length) * 100 : 100;
+  const covOk = covPct >= covFloor;
+  if (!covOk) {
+    const missing = cov.filter((r) => !r.hasEvals).map((r) => r.skill);
+    console.error(
+      `\n✖ eval coverage ${covWith}/${cov.length} (${covPct.toFixed(1)}%) below required ${covFloor}%.` +
+        `\n  Skills without semantic evals:\n${missing.map((m) => `    - ${m}`).join("\n")}` +
+        `\n  Scaffold them with: bun run generate-skill-evals` +
+        `\n  Or lower the floor for this run: JSTACK_EVAL_COVERAGE_MIN=${Math.floor(covPct)} bun run eval:quick`,
+    );
+  }
+
+  const exitCode = u.ok === u.total && c.ok === c.total && v.errors.length === 0 && covOk ? 0 : 1;
   process.exit(exitCode);
 }
 

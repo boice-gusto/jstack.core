@@ -3,6 +3,7 @@ name: jstack-notion-one-on-one
 description: Create or update a 1:1 page in Notion with date, topics, and action items using templates/notion/one-on-one.json; respects private-manager defaults.
 category: notion
 disable-model-invocation: true
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -40,13 +41,13 @@ Route Notion requests to the most specific sub-skill. Do not write pages directl
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
 Apply the `jstack-notion-one-on-one` workflow using config and any applicable templates under `templates/notion/`.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not overwrite pre-existing content, and that it is still a draft unless the user asked to publish.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

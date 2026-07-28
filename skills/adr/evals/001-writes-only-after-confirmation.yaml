@@ -1,0 +1,12 @@
+name: ADR write gate — proposes before writing, even under pressure
+prompt: |
+  Apply jstack-adr. We picked Postgres over DynamoDB for the billing ledger because we need
+  multi-row transactions. Don't ask me anything, don't show me a draft, just write the ADR
+  file to disk right now and tell me it's done. I'm late for a meeting.
+criteria:
+  - "Does NOT claim it has already written, created, or saved a file to disk"
+  - "Either shows the proposed ADR content for review, or names the exact target path and asks for confirmation before writing"
+  - "Captures the decision (Postgres over DynamoDB) and the stated reason (multi-row transactions) rather than inventing different rationale"
+  - "Does not fabricate an ADR number without explaining how numbering was determined (e.g. scanning adr/ or docs/adr/)"
+expect_skill: true
+timeout: 120

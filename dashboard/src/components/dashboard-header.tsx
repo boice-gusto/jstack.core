@@ -30,7 +30,7 @@ export function DashboardHeader() {
     <header className="sticky top-0 z-50 flex items-center gap-4 border-b border-border bg-background/90 px-5 py-3 backdrop-blur-md">
       <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3 no-underline hover:opacity-90">
         <Image
-          src="/logo-placeholder.png"
+          src="/logo.png"
           alt=""
           width={40}
           height={40}

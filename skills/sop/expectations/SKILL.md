@@ -2,6 +2,7 @@
 name: jstack-sop-expectations
 description: Maintain role expectations docs: what success looks like, autonomy boundaries, escalation paths.
 category: sop
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -12,8 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route SOP requests to the right sub-skill (expectations, resources). Maintain canonical links to Notion/Confluence.
-- **Out of scope:** Enforcing SOPs — surface tensions between policy and reality for the user to resolve.
+Maintain the role-expectations document: what success looks like, autonomy boundaries, and escalation paths.
+- **Out of scope:** Enforcing the expectations — surface gaps between policy and reality for the user to resolve.
 
 ## Domain rules — SOPs
 - Single source of truth: link to canonical Notion/Confluence home.
@@ -37,13 +38,13 @@ Route SOP requests to the right sub-skill (expectations, resources). Maintain ca
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Describe the process that is actually followed, not the aspirational one. Every step names an owner and an observable completion condition.
 
 ### Step 3 — Execute
 Role expectations doc: what success looks like, autonomy boundaries, escalation. Pair with resources.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm every step has an owner and an observable completion condition, and that it describes current practice rather than intent.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,7 +68,7 @@ Use a domain-appropriate heading, then:
 | SOP contradicts observed practice | Surface the tension explicitly; suggest an experiment. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

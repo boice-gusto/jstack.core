@@ -6,6 +6,7 @@ description: >-
 category: meetings
 arguments: [person_name]
 argument-hint: [person-name]
+effort: high
 ---
 
 <!-- Chain Contract -->
@@ -34,6 +35,21 @@ Run a **1:1 cycle** tied to **transcripts** (configurable sources or user paste)
 - Privacy: treat transcripts as **manager-report sensitive**; redact PII in any summary that might leave the private PE surface.
 - Action items need **owner + due** when possible; otherwise `unassigned` + suggested follow-up.
 - Never present invented Notion page IDs, Lattice record IDs, or URLs as verified — only config, tool results, or user paste.
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Quoting a transcript verbatim into a wider-visibility doc | A direct quote can carry tone, names, or performance detail meant for the 1:1 only | Paraphrase and redact per the privacy rule above before it leaves the private surface |
+| Presenting "prepare" agenda bullets as if decisions are already made | Prepare-phase output is speculative framing, not a settled outcome | Phrase prepare output as proposed topics/questions, not conclusions |
+| Inventing a Notion page id or Lattice record id when the tool didn't return one | A fabricated id breaks the actual write and hides that nothing was created | State "no id returned" and hand off explicitly rather than presenting a guess as real |
+| Skipping AI attribution because the note "seems obviously AI-written" | Violates the always-on attribution rule regardless of how the draft reads | Append `ai_attribution.footer_markdown` whenever `append_to_generated_notes` is true, no exceptions |
+| Falling back to Notion silently when Lattice was configured | Hides a routing decision the user configured Lattice specifically to avoid | State the fallback explicitly in Details when Lattice is enabled but unreachable |
+
+### Worked example
+
+- *Weak:* "Talked about workload, seems stressed, will check in next time."
+- *Sharp:* "**Decisions:** Reduce on-call rotation from 1-in-3 to 1-in-4 starting next sprint (owner: EM, effective [date]). **Action items:** [ ] EM to update PagerDuty schedule — by Friday. **Feedback theme:** raised twice now (this transcript + prior prep notes) that sprint scope commitments don't account for on-call load — flag as a recurring theme for the next retro, not just this person's 1:1. Provenance: AI-generated from transcript `2026-07-20-1on1.txt`; human review required."
 
 ## Config and references
 
