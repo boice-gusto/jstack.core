@@ -2,7 +2,7 @@
 name: jstack-plugin
 description: Route a plugin-distribution request to the right sub-skill. Currently create-plugin-pr, which opens a PR against jstack.core or an overlay using distribution.github config. Not for authoring the skill itself — that is jstack-skill-creator.
 category: plugin
-effort: medium
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -15,6 +15,12 @@ Read the setup preamble first:
 ## What this skill is for
 Route a plugin-distribution request to the right sub-skill. `create-plugin-pr` opens a PR against jstack.core or an overlay using `distribution.github`, respecting `plugin_pr.path_deny_globs`.
 - **Out of scope:** Authoring the skill being shipped (`jstack:skill-creator`), and merging the PR.
+
+## Domain rules — plugin distribution
+- Read the target from `distribution.github` — owner, repo, default branch. Unset means stop and say which key is missing; never guess a repository.
+- Honour `distribution.plugin_pr.path_deny_globs`. A PR that touches a denied path is a packaging mistake, not a review question.
+- Open the PR; do not merge it. Merging is a human decision with CI attached.
+- Never vendor an upstream marketplace tree into this repo — reference it, or take an allowlisted `plugins/<id>/` subtree only.
 
 ## Sub-skills (pick the most specific)
 **Under `skills/plugin/`:** create-plugin-pr

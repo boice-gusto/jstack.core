@@ -237,7 +237,7 @@ row before attributing a movement to the intervention.
 
 | User says | You do |
 |---|---|
-| "Leadership one-pager" | Validate the numbers here, then hand off to `jstack:reports` (`report-generator`) with tone from `prompts/tones/`. |
+w| "Leadership one-pager" | Validate the numbers here, then hand off to `jstack:reports` (`report-generator`) with tone from `prompts/tones/`. |
 | "My numbers only" | `jstack:my-metrics`; confirm identity vs. team rollup before pulling. |
 | "Why did this metric move" | Check the denominator first (did it move?), then seasonality (day-of-week), open final period, cohort composition, and Simpson's-paradox risk before naming a cause. |
 

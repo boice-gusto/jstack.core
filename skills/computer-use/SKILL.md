@@ -16,6 +16,12 @@ Read the setup preamble first:
 Route computer-use requests to the right surface: native macOS/desktop UI (`jstack:computer-use-cua`), web automation (`jstack:workflow-execute`, Playwright MCP), or a saved JSON workflow definition under `config/workflows/`. Pick one surface and say why.
 - **Out of scope:** Driving the machine yourself from this skill, and installing drivers or granting accessibility permissions — those are operator steps.
 
+## Domain rules — computer use
+- Three distinct surfaces, and picking the wrong one wastes the whole attempt: native desktop UI (`jstack:computer-use-cua`), web automation via a saved flow (`jstack:workflow-execute`), or an org YAML workflow definition. Name the surface and why before acting.
+- Driving a real machine is destructive by default. Preview the action, then require explicit confirmation; `restart` and `destroy` against a live sandbox are never implicit.
+- Never type a credential into a driven UI. Form fills read from env, and no secret appears in a flow definition or in chat.
+- Capture evidence per step (screenshot, trace, or log). An automation run with no artifact cannot be reviewed after the fact.
+
 ## Sub-skills (pick the most specific)
 **Under `skills/computer-use/`:** cua
 

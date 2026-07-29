@@ -2,7 +2,7 @@
 name: jstack-pe
 description: Route a people/performance-engineering request to the right sub-skill. Currently report-context, which assembles the validated reporting window and team scope. Not for writing performance narrative about a named individual.
 category: pe
-effort: high
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -15,6 +15,12 @@ Read the setup preamble first:
 ## What this skill is for
 Route a people/performance-engineering request to the right sub-skill. `report-context` assembles the validated reporting window, teams, and projects from `pe.*` config before any narrative is written.
 - **Out of scope:** Writing performance narrative or a rating about a named individual, and reporting on a team absent from `pe.teams`.
+
+## Domain rules — people and performance engineering
+- Assemble the reporting CONTEXT before any narrative: which teams, which projects, and the exact window, all validated against `pe.*` in config. A narrative written before the window is fixed cannot be checked later.
+- Report on a team only if it appears in `pe.teams`. An unlisted team means the scope is unconfirmed — say so instead of inferring it.
+- Separate observation from evaluation. Describe what happened with a date and a source; do not attach a rating, a level, or a promotion opinion about a named person.
+- Single incidents are not patterns. One data point gets labelled as one data point.
 
 ## Sub-skills (pick the most specific)
 **Under `skills/pe/`:** report-context

@@ -1205,3 +1205,69 @@ MISSIONS.update({
     "plugin": "Route a plugin-distribution request to the right sub-skill. `create-plugin-pr` opens a PR against jstack.core or an overlay using `distribution.github`, respecting `plugin_pr.path_deny_globs`.\n- **Out of scope:** Authoring the skill being shipped (`jstack:skill-creator`), and merging the PR.",
     "shortcuts": "Route a named composite shortcut to its sub-skill. Each composite pins one persona plus one tone — `ceo-brainstorm` (CEO persona + executive tone), `executive-research-brief` (research then executive compression).\n- **Out of scope:** Generic brainstorming or research with no named composite — call the underlying skill directly rather than forcing a persona onto it.",
 })
+
+
+# Domain rules for the four routers added to reach previously-unreachable children.
+# 16 of 20 routers carry a domain-rules block; these four had no CATEGORY_DEEP entry, so they rendered
+# without one and `pe`/`plugin` failed the depth gate.
+CATEGORY_DEEP.update({
+    "design": (
+        "## Domain rules — design\n"
+        "- Two very different outputs live here. `figma-handoff` produces an implementation CONTRACT "
+        "(named components and variants, token references, state coverage, the accessibility criterion "
+        "each state must meet). `visual-single-page-html` produces a self-contained ARTIFACT a reader "
+        "opens directly. Pick by deliverable, not by topic.\n"
+        "- Never claim pixel parity without a screenshot reference; say `[no screenshot available]` "
+        "rather than asserting visual accuracy from a description.\n"
+        "- Accessibility is a named criterion, not an adjective — cite the WCAG rule and the measured "
+        "value (`#999 on #fff is 2.85:1`), never \"contrast looks low\".\n"
+        "- A single-page artifact pins its CDN scripts with SRI and embeds no real customer or employee "
+        "data. Use synthetic values in examples."
+    ),
+    "pe": (
+        "## Domain rules — people and performance engineering\n"
+        "- Assemble the reporting CONTEXT before any narrative: which teams, which projects, and the "
+        "exact window, all validated against `pe.*` in config. A narrative written before the window is "
+        "fixed cannot be checked later.\n"
+        "- Report on a team only if it appears in `pe.teams`. An unlisted team means the scope is "
+        "unconfirmed — say so instead of inferring it.\n"
+        "- Separate observation from evaluation. Describe what happened with a date and a source; do not "
+        "attach a rating, a level, or a promotion opinion about a named person.\n"
+        "- Single incidents are not patterns. One data point gets labelled as one data point."
+    ),
+    "plugin": (
+        "## Domain rules — plugin distribution\n"
+        "- Read the target from `distribution.github` — owner, repo, default branch. Unset means stop "
+        "and say which key is missing; never guess a repository.\n"
+        "- Honour `distribution.plugin_pr.path_deny_globs`. A PR that touches a denied path is a "
+        "packaging mistake, not a review question.\n"
+        "- Open the PR; do not merge it. Merging is a human decision with CI attached.\n"
+        "- Never vendor an upstream marketplace tree into this repo — reference it, or take an "
+        "allowlisted `plugins/<id>/` subtree only."
+    ),
+    "shortcuts": (
+        "## Domain rules — named composites\n"
+        "- A composite pins exactly one persona plus one tone and loads both verbatim with `!cat`. "
+        "Paraphrasing either from memory defeats the point of having the file.\n"
+        "- The composite must change the OUTPUT, not just the preamble. If the answer reads the same as "
+        "the underlying skill without the persona, the composite added nothing.\n"
+        "- Prefer the underlying skill when no named composite fits. Forcing a persona onto an unrelated "
+        "request produces confident-sounding output in the wrong register.\n"
+        "- Cross-plugin bridges (gstack, superpowers) only work when that pack is installed — say it is "
+        "missing rather than inventing its behaviour."
+    ),
+})
+
+# The last router without a domain-rules block (19 of 20 had one).
+CATEGORY_DEEP["computer-use"] = (
+    "## Domain rules — computer use\n"
+    "- Three distinct surfaces, and picking the wrong one wastes the whole attempt: native desktop UI "
+    "(`jstack:computer-use-cua`), web automation via a saved flow (`jstack:workflow-execute`), or an org "
+    "YAML workflow definition. Name the surface and why before acting.\n"
+    "- Driving a real machine is destructive by default. Preview the action, then require explicit "
+    "confirmation; `restart` and `destroy` against a live sandbox are never implicit.\n"
+    "- Never type a credential into a driven UI. Form fills read from env, and no secret appears in a "
+    "flow definition or in chat.\n"
+    "- Capture evidence per step (screenshot, trace, or log). An automation run with no artifact cannot "
+    "be reviewed after the fact."
+)

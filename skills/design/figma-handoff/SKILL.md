@@ -18,6 +18,12 @@ Read the setup preamble first:
 Turn a Figma design into an implementable handoff: named components and variants, token references, state coverage, and the accessibility contract each state must meet.
 - **Out of scope:** Writing the component code (`jstack:review-code-review` for the diff, frontend-specialist for implementation), and editing the Figma file itself.
 
+## Domain rules — design
+- Two very different outputs live here. `figma-handoff` produces an implementation CONTRACT (named components and variants, token references, state coverage, the accessibility criterion each state must meet). `visual-single-page-html` produces a self-contained ARTIFACT a reader opens directly. Pick by deliverable, not by topic.
+- Never claim pixel parity without a screenshot reference; say `[no screenshot available]` rather than asserting visual accuracy from a description.
+- Accessibility is a named criterion, not an adjective — cite the WCAG rule and the measured value (`#999 on #fff is 2.85:1`), never "contrast looks low".
+- A single-page artifact pins its CDN scripts with SRI and embeds no real customer or employee data. Use synthetic values in examples.
+
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
 - Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`

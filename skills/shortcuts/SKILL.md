@@ -16,6 +16,12 @@ Read the setup preamble first:
 Route a named composite shortcut to its sub-skill. Each composite pins one persona plus one tone — `ceo-brainstorm` (CEO persona + executive tone), `executive-research-brief` (research then executive compression).
 - **Out of scope:** Generic brainstorming or research with no named composite — call the underlying skill directly rather than forcing a persona onto it.
 
+## Domain rules — named composites
+- A composite pins exactly one persona plus one tone and loads both verbatim with `!cat`. Paraphrasing either from memory defeats the point of having the file.
+- The composite must change the OUTPUT, not just the preamble. If the answer reads the same as the underlying skill without the persona, the composite added nothing.
+- Prefer the underlying skill when no named composite fits. Forcing a persona onto an unrelated request produces confident-sounding output in the wrong register.
+- Cross-plugin bridges (gstack, superpowers) only work when that pack is installed — say it is missing rather than inventing its behaviour.
+
 ## Sub-skills (pick the most specific)
 **Under `skills/shortcuts/`:** ceo-brainstorm, executive-research-brief
 

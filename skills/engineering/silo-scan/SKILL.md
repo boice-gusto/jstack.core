@@ -2,10 +2,8 @@
 name: jstack-engineering-silo-scan
 description: Detect overlapping work — same files or similar tickets/PRs — from a Jira ticket or GitHub PR; confidence-thresholded; read-only unless user approves comments.
 category: engineering
-agent: Explore
-context: fork
-effort: high
 disable-model-invocation: true
+effort: high
 ---
 
 <!-- Chain Contract -->
