@@ -1,0 +1,149 @@
+---
+name: jstack-crew
+description: Inspect and manage the background Slack agents (crew) that watch a DM and answer in it — list, show, create, edit, enable, disable, remove agents, check status, explain why a message got no reply, and halt everything. Use when the user asks about "my agents", "background agents", "Ralph", "crew", "why didn't it respond", or wants to add/disable an agent. Do NOT use to compose or send a Slack message, and do NOT use to switch the crew to live posting — that is a deliberate human step (`jstackc crew go-live`).
+category: crew
+effort: low
+disable-model-invocation: true
+disallowed-tools: AskUserQuestion
+argument-hint: "[list|show <id>|add <id>|edit <id>|enable <id>|disable <id>|remove <id>|status|doctor|explain <ts>|ui|panic]"
+---
+
+# Crew: managing background Slack agents
+
+The **crew** is a set of named agents that poll one Slack conversation, decide in
+deterministic TypeScript whether anything is addressed to them, and answer in a thread.
+This skill is the operator surface for them. It reads and edits
+`jstack.config.json` → `crew.agents` and the crew ledger; it never composes a Slack message.
+
+## Two facts to state before you change anything
+
+1. **Crew posts as the operator, not as a bot.** There is no bot identity. Every message an
+   agent sends is attributed to the human, and Slack posts **cannot be edited or deleted**.
+2. **`mode` gates everything.** In `dry_run` the pipeline runs and renders the exact payload
+   but posts nothing. Going live is `jstackc crew go-live --confirm-channel <D…>` and is the
+   operator's decision, never yours.
+
+## Procedure
+
+1. **Orient before acting.** Run:
+
+   ```bash
+   jstackc crew agents list
+   jstackc crew status
+   ```
+
+   `status` shows `mode`, whether a `HALTED` sentinel is present, the watermark, task count
+   and spend against the daily cap. If `halted` is `YES`, say so first: nothing will run
+   until it is cleared, and the recorded reason usually explains why.
+
+2. **Answer read-only questions from `list` / `show` / `explain`.** Do not edit config to
+   answer a question.
+
+   | Question | Command |
+   |---|---|
+   | What agents exist, which are live? | `jstackc crew agents list` |
+   | What exactly is agent X configured to do? | `jstackc crew agents show <id>` |
+   | Why did a message get no reply? | `jstackc crew explain <message_ts>` |
+   | Is it running, what has it spent? | `jstackc crew status` |
+   | Is anything misconfigured? | `jstackc crew doctor` |
+   | I want to see it all at once | `jstackc crew ui` |
+
+   `explain` prints the decision trace with a `rule_id` per drop. Report the rule rather
+   than speculating. Common ones: `G3_no_sigil` (no trigger in the message),
+   `too_old` (older than the cold-start window, root messages only),
+   `G1_outbox` (the agent's own post), `ingress_author` / `ingress_channel` (policy),
+   `no_agent` (matched no *enabled* agent), `blocked_budget`, `backlog_skipped`.
+
+3. **Creating an agent.** Needs an id and a workspace:
+
+   ```bash
+   jstackc crew agents add <id> --workspace <path> --description "<what it is for>"
+   ```
+
+   It is created **disabled** on purpose: adding an agent must never silently change what
+   answers the operator's messages. Default sigils are `!<id>` and `@agent-<id>`; a sigil
+   already owned by another agent is refused rather than resolved by key order. Tell the
+   operator the enable command; do not run it unprompted.
+
+4. **Changing an agent.** `jstackc crew agents edit <id>` with any of `--name --model
+   --workspace --sigil --tool --description --persona --emoji`. `--sigil` and `--tool`
+   **replace** the list rather than appending. The config is validated before it is written,
+   so an edit that would not load fails without touching the file.
+
+5. **Turning an agent off.** Prefer `disable` over `remove`:
+
+   - `jstackc crew agents disable <id>` — out of routing, definition kept. Reversible.
+   - `jstackc crew agents remove <id> --yes` — deletes the definition. Refused for the last
+     remaining agent, because crew cannot load with none. Task history survives in the ledger.
+
+6. **Stopping everything.** `jstackc crew panic --reason "<why>"` writes a `HALTED` sentinel;
+   the tick refuses to run or post until `jstackc crew resume`. Use this rather than editing
+   config when something is going wrong. Note that `panic` cannot recall a message already
+   posted, and cannot cancel a scheduled one.
+
+7. **The orchestration page.** `jstackc crew ui` starts an **ephemeral** server on 127.0.0.1
+   with a per-run token and opens a page covering agents, tasks, logs, scheduler and doctor.
+   It dies on Ctrl-C and the token is never written to disk.
+
+   Suggest it when the operator wants an overview rather than an answer. Two things to tell
+   them rather than let them discover: `go-live`, `resume`, `install` and `uninstall` are
+   **not reachable from the page** on purpose, and the server refuses cross-site requests,
+   GET mutations and unexpected `Host` headers — because a browser-reachable control plane
+   that can post as them is the shape of a known RCE, and loopback binding alone is not a
+   defence.
+
+8. **Running without a terminal.** `jstackc crew install` compiles `crewd` and installs a
+   LaunchAgent. Compiling is not cosmetic: TCC attributes file access to the executable
+   launchd runs, so a shell script is attributed to `/bin/bash` and denied `~/Documents`,
+   while a compiled binary was measured reading it fine. `jstackc crew doctor` reports the
+   real answer, because it reads what `crewd` recorded from inside the launchd context rather
+   than probing from a terminal that has different grants. Only send someone to System
+   Settings if doctor actually says denied.
+
+9. **Verifying a change without posting.** `jstackc crew simulate '<text>'` pushes a synthetic
+   message through the real poller, guards, router and renderer and stops at the Slack
+   boundary. It forces `dry_run` even when `mode` is `live`, so it is always safe.
+
+10. **Checking answer quality, not just plumbing.** `jstackc crew eval` grades the agent's real
+    answers on hard tasks — multi-file tracing, a refusal, an unknown symbol, a prompt
+    injection. Every case runs through `simulate`, so it never posts and never moves a
+    watermark. Two kinds of check: deterministic ones (every cited `file.ts:42` is resolved
+    against the real workspace and the line number verified) and judged rubric criteria. Use
+    `--deterministic` for a free offline pass, `--only <ids>` for one case. It costs roughly
+    $1 for the full suite, so do not run it on a whim; report the pass counts and the artefact
+    path under `.tmp/crew-evals/`.
+    - A run that aborts with "crew could not run" is a blocker (contended lock, HALTED, auth),
+      not an agent failure. Fix the blocker and re-run; do not report it as a quality result.
+    - `judge_incomplete` on a criterion is a harness fault for the same reason.
+
+## Report back
+
+State, in this order: mode and halt state; the agents and which are enabled; what you
+changed and the exact command; anything the operator must do next (usually `enable`, or
+`go-live`). If you edited config, name the file. Keep it to a few lines.
+
+## Failure modes
+
+- **`no "crew" key`** — not set up. `jstackc crew init --user <U…> --dm <D…> --workspace <path>`.
+  Get the DM channel id from the operator; do not guess it.
+- **`HALTED`** — report the recorded reason and stop. Clearing it is the operator's call.
+- **`auth_lost`** in the event log — the Slack MCP grant is gone. Only an interactive
+  `claude mcp login` fixes it; the crew cannot self-heal, by design.
+- **`backlog_skipped`** — messages arrived faster than the page budget. Suggest raising
+  `crew.slack.max_pages` or `read_limit`, or ticking more often. The skipped range is in the
+  event detail.
+- **Nothing is polling.** `crew tick` is one cycle. Continuous operation is either
+  `jstackc crew install` (LaunchAgent, survives terminal close and reboot) or
+  `jstackc crew watch` (foreground). If the operator says "it didn't respond", check this
+  before anything else — it is the most common cause.
+- **`backlog_skipped`** — more messages arrived than one tick's page budget. The skipped range
+  is named in the event detail; raise `crew.slack.max_pages` or tick more often.
+
+## Do not
+
+- Do not run `go-live`, `enable`, or `remove` on your own initiative. Propose and let the
+  operator choose.
+- Do not hand-edit `crew.agents` in `jstack.config.json`; the subcommands validate before
+  writing and refuse duplicate sigils.
+- Do not add a channel to `policy.egress.channels` other than the operator's own DM without
+  an explicit instruction. Everything posted there is attributed to them, permanently.
