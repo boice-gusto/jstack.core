@@ -3,6 +3,7 @@ name: jstack-sprint-refinement
 description: Refinement ceremony — five questions per ticket, capacity snapshot, sprint-ready checklist; no bulk Jira writes without confirmation.
 category: sprint
 effort: high
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->
@@ -70,7 +71,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read the board's actual state before planning against it. When something spilled, diagnose which of scope growth, underestimation, or blockage caused it rather than re-committing the same item. Change the plan or the scope, not the record of what happened.
 
 ### Step 3 — Execute
-Apply the `jstack-sprint-refinement` workflow using config and any applicable templates under `templates/sprint/`.
+Apply the `jstack-sprint-refinement` workflow using values from `jstack.config.json`. There is no `templates/sprint/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm the numbers match the board rather than the narrative, and that carryover is explained rather than silently re-committed.

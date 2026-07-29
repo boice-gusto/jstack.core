@@ -1,0 +1,34 @@
+name: Graded rubric — self-description checked against declared scope and failure modes
+prompt: >-
+  You are applying the jstack skill **jstack-transcripts-ingest** (path:
+  `meetings/transcripts-ingest`).
+
+  Category: meetings.
+
+  Skill description: Ingest new transcript files from Google Drive (or paste) into meetings
+  pipeline; classify source and route to child skills.
+
+
+  User: In 3–5 short bullet points, say what this skill is for, one thing it explicitly does
+
+  *not* do, and what it does when it is missing config or required input. Under ~200 words.
+
+  Do not claim to have run external tools or APIs.
+grading:
+  rubric:
+    - description: Identifies this skill's specific purpose, not a generic description of an assistant
+      pass_if: >-
+        response states what jstack-transcripts-ingest is for and when to use it, in terms specific
+        to meetings
+    - description: Describes what it does when a declared failure mode occurs
+      pass_if: >-
+        response explains how it behaves in this situation, or that it stops and asks: Drive
+        integration missing
+  pass_threshold: 2
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 120
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

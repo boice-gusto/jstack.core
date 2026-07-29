@@ -16,7 +16,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Validate and normalize PE / team report JSON against schemas/pe; gate skills until pe.configured is true.
+Assemble the PE reporting context for a period: teams, projects, and the window the figures cover, validated against config.
+- **Out of scope:** Writing performance narrative about a named individual, and reporting on a team absent from `pe.teams`.
 
 ## Domain rules — pe/report-context
 

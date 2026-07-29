@@ -11,9 +11,12 @@ effort: low
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md
 
 ## What this skill is for
-Route review requests to project-review, announcement-review, or counsel-review.
+Route a review request to the right lens: code-review (diff), project-review (schedule/scope/risk), announcement-review (comms), or counsel-review (multi-persona). One lens per request unless the user asks for reconciliation.
+- **Out of scope:** Approving or merging anything, and overriding a named human reviewer's verdict.
 
 ## Domain rules — review
 - Multi-perspective pass using `prompts/personas/*`. Separate factual issues from tone issues.
@@ -21,7 +24,7 @@ Route review requests to project-review, announcement-review, or counsel-review.
 - If the same content must ship in Notion, feed output to `jstack:notion-article` with edits applied.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/review/`:** project-review, announcement-review, counsel-review
+**Under `skills/review/`:** code-review, project-review, announcement-review, counsel-review
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

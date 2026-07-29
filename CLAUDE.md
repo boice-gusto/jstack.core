@@ -8,7 +8,7 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 - **Package manager:** `bun` (lockfile: `bun.lock`). Use `bun install`, `bun add`, `bun remove`. Do not use `npm`, `yarn`, or `pnpm`.
 - **Test runner:** `bun:test`. Tests live next to source as `*.test.ts` (e.g. `cli/src/lib/foo.test.ts`).
 - **Module system:** ESM. Imports of local TypeScript files use the `.js` suffix even though the source is `.ts` (e.g. `import { x } from "./foo.js"`). Match this in new files.
-- **Config schema:** Zod, in `cli/src/types/config.ts` — this is the only schema any code enforces. `config/schema.json` is **documentation only** (no code loads it); `config/defaults.json` supplies runtime defaults.
+- **Config schema:** Zod, in `cli/src/types/config.ts` — the single source of truth and the only schema any code enforces. `config/schema.json` is **generated** from it by `bun run schema:generate`; `bun run schema:check` (in `bun run check`) fails on drift. Never hand-edit `config/schema.json`. `config/defaults.json` supplies runtime defaults.
 - **CLI framework:** `commander`. CLI entry: `cli/src/index.ts`.
 
 ## Commands you'll use most
@@ -67,7 +67,9 @@ To add a wizard to a skill: replace the prose "ask once if unclear" pattern in t
 ## Config-first
 
 - Org-specific values (sprint length, approvers, channels, integration ids) live in `jstack.config.json`. Never hardcode them in skill prose or TS source.
-- `bun run validate-config` merges `config/defaults.json` with a project's `jstack.config.json` and checks integration keys. It does **not** read `config/schema.json` — nothing does. Keep `config/schema.json` updated as the human/agent-facing reference, but remember it enforces nothing; the enforced contract is the Zod schema in `cli/src/types/config.ts`, which today validates only a few sections deeply.
+- `bun run validate-config` merges `config/defaults.json` with a project's `jstack.config.json`, **validates both against the Zod schema**, and checks integration keys. Failures print one `path: message` line per issue.
+- To change the config contract: edit `cli/src/types/config.ts`, run `bun run schema:generate`, and commit both. No code loads `config/schema.json` — it is the generated human/agent-facing reference, kept honest by the drift gate rather than by discipline.
+- All 43 sections are described and every field is `.optional()` inside a `.passthrough()` section, so unknown keys never break an older CLI. **Do not add `.default()`** — defaults live in `config/defaults.json`; a Zod default would be injected by `readConfig` and then persisted by `writeConfig`, silently inflating a user's hand-written config.
 - Skill defaults you want users to override go under `skill_defaults.<skill-id>`.
 
 ## Editing rules

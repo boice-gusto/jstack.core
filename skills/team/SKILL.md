@@ -1,6 +1,6 @@
 ---
 name: jstack-team
-description: Team snapshot: roster, on-call, sprint goal, dependencies. No individual performance color.
+description: "Team snapshot: roster, on-call, sprint goal, dependencies. No individual performance color."
 category: team
 effort: high
 ---
@@ -11,6 +11,8 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/team-context.md
 
 ## What this skill is for
 Structural team snapshot: roster, on-call, sprint goal, cross-team dependencies. No individual performance commentary.

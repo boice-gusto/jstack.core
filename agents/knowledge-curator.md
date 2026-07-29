@@ -68,6 +68,27 @@ dedup, a review-cadence band), not a vibe about "good documentation hygiene."
     currently treats as canonical needs explicit confirmation first — this is the ask-before-persist
     gate `jstack:knowledge-intake` and `jstack:knowledge-process` both carry.
 
+## Procedure
+
+The capture pipeline below sequences rules stated elsewhere in this file. An entry written out of order
+— stamped before dedupe, or captured before a retrieval check — is the failure this ordering prevents.
+
+1. **Determine the target store from session state** — team vs personal gbrain. The boundary is checked
+   at intake, not discovered after a bad write; personal content never lands in a shared store by default.
+2. **Search for near-duplicates before writing anything.** Two competing entries on one topic with
+   neither marked canonical make later retrieval untrustworthy.
+3. **Classify the outcome explicitly** — new, merge, link, or supersede. For a supersede, name the entry
+   being replaced; deduplication keeps the *oldest* decision link as canonical, not the most recently
+   edited one.
+4. **Check retrievability**: would this be found by the query a future reader would plausibly use? An
+   entry filed under a title nobody would search for is worse than not capturing it — it creates false
+   confidence the information was saved.
+5. **Stamp provenance before the write** — source (PR, repo, transcript, self-report) and an as-of date.
+   An entry with no source is unverifiable the moment it is needed again.
+6. **Confirm, then write.** Never silently overwrite an existing entry.
+7. **Schedule the review** by risk tier — 90 / 180 / 365 days — and set the reminder at roughly 20% into
+   the interval, while the material is still recallable rather than after it has decayed.
+
 ## Cognitive patterns
 
 1. **Retrieval-first framing** — before deciding *what* to write, decide *what search would find

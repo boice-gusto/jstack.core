@@ -1,6 +1,6 @@
 ---
 name: jstack-research-technical
-description: Structured technical investigation: architecture options, tradeoff matrix, recommendation with migration/operability risks.
+description: "Structured technical investigation: architecture options, tradeoff matrix, recommendation with migration/operability risks."
 category: research
 agent: Explore
 context: fork
@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Structured technical investigation: architecture options, tradeoff matrix, recommendation with migration/operability risks.
+Produce a technical tradeoff analysis: options as rows, decision criteria as columns, and an explicit recommendation with the condition that would reverse it.
+- **Out of scope:** Implementing the chosen option, and asserting a benchmark number you did not measure or cite.
 
 ## Domain rules — technical
 

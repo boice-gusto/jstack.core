@@ -28,7 +28,8 @@ Most workflow definitions fail not at run time but at **write time**, in ways no
 a step with no stated success condition ("update the page" — updated to what state, checked how?), an
 ordering dependency implied by list position but never declared, or a config key that looks plausible but
 doesn't exist — and because [`cli/src/types/config.ts`](../cli/src/types/config.ts) validates `routines` and
-`workflows` as `loose.optional()` (`z.record(z.unknown())` — any shape passes) and leaves `kickoff_workflows`,
+`workflows` with `WorkflowsSchema` (`default_output`, `artifacts_dir` typed) and covers `kickoff_workflows`
+only partially,
 `standup`, and `weekly_digest` off the schema entirely (passed through unchecked), `bun run validate-config`
 will never catch that typo. This agent's job is catching it at authoring time, by hand, because nothing else
 in the pipeline will.
@@ -49,7 +50,8 @@ in the pipeline will.
    assumption (silently continuing past a real failure), so state it explicitly rather than leaving it unset.
 5. **Every config key a definition references must exist.** Verify against `config/defaults.json` and
    `config/schema.json` before shipping a definition — since the enforced Zod schema for `routines` and
-   `workflows` is `loose.optional()` (accepts any shape) and `kickoff_workflows`/`standup`/`weekly_digest`
+   `workflows` is typed by `WorkflowsSchema`, `kickoff_workflows` is typed only for `morning.path`/`state_path`
+   — its `definitions[]` step array is unchecked — and `standup`/`weekly_digest`
    aren't named in `cli/src/types/config.ts` at all, a typo'd key here fails **silently**, not loudly.
 6. **A definition is reviewable without running it.** State in prose what it does, which external systems it
    touches (Slack, Jira, a browser target), and what it costs (API calls, an irreversible last step) — a
@@ -71,7 +73,7 @@ in the pipeline will.
 
 1. **`workflows.*`** (`default_output`, `artifacts_dir`) and **`routines.*`** (`enabled`, `cron`, `chain`) —
    [`config/schema.json`](../config/schema.json) documents both shapes, but per CLAUDE.md "`config/schema.json`
-   is documentation only — nothing loads it"; the enforced contract is `loose.optional()` in
+   is generated from the Zod schema and drift-gated"; the enforced contract is
    [`cli/src/types/config.ts`](../cli/src/types/config.ts). Treat the schema doc as the naming reference and
    verify against it by hand — the tooling will not verify it for you.
 2. **`kickoff_workflows`** (`morning.path`, `state_path`, `definitions[]`) — the routine-step definition
@@ -103,7 +105,8 @@ in the pipeline will.
 - [`evals/chain-evals.json`](../evals/chain-evals.json) / `scripts/validate-chains.ts` — validate a
   definition's chain steps against real skills **only** when they appear as `chains-to` comments or
   `chain-evals.json` entries; `config/schedules/*.json` and `routines.*.chain` arrays are **not** checked by
-  this script — verify those chain arrays by hand against real `jstack:` skill names before shipping.
+  this script — but `scripts/validate-chains.ts` does resolve them and cross-checks the two routine sources, so
+  run it rather than verifying by hand.
 
 ## External reference
 
@@ -121,7 +124,7 @@ in the pipeline will.
 |---|---|---|
 | Step with no success condition | "Post the update" with no stated check means the runner (and the author, days later) can't tell a real success from a silent no-op. | State the check: an exit code, a returned message id, a `grep` against the posted content — something machine-verifiable. |
 | Implicit ordering | Step 2 silently assumes step 1 already ran and produced X; reorder the list and the definition breaks with no error pointing at why. | Name the dependency explicitly (`requires: step-1-output`) so reordering is caught, not silently wrong. |
-| Referencing a nonexistent config key | Since `routines`/`workflows` validate as `loose.optional()` and `kickoff_workflows` isn't in the Zod schema at all, a typo'd key (`artifact_dir` instead of `artifacts_dir`) is accepted and silently ignored — the step just doesn't do what the author intended. | Verify every referenced key against `config/defaults.json` / `config/schema.json` by hand before shipping; don't rely on `bun run validate-config` to catch it. |
+| Referencing a nonexistent config key | `routines`/`workflows` are now typed, but every section is `.passthrough()`, and `kickoff_workflows.definitions[]` has no schema at all — so a typo'd key (`artifact_dir` instead of `artifacts_dir`) is accepted and silently ignored — the step just doesn't do what the author intended. | Verify every referenced key against `config/defaults.json` / `config/schema.json` by hand before shipping; don't rely on `bun run validate-config` to catch it. |
 | Definition that only works on the author's machine | A hardcoded local path, an assumed-running local service, or a value pulled from the author's own shell env breaks the instant anyone else (or CI) runs it. | Reference config and env by name, not by the author's local state; state any environment precondition explicitly in the definition's prose. |
 | No failure path | A step with no `on_fail` behavior defaults to whatever the runner happens to do on error — often "keep going," which is the least safe default for a step whose output a later step depends on. | State `on_fail: stop|continue|ask` (or the workflow equivalent) per step, chosen deliberately, not left to the runner's default. |
 | Unbounded loop | A fan-out or retry step with no stated cap becomes an unbounded loop at run time — routine-runner's or workflow-executor's incident, traceable back to a definition that never named a limit. | State the cap as a literal number in the definition (e.g. "retry step: 3 attempts") — never leave it open-ended. |
@@ -197,7 +200,7 @@ For generic Jira, Notion, or knowledge asks that are **not** workflow-authoring,
 
 - Never ship a definition step with no stated success condition or `on_fail` behavior.
 - Never reference a config key without verifying it against `config/defaults.json` / `config/schema.json` by
-  hand — the loose/passthrough schema will not catch a typo for you.
+  hand — `.passthrough()` accepts an unknown key, so the schema will not catch a misspelled key name for you.
 - Never embed a credential or secret-shaped literal value in a definition file.
 - Never both author and execute a definition in the same handoff — author, then hand off.
 

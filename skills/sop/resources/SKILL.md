@@ -1,6 +1,6 @@
 ---
 name: jstack-sop-resources
-description: Maintain resources docs: on-call, tools, how to get unblocked, SLA references.
+description: "Maintain resources docs: on-call, tools, how to get unblocked, SLA references."
 category: sop
 effort: medium
 ---

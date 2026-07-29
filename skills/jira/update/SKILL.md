@@ -2,8 +2,8 @@
 name: jstack-jira-update
 description: Update fields or add comments on an existing Jira issue. Confirm before sensitive field changes.
 category: jira
-argument-hint: [PROJ-123]
-arguments: [ticket_id]
+argument-hint: "[PROJ-123]"
+arguments: "[ticket_id]"
 disable-model-invocation: true
 effort: low
 ---

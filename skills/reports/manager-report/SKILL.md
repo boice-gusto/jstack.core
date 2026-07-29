@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate a manager rollup across teams without stack-ranking individuals.
+Assemble a manager-facing roll-up: delivery, risk, and people-signal sections at the altitude a manager acts on.
+- **Out of scope:** Individual performance verdicts, and IC-identifying detail where the report redacts names by config.
 
 ## Domain rules — manager-report
 

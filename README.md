@@ -30,7 +30,7 @@ It runs on **Claude Code**, **Cursor**, and **Codex**.
 | | |
 |---|---|
 | **136 skills** | Sprint ceremonies, incident response, Jira/Notion CRUD with enforcement rules, reports, research, meetings, session lifecycle, personal productivity |
-| **18 agents** | Role-scoped subagents (staff engineer, PM, design lead, sprint lead, review counsel…) for multi-perspective work |
+| **22 agents** | Role-scoped subagents (staff engineer, PM, design lead, sprint lead, review counsel…) for multi-perspective work |
 | **CLI** | `setup`, `doctor`, `eval`, `schedule`, `workflow`, `mcp`, `telemetry` — scriptable, with JSON output |
 | **Eval harness** | Structural, chain, and LLM-graded evals so a skill can be shown to still work |
 | **Onboarding wizard** | Browser and conversational, both producing the same validated config |

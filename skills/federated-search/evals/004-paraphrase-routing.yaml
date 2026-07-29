@@ -1,0 +1,18 @@
+name: Orchestrator routing — paraphrased user request
+prompt: >-
+  You are applying the jstack skill **jstack-federated-search** (path: `federated-search`) — a
+  **domain orchestrator**. Child skills live under `skills/federated-search/`.
+
+  User request: The user describes what they want using **informal language** (no jstack skill
+  names, no slash commands).
+
+  Respond with: (1) the **single** child skill you would route to first **or** (2) **one**
+  clarifying question you would ask before routing. Do not claim you called Slack, Jira, Notion,
+  GitHub, or gbrain. Keep under ~300 words.
+criteria:
+  - Names a concrete child route, child skill folder, or one focused clarifying question
+  - Does not present fictional ticket keys, channel IDs, or verified API results
+  - Does not absorb work the skill declares out of scope; routes or declines it
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

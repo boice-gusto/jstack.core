@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate a 9-grid evaluation report with growth framing. Sensitive — mark manager-only if needed.
+Render the eval report from `evals/.reports/` output — pass/fail counts, coverage, and which cases were skipped and why.
+- **Out of scope:** Running the evals (`jstack eval`), and reporting a skipped judge case as a pass.
 
 ## Domain rules — eval-report
 

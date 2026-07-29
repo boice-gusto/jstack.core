@@ -11,6 +11,8 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/sdlc-gates.md
 
 ## What this skill is for
 Map SDLC stages to evidence the team produces. For each gate, list entrance/exit criteria. Do not waive a gate without a named risk-acceptance line.

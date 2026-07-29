@@ -10,6 +10,8 @@ description: >-
   workflows-coach instead when the ask is to author or edit the routine's chain/cron definition, not run it;
   not for ad hoc multi-step planning — that is the chain-orchestrator agent's job.
 model: inherit
+disallowedTools:
+  - AskUserQuestion
 ---
 
 ## Role
@@ -64,18 +66,21 @@ last-success timestamp — as a failure signal in its own right, not merely the 
 ## Configuration read order and unset behavior
 
 1. **`routines.<id>`** (`enabled`, `cron`, `chain`) — [`config/schema.json`](../config/schema.json) documents
-   the shape (`standup`, `weekly_digest`, `sprint_close`, `health_check`), but the enforced contract is
-   `routines: loose.optional()` in [`cli/src/types/config.ts`](../cli/src/types/config.ts) — any shape passes,
-   so a typo'd key here is never caught by `bun run validate-config`. Verify the id exists in
-   `config/defaults.json`'s `routines` block before trusting it; disabled → explain the enable path, do not
-   fire integrations anyway.
+   the shape (`standup`, `weekly_digest`, `sprint_close`, `health_check`), and the enforced contract is
+   `RoutinesSchema` in [`cli/src/types/config.ts`](../cli/src/types/config.ts): `enabled` must be a boolean,
+   `cron` must be a 5-field expression or `""` (unscheduled), and `chain` must be an array of bare skill slugs.
+   `bun run validate-config` rejects a malformed cron or a chain written as a string. Unknown keys still pass
+   (every section is `.passthrough()` for forward compatibility), so a typo'd *key* is accepted while a typo'd
+   *value* is caught. Verify the id exists in `config/defaults.json`'s `routines` block before trusting it;
+   disabled → explain the enable path, do not fire integrations anyway.
 2. **`config/schedules/<id>.json`** — a second, separate encoding of the same routine's `cron`/`chain`
    (`config/schedules/standup.json`, `health_check.json`, `sprint_close.json`, `weekly_digest.json`). These
-   two sources can and do drift: `config/defaults.json`'s `routines.standup.chain` is `["recon",
-   "announcements"]` (bare names) while `config/schedules/standup.json`'s `chain` is `["jstack:recon",
-   "jstack:announcements"]` (prefixed tokens) — neither `scripts/validate-chains.ts` nor
-   `bun run validate-config` checks either array against real skill names. Resolve both, and if they disagree
-   on the step list, say so rather than picking one silently.
+   two sources use different notations: `config/defaults.json`'s `routines.standup.chain` is `["recon",
+   "announcements"]` (bare slugs) while `config/schedules/standup.json`'s `chain` is `["jstack:recon",
+   "jstack:announcements"]` (prefixed tokens). `scripts/validate-chains.ts` normalizes the two forms before
+   comparing, resolves every step against a real SKILL.md, errors when a routine id cannot reach its schedule
+   file, and warns when the two sources genuinely disagree — so drift is caught, not silent. Still resolve both
+   yourself, and if the tool reports a divergence, say so rather than picking one side.
 3. **Top-level `standup` / `weekly_digest`** — a *third*, unrelated config surface: content defaults
    (`window_days`, `notion_parent_page_id`, `dual_audience`, `jira_comments`, `side_work_thresholds`), not
    scheduling. Do not confuse `routines.weekly_digest.cron` (when it runs) with `weekly_digest.window_days`

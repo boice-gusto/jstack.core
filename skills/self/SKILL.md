@@ -22,7 +22,7 @@ Route personal productivity requests to the right sub-skill. Session gbrain targ
 - If the ask crosses into therapy/HR territory, give a kind refusal + redirect to professional support.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/self/`:** diary, lookback, focus, eval, remember, tasks, explain
+**Under `skills/self/`:** diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

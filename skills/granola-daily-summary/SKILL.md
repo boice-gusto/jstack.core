@@ -2,7 +2,7 @@
 name: jstack-granola-daily-summary
 description: Summarize Granola (or meeting) notes into a daily digest.
 when_to_use: End-of-day summary from meeting notes or Granola exports.
-category: workflows
+category: meetings
 data_class: internal
 disallowed-tools: AskUserQuestion
 effort: low
@@ -17,12 +17,13 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Summarize Granola (or meeting) notes into a daily digest.
+Summarize Granola or meeting notes into a daily digest with owners and follow-ups, from the notes provided.
+- **Out of scope:** Joining or transcribing the call (`jstack:meetings-transcribe`), and inferring a decision the notes do not record.
 
-## Domain rules — browser workflows
-- Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
-- Same flow definition for CI and local — call out which base URL the user is targeting.
+## Domain rules — meetings
+- Privacy: mark sensitive transcript segments; offer redacted summary for public channels.
+- Action items need **owner + due**; if owner unknown, `unassigned` + suggested ping.
+- Not a calendar authority — suggest invite text, do not send unless a tool explicitly does.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -41,13 +42,13 @@ Summarize Granola (or meeting) notes into a daily digest.
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
+Confirm attribution before recording a decision as someone's — misattributing a commitment is the costly error here. Keep personal notes out of team stores. Distinguish what was decided from what was merely discussed.
 
 ### Step 3 — Execute
-Apply the `jstack-granola-daily-summary` workflow using config and any applicable templates under `templates/workflows/`.
+Apply the `jstack-granola-daily-summary` workflow using values from `jstack.config.json`. There is no `templates/meetings/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
-Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
+Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. Confirm personal content did not land in a shared store.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,11 +68,11 @@ Use a domain-appropriate heading, then:
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
+| No transcript / empty paste | Ask user to provide notes or audio file path. |
+| PII in public summary | Redact and flag before posting; offer redacted vs full versions. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-meetings-granola` then `jstack-meetings-action-items`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

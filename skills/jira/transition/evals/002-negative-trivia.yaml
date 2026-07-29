@@ -1,7 +1,30 @@
-name: Negative — minimal reply (no full skill run)
-prompt: 'Reply with only the single word: pong'
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-jira-transition** (path: `jira/transition`).
+
+  Category: jira.
+
+  Skill description: Move a Jira issue between workflow states after validating the transition is
+  legal and required fields are set.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Field updates beyond what
+  the transition requires (use jira/update).
+
+
+  Keep the response under ~200 words.
 criteria:
-  - Response is very short (roughly one word or a tiny phrase, optionally with light punctuation)
-  - Does not produce a long multi-section report, checklist, or workflow as the main content
-expect_skill: false
-timeout: 90
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Field
+    updates beyond what the transition requires (use jira/update)
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Does not claim the action was performed, and requires explicit user confirmation before any
+    write
+  - Hands off rather than absorbing the work (e.g. to jstack:jira-notify)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

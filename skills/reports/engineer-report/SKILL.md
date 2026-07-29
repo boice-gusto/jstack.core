@@ -1,6 +1,6 @@
 ---
 name: jstack-engineer-report
-description: Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics.
+description: "Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics."
 category: reports
 effort: high
 ---
@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics.
+Assemble an individual engineer report for a named period, from configured sources only, with per-figure provenance.
+- **Out of scope:** Performance ratings or promotion recommendations, and comparing engineers against each other.
 
 ## Domain rules — engineer-report
 

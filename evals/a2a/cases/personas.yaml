@@ -1,0 +1,79 @@
+# Persona behavioral cases — A2A: a candidate agent is given the persona file plus a task,
+# then an independent judge assesses whether the persona actually changed the output.
+#
+# This is the only way to test a persona. A static check can confirm a file has a
+# "Prime Directives" heading; it cannot confirm the file makes a model behave differently.
+# These personas previously contained fabricated company facts injected verbatim into
+# prompts, and their real content was hidden inside HTML comments, so a model reading them
+# got headings with no guidance. The tests below assert observable behavioral consequences.
+
+- id: ceo-persona-demands-a-decision
+  surface: personas
+  description: The CEO lens must reject a status update masquerading as a proposal.
+  subject:
+    kind: agentic
+    paths: ["prompts/personas/ceo.md"]
+    task: >-
+      Review this internal proposal and give your assessment:
+      "Q3 Platform Update. The team completed the caching migration and reduced p95 by 18%.
+      We also refactored the auth module and improved test coverage. Next quarter we plan to
+      continue investing in platform reliability. Options: (A) continue current staffing,
+      (B) add two engineers, (C) pause platform work."
+  criteria:
+    - The response identifies that the document contains no specific decision, ask, or deadline for the reader — it is a status update presented as a proposal.
+    - The response objects that the three options are presented neutrally without a recommendation, rather than simply picking one for the author.
+    - The response asks what happens if nothing is done, or otherwise probes the counterfactual/urgency.
+    - The response does NOT invent facts about the company such as revenue figures, competitor names, compliance deadlines, or headcount that were absent from the proposal.
+
+- id: qa-persona-treats-tautological-assert-as-defect
+  surface: personas
+  description: >-
+    The QA lens must call a non-falsifiable assertion a defect rather than counting it as
+    coverage. This is the exact failure mode found across ~90% of this repo's eval files.
+  subject:
+    kind: agentic
+    paths: ["prompts/personas/qa.md"]
+    task: >-
+      Assess this test as a reviewer:
+      "test('report renders', () => { const out = render(payload); expect(out.length).toBeGreaterThan(10); expect(out).not.toContain('<script'); })"
+      The author says this gives them coverage of the report renderer.
+  criteria:
+    - The response identifies that these assertions are effectively tautological — almost any non-empty output would satisfy them, so they cannot detect a regression.
+    - The response states or clearly implies that such a test is a defect or provides false confidence, not genuine coverage.
+    - The response proposes at least one concrete, falsifiable assertion tied to actual expected report behavior.
+
+- id: engineer-persona-names-failure-mode-not-vibes
+  surface: personas
+  description: The staff-engineer lens must name a specific mechanism, not offer generic caution.
+  subject:
+    kind: agentic
+    paths: ["prompts/personas/engineer.md"]
+    task: >-
+      Review this design note:
+      "On checkout we call the inventory service synchronously to reserve stock, then call
+      the payment provider, then write the order row. If payment fails we log the error and
+      return a 500. We'll add retries later if needed."
+  criteria:
+    - The response identifies at least one specific named failure mode, such as the reservation persisting after a payment failure, a partial write with no compensating action, or a missing timeout on a synchronous dependency.
+    - The response objects to the error handling being a bare log-and-500 rather than a named, handled condition.
+    - The response raises retry safety or idempotency rather than accepting "add retries later" as sufficient.
+    - The response is specific about mechanism and does not consist solely of generic advice like "consider scalability" or "add more tests".
+
+- id: personas-produce-distinct-findings
+  surface: personas
+  description: >-
+    Five personas that all produce the same shape of finding are one persona copied five
+    times. Before the rewrite they shared an identical four-section skeleton.
+  subject:
+    kind: agentic
+    paths: ["prompts/personas/pm.md", "prompts/personas/engineer.md"]
+    task: >-
+      Two separate reviewers are described above. For the following change, state what the PM
+      lens would raise that the engineer lens would not, and vice versa:
+      "Add a bulk CSV export button to the reports page. Generates the file server-side and
+      emails a download link when ready."
+  criteria:
+    - The response attributes clearly different concerns to each lens rather than repeating the same points under two headings.
+    - The PM-attributed concerns involve user need, trigger, measurable outcome, or scope — not implementation mechanics.
+    - The engineer-attributed concerns involve mechanism such as job durability, timeout, failure handling, or resource cost — not product framing.
+    - The response does not claim both lenses would raise substantially identical findings.

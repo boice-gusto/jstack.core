@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Team DORA-style signals with caveats for sample size. Separate unplanned work % when labels exist.
+Report team delivery metrics (throughput, cycle time, WIP, flow efficiency) from configured sources, stating the population and window for every figure.
+- **Out of scope:** Ranking individuals within the team, and inferring causation from a metric shift.
 
 ## Domain rules — team metrics
 

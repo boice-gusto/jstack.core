@@ -1,8 +1,9 @@
 ---
 name: jstack-sprint-planning
-description: Sprint planning: capacity, commit vs goal, spill from last sprint with root causes.
+description: "Sprint planning: capacity, commit vs goal, spill from last sprint with root causes."
 category: sprint
 effort: high
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

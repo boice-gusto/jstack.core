@@ -1,6 +1,6 @@
 ---
 name: jstack-setup
-description: First-time jstack onboarding: run jstack setup wizard, create config, validate with jstack doctor. No secrets in chat.
+description: "First-time jstack onboarding: run jstack setup wizard, create config, validate with jstack doctor. No secrets in chat."
 when_to_use: Also for first-time install, onboarding, jstack doctor failures, MCP setup, or fixing missing jstack.config.json.
 category: setup
 effort: low

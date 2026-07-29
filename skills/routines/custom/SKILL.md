@@ -14,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.
+Execute a custom routine from its `config/schedules/<id>.json` definition, resolving every step to a real skill before starting.
+- **Out of scope:** Inventing a step the definition does not contain, and returning a plausible result when the definition is invalid — return the fix instead.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.

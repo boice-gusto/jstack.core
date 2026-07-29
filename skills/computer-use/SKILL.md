@@ -1,7 +1,6 @@
 ---
 name: jstack-computer-use
-description: Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.
-when_to_use: >-
+description: Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs a saved JSON workflow definition under config/workflows/.
 category: computer-use
 effort: low
 ---
@@ -14,7 +13,13 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.
+Route computer-use requests to the right surface: native macOS/desktop UI (`jstack:computer-use-cua`), web automation (`jstack:workflow-execute`, Playwright MCP), or a saved JSON workflow definition under `config/workflows/`. Pick one surface and say why.
+- **Out of scope:** Driving the machine yourself from this skill, and installing drivers or granting accessibility permissions — those are operator steps.
+
+## Sub-skills (pick the most specific)
+**Under `skills/computer-use/`:** cua
+
+If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -36,7 +41,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-computer-use` workflow using config and any applicable templates under `templates/computer-use/`.
+Route to the most specific child skill under `skills/computer-use/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.
@@ -61,7 +66,7 @@ Use a domain-appropriate heading, then:
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+This is a **domain orchestrator** — route to the most specific child skill. Do not inline every sub-flow. If the user's task maps to one child, say `suggested_next: <child-skill>` and stop.
 
 ## User request
 

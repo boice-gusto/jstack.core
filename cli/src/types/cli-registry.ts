@@ -32,6 +32,39 @@ export const CLI_COMMANDS: CliCommand[] = [
     tags: ["setup", "onboarding", "mcp"],
     arguments: [
       {
+        name: "--schema",
+        type: "boolean",
+        required: false,
+        default: false,
+        description: "Field-by-field schema wizard (cli/src/lib/schema-questions.ts) instead of the section wizard.",
+      },
+      {
+        name: "--section",
+        type: "string",
+        required: false,
+        description: "With --schema: limit the wizard to one config section.",
+      },
+      {
+        name: "--non-interactive",
+        type: "boolean",
+        required: false,
+        default: false,
+        description: "With --schema: accept defaults without prompting. Use for scripted setup.",
+      },
+      {
+        name: "--ci",
+        type: "boolean",
+        required: false,
+        default: false,
+        description: "Write a fixture config unconditionally, no prompts. For CI only — overwrites without confirmation.",
+      },
+      {
+        name: "--disk-fallback-root",
+        type: "string",
+        required: false,
+        description: "Override knowledge_storage.disk_fallback_root during setup.",
+      },
+      {
         name: "--reconfigure",
         type: "boolean",
         required: false,
@@ -154,11 +187,33 @@ export const CLI_COMMANDS: CliCommand[] = [
     tags: ["setup", "health"],
     arguments: [
       {
+        name: "--apply",
+        type: "boolean",
+        required: false,
+        default: false,
+        description:
+          "With --fix: actually apply repairs (mkdir, write template, set_config) with per-group consent. Requires an interactive terminal.",
+      },
+      {
+        name: "--save-repairs",
+        type: "string",
+        required: false,
+        description: "With --fix: write the repair proposal JSON to this path for later review or replay.",
+      },
+      {
+        name: "--apply-repairs",
+        type: "string",
+        required: false,
+        description:
+          "Replay a saved repair proposal JSON. Requires --apply and an interactive terminal; exits non-zero rather than silently no-op'ing in a non-TTY.",
+      },
+      {
         name: "--fix",
         type: "boolean",
         required: false,
         default: false,
-        description: "Reserved for auto-fix (not implemented)",
+        description:
+          "Run the dependency resolver and print proposed repairs. Dry-run by default; add --apply to write.",
       },
       {
         name: "--strict",
@@ -427,6 +482,27 @@ export const CLI_COMMANDS: CliCommand[] = [
       },
     ],
     returns: "Telemetry status or JSON",
+  },
+  {
+    name: "jstack claude-md",
+    description:
+      "Audit CLAUDE.md against real session transcripts and commits, then render or stage proposed edits. Read-only by default.",
+    tags: ["claude-md", "authoring", "quality"],
+    arguments: [
+      {
+        name: "subcommand",
+        type: "string",
+        required: true,
+        description:
+          "scan [--output prose|json] | render --input <scan.json> [--patch <path>] | apply --patch <path> --scan-mtime <ms> --yes. Flags belong to the subcommand, not to `claude-md` itself.",
+      },
+    ],
+    examples: [
+      { command: "jstack claude-md scan --output json", description: "Machine-readable audit for a skill to consume" },
+      { command: "jstack claude-md render --input scan.json --patch /tmp/claude-md.patch", description: "Write the proposed diff" },
+    ],
+    returns:
+      "scan: findings (prose or JSON). render: a unified diff on disk. apply: a validated `git apply` command for the caller to run — it never writes CLAUDE.md itself.",
   },
 ];
 

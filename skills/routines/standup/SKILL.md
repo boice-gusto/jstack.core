@@ -1,6 +1,6 @@
 ---
 name: jstack-standup
-description: Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.
+description: "Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only."
 category: routines
 disallowed-tools: AskUserQuestion
 effort: low
@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.
+Produce standup content — yesterday, today, blockers — from Jira and Slack, capped at three bullets per person, as a draft for review.
+- **Out of scope:** Posting to the channel, and inventing an update for someone with no activity — say there is none.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.

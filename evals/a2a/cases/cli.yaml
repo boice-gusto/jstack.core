@@ -1,0 +1,186 @@
+# CLI behavioral cases. All deterministic — they spawn the real command and assert on
+# exit code and output, so they run in CI with no API key and still prove real behavior.
+#
+# Several of these encode bugs that actually shipped, so a regression is caught rather than
+# rediscovered later.
+
+- id: doctor-optional-mcp-does-not-fail-run
+  surface: cli
+  description: >-
+    doctor previously exited 1 in a project with no .mcp.json because a check explicitly
+    labelled "(optional)" still flipped the failure flag. Human mode and --json also
+    disagreed about health on identical state.
+  subject:
+    kind: cli
+    command: ["doctor"]
+  expect:
+    exit_code: 0
+    stdout_contains: [".mcp.json (optional)"]
+    # The advisory bullet, not the failure mark, must precede an optional check.
+    stdout_matches: ["•\\s+\\.mcp\\.json \\(optional\\)"]
+
+- id: doctor-json-mode-emits-only-json
+  surface: cli
+  description: >-
+    CLAUDE.md requires a JSON mode to print only its payload so it stays machine-parseable.
+    Interleaved prose has broken --json consumers before.
+  subject:
+    kind: cli
+    command: ["doctor", "--json"]
+  expect:
+    exit_code: 0
+    stdout_matches: ['^\s*\{']
+    stdout_not_contains: ["✔", "✖", "•"]
+
+- id: doctor-json-and-human-agree
+  surface: cli
+  description: >-
+    Both output modes must reach the same verdict. They diverged once because --json's
+    hardFail set omitted the optional mcp check that human mode counted.
+  subject:
+    kind: cli
+    command: ["doctor", "--json"]
+  expect:
+    exit_code: 0
+    stdout_contains: ['"ok": true']
+
+- id: help-json-is-machine-readable-registry
+  surface: cli
+  description: >-
+    README points at --help-json as the authoritative command registry, so it must parse
+    and enumerate commands.
+  subject:
+    kind: cli
+    command: ["--help-json"]
+  expect:
+    exit_code: 0
+    stdout_matches: ['"commands"']
+
+- id: doctor-fix-is-dry-run-by-default
+  surface: cli
+  description: >-
+    --fix must only propose repairs. Writing without --apply would make an inspection
+    command mutate a user's project.
+  subject:
+    kind: cli
+    command: ["doctor", "--fix"]
+  expect:
+    exit_code: 0
+    stdout_not_contains: ["Applied", "wrote "]
+
+- id: apply-repairs-refuses-without-apply
+  surface: cli
+  description: >-
+    Replaying a saved repairs file must require --apply, so a stale file cannot mutate a
+    project by accident.
+  subject:
+    kind: cli
+    command: ["doctor", "--apply-repairs", "/nonexistent/repairs.json"]
+  expect:
+    # Guard fires before the file is even read, so this is about the refusal, not the path.
+    stdout_contains: ["--apply-repairs requires --apply"]
+
+- id: eval-gate-refuses-without-a-real-run
+  surface: cli
+  description: >-
+    The gate command used to pass hard-coded metrics and a fabricated output string, making
+    it incapable of failing. It must now refuse when there is no real semantic run to judge.
+  subject:
+    kind: cli
+    command: ["eval", "gate"]
+  expect:
+    stdout_matches: ["No semantic run found|cannot be checked from static files"]
+    stdout_not_contains: ['"passed": true']
+
+- id: cli-unknown-command-fails-instead-of-reporting-success
+  surface: cli
+  description: >-
+    A mistyped command must exit non-zero. `jstack doctr` used to print the friendly
+    "run with --help" hint and exit 0, because the catch-all `program.action()` matched every
+    unmatched argument — commander only errors on an unknown command when no default action is
+    registered. A typo in a script, Makefile, or CI job therefore reported success while doing
+    nothing at all, which is the worst possible failure mode for an automation surface.
+  subject:
+    kind: cli
+    command: ["doctr"]
+  expect:
+    exit_code: 1
+    stdout_contains: ["unknown command: doctr"]
+    stdout_not_contains: ["run with --help or jstack setup"]
+
+- id: cli-bare-invocation-still-prints-a-hint-and-succeeds
+  surface: cli
+  description: >-
+    The counterpart to the case above: fixing the typo path must not turn a bare `jstack` into an
+    error. Running the binary with no arguments is a legitimate "what is this?" and must stay exit 0
+    with the orientation hint.
+  subject:
+    kind: cli
+    command: []
+  expect:
+    exit_code: 0
+    stdout_contains: ["run with --help or jstack setup"]
+    stdout_not_contains: ["unknown command"]
+
+- id: cli-doctor-skills-json-is-parseable-not-prose
+  surface: cli
+  description: >-
+    `doctor skills --json` emitted human-readable text at exit 0, so any caller piping it to a JSON
+    parser crashed while the CLI reported success. Root cause was measured, not guessed: the parent
+    `doctor` command also declares `--json`, and commander resolves the PARENT's option first
+    regardless of flag position — a probe showed the child's `o.json` stayed `false` while the
+    parent's went `true` for both `doctor skills --json` and `doctor --json skills`.
+    Asserts the payload is a JSON array of catalog entries with no prose leading it.
+  subject:
+    kind: cli
+    command: ["doctor", "skills", "--json"]
+  expect:
+    exit_code: 0
+    stdout_matches: ['^\s*\{']
+    stdout_contains: ['"ok"', '"count"', '"skills"', '"relPath"']
+    stdout_not_contains: ["skills under", "and 132 more"]
+
+- id: cli-time-iso-is-a-bare-timestamp-and-bad-format-fails
+  surface: cli
+  description: >-
+    `--format iso` fell through to the human branch, emitting `<iso> (<tz>)` — byte-identical to
+    `--format human` and unparseable as a bare timestamp, while both `--help` and the command registry
+    advertised it as a distinct format. Separately, any unknown value silently rendered the human
+    format at exit 0, so a typo was indistinguishable from success.
+  subject:
+    kind: cli
+    command: ["time", "--format", "iso"]
+  expect:
+    exit_code: 0
+    # A bare ISO-8601 instant and nothing else — no timezone suffix in parentheses.
+    stdout_matches: ['^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\s*$']
+    stdout_not_contains: ["(", ")"]
+
+- id: cli-unknown-time-format-is-rejected
+  surface: cli
+  description: >-
+    The counterpart to the case above: an unrecognised `--format` must fail loudly rather than
+    silently substituting the human format at exit 0.
+  subject:
+    kind: cli
+    command: ["time", "--format", "is0"]
+  expect:
+    exit_code: 1
+    stdout_contains: ["Unknown --format", "human, iso, unix, json"]
+
+- id: cli-apply-repairs-fails-loudly-in-a-non-tty
+  surface: cli
+  description: >-
+    `doctor --apply --apply-repairs <file>` printed "No repairs applied." and exited 0 when run
+    without a TTY — writing nothing, in exactly the CI context the flag exists for, and reporting
+    success. That is the unfailable-gate shape this repo has repeatedly had to remove. It now exits
+    non-zero and says nothing was written.
+    Note what was deliberately NOT changed: it still requires a terminal. Making a write path
+    prompt-free is a separate decision from fixing a false success.
+  subject:
+    kind: cli
+    command: ["doctor", "--apply", "--apply-repairs", "evals/a2a/fixtures/empty-repairs.json"]
+  expect:
+    exit_code: 1
+    stdout_contains: ["Cannot replay repairs", "Nothing was written"]
+    stdout_not_contains: ["No repairs applied."]

@@ -2,8 +2,7 @@
 name: jstack-knowledge-process
 description: Deduplicate, merge near-duplicates, and set canonical links across gbrain/Notion entries.
 category: knowledge
-agent: Explore
-context: fork
+disable-model-invocation: true
 effort: medium
 ---
 

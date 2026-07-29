@@ -1,6 +1,6 @@
 ---
 name: jstack-weeklydigest
-description: Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.
+description: "Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences."
 category: routines
 disallowed-tools: AskUserQuestion
 effort: low
@@ -14,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.
+Assemble the weekly digest over the configured window for both team and stakeholder audiences.
+- **Out of scope:** Sending the digest, and padding a quiet week with restated work from a previous one.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.

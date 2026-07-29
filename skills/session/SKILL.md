@@ -14,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route to session init or end.
+Route a session-lifecycle request to `init` or `end`. Session state (gbrain target, session id) lives in `jstack.config.json` under `session` — read it rather than assuming.
+- **Out of scope:** Doing the work of the session itself, and changing the gbrain target silently mid-session.
 
 ## Domain rules — session lifecycle
 - `init` sets gbrain target, issues or reads `session.current_session_id`, loads context; `end` flushes to GBrain with **provenance** per `gbrain.provenance` and `gbrain-entry-provenance.md`.

@@ -3,7 +3,7 @@ name: jstack-workflow-execute
 description: Run a saved workflow via CLI; preview then run with --yes. Engine may be stub until Playwright is wired.
 when_to_use: After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior.
 category: workflows
-argument-hint: [workflow-name]
+argument-hint: "[workflow-name]"
 data_class: internal
 disable-model-invocation: true
 effort: low
@@ -18,11 +18,12 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Run a saved workflow via CLI; preview then run with --yes. Engine may be stub until Playwright is wired.
+Run a saved `config/workflows/*.json` flow through the `jstack workflow` CLI: preview, confirm, then execute, capturing an artifact per step.
+- **Out of scope:** Editing the flow definition, and claiming a browser ran when the runner is the stub.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
+- Secrets: `fill` values that are secrets name an env var; never write a credential into the JSON definition or print one in chat.
 - Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Config and references
@@ -42,13 +43,13 @@ Run a saved workflow via CLI; preview then run with --yes. Engine may be stub un
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
+Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed — and the shipped runner is a stub that produces none, so `unverified` is the honest ceiling until a real driver is wired.
 
 ### Step 3 — Execute
-Apply the `jstack-workflow-execute` workflow using config and any applicable templates under `templates/workflows/`.
+Load the saved `config/workflows/<id>.json`, print the step list as a preview, get explicit confirmation, then run it. The shipped executor is `runWorkflowStub` — it produces no artifact, so report `unverified` and name the missing driver instead of claiming the browser ran.
 
 ### Step 4 — Validate
-Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
+Confirm an artifact exists for every claimed step outcome. Without one, downgrade the result to unverified rather than reporting a pass.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -69,7 +70,9 @@ Use a domain-appropriate heading, then:
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
 | Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
+| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
+| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

@@ -2,7 +2,7 @@
 
 Complete reference for `jstack.config.json`. Every key, its type, what reads it, and the default value.
 
-Source of truth: `config/defaults.json` (defaults) and `config/schema.json` (validation).
+Source of truth: `cli/src/types/config.ts` (the Zod schema that is actually enforced) and `config/defaults.json` (defaults). `config/schema.json` is generated from the Zod schema by `bun run schema:generate` and is a read-only reference — validate with `bun run validate-config`, which enforces the Zod contract.
 
 ## onboarding
 

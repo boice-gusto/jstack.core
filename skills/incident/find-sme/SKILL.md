@@ -11,9 +11,12 @@ effort: medium
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/incident-policy.md
 
 ## What this skill is for
-Rank subject-matter experts from Jira history + Slack presence for an incident description or incident id; config project scope.
+Identify the likeliest subject-matter expert for a system from configured history (commits, tickets, docs), with the evidence for each candidate.
+- **Out of scope:** Paging or messaging the person, and treating commit volume alone as expertise.
 
 ## Domain rules — incident/find-sme
 
@@ -77,7 +80,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Stabilize before diagnosing. Record the timeline as you go, not afterwards from memory. Do not state a cause until it is established — in anything customer-facing, "under investigation" is correct and a guess is a liability.
 
 ### Step 3 — Execute
-Apply the `jstack-incident-find-sme` workflow using config and any applicable templates under `templates/incident/`.
+Apply the `jstack-incident-find-sme` workflow using values from `jstack.config.json`. There is no `templates/incident/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm the timeline is ordered and sourced, that cause is labelled as established or under investigation, and that no customer-facing text asserts more than is known.

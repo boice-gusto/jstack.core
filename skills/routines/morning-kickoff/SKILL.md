@@ -14,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Config-driven morning routine — ordered jstack skill steps with PASS/FAIL/SKIP/BLOCKED, markdown checklist, on_fail stop|continue|ask; not browser workflow runner.
+Run the morning kickoff from `kickoff_workflows`: today's calendar, open threads, and the shortlist worth attention first.
+- **Out of scope:** Acting on any item, and reordering the user's actual priorities for them.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.
@@ -41,7 +42,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled job that fails silently goes unnoticed for weeks.
 
 ### Step 3 — Execute
-Apply the `jstack-morning-kickoff` workflow using config and any applicable templates under `templates/routines/`.
+Apply the `jstack-morning-kickoff` workflow using values from `jstack.config.json`. There is no `templates/routines/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.

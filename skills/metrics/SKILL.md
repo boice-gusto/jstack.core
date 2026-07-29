@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route metrics requests to my-metrics or team-metrics.
+Route a metrics request to `my-metrics` (individual) or `team-metrics` (team roll-up). Both read from configured sources; neither invents a number.
+- **Out of scope:** Performance evaluation of a named person, and defining new org-wide metric definitions.
 
 ## Domain rules — metrics
 - Derive rollups from Jira/GitHub only; label gaps when data is partial.

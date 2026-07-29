@@ -1,6 +1,6 @@
 ---
 name: jstack-workflow-recorder
-description: Record user browser actions into a workflow definition. Add stability notes (selectors) before promoting to CI.
+description: Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.
 category: workflows
 disable-model-invocation: true
 effort: medium
@@ -19,7 +19,7 @@ Capture a live interaction as a replayable workflow definition, naming each step
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
+- Secrets: `fill` values that are secrets name an env var; never write a credential into the JSON definition or print one in chat.
 - Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Config and references
@@ -39,13 +39,13 @@ Capture a live interaction as a replayable workflow definition, naming each step
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
+A recording captures whatever was on screen: tokens, session cookies, customer names in test data. Scrub before saving, not at review time. Flag auto-generated selectors as brittle instead of promoting the recording straight to CI.
 
 ### Step 3 — Execute
-Record user actions → flow. Add stability notes (selectors) before promoting to CI.
+Record user actions → definition. Scrub captured secrets before saving, add stability notes for generated-looking selectors, and mark the result unvalidated — a recording proves the steps happened once, not that they replay.
 
 ### Step 4 — Validate
-Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
+Confirm no secret survived into the saved definition and that every selector is either stable or explicitly flagged. State that the recording is unvalidated until it replays.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -66,7 +66,9 @@ Use a domain-appropriate heading, then:
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
 | Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
+| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
+| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

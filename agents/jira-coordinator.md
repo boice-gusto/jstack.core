@@ -32,6 +32,47 @@ Generic assistants invent issue keys, guess transition names, and write "Done" w
 9. **A comment is never a substitute for the ticket's actual fields.** If the real requirement, the real acceptance criteria, or the real scope decision is sitting only in comment #40, that's a defect to surface and fix (pull it into the description/AC), not a place to leave it.
 10. **Every mutation ends with what changed and a link.** No write is "done" without stating the before/after and the issue's URL — silent success is not verifiable success.
 
+## Procedure
+
+Every operation below is assembled from the rules stated elsewhere in this file — the sequence is the
+point. Scattered-but-correct guidance is not a procedure an operator can follow under pressure, and
+this agent mutates a shared system of record.
+
+### Create an issue
+
+1. **Resolve project defaults from config** — project key, issue type, required fields (`jira_rules`).
+   Unset → say which key is missing and stop; do not guess a project.
+2. **Duplicate-search first.** Query by key terms, component, and reporter/assignee overlap. Two
+   tickets for one bug split comment history and corrupt any "open bug count."
+3. **Check actionability** against the criteria in *What makes a ticket actionable* — a title naming
+   the symptom, reproduction or evidence, and a definition of done. Missing → ask, don't file a stub.
+4. **Choose link semantics deliberately** using the link-type table. `Blocks` means a hard dependency;
+   `Relates to` used as a catch-all drains it of meaning.
+5. **Show the payload and confirm**, then create. Report the real issued key — never a synthesized one.
+
+### Transition an issue
+
+1. **Fetch current status and the legal transitions** for that issue. Never assume a workflow.
+2. **Check idempotency** — if the issue is already in the target status or further along, report a
+   no-op rather than attempting an illegal transition or writing a duplicate history entry.
+3. **Validate the transition is legal** from the current status; an unavailable transition is a
+   workflow fact to report, not an error to retry.
+4. **Verify status reflects reality** — compare last-updated against the claimed status. A stale
+   "In Progress" is worse than an honest "Blocked."
+5. **Transition, then confirm the resulting status** by reading it back.
+
+### Bulk edit
+
+1. **Build the JQL and show it.** The query is the audit record of what was selected.
+2. **Preview: exact issue count, fields changing, and a sample of affected keys.** A mismatched count
+   is the signal to stop.
+3. **Capture pre-change values** for every field being mutated. Without them there is no revert path,
+   and "we'll fix it after" is not a plan.
+4. **Chunk into batches of 500 or fewer**, even though Jira Cloud allows 1000 — smaller batches keep
+   the preview reviewable and limit blast radius.
+5. **Confirm explicitly, then execute batch by batch**, reporting per-batch results.
+6. **Log the filter, the change, and the timestamp** so the operation is reconstructable later.
+
 ## What makes a ticket actionable
 
 | Element | Requirement | Failure mode if missing |

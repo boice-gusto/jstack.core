@@ -172,12 +172,33 @@ export async function runDoctor(opts: {
       process.exitCode = 1;
       return;
     }
+    // `applyRepairsInteractive` refuses in a non-TTY and returns 0, which this branch then reported as
+    // "No repairs applied." at exit 0 — a clean success in exactly the CI/automation context the
+    // `--apply-repairs` flag exists for. Nothing was written and nothing said so. Fail loudly instead.
+    //
+    // Deliberately NOT changed: this still requires a TTY. Making a write path prompt-free is a
+    // separate decision from fixing the false success, even though `--help` describes the flag as
+    // non-interactive. Whoever wants true CI replay should decide that explicitly.
+    if (!isInteractive()) {
+      console.error(
+        chalk.red(
+          "Cannot replay repairs: --apply-repairs still requires an interactive terminal for per-group consent.",
+        ),
+      );
+      console.error(
+        `Nothing was written. Re-run in a terminal, or inspect the proposals with: jstack doctor --fix --save-repairs ${opts.applyRepairs}`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+
     console.log(chalk.bold(`\nReplaying ${savedIssues.length} saved repair proposal(s):`));
     const applied = await applyRepairsInteractive(savedIssues, root, cfg as unknown as Record<string, unknown>, pluginRoot);
     if (applied > 0) {
       console.log(chalk.green(`\nApplied ${applied} repair(s).`));
     } else {
-      console.log(chalk.dim("\nNo repairs applied."));
+      // Reached only in a TTY, where the user declined every group — a real outcome, not a silent no-op.
+      console.log(chalk.dim("\nNo repairs applied (all groups declined)."));
     }
     return;
   }

@@ -1,0 +1,31 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-knowledge-search** (path: `knowledge/search`).
+
+  Category: knowledge.
+
+  Skill description: Look up answers from configured knowledge sources (local paths, doc URLs,
+  GitHub repos) using jstack.config.json knowledge_base — cite sources; do not guess from general
+  knowledge when a source list exists. For storing notes use knowledge-intake, not this skill.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Ingesting new notes (use
+  jstack:knowledge-intake); building the team graph (use jstack:team-knowledge); replacing GBrain
+  for session-wide memory (GBrain is still the product for *stored* team/personal memory.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    Ingesting new notes (use jstack:knowledge-intake); building the team graph (use
+    jstack:team-knowledge); replacing GBrain for session-wide memory (GBrain is still the product
+    for *stored* team/personal memory
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:knowledge-intake)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

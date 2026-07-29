@@ -1,6 +1,6 @@
 ---
 name: jstack-sop-expectations
-description: Maintain role expectations docs: what success looks like, autonomy boundaries, escalation paths.
+description: "Maintain role expectations docs: what success looks like, autonomy boundaries, escalation paths."
 category: sop
 effort: medium
 ---

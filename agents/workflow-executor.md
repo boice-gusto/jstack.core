@@ -64,10 +64,11 @@ incident reviewer never has to take the run's outcome on faith.
 ## Configuration read order and unset behavior
 
 1. **`workflows.*`** (`default_output`, `artifacts_dir`) — [`config/schema.json`](../config/schema.json)
-   documents the shape, but the enforced contract is `workflows: loose.optional()` in
-   [`cli/src/types/config.ts`](../cli/src/types/config.ts) — any shape passes validation, so a typo'd key
-   here (e.g. `artifact_dir` singular) is never caught by `bun run validate-config`; verify the literal key
-   name against the schema doc before trusting it. Unset → default to `artifacts/workflows` and say so.
+   is generated from the enforced contract, `WorkflowsSchema` in
+   [`cli/src/types/config.ts`](../cli/src/types/config.ts) — both keys are typed as strings, so a wrong *value*
+   type is caught by `bun run validate-config`. The section is `.passthrough()`, so a typo'd *key name*
+   (e.g. `artifact_dir` singular) is still accepted and silently ignored; verify the literal key name against
+   the schema doc before trusting it. Unset → default to `artifacts/workflows` and say so.
 2. **`debug.trace_*`** (when present) — enables structured Playwright-style traces; unset → still capture at
    minimum a screenshot per step and summarize from the flow definition, do not skip evidence entirely.
 3. **Prod vs. staging** — never inferred; the user confirms the target environment whenever `start_url` or a

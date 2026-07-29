@@ -1,0 +1,26 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-skill-finder** (path: `knowledge/skill-finder`).
+
+  Category: knowledge.
+
+  Skill description: Map vague user goals to specific jstack skills; prefer CLI skills index and
+  domain routers.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Doing the work of the
+  skill it recommends, and inventing a skill that does not exist.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Doing
+    the work of the skill it recommends, and inventing a skill that does not exist
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

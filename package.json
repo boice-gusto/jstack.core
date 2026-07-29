@@ -50,13 +50,28 @@
     "typecheck:dashboard": "./node_modules/typescript/bin/tsc --noEmit -p dashboard/tsconfig.json",
     "prove": "bun run scripts/prove-e2e.ts",
     "verify": "bun run scripts/verify-integration.ts",
-    "test:cli": "bun test cli/src evals/assert.test.ts evals/gate-runner.test.ts evals/eval-config.test.ts evals/execute.test.ts onboarding/wizard.test.ts markdown-render.test.ts scripts/agents-depth-check.test.ts scripts/skills-depth-check.test.ts",
+    "test:cli": "bun test cli/src evals/assert.test.ts evals/gate-runner.test.ts evals/eval-config.test.ts evals/execute.test.ts onboarding/wizard.test.ts markdown-render.test.ts scripts/agents-depth-check.test.ts scripts/skills-depth-check.test.ts evals/a2a/protocol.test.ts",
     "agents-check": "bun run scripts/agents-check.ts",
-    "check": "bun run validate-config && bun run agents-check && bun run agents-depth:strict && bun run skills-depth:strict && bun run validate-chains && bun run validate:alias-drift --strict && bun run eval:validate && bun run eval:scenarios-validate && bun run eval:routers && bun run eval:quick && bun run test:cli && bun run typecheck:cli && bun run typecheck:dashboard",
+    "check": "bun run validate-config && bun run schema:check && bun run check-sri && bun run agents-check && bun run agents-depth:strict && bun run skills-depth:strict && bun run validate-chains && bun run check-routers && bun run check-write-gates && bun run check-name-collisions && bun run check-prompt-wiring && bun run validate:alias-drift --strict && bun run eval:validate && bun run eval:scaffold && bun run eval:scenarios-validate && bun run eval:routers && bun run eval:quick && bun run a2a && bun run test:gates && bun run test:cli && bun run typecheck:cli && bun run typecheck:dashboard",
     "agents-depth": "bun run scripts/agents-depth-check.ts",
     "agents-depth:strict": "bun run scripts/agents-depth-check.ts --strict",
     "skills-depth": "bun run scripts/skills-depth-check.ts",
-    "skills-depth:strict": "bun run scripts/skills-depth-check.ts --strict"
+    "skills-depth:strict": "bun run scripts/skills-depth-check.ts --strict",
+    "a2a": "bun run evals/a2a/run.ts",
+    "a2a:list": "bun run evals/a2a/run.ts --list",
+    "a2a:judge": "bun run evals/a2a/run.ts --require-judge",
+    "schema:generate": "bun run scripts/generate-config-schema.ts",
+    "schema:check": "bun run scripts/generate-config-schema.ts --check",
+    "check-sri": "bun run scripts/check-sri.ts",
+    "eval:scaffold": "bun run scripts/check-eval-scaffold.ts",
+    "crew:eval": "bun run cli/src/index.ts crew eval",
+    "crew:eval:det": "bun run cli/src/index.ts crew eval --deterministic",
+    "gen:skill-evals": "bun run scripts/generate-skill-evals.ts",
+    "check-routers": "bun run scripts/check-router-children.ts",
+    "check-write-gates": "bun run scripts/check-write-gates.ts",
+    "check-name-collisions": "bun run scripts/check-name-collisions.ts",
+    "check-prompt-wiring": "bun run scripts/check-prompt-wiring.ts",
+    "test:gates": "bun test scripts/gates.test.ts scripts/agents-depth-check.test.ts scripts/skills-depth-check.test.ts"
   },
   "workspaces": [
     "cli",
@@ -69,10 +84,15 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/js-yaml": "^4.0.9",
+    "ajv": "^8.20.0",
     "dompurify": "^3.2.4",
     "esbuild": "^0.28.1",
     "isomorphic-dompurify": "^2.28.0",
     "marked": "^15.0.7",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "bin": {
+    "jstackc": "cli/src/index.ts"
   }
 }

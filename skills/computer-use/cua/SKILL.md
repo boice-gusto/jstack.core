@@ -8,6 +8,7 @@ description: >
   repro outside the browser. Parent router: jstack-computer-use.
 category: computer-use
 effort: high
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->

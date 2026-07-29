@@ -1,6 +1,6 @@
 ---
 name: jstack-workflows-builder
-description: Build a workflow definition (YAML/JSON): start URL, steps, waits, assertions. No credentials in the file.
+description: "Build a BROWSER workflow definition as JSON at `config/workflows/<id>.json`: start URL and ordered steps drawn from the six kinds the schema allows (goto, click, fill, wait, screenshot, ai). No credentials in the file. Not for skill-chain, routine, or policy design — that is `jstack-workflow-builder` (singular), a different skill one letter away."
 category: workflows
 disable-model-invocation: true
 effort: medium
@@ -14,12 +14,12 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Author a workflow definition — start URL, ordered steps, waits, and assertions — that a runner can execute unattended.
+Author a browser workflow definition — start URL and ordered steps — as JSON at `config/workflows/<id>.json`, so a runner can execute it unattended. The schema has no assertion kind, so a check is a `wait` on a selector that only appears in the desired state.
 - **Out of scope:** Running the workflow (`jstack:workflows-execute`) and recording one from live interaction (`jstack:workflows-recorder`). Never place a credential in the definition file.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
+- Secrets: `fill` values that are secrets name an env var; never write a credential into the JSON definition or print one in chat.
 - Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Config and references
@@ -34,18 +34,26 @@ Author a workflow definition — start URL, ordered steps, waits, and assertions
 2. If a required id is missing, ask **one** focused question; otherwise use config defaults (label assumptions as `[assumption]`).
 3. If the request bundles multiple unrelated goals, handle the first and offer to continue.
 
+Before writing any definition, run the design interview:
+
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/workflow-design-interview.md
+
+For a browser definition specifically, the questions config cannot answer are: what starts the flow, what observable on-page state means it succeeded (that state becomes a `wait` selector, since the schema has no assertion kind), which fills read from env, and what this flow must explicitly not touch. Post the understanding lock before drafting, not after.
+
 ## Procedure
 ### Step 1 — Load config
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
+Nothing executes here, so the safety question is what this file will do when someone else runs it unattended months from now. Every `click` and `fill` needs a preceding `wait` on its own selector — a step that races the page is the defect that only ever reproduces in CI. Secrets are env references, never literals, because this file gets committed.
 
 ### Step 3 — Execute
-Build flow YAML/JSON: start URL, steps, waits, assertions. No credentials in the file.
+Write a JSON definition to `config/workflows/<id>.json` matching `WorkflowDefinitionSchema` (`cli/src/types/workflow.ts`): `id`, `name`, `start_url`, `steps[]`, where each step is `{id, kind, selector?, value?, url?, notes?}`.
+- `kind` is one of `goto`, `click`, `fill`, `wait`, `screenshot`, `ai`. There is **no assertion kind** — express a check as a `wait` on a selector that only exists in the desired state, plus a `screenshot` for evidence.
+- No credentials in the file: a `fill` whose value is a secret names an env var, never a literal.
 
 ### Step 4 — Validate
-Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
+Confirm the definition parses against `WorkflowDefinitionSchema`, that every `kind` is one of the six the schema accepts, that every `click`/`fill` is preceded by a `wait`, and that no value is a credential literal. Do not claim the flow works — nothing was run.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -66,7 +74,9 @@ Use a domain-appropriate heading, then:
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
 | Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
+| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
+| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

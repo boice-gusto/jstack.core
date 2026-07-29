@@ -5,6 +5,7 @@ category: engineering
 agent: Explore
 context: fork
 effort: high
+disable-model-invocation: true
 ---
 
 <!-- Chain Contract -->
@@ -77,7 +78,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Name the mechanism, not the symptom, and cite the file or component that shows it. Prefer measuring to asserting. If you cannot name the alternative to what you are criticizing, say so plainly.
 
 ### Step 3 — Execute
-Apply the `jstack-engineering-silo-scan` workflow using config and any applicable templates under `templates/engineering/`.
+Apply the `jstack-engineering-silo-scan` workflow using values from `jstack.config.json`. There is no `templates/engineering/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm each finding names a mechanism and a location, and that any measurement you cite is reproducible.

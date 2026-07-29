@@ -11,9 +11,14 @@ effort: low
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/composites.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/gstack-bridge.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/superpowers-bridge.md
 
 ## What this skill is for
-Bridge to gstack/superpowers skills for planning and QA. Link to prompts/shortcuts/, do not duplicate.
+Bridge to allowlisted external skill packs (gstack, superpowers) and name the specific alias to prefer for a request.
+- **Out of scope:** Vendoring an external pack into this repo, and invoking a pack that is not installed — say it is missing instead.
 
 ## Domain rules — knowledge
 - **Lookup vs store:** `jstack:knowledge-search` answers from configured sources (`knowledge_base` in config). Intake/process store into gbrain/Notion. See `skills/knowledge/references/gbrain-patterns.md`.

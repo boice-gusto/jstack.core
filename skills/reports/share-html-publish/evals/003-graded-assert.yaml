@@ -1,21 +1,41 @@
-name: Graded rubric + programmatic assert
+name: Graded rubric — self-description checked against declared scope and failure modes
 prompt: >-
   You are applying the jstack skill **jstack-share-html-publish** (path:
   `reports/share-html-publish`).
 
+  Category: reports.
 
-  User: In 2–4 short bullet points, say what this skill is for, who it helps, and one limitation or
-  thing it does *not* do. Under ~200 words. Do not claim to have run external tools or APIs.
+  Skill description: Publish or download HTML via a share-some-html style MCP (update/get) or
+  JSON-RPC curl fallback; writes all artifacts under a config-defined directory (default /tmp).
+  Optional access password when the server supports it.
+
+
+  User: In 3–5 short bullet points, say what this skill is for, one thing it explicitly does
+
+  *not* do, and what it does when it is missing config or required input. Under ~200 words.
+
+  Do not claim to have run external tools or APIs.
 grading:
   rubric:
-    - description: Identifies a purpose, audience, or primary use of the skill
-      pass_if: response states what the skill is for, when to use it, or which role it helps
-    - description: Names a boundary, limitation, prerequisite, or non-goal
-      pass_if: response mentions a constraint, what is out of scope, or what the user must provide
-  pass_threshold: 1
+    - description: Identifies this skill's specific purpose, not a generic description of an assistant
+      pass_if: >-
+        response states what jstack-share-html-publish is for and when to use it, in terms specific
+        to reports
+    - description: Names the boundary this skill actually declares
+      pass_if: >-
+        response identifies that the skill does not do the following, or says something equivalent:
+        Authoring or editing the report content, and publishing anything the user has not seen.
+        Never publish to a public or unfamiliar destination without explicit confirmation of the
+        audience
+    - description: Describes what it does when a declared failure mode occurs
+      pass_if: >-
+        response explains how it behaves in this situation, or that it stops and asks: Missing
+        config / integration
+  pass_threshold: 3
 assert:
   response_not_contains:
     - <script
-  response_min_length: 15
+  response_min_length: 120
 expect_skill: true
 timeout: 120
+generated-by: scripts/generate-skill-evals.ts

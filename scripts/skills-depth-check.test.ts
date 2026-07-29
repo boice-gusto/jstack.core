@@ -146,6 +146,36 @@ describe("skills-depth-check — correctness (always fatal)", () => {
     rmSync(join(sandbox, "skills", "x"), { recursive: true });
   });
 
+  // `read_front_matter` in scripts/apply_detailed_skills.py is line-based, so `when_to_use: >-`
+  // with the text on following indented lines loses that text and round-trips the bare indicator
+  // back into the file. `computer-use` shipped with a literal `when_to_use: ">-"` for exactly this
+  // reason, spending skill-listing budget on two meaningless characters.
+  test("flags a frontmatter value that is only a YAML block-scalar indicator", async () => {
+    const d = join(sandbox, "skills", "x", "y");
+    mkdirSync(d, { recursive: true });
+    writeFileSync(
+      join(d, "SKILL.md"),
+      `---\nname: jstack-x-y\ndescription: A fixture skill used only for testing the depth gate.\nwhen_to_use: ">-"\ncategory: x\neffort: low\n---\n\nRun \`jstack doctor\` and report the failing integration by name.\n`,
+    );
+    const { code, out } = await run(sandbox);
+    expect(code).toBe(1);
+    expect(out).toContain("block-scalar-frontmatter");
+    expect(out).toContain("when_to_use");
+    rmSync(join(sandbox, "skills", "x"), { recursive: true });
+  });
+
+  test("does NOT flag a normal inline when_to_use", async () => {
+    const d = join(sandbox, "skills", "x", "y");
+    mkdirSync(d, { recursive: true });
+    writeFileSync(
+      join(d, "SKILL.md"),
+      `---\nname: jstack-x-y\ndescription: A fixture skill used only for testing the depth gate.\nwhen_to_use: Use when an integration reports unhealthy and you need the failing name.\ncategory: x\neffort: low\n---\n\nRun \`jstack doctor\` and report the failing integration by name.\n`,
+    );
+    const { out } = await run(sandbox);
+    expect(out).not.toContain("block-scalar-frontmatter");
+    rmSync(join(sandbox, "skills", "x"), { recursive: true });
+  });
+
   test("flags fabricated org data ASSERTED as fact", async () => {
     writeSkill(sandbox, "x/y", "low", "Our SOC2 audit in September blocks any data handling change.");
     const { code, out } = await run(sandbox);

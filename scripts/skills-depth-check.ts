@@ -186,9 +186,23 @@ for (const dir of skillDirs) {
   let meta: Record<string, unknown> = {};
   try {
     meta = (yaml.load(fmMatch[1]) ?? {}) as Record<string, unknown>;
-  } catch {
-    // The generator's own parser is line-based and tolerates things strict YAML rejects
-    // (e.g. an unquoted description containing a colon), so fall back rather than fail.
+  } catch (e) {
+    // Frontmatter MUST be valid YAML. 27 of 137 files once failed `yaml.safe_load` — usually a
+    // colon-space inside an unquoted description — and every consumer using a real YAML parser saw an
+    // EMPTY mapping for them, so `name`, `effort`, and `disable-model-invocation` all read as absent.
+    // `build_frontmatter` now quotes values via `yaml_scalar()`, so a failure here means either a
+    // hand-maintained (SKIP) file or a regression in the quoter. This used to fall back silently to a
+    // line-based parse, which hid the problem for as long as it existed.
+    findings.push({
+      skill: rel,
+      kind: "correctness",
+      id: "invalid-yaml-frontmatter",
+      message:
+        `frontmatter is not valid YAML (${String(e).split("\n")[0].slice(0, 90)}). ` +
+        `Quote any value containing ": " — a consumer using a real YAML parser reads this file's ` +
+        `frontmatter as empty, losing name/effort/disable-model-invocation.`,
+    });
+    // Still parse line-based so the remaining rules can report on this file too.
     for (const line of fmMatch[1].split("\n")) {
       const i = line.indexOf(":");
       if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
@@ -199,6 +213,27 @@ for (const dir of skillDirs) {
   for (const key of ["name", "description", "effort"]) {
     if (typeof meta[key] !== "string" || String(meta[key]).trim() === "") {
       findings.push({ skill: rel, kind: "correctness", id: `missing-${key}`, message: `frontmatter must set a non-empty '${key}'` });
+    }
+  }
+  // A frontmatter value that is nothing but a YAML block-scalar indicator means the author wrote
+  // `key: >-` with the content on following indented lines, and `read_front_matter` in
+  // scripts/apply_detailed_skills.py — which is line-based and keeps only lines containing ":" —
+  // dropped that content and round-tripped the bare indicator back into the file. The key then
+  // survives as the literal two-character string ">-", which reads as real content and consumes
+  // skill-listing budget while saying nothing. `computer-use` shipped in exactly this state.
+  const BLOCK_SCALAR_ONLY = new Set([">", ">-", ">+", "|", "|-", "|+"]);
+  for (const [key, value] of Object.entries(meta)) {
+    if (typeof value === "string" && BLOCK_SCALAR_ONLY.has(value.trim().replace(/^["']|["']$/g, ""))) {
+      findings.push({
+        skill: rel,
+        kind: "correctness",
+        id: "block-scalar-frontmatter",
+        message:
+          `frontmatter '${key}' is the bare block-scalar indicator "${value.trim()}" — its content was ` +
+          `lost by the line-based reader in scripts/apply_detailed_skills.py. Rewrite it as an inline ` +
+          `scalar on one line, or move the text into WHEN_TO_USE/DESCRIPTIONS in ` +
+          `scripts/apply_detailed_skills_data.py.`,
+      });
     }
   }
   for (const dead of DEAD_BOILERPLATE) {

@@ -11,9 +11,12 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md
 
 ## What this skill is for
-PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch).
+Review a diff for correctness, security, and maintainability, separating blocking defects from taste, and naming a specific required edit for each blocker.
+- **Out of scope:** Merging or approving, and rewriting the change wholesale instead of reviewing it.
 
 ## Domain rules — code-review
 
@@ -100,7 +103,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read the whole change before commenting on any part of it. Separate blocking findings from suggestions, and cite `file:line` for each. Do not approve based on a summary you did not verify. Rank by severity, not by reading order.
 
 ### Step 3 — Execute
-Apply the `jstack-review-code-review` workflow using config and any applicable templates under `templates/review/`.
+Apply the `jstack-review-code-review` workflow using values from `jstack.config.json`. There is no `templates/review/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm every finding cites a real location and that severities are ordered. Confirm you did not present a preference as a defect. State explicitly what you did not review.
