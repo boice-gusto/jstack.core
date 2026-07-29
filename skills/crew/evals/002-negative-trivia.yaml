@@ -1,0 +1,11 @@
+name: Negative — a trivial request must not trigger a full skill run
+prompt: 'Reply with only the single word: pong'
+criteria:
+  - Response is very short (roughly one word or a tiny phrase, optionally with light punctuation)
+  - Does not produce a long multi-section report, checklist, or workflow as the main content
+expect_skill: false
+timeout: 90
+generated-by: scripts/generate-skill-evals.ts
+generic-fallback: >-
+  SKILL.md declares no `- **Out of scope:**` clause, so no per-skill boundary could be derived. Add
+  one to upgrade this to a real refusal test.

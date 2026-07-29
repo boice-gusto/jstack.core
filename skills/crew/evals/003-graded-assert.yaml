@@ -1,0 +1,34 @@
+name: Graded rubric — self-description checked against declared scope and failure modes
+prompt: >-
+  You are applying the jstack skill **jstack-crew** (path: `crew`).
+
+  Category: crew.
+
+  Skill description: Inspect and manage the background Slack agents (crew) that watch a DM and
+  answer in it — list, show, create, edit, enable, disable, remove agents, check status, explain why
+  a message got no reply, and halt everything. Use when the user asks about "my agents", "background
+  agents", "Ralph", "crew", "why didn't it respond", or wants to add/disable an agent. Do NOT use to
+  compose or send a Slack message, and do NOT use to switch the crew to live posting — that is a
+  deliberate human step (`jstack crew go-live`).
+
+
+  User: In 3–5 short bullet points, say what this skill is for, one thing it explicitly does
+
+  *not* do, and what it does when it is missing config or required input. Under ~200 words.
+
+  Do not claim to have run external tools or APIs.
+grading:
+  rubric:
+    - description: Identifies this skill's specific purpose, not a generic description of an assistant
+      pass_if: response states what jstack-crew is for and when to use it, in terms specific to crew
+  pass_threshold: 1
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 120
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts
+generic-fallback: >-
+  SKILL.md declares neither an out-of-scope clause nor a failure-mode table, so only the purpose
+  criterion could be derived.
