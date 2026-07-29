@@ -13,6 +13,7 @@
   subject:
     kind: cli
     command: ["doctor"]
+    cwd: evals/a2a/fixtures/project
   expect:
     exit_code: 0
     stdout_contains: [".mcp.json (optional)"]
@@ -27,6 +28,7 @@
   subject:
     kind: cli
     command: ["doctor", "--json"]
+    cwd: evals/a2a/fixtures/project
   expect:
     exit_code: 0
     stdout_matches: ['^\s*\{']
@@ -40,6 +42,7 @@
   subject:
     kind: cli
     command: ["doctor", "--json"]
+    cwd: evals/a2a/fixtures/project
   expect:
     exit_code: 0
     stdout_contains: ['"ok": true']
@@ -64,6 +67,7 @@
   subject:
     kind: cli
     command: ["doctor", "--fix"]
+    cwd: evals/a2a/fixtures/project
   expect:
     exit_code: 0
     stdout_not_contains: ["Applied", "wrote "]
@@ -179,7 +183,8 @@
     prompt-free is a separate decision from fixing a false success.
   subject:
     kind: cli
-    command: ["doctor", "--apply", "--apply-repairs", "evals/a2a/fixtures/empty-repairs.json"]
+    command: ["doctor", "--apply", "--apply-repairs", "../empty-repairs.json"]
+    cwd: evals/a2a/fixtures/project
   expect:
     exit_code: 1
     stdout_contains: ["Cannot replay repairs", "Nothing was written"]
