@@ -13,6 +13,12 @@ export interface CaseReport {
   criteria_passed: number;
   criteria_total: number;
   gate_failures?: string[];
+  /**
+   * Raw model response. Persisted so `eval gate` can re-check
+   * `required_output_fields` / `forbidden_patterns` against a real run instead of
+   * a fabricated string. Reports live in the gitignored `evals/.reports/`.
+   */
+  response?: string;
 }
 
 export interface SemanticSummary {
@@ -60,6 +66,7 @@ export function buildSemanticSummary(
       criteria_passed: s.passed ?? 0,
       criteria_total: s.total ?? 0,
       gate_failures: gf.length ? gf : undefined,
+      response: er.response,
     });
   }
 

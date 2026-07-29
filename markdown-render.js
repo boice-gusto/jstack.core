@@ -15,9 +15,16 @@ export async function ensureMarkdownLibs() {
   if (markedApi && purifyToFragment) {
     return;
   }
+  // Pinned versions: keep in sync with the npm-installed versions used by the
+  // bundled build path (package.json `marked`/`dompurify`). dompurify@3.1.7 was
+  // previously pinned here and is in the disclosed-vulnerable range for
+  // GHSA-v2wj-7wpq-c8vv / CVE-2026-0540 (missing rawtext-element handling —
+  // noscript/xmp/noembed/noframes/iframe — in SAFE_FOR_XML lets an attribute value
+  // like `title="</noscript><img src=x onerror=...>"` survive sanitize() unescaped).
+  // Fixed upstream in dompurify 3.3.2; pinned here to a version well past that fix.
   const [markedMod, domMod] = await Promise.all([
-    import("https://cdn.jsdelivr.net/npm/marked@14.1.4/+esm"),
-    import("https://cdn.jsdelivr.net/npm/dompurify@3.1.7/+esm"),
+    import("https://cdn.jsdelivr.net/npm/marked@15.0.12/+esm"),
+    import("https://cdn.jsdelivr.net/npm/dompurify@3.4.1/+esm"),
   ]);
   const marked = markedMod.marked;
   marked.setOptions({ gfm: true, breaks: false });

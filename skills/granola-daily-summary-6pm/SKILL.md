@@ -1,37 +1,79 @@
 ---
 name: jstack-granola-daily-summary-6pm
-description: "Scheduled variant of daily Granola/meeting summary (6pm cadence)."
-category: workflows
-gbrain_destination: team
+description: Scheduled variant of daily Granola/meeting summary (6pm cadence).
+when_to_use: Automated or scheduled daily summary workflow.
+category: meetings
 data_class: internal
-when_to_use: "Automated or scheduled daily summary workflow."
-effort: low
 disallowed-tools: AskUserQuestion
+effort: low
+gbrain_destination: team
 ---
 
 <!-- Chain Contract -->
-<!-- end Chain Contract -->
+<!-- inputs: user_request, jstack_config -->
+<!-- outputs: structured_result -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
-Run the **`jstack-granola-daily-summary`** skill for today.
 
-Pass the user's configured Notion parent page via `--parent-page`. If the
-env var `GRANOLA_NOTION_PARENT_PAGE_ID` is set, use it:
-```
-jstack-granola-daily-summary --parent-page $GRANOLA_NOTION_PARENT_PAGE_ID
-```
-If the env var is not set, the skill will prompt the user for their page ID.
+## What this skill is for
+Scheduled end-of-day variant of the Granola daily summary, run unattended on a cron trigger.
+- **Out of scope:** Blocking on an interactive prompt — there is no human present — and posting the digest anywhere.
 
-It will:
-1. Pull today's meetings from Granola (America/Los_Angeles date).
-2. Generate a concise summary + action items / decisions for each meeting.
-3. Create (or update if it already exists) a child page titled `Daily Summary — YYYY-MM-DD` under the user's Notion parent page.
-4. Report back the Notion page URL and a one-line stat (N meetings · X action items · Y decisions).
+## Domain rules — meetings
+- Privacy: mark sensitive transcript segments; offer redacted summary for public channels.
+- Action items need **owner + due**; if owner unknown, `unassigned` + suggested ping.
+- Not a calendar authority — suggest invite text, do not send unless a tool explicitly does.
 
-Prerequisites:
-- A **Granola** (or equivalent meeting) MCP server must be connected in the host config.
-- A **Notion** MCP server must be authorized with access to the target page. If auth has expired, surface the error clearly so the user can re-auth via /mcp (or the host's MCP UI).
-- The user must provide their Notion parent page ID (via `--parent-page` arg or `GRANOLA_NOTION_PARENT_PAGE_ID` env var).
+## Config and references
+- `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
+- Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
+- Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
+- Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
+- Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
-Follow the skill exactly. Do not invent new behavior.
+## Intake
+1. Parse `$ARGUMENTS` — note whether the user **pasted** data or is asking you to **query** a system.
+2. If a required id is missing, ask **one** focused question; otherwise use config defaults (label assumptions as `[assumption]`).
+3. If the request bundles multiple unrelated goals, handle the first and offer to continue.
+
+## Procedure
+### Step 1 — Load config
+Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
+
+### Step 2 — Plan the safe path
+Confirm attribution before recording a decision as someone's — misattributing a commitment is the costly error here. Keep personal notes out of team stores. Distinguish what was decided from what was merely discussed.
+
+### Step 3 — Execute
+Apply the `jstack-granola-daily-summary-6pm` workflow using values from `jstack.config.json`. There is no `templates/meetings/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+
+### Step 4 — Validate
+Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. Confirm personal content did not land in a shared store.
+
+### Step 5 — Summarize and hand off
+State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
+
+## Output shape
+Use a domain-appropriate heading, then:
+- **Summary** (2–4 sentences)
+- **Details** (bullets, table, or structured fields)
+- **Next steps** with owner + timeline if known
+- **Limitations** (partial data, no write access, etc.)
+- For eval-gated skills, end with `result_ok: true` or `result_ok: false` + reason
+
+## Failure modes
+
+| Symptom | Recovery |
+|---------|----------|
+| Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
+| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
+| Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
+| No transcript / empty paste | Ask user to provide notes or audio file path. |
+| PII in public summary | Redact and flag before posting; offer redacted vs full versions. |
+
+## Chaining
+Complete the work here. If a natural follow-up exists (e.g. `jstack-meetings-granola` then `jstack-meetings-action-items`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+
+## User request
+
+$ARGUMENTS

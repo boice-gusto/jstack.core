@@ -2,6 +2,7 @@
 name: jstack-metrics
 description: Route metrics requests to my-metrics or team-metrics.
 category: metrics
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -12,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route metrics requests to my-metrics or team-metrics.
+Route a metrics request to `my-metrics` (individual) or `team-metrics` (team roll-up). Both read from configured sources; neither invents a number.
+- **Out of scope:** Performance evaluation of a named person, and defining new org-wide metric definitions.
 
 ## Domain rules — metrics
 - Derive rollups from Jira/GitHub only; label gaps when data is partial.
@@ -41,13 +43,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+State the denominator and the time window before stating the number; a rate without either is unusable. Prefer percentiles to averages and say which you used. Note the data's freshness.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/metrics/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm each number carries its denominator, window, and freshness, and that no average is hiding a distribution you should have shown as percentiles.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

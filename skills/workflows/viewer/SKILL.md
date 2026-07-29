@@ -1,7 +1,9 @@
 ---
 name: jstack-workflow-viewer
-description: Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pixel equality as pass/fail.
+description: "Summarize what a workflow run log contains: steps taken and artifacts produced. Never reconstruct a result for a run with no report."
 category: workflows
+argument-hint: "[run-id-1] [run-id-2]"
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -12,11 +14,12 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pixel equality as pass/fail.
+Summarize what a recorded run actually did: the steps its log reports and the artifacts it produced.
+- **Out of scope:** Re-running the workflow or editing the definition. Never report an outcome that the run log does not contain, and never fill a gap in the log from the definition.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
+- Secrets: `fill` values that are secrets name an env var; never write a credential into the JSON definition or print one in chat.
 - Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Config and references
@@ -36,14 +39,13 @@ Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pi
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+This surface only reads, so the risk is not a destructive action — it is inventing a result. If the run produced no report, say that, rather than describing what the definition would have done.
 
 ### Step 3 — Execute
-Diff two runs: timing, flakiness, visual diff summary when artifacts exist.
-- Do not assert pixel equality as pass/fail if threshold-based.
+Summarize what the run log actually contains, step by step. If no report file exists for the run, say so and stop — do not reconstruct a plausible result from the definition.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm every statement traces to a line in the run log. What is not in the log is absent, not implied.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -64,10 +66,12 @@ Use a domain-appropriate heading, then:
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
 | Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
+| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
+| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

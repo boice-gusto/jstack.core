@@ -1,14 +1,15 @@
 ---
 name: jstack-end-session
-description: End the current session: summarize, flush carryover items, optionally run eval hooks.
+description: "End the current session: summarize, flush carryover items, optionally run eval hooks."
 category: session
+disable-model-invocation: true
 effort: low
 ---
 
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config -->
 <!-- outputs: structured_result -->
-<!-- chains-to: jstack:session/init -->
+<!-- chains-to: jstack:init-session -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -39,15 +40,14 @@ End the current session: produce summary, flush carryover items, run eval hooks 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Make init and end idempotent — re-running either must not duplicate state or double-write carryover. Read the existing session id before assigning one.
 
 ### Step 3 — Execute
-Summary, carryover, links. When writing to GBrain, include envelope: session id, gbrain_target, config_label, slack_handle/ids if resolved, `source_skill: jstack:session-end`, `written_at`. See `gbrain-entry-provenance.md`.
-- **New carryover** that was not already approved during the session: use the same **persistence gate** as intake — preview and get explicit user confirmation before flushing to GBrain or other stores.
+Summary, carryover, links. When writing to GBrain, include envelope: session id, gbrain_target, config_label, slack_handle/ids if resolved, `source_skill: jstack-end-session`, `written_at`. See `gbrain-entry-provenance.md`.
 - Optional metrics from eval hooks. Clear ready for next init.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm re-running would produce the same state — no duplicated session, no double-written carryover.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -70,7 +70,7 @@ Use a domain-appropriate heading, then:
 | Prior session still open | Ask once whether to end it or continue. Do not silently close. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-init-session` then `jstack-end-session`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

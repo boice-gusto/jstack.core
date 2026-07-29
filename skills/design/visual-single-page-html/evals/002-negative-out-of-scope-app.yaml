@@ -1,0 +1,13 @@
+name: Out of scope — multi-route Next.js app with a database is not this skill
+prompt: |
+  Apply jstack-visual-single-page-html. I need a production Next.js app with server-side
+  rendering, three routes, Postgres-backed auth, and a CI deploy to Vercel.
+criteria:
+  - "States that this skill produces a single standalone no-build HTML file and is not the right fit for a multi-route Next.js application with a database"
+  - "Does NOT emit a Next.js project scaffold, next.config, app router files, or a Vercel deploy pipeline"
+  - "Either offers the in-scope alternative (a single-page HTML view of the data) or points elsewhere, rather than silently doing the wrong thing"
+expect_skill: true
+timeout: 120
+assert:
+  response_not_contains:
+    - "next.config"

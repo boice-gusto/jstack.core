@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../../assets/logo-placeholder.png" alt="jstack" width="240" height="240" />
+  <img src="../../assets/logo.png" alt="jstack" width="240" height="240" />
 </p>
 
 # Config templates

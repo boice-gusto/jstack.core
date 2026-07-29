@@ -1,83 +1,77 @@
 ---
 name: jstack-report-design
 description: Map org brand to semantic report tokens (colors, type, radius) for static HTML shells and jstack report render.
-category: reports
-gbrain_destination: inherit
-data_class: internal
 when_to_use: User wants report HTML/PDF to match brand; configure reports.branding and related defaults.
+category: reports
+data_class: internal
+effort: medium
+gbrain_destination: inherit
 ---
 
 <!-- Chain Contract -->
-<!-- inputs: user_request, brand_inputs optional, jstack_config -->
-<!-- outputs: branding_json_fragment, structured_result -->
-<!-- chains-to: jstack report render, share-html-publish, reports/team, etc. -->
+<!-- inputs: user_request, jstack_config -->
+<!-- outputs: structured_result -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
+Choose the report's shape before its content: audience, sections, and which figures earn a place.
+- **Out of scope:** Producing the finished report (`jstack:reports`) and inventing figures to fill a section — an empty section is a finding, not a gap to paper over.
 
-Help authors set **`reports.branding`** in `jstack.config.json` (merged over `config/defaults.json`) so **`jstack report render`** injects consistent **CSS variables** into `templates/reports/shells/default.html`. Keep proposals **JSON-shaped** and **secret-free**. Optionally align with **`skill_defaults.reports`** for tone defaults per org.
-
-## Out of scope
-
-- Fetching real brand assets from a corporate DAM (user may paste hex or Figma); do not invent official palette names without a source.
-- Full dashboard (Next.js) theming; that’s a different surface — use **`html-spa-design.md`** to distinguish.
-
-## Domain rules — report branding
-
-- **Semantic tokens:** Map to slots like primary, surface, text, border — not ad hoc class names in every skill.
-- **Schema awareness:** Large structured payloads use **`schemas/reports/report-payload-v1.schema.json`**; branding is separate from payload fields.
-- **Preview loop:** Suggest `jstack report render --data … --out …` for local verification.
+## Domain rules — reports
+- Fill `templates/reports/*` with data from config, tools, and user-supplied facts only — never invent velocity, incidents, or goals.
+- Match tone from `prompts/tones/` and audience from `prompts/personas/`.
+- For rollups, strip IC names when policy requires. Eval reports are sensitive — growth framing, not performance-review legal claims.
 
 ## Config and references
-
-- `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/html-spa-design.md` (static CDN shell vs React dashboard)
-- `${CLAUDE_PLUGIN_ROOT}/skills/design/visual-single-page-html/references/brand-variables.md` (**multi-brand** presets, **`assets_dir`**, logos; extends **`reports.branding`** semantics)
-- `${CLAUDE_PLUGIN_ROOT}/templates/reports/AUTHORING.md` (sections, tone, payload)
-- `${CLAUDE_PLUGIN_ROOT}/schemas/reports/report-payload-v1.schema.json`
-- `${CLAUDE_PLUGIN_ROOT}/skills/reports/share-html-publish/SKILL.md` (hosted / MCP publish path)
-- Design handoff: `${CLAUDE_PLUGIN_ROOT}/skills/design/figma-handoff/SKILL.md` when mapping from Figma exports
+- `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
+- Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
+- Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
+- Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
+- Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
 ## Intake
-
-1. Ask or infer: **source** of colors (Figma, existing site, or user-provided hex list).
-2. Confirm output target: **static shell** (default) vs future dashboard (document limitation).
+1. Parse `$ARGUMENTS` — note whether the user **pasted** data or is asking you to **query** a system.
+2. If a required id is missing, ask **one** focused question; otherwise use config defaults (label assumptions as `[assumption]`).
+3. If the request bundles multiple unrelated goals, handle the first and offer to continue.
 
 ## Procedure
+### Step 1 — Load config
+Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
-### Step 1 — Read design guide
+### Step 2 — Plan the safe path
+Every figure traces to a named source with an as-of time. Mark a missing metric as `[no data]` — never interpolate it, and never drop the row silently, because omission in an authoritative-looking report misleads exactly as much as fabrication.
 
-Read **`html-spa-design.md`** for the semantic token table and naming.
+### Step 3 — Execute
+Apply the `jstack-report-design` workflow using config and any applicable templates under `templates/reports/`.
 
-### Step 2 — Figma (optional)
+### Step 4 — Validate
+Confirm every figure has a source and as-of time, that gaps read `[no data]`, and that the footer and scope match this report's kind. Re-run the render and confirm identical output from identical inputs.
 
-If the user has Figma context, route through **`design/figma-handoff`**, then map hex to **semantic** slots (avoid one-off class names in skills).
-
-### Step 3 — Propose config fragment
-
-Propose a JSON fragment for **`reports.branding` only** (and mention **`skill_defaults.reports`** if tone defaults apply). No secrets, no API keys.
-
-### Step 4 — Preview
-
-Suggest: `jstack report render --data … --out …` for a local check.
+### Step 5 — Summarize and hand off
+State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
 
 ## Output shape
-
-- **Proposed `reports.branding`** — fenced JSON fragment ready to merge.
-- **Token mapping** — Small table: semantic slot, hex, notes.
-- **Next command** — Render command line with placeholders.
+Use a domain-appropriate heading, then:
+- **Summary** (2–4 sentences)
+- **Details** (bullets, table, or structured fields)
+- **Next steps** with owner + timeline if known
+- **Limitations** (partial data, no write access, etc.)
+- For eval-gated skills, end with `result_ok: true` or `result_ok: false` + reason
 
 ## Failure modes
 
 | Symptom | Recovery |
 |---------|----------|
-| Conflicting with existing `reports.branding` | Show diff; ask to merge or replace. |
-| User wants full React theme | Out of scope; point to dashboard package docs. |
+| Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
+| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
+| Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
+| Missing data for a metric | Leave cell blank with `[no data]`; do not invent numbers. |
+| Tone mismatch | Offer 2 tone options from `prompts/tones/` in one question. |
 
 ## Chaining
-
-- `suggested_next:` **`jstack-report`** family or **`jstack-report-share-html-publish`** when hosting matters.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-team-report` then `jstack-share-html-publish`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

@@ -1,17 +1,30 @@
 /**
- * Docs single-file build: embed `./assets/logo-placeholder.png` as data URLs
- * in the favicon + header mark regions (markers in index.html).
+ * Docs single-file build: embed the brand PNG as data URLs in the favicon + header
+ * mark regions (markers in index.html).
  * Used by jstack.core and jstack.gusto (each passes its package root as `repoRoot`).
+ *
+ * Inlines a 128px mark, not the 1024px source. The data URL is emitted THREE times
+ * (favicon, apple-touch-icon, header mark) and the mark renders at 40x40 — inlining
+ * the 1.7 MB 1024px original produced a ~7 MB `index.html` and ~9 MB `docs/index.html`
+ * in each repo (~32 MB of tracked HTML) for an image never displayed above 128px.
  */
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 
 const INDEX_FAVICON_BEGIN = "<!-- jstack:generated-favicon -->";
 const INDEX_FAVICON_END = "<!-- /jstack:generated-favicon -->";
 const INDEX_BRAND_MARK_BEGIN = "<!-- jstack:generated-brand-mark -->";
 const INDEX_BRAND_MARK_END = "<!-- /jstack:generated-brand-mark -->";
 
-const LOGO_REL = "assets/logo-placeholder.png";
+/** Preferred small mark for inlining; falls back to the full-size source if absent. */
+const LOGO_MARK_REL = "assets/logo-mark-128.png";
+const LOGO_FALLBACK_REL = "assets/logo.png";
+
+function resolveMarkPath(repoRoot: string): string {
+  const small = join(repoRoot, LOGO_MARK_REL);
+  return existsSync(small) ? small : join(repoRoot, LOGO_FALLBACK_REL);
+}
 
 function replaceBetweenMarkerPair(
   html: string,
@@ -36,7 +49,7 @@ export async function patchDocsIndexPngBranding(
   html: string,
   repoRoot: string,
 ): Promise<string> {
-  const logoPath = join(repoRoot, LOGO_REL);
+  const logoPath = resolveMarkPath(repoRoot);
   const buf = await readFile(logoPath);
   const dataUrl = `data:image/png;base64,${buf.toString("base64")}`;
   let out = html;

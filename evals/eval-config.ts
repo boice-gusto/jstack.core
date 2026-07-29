@@ -78,6 +78,36 @@ export interface GlobalEvalEnv {
   workspaceDir: string;
 }
 
+/**
+ * Parse a numeric override from an environment variable. Unset, empty, or
+ * whitespace-only values fall back to `fallback` rather than becoming `0` —
+ * `Number("")` and `Number("   ")` are both `0` in JS, so without this normalization
+ * an accidentally-blank env var (e.g. an empty CI template variable) would silently
+ * become "the strictest/loosest possible value" instead of "use the default". A
+ * value that parses to a non-finite number (`NaN`, `Infinity`, a non-numeric string)
+ * also falls back, since a `NaN` threshold makes every `>=`/`>` comparison against it
+ * evaluate to `false` — a silent, surprising way to disable a gate.
+ */
+export function numberFromEnv(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  const trimmed = raw.trim();
+  if (trimmed === "") return fallback;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Guard against an `eval-config.yaml` `pass_threshold` of 0 or negative. `pass_rate`
+ * is always >= 0, so `pass_rate >= 0` (or `>= -5`) is unconditionally true: the
+ * skill's semantic evals could never fail no matter how badly it's graded, while
+ * still looking "covered" for the eval-coverage gate. Falls back to `fallback` for
+ * any non-finite or non-positive value; otherwise passes `raw` through unchanged.
+ */
+export function sanitizePassThreshold(raw: number | undefined, fallback: number): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) return fallback;
+  return raw;
+}
+
 export function skillGateId(relPath: string): string {
   const slug = relPath.split("/").filter(Boolean).join("/");
   return `jstack:${slug}`;
@@ -98,17 +128,21 @@ function readOptionalDebugMockScenario(pluginRoot: string): string | undefined {
 }
 
 export function loadGlobalEvalEnv(pluginRoot: string): GlobalEvalEnv {
-  const passThreshold = Number(
-    process.env.JSTACK_EVAL_PASS_THRESHOLD ?? process.env.PASS_THRESHOLD ?? "80",
+  const passThreshold = numberFromEnv(
+    process.env.JSTACK_EVAL_PASS_THRESHOLD ?? process.env.PASS_THRESHOLD,
+    80,
   );
-  const defaultTimeout = Number(
-    process.env.JSTACK_EVAL_TIMEOUT ?? process.env.EVAL_TIMEOUT ?? "120",
+  const defaultTimeout = numberFromEnv(
+    process.env.JSTACK_EVAL_TIMEOUT ?? process.env.EVAL_TIMEOUT,
+    120,
   );
-  const maxRetries = Number(
-    process.env.JSTACK_EVAL_MAX_RETRIES ?? process.env.MAX_RETRIES ?? "3",
+  const maxRetries = numberFromEnv(
+    process.env.JSTACK_EVAL_MAX_RETRIES ?? process.env.MAX_RETRIES,
+    3,
   );
-  const retryDelaySec = Number(
-    process.env.JSTACK_EVAL_RETRY_DELAY ?? process.env.RETRY_DELAY ?? "10",
+  const retryDelaySec = numberFromEnv(
+    process.env.JSTACK_EVAL_RETRY_DELAY ?? process.env.RETRY_DELAY,
+    10,
   );
   const claudeBin = process.env.JSTACK_EVAL_CLAUDE_BIN ?? "claude";
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -121,10 +155,10 @@ export function loadGlobalEvalEnv(pluginRoot: string): GlobalEvalEnv {
 
   return {
     pluginRoot,
-    passThreshold: Number.isFinite(passThreshold) ? passThreshold : 80,
-    defaultTimeout: Number.isFinite(defaultTimeout) ? defaultTimeout : 120,
-    maxRetries: Number.isFinite(maxRetries) ? maxRetries : 3,
-    retryDelaySec: Number.isFinite(retryDelaySec) ? retryDelaySec : 10,
+    passThreshold,
+    defaultTimeout,
+    maxRetries,
+    retryDelaySec,
     claudeBin,
     anthropicApiKey,
     mcpScenario,

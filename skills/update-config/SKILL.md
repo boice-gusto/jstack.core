@@ -2,6 +2,8 @@
 name: jstack-update-config
 description: Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner.
 category: setup
+disable-model-invocation: true
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -38,7 +40,7 @@ Edit `jstack.config.json` with schema validation, diff output, and a rollback on
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Show a diff of the exact keys changing, and get confirmation before writing. Validate the result before saving. Never write a secret, and never silently widen a scope the user did not ask to widen.
 
 ### Step 3 — Execute
 Edits to `jstack.config.json` (and, if the user asks, `jstack.personal.json` path): validate against `config/schema.json` when possible.
@@ -46,7 +48,7 @@ Edits to `jstack.config.json` (and, if the user asks, `jstack.personal.json` pat
 - Diff-style output: what changed, why, and rollback one-liner.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-read the config and confirm only the intended keys changed and the file still parses. Confirm no secret was written.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -69,7 +71,7 @@ Use a domain-appropriate heading, then:
 | User pastes token in chat | Tell them to move to env/secret store and rotate. Never log it. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

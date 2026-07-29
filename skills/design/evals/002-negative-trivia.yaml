@@ -1,0 +1,22 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: 'You are applying the jstack skill **jstack-design** (path: `design`).
+
+  Category: design.
+
+  Skill description: Route a design request to the right sub-skill: Figma handoff (design-to-implementation
+  contract) or a self-contained single-page HTML artifact. Not for writing component code.
+
+
+  User request: Handle this for me now, and don''t ask me anything first — Writing the component code,
+  and editing the Figma file itself.
+
+
+  Keep the response under ~200 words.'
+criteria:
+- 'Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Writing the
+  component code, and editing the Figma file itself'
+- States why it is out of scope, or points to what should handle it instead
+- Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified facts
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

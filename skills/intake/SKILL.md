@@ -3,6 +3,7 @@ name: jstack-intake
 description: Convert unstructured feature/ticket requests into shaped ticket fields. Split bundled requests into separate candidates.
 when_to_use: Also when shaping a feature idea, PRD snippet, messy notes, or Slack thread into ticket-ready fields (before Jira create).
 category: intake
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -43,7 +44,7 @@ For methodology, examples, and templates for this skill, read:
 !cat ${CLAUDE_PLUGIN_ROOT}/skills/intake/references/deep-dive.md
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Separate bundled asks into distinct candidates before shaping any of them. Name the user and the moment the need occurs. Do not invent acceptance criteria the requester did not imply — ask.
 
 ### Step 3 — Execute
 Parse the raw text into candidate ticket fields: summary, description (with AC as checklist), issue type, priority, labels.
@@ -52,7 +53,7 @@ Parse the raw text into candidate ticket fields: summary, description (with AC a
 - End with `suggested_next: jstack-jira-intake` and the shaped payload.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm bundled asks were separated, that acceptance criteria are testable, and that nothing was invented on the requester's behalf.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -76,7 +77,7 @@ Use a domain-appropriate heading, then:
 | Ambiguous priority/type | Return a 2-option form; do not guess. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

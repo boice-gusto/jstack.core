@@ -1,6 +1,10 @@
 # Chain: Incident response
 
-> **Owner:** EM, SRE lead, or on-call manager. Edit this to match your actual incident response flow, channels, and retro process.
+> **Maintainer:** EM, SRE lead, or on-call manager.
+
+This file is injected verbatim into prompts. It contains no invented channel names, tool
+names, or facilitator identities — treat any org-specific value not present in config or the
+conversation as unknown, and ask rather than assume.
 
 **Flow:** `jstack:incident` → `jstack:announcements` (comms draft) → `jstack:incident-retro`
 
@@ -16,28 +20,20 @@
 - Comms must go through review per `prompts/policies/review-policy.md` before external posting.
 - Retro is not optional for SEV1/SEV2. Schedule within the deadline set in incident policy.
 
-## Your customizations
+## Defaults and overrides
 
-<!-- [CUSTOMIZE] Adapt these to your team's actual incident process -->
+None of these have a dedicated config key today — they're either resolved from existing config or left to the conversation:
 
-| Setting | Default | Your value |
-|---------|---------|------------|
-| Incident channel | #incident | <!-- Your Slack channel --> |
-| Status page tool | Manual | <!-- Statuspage? Instatus? PagerDuty? --> |
-| Retro facilitator | On-call lead | <!-- Who runs your retros? --> |
-| Action item tracker | Jira | <!-- Where do retro action items live? --> |
+| Setting | Where it comes from |
+|---------|----------------------|
+| Incident channel, status page tool | Not modeled in config; use what's already in use for the active incident, or ask |
+| Retro facilitator | Defaults to the on-call lead unless the user names someone else |
+| Action item tracker | `integrations.jira.project_key` if configured; otherwise ask where to file it |
 
 ## Config hook
 
-```json
-{
-  "chains": {
-    "incident_response": {
-      "incident_channel": "#incident",
-      "status_page": "statuspage",
-      "retro_facilitator": "on-call lead",
-      "action_item_project": "OPS"
-    }
-  }
-}
-```
+There's no dedicated config section for this chain. Its behavior comes from `policies.incidents` (severity, escalation — see `prompts/policies/incident-policy.md`) and `policies.review` / `approval_chains` (comms approval — see `prompts/policies/review-policy.md`). Adjust those, or edit this file's steps directly.
+
+## Adapting this file
+
+Edit this file directly to change the step order, add a step, or hardcode a channel/tool/facilitator your team always uses. For severity and escalation data, use `policies.incidents` in `jstack.config.json` instead.

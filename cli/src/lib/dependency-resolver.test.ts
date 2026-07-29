@@ -282,4 +282,315 @@ describe("resolveDependencies", () => {
     const issues = resolveDependencies({ cfg, projectRoot: root });
     expect(ids(issues)).not.toContain("cross-plugins-gbrain-empty-skills");
   });
+
+  // ── checkNotionTemplateSet ────────────────────────────────────────────────
+
+  test("notion-template-set-custom-missing detected when pluginRoot set and catalog absent", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const pluginRoot = mkTmpRoot("jstack-plugin-");
+    const cfg = baseCfg({ notion_defaults: { template_set: "custom" } });
+    const issues = resolveDependencies({ cfg, projectRoot: root, pluginRoot });
+    const issue = findIssue(issues, "notion-template-set-custom-missing");
+    expect(issue).toBeDefined();
+    expect(issue?.severity).toBe("warn");
+    const repair = issue?.repairs[0] as Extract<RepairAction, { kind: "write_file" }>;
+    expect(repair.kind).toBe("write_file");
+    expect(repair.path).toContain("custom.json");
+    expect(repair.content).toBe('{"templates":[]}');
+  });
+
+  test("notion-template-set-custom-missing not raised when catalog exists", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const pluginRoot = mkTmpRoot("jstack-plugin-");
+    const catalogDir = join(pluginRoot, "templates/notion/catalog");
+    mkdirSync(catalogDir, { recursive: true });
+    writeFileSync(join(catalogDir, "custom.json"), '{"templates":[]}', "utf8");
+    const cfg = baseCfg({ notion_defaults: { template_set: "custom" } });
+    const issues = resolveDependencies({ cfg, projectRoot: root, pluginRoot });
+    expect(ids(issues)).not.toContain("notion-template-set-custom-missing");
+  });
+
+  test("notion-template-set-custom-missing not raised when template_set is not 'custom'", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const pluginRoot = mkTmpRoot("jstack-plugin-");
+    const cfg = baseCfg({ notion_defaults: { template_set: "official" } });
+    const issues = resolveDependencies({ cfg, projectRoot: root, pluginRoot });
+    expect(ids(issues)).not.toContain("notion-template-set-custom-missing");
+  });
+
+  test("notion-template-set-custom-missing not raised when pluginRoot is absent", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({ notion_defaults: { template_set: "custom" } });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("notion-template-set-custom-missing");
+  });
+
+  // ── checkNotionParentPages ────────────────────────────────────────────────
+
+  test("notion-parent-pages-incomplete raised for team_hub when team_notion.setup_complete=true", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      notion_defaults: {
+        team_notion: { setup_complete: true },
+        private_vault: { setup_complete: false },
+        parent_pages: { team_hub: "", private_root: "pg-123", one_on_ones: "pg-456" },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const matching = issues.filter((i) => i.id === "notion-parent-pages-incomplete");
+    expect(matching.length).toBeGreaterThanOrEqual(1);
+    expect(matching.some((i) => i.configPath.includes("team_hub"))).toBe(true);
+  });
+
+  test("notion-parent-pages-incomplete raised when private_vault.setup_complete=true and private_root empty", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      notion_defaults: {
+        team_notion: { setup_complete: false },
+        private_vault: { setup_complete: true },
+        parent_pages: { team_hub: "pg-1", private_root: "", one_on_ones: "pg-2" },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const matching = issues.filter((i) => i.id === "notion-parent-pages-incomplete");
+    expect(matching.some((i) => i.configPath.includes("private_root"))).toBe(true);
+    const repair = matching[0]?.repairs[0] as Extract<RepairAction, { kind: "shell_hint" }>;
+    expect(repair.kind).toBe("shell_hint");
+    expect(repair.cmd).toContain("jstack setup");
+  });
+
+  test("notion-parent-pages-incomplete not raised when neither setup_complete", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      notion_defaults: {
+        team_notion: { setup_complete: false },
+        private_vault: { setup_complete: false },
+        parent_pages: { team_hub: "", private_root: "", one_on_ones: "" },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("notion-parent-pages-incomplete");
+  });
+
+  test("notion-parent-pages-incomplete not raised when all parent pages populated", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      notion_defaults: {
+        team_notion: { setup_complete: true },
+        private_vault: { setup_complete: true },
+        parent_pages: { team_hub: "pg-1", private_root: "pg-2", one_on_ones: "pg-3" },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("notion-parent-pages-incomplete");
+  });
+
+  // ── checkMcpServerWiring ──────────────────────────────────────────────────
+
+  test("mcp-server-not-wired detected when server_id not in .mcp.json", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(
+      join(root, ".mcp.json"),
+      JSON.stringify({ mcpServers: { "other-server": { command: "node", args: [] } } }),
+      "utf8",
+    );
+    const cfg = baseCfg({
+      mcp_servers: {
+        jira: {
+          label: "Jira",
+          description: "Jira",
+          status: "not_configured",
+          server_id: "jira-mcp",
+          tools: [],
+          used_by_skills: [],
+        },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const issue = findIssue(issues, "mcp-server-not-wired");
+    expect(issue).toBeDefined();
+    expect(issue?.severity).toBe("warn");
+    const repair = issue?.repairs[0] as Extract<RepairAction, { kind: "shell_hint" }>;
+    expect(repair.cmd).toBe("jstack mcp add jira-mcp");
+  });
+
+  test("mcp-server-not-wired not raised when server_id is present in .mcp.json", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(
+      join(root, ".mcp.json"),
+      JSON.stringify({ mcpServers: { "jira-mcp": { command: "node", args: [] } } }),
+      "utf8",
+    );
+    const cfg = baseCfg({
+      mcp_servers: {
+        jira: {
+          label: "Jira",
+          description: "Jira",
+          status: "connected",
+          server_id: "jira-mcp",
+          tools: [],
+          used_by_skills: [],
+        },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("mcp-server-not-wired");
+  });
+
+  test("mcp-server-not-wired not raised when .mcp.json absent", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      mcp_servers: {
+        jira: {
+          label: "Jira",
+          description: "Jira",
+          status: "not_configured",
+          server_id: "jira-mcp",
+          tools: [],
+          used_by_skills: [],
+        },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("mcp-server-not-wired");
+  });
+
+  test("mcp-server-not-wired not raised when server_id is null", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, ".mcp.json"), JSON.stringify({ mcpServers: {} }), "utf8");
+    const cfg = baseCfg({
+      mcp_servers: {
+        jira: {
+          label: "Jira",
+          description: "Jira",
+          status: "not_configured",
+          server_id: null,
+          tools: [],
+          used_by_skills: [],
+        },
+      },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("mcp-server-not-wired");
+  });
+
+  // ── checkApprovalChainMembers ─────────────────────────────────────────────
+
+  test("approval-chain-member-unknown detected for typo'd member id", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      team: {
+        name: "eng",
+        members: [
+          { id: "alice", name: "Alice" },
+          { id: "bob", name: "Bob" },
+        ],
+      },
+      approval_chains: { chains: { default: ["alice", "charlie"] } },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const issue = findIssue(issues, "approval-chain-member-unknown");
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain("charlie");
+    const repair = issue?.repairs[0] as Extract<RepairAction, { kind: "shell_hint" }>;
+    expect(repair.cmd).toContain("jstack setup");
+  });
+
+  test("approval-chain-member-unknown not raised for 'author' sentinel", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      team: { name: "eng", members: [{ id: "alice", name: "Alice" }] },
+      approval_chains: { chains: { default: ["author", "alice"] } },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("approval-chain-member-unknown");
+  });
+
+  test("approval-chain-member-unknown not raised when all members are valid", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      team: {
+        name: "eng",
+        members: [
+          { id: "alice", name: "Alice" },
+          { id: "bob", name: "Bob" },
+        ],
+      },
+      approval_chains: { chains: { default: ["alice", "bob"] } },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("approval-chain-member-unknown");
+  });
+
+  test("approval-chain-member-unknown not raised when team has no members", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      team: { name: "eng", members: [] },
+      approval_chains: { chains: { default: ["alice"] } },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("approval-chain-member-unknown");
+  });
+
+  // ── checkPeConfigured ─────────────────────────────────────────────────────
+
+  test("pe-configured-incomplete raised for empty jira_project_keys", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      pe: { configured: true, jira_project_keys: [], notion_parent_keys: ["pk-1"] },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const matching = issues.filter((i) => i.id === "pe-configured-incomplete");
+    expect(matching.some((i) => i.configPath.includes("jira_project_keys"))).toBe(true);
+    const repair = matching[0]?.repairs[0] as Extract<RepairAction, { kind: "shell_hint" }>;
+    expect(repair.cmd).toBe("jstack setup --pe");
+  });
+
+  test("pe-configured-incomplete raised for empty notion_parent_keys", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      pe: { configured: true, jira_project_keys: ["ENG"], notion_parent_keys: [] },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const matching = issues.filter((i) => i.id === "pe-configured-incomplete");
+    expect(matching.some((i) => i.configPath.includes("notion_parent_keys"))).toBe(true);
+  });
+
+  test("pe-configured-incomplete not raised when both arrays are populated", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      pe: { configured: true, jira_project_keys: ["ENG"], notion_parent_keys: ["pk-1"] },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("pe-configured-incomplete");
+  });
+
+  test("pe-configured-incomplete not raised when pe.configured is false", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    const cfg = baseCfg({
+      pe: { configured: false, jira_project_keys: [], notion_parent_keys: [] },
+    });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    expect(ids(issues)).not.toContain("pe-configured-incomplete");
+  });
 });

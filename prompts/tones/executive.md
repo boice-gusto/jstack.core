@@ -1,51 +1,51 @@
 # Tone: Executive
 
-> **Owner:** PM or team lead. Edit this file so every jstack agent writes to leadership in your org's voice.
+Use for leadership updates, skip-levels, board and investor comms.
+
+This file is injected verbatim into prompts. It asserts **no facts about your org or product** —
+if a name, metric, or date isn't in config or the conversation, leave it out rather than
+inventing it.
 
 ## Audience
 
-<!-- [CUSTOMIZE] Who reads executive-level output from your team? -->
-Leadership, skip-levels, board updates, investor comms.
+Readers who scan, decide, and move on. They have context on the business and little on your
+implementation. Assume 30 seconds of attention and one question: "what do you need from me?"
 
-## Voice
+## Shape
 
-<!-- [CUSTOMIZE] Paste 2-3 sentences from a real exec update your stakeholders liked. This anchors the style better than rules. -->
+Write to this skeleton rather than copying a sample:
+
 ```
-Example: "Auth latency is up 40% since the Redis migration. Customer impact: 
-login takes 4s instead of 2s on mobile. Fix ships Thursday; fallback is 
-reverting to the old cluster, which we can do in <5 min."
+<Outcome or ask, one sentence — the number or the decision goes first.>
+<Customer or business impact, in their units, not yours.>
+<What happens next, with a date and an owner.>
+<Fallback or risk, and how reversible it is.>
 ```
+
+Each line earns its place. If a line doesn't change what the reader decides, cut it.
 
 ## Structure
 
-1. **Lead with the outcome or ask** — not the backstory. Stakeholders scan; put the decision or number first.
-2. **Translate technical terms** using your product's language:
-   <!-- [CUSTOMIZE] Add your team's translations below -->
-   | Technical | Say instead |
-   |-----------|------------|
-   | API p99 latency | Page load time for customers |
-   | Feature flag rollout | Gradual release to users |
-   | Circuit breaker tripped | Service automatically protected itself |
-3. **Risks and asks are numbered** with an owner if known.
-4. **One page max.** Link to the detail doc if more is needed.
+1. **Lead with the outcome or ask** — not the backstory. Put the decision or the number first.
+2. **Translate technical terms into customer-visible effects.** Say what the user experiences,
+   not which component is involved: response time rather than p99, gradual release rather than
+   feature flag, the service protected itself rather than the breaker tripped. Build the mapping
+   from your own product's vocabulary; do not guess at names you haven't been told.
+3. **Number risks and asks**, each with an owner where known.
+4. **One page maximum.** Link to detail rather than inlining it.
+5. **State reversibility.** Leadership treats "we can undo this in minutes" very differently
+   from "this is one-way."
 
-## What to avoid
+## Avoid
 
-<!-- [CUSTOMIZE] Add phrases or patterns your leadership has pushed back on -->
-- Hedging without data ("we think it might be okay")
-- Internal tool names stakeholders won't recognize
-- Walls of bullets with no summary sentence
+- Hedging without data — "we think it might be fine."
+- Internal tool, service, or project codenames the reader won't recognize.
+- Walls of bullets with no summary sentence.
+- Precision you don't have. A projection stated as a fact will be quoted back as one.
+- Jargon doing the work of an argument.
 
-## Config hook
+## Adapting this file
 
-If `jstack.config.json` has a `tones.executive` block, merge those overrides on top of this file:
-```json
-{
-  "tones": {
-    "executive": {
-      "max_length": "1 page",
-      "translation_table": { "p99": "response time" }
-    }
-  }
-}
-```
+Sharpen it by editing this file directly — add your real translation vocabulary and the phrasing
+your leadership has pushed back on. There is no config-based override for tones; `jstack.config.json`
+does not drive this file.

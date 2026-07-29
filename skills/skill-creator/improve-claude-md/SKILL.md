@@ -2,6 +2,7 @@
 name: jstack-improve-claude-md
 description: Audit a project's CLAUDE.md against commits, session transcripts, and working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or as a monthly hygiene routine.
 category: skill-creator
+effort: high
 ---
 
 <!-- Chain Contract -->
@@ -26,6 +27,21 @@ Read the setup preamble first:
 - **PII redaction is always-on** in evidence excerpts (see `cli/src/lib/claude-md-improver.ts` `PII_PATTERNS`).
 - **Declined edits are remembered** in `.jstack/claude-md-improver-history.json` and skipped on subsequent runs unless evidence materially changes.
 - **Persona review is mandatory** before showing edits to the user — at least 3 of 4 personas (CEO/PM/ENG/QA) must score ≥8.
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Proposing a new rule with no cited evidence | Step 2 requires citing evidence verbatim precisely to prevent this — an uncited rule is indistinguishable from a hallucinated one | Every `ProposedEdit.rationale` quotes the commit, session, or file that motivated it |
+| Running `--apply` after `CLAUDE.md` changed since the scan | Silently overwrites or conflicts with edits made after the scan ran | Check mtime vs scan time first; abort and ask for a re-run if it changed |
+| Re-surfacing a previously-declined edit every run | Wastes the user's attention on a decision they already made | Check `.jstack/claude-md-improver-history.json` and skip unless evidence materially changed |
+| Accepting an edit that only 2 of 4 personas approved | Violates the ≥3-of-4 average-≥8 acceptance rule; the edit wasn't actually vetted | Apply the acceptance rule strictly; surface the rejecting persona's reasoning in "Filtered out" |
+| Redacting PII inconsistently across evidence excerpts | Leaks the exact thing `PII_PATTERNS` exists to catch, inside the report meant to fix hygiene | Redaction is always-on, not conditional on how sensitive a given excerpt looks |
+
+### Worked example
+
+- *Weak `ProposedEdit`:* `{"before": null, "after": "Always write good tests.", "rationale": "seems like a good practice"}`
+- *Sharp `ProposedEdit`:* `{"before": null, "after": "Tests live next to source as *.test.ts (e.g. cli/src/lib/foo.test.ts).", "rationale": "17 of the last 20 commits touching cli/src/lib/*.ts added a co-located *.test.ts; CLAUDE.md doesn't state this convention, and one session (2026-07-14) required 2 corrections before matching it.", "benefit": "Claude places new test files correctly on the first attempt instead of guessing __tests__/ or a top-level tests/ directory.", "example": "Adding cli/src/lib/dateUtils.ts, Claude creates cli/src/lib/dateUtils.test.ts without being told where."}`
 
 ## Config and references
 

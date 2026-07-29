@@ -1,0 +1,81 @@
+# Contributing to jstack.core
+
+## Toolchain
+
+Bun only. `bun install`, `bun add`, `bun remove`, `bun test`, `bun run <script>`. Do not use `npm`, `yarn`, or `pnpm` — no lockfile for them is maintained and CI does not install them. See `CLAUDE.md` for the full stack description (TypeScript strict, ESM with `.js` import suffixes, Zod config schema, `commander` CLI).
+
+## The gate: `bun run check`
+
+```bash
+bun run check
+```
+
+This is what CI (`.github/workflows/check.yml`, via `bun run verify`) runs. It chains: `validate-config` → `agents-check` → `validate-chains` → `validate:alias-drift --strict` → `eval:validate` → `eval:scenarios-validate` → `eval:routers` → `eval:quick` → `test:cli` → `typecheck:cli` → `typecheck:dashboard`. Run it before opening a PR for any change that touches code, config, or skill chaining. Fix failures rather than skipping them — there is no supported flag to bypass individual steps in `check` itself (`bun run verify` does support `SKIP_VERIFY_CHECK=1` to skip the trailing `check` call and only run its own hooks/CLI-matrix smoke tests).
+
+## Adding a skill end-to-end
+
+1. **Scaffold the file.** Add an entry to [`scripts/generate-skills.ts`](scripts/generate-skills.ts), then run:
+
+   ```bash
+   bun scripts/generate-skills.ts
+   ```
+
+   This creates a minimal `skills/<path>/SKILL.md` for any entry that doesn't already exist on disk. It never overwrites an existing file.
+
+2. **The most important thing to know:** most skill *bodies* are generated, not hand-written. `scripts/apply_detailed_skills.py` (data in `scripts/apply_detailed_skills_data.py`) regenerates the full body of every `SKILL.md` **except** those listed in the `SKIP` set at the top of that script. As of this writing that's roughly 125 of the 135 skills (`find skills -name SKILL.md | wc -l` for the live count) — the exact split will drift, don't hardcode it. If you hand-edit a skill that is not in `SKIP`, the next run of:
+
+   ```bash
+   bun run apply-skills          # == python3 scripts/apply_detailed_skills.py
+   ```
+
+   will silently overwrite your edits. Either:
+   - Add your content to `DESCRIPTIONS` / `WHEN_TO_USE` / `MISSIONS` / `CHAINS_TO` / `FAILURE_EXTRAS` / `CATEGORY_DEEP` in `apply_detailed_skills_data.py` so the generator produces what you want, or
+   - Add the skill's `SKILL.md` path to `SKIP` in `apply_detailed_skills.py` if it's genuinely hand-maintained (bespoke structure the generator can't express). `CLAUDE.md` keeps a copy of the current `SKIP` list for reference — keep both in sync when you change one.
+
+   Never run `apply-skills` / `apply_detailed_skills.py` speculatively. It regenerates *every* non-`SKIP` skill body in one pass — review the full diff before committing.
+
+3. **Frontmatter.** Every `SKILL.md` needs `name` (kebab-case, `jstack-` prefixed), `description`, and `category`. See `skills/_core/references/skill-conventions.md` and `skills/_core/references/skill-frontmatter-guide.md` for the full field reference (`disable-model-invocation`, `context: fork`, `effort`, `disallowed-tools`, `argument-hint`, `allowed-tools`).
+
+4. **Catalog entry.** Regenerate `skill-catalog.json` (and `skills-data.js`, `index.html`'s inline payload) after adding a skill:
+
+   ```bash
+   bun run docs:generate
+   ```
+
+5. **Chain references.** If the skill uses `<!-- chains-to: jstack:foo -->`, `foo` must resolve to a real skill. Verify with:
+
+   ```bash
+   bun run validate-chains
+   ```
+
+## Authoring evals
+
+See [`evals/AUTHORING.md`](evals/AUTHORING.md) for layout, the smoke/negative/graded case tiers, orchestrator paraphrase-routing cases, and scenario packs. Quick local loop (no API key):
+
+```bash
+bun run eval                    # quick: structural + chains + YAML lint + coverage
+bun run eval validate           # lint all skills/*/evals/*.yaml
+bun run eval coverage           # skills still missing semantic cases
+```
+
+Scaffold baseline eval YAML for a skill that needs it: `bun run generate-skill-evals`.
+
+## Touching agents
+
+Whenever you edit `agents/*.md` or rename a skill, run:
+
+```bash
+bun run agents-check
+```
+
+This validates YAML frontmatter and checks every `jstack:*` token against live `skills/**/SKILL.md` names. It's part of `bun run check`, but run it standalone after bulk agent edits so stale references fail fast before you run the full gate.
+
+## Git workflow
+
+- No direct pushes to `main`. All changes land through a PR.
+- Don't auto-commit. Only commit when explicitly asked to, and only after `bun run check` passes.
+- Prefer several small, reviewable commits over one large one for multi-file refactors.
+
+## Config changes
+
+Org-specific values (sprint length, approvers, channel ids, integration ids) belong in `jstack.config.json`, never hardcoded in skill prose or TS source. `config/schema.json` is generated — to change the config contract, edit the Zod schema in `cli/src/types/config.ts`, run `bun run schema:generate`, and commit both. Run `bun run validate-config` to confirm `config/defaults.json` still satisfies the contract.

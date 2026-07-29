@@ -2,6 +2,7 @@
 name: jstack-notion
 description: Route Notion requests to the right sub-skill (adr, article, sprint, report, etc.). Ask one question if ambiguous.
 category: notion
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -17,22 +18,17 @@ Route Notion requests to the most specific sub-skill. Do not write pages directl
 
 ## Domain rules — Notion
 - Use `templates/notion/*.json` and property maps from team conventions. Never invent a `database_id` — require config or pasted URL.
-- Resolve parents via **`notion_defaults.post_targets`** and **`notion_defaults.parent_pages`** (private vault vs team hub). See `skills/notion/references/notion-vault-and-routing.md`.
-- Apply body/property conventions in `skills/notion/references/notion-page-format-rules.md` so evals and templates stay aligned.
 - ADR vs report vs team-note differ; pick the sub-skill that matches. Keep parent/child page relationships explicit.
 - Return **Notion page URL** in the summary for every create/update.
 - No workspace-wide member or public-web changes without a dedicated sub-step the user approves.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/notion/`:** update, planning, sprint, project, report, adr, article, knowledge-base, team-note
+**Under `skills/notion/`:** update, planning, sprint, project, report, adr, article, knowledge-base, team-note, standup, team-report, performance, one-on-one, setup
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
-- Notion template patterns (gallery vs JSON vs hybrid): `${CLAUDE_PLUGIN_ROOT}/skills/notion/references/notion-template-strategy.md` (includes **OpenAI `.curated` notion-*** cross-links).
-- Private vault + team routing + `post_targets`: `${CLAUDE_PLUGIN_ROOT}/skills/notion/references/notion-vault-and-routing.md`
-- Page format / eval checklist: `${CLAUDE_PLUGIN_ROOT}/skills/notion/references/notion-page-format-rules.md`
 - Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
 - Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
 - Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
@@ -48,13 +44,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/notion/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not overwrite pre-existing content, and that it is still a draft unless the user asked to publish.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

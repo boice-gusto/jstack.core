@@ -14,6 +14,10 @@
         "generated_at": { "type": "string" },
         "team": { "type": "string" },
         "subtitle": { "type": "string", "description": "Optional subtitle (e.g. week range) for UI shells." },
+        "footer_note": {
+          "type": "string",
+          "description": "Optional footer line; when omitted, the report shell picks copy from report_kind."
+        },
         "report_kind": {
           "type": "string",
           "description": "Aligns with templates/reports/*.md names (for dashboard badge and routing).",

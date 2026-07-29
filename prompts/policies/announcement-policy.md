@@ -1,18 +1,22 @@
 # Announcement policy
 
-> **Owner:** PM or comms lead. Edit this to define how YOUR team classifies, drafts, and publishes announcements.
+> **Maintainer:** PM or comms lead.
+
+This file is injected verbatim into prompts. It contains no invented channel names, approver
+names, or notice periods — treat any org-specific value not present in config or the
+conversation as unknown, and ask rather than assume.
 
 ## Audience classification
 
 Every announcement must be classified before drafting:
 
-<!-- [CUSTOMIZE] Replace examples with your actual announcement types -->
+| Type | Audience | Examples |
+|------|----------|----------|
+| **Internal** | Team or company | Sprint updates, team changes, internal tool launches |
+| **External** | Customers, public | Product launches, pricing changes, incident updates |
+| **Partner** | Integration partners, resellers | API changes, deprecation notices |
 
-| Type | Audience | Channels | Examples |
-|------|----------|----------|----------|
-| **Internal** | Team or company | <!-- #eng, #general, all-hands --> | Sprint updates, team changes, internal tool launches |
-| **External** | Customers, public | <!-- Blog, email, status page, social --> | Product launches, pricing changes, incident updates |
-| **Partner** | Integration partners, resellers | <!-- Partner Slack, email list --> | API changes, deprecation notices |
+Target channels aren't hardcoded here. Read `policies.announcements.channels`; if it's empty, ask the user which channel to post to before drafting.
 
 ## Draft workflow
 
@@ -22,26 +26,16 @@ Every announcement must be classified before drafting:
 4. **Review gate** — external or partner announcements require review per `prompts/policies/review-policy.md`.
 5. **Never post directly** — posting requires explicit user action or a linked skill with approval.
 
-## Approval matrix
+## Approval
 
-<!-- [CUSTOMIZE] Who approves what? This is the key org-specific value of this file. -->
-
-| Announcement type | Approver(s) | Notes |
-|-------------------|------------|-------|
-| Internal team update | Author (self-serve) | No gate needed |
-| Company-wide internal | EM or PM lead | Esp. for reorgs, policy changes |
-| Customer-facing product | PM + marketing | Legal review if pricing/terms |
-| Incident external comms | PM + legal | Per incident-policy.md |
-| Partner/API changes | PM + eng lead | Minimum 30-day notice for breaking changes |
+Announcements are not self-approved by default (`policies.announcements.approval_required` is `true`). Resolve who approves from `approval_chains.chains` (see `skills/_core/references/approval-chains.md`): use the `external_comms` chain for anything customers, partners, or the public will see, and `policy_change` for internal policy or reorg announcements. If the action type isn't defined in `approval_chains.chains`, fall back to `chains.default` (`["author"]` unless configured otherwise). If a role in the chain has no team member mapped to it, ask the user who fills it — do not invent a name or title. If `approval_required` is set to `false`, internal-only announcements may be self-serve; external and partner announcements still resolve through the chain above regardless of that flag.
 
 ## Content guardrails
-
-<!-- [CUSTOMIZE] Add your org's specific restrictions -->
 
 - Never leak unreleased product detail in external copy unless the user explicitly confirms external audience.
 - `@here` / `@channel` only with user approval for important-level messages.
 - Legal/compliance content (pricing, terms, data handling): flag for stakeholder review before finalization.
-- <!-- [CUSTOMIZE] Embargo rules? Partner NDAs? --> 
+- If the announcement could touch an embargo, NDA, or partner agreement, ask the user for its terms before drafting — do not assume one exists or doesn't.
 
 ## Config hook
 
@@ -49,11 +43,20 @@ Every announcement must be classified before drafting:
 {
   "policies": {
     "announcements": {
-      "internal_channels": ["#eng", "#general"],
-      "external_channels": ["blog", "email"],
-      "breaking_change_notice_days": 30,
-      "external_requires_approval": ["PM", "marketing"]
+      "approval_required": true,
+      "channels": []
+    }
+  },
+  "approval_chains": {
+    "chains": {
+      "external_comms": ["author", "PM", "legal"]
     }
   }
 }
 ```
+
+`policies.announcements.approval_required` and `policies.announcements.channels` are declared in `config/defaults.json` and match the defaults shown. `approval_chains.chains` is declared there too (default: `{"default": ["author"]}`); the `external_comms` chain above is an example shape from `skills/_core/references/approval-chains.md`, not a value that ships by default — define it if you want a named chain instead of falling back to `default`.
+
+## Adapting this file
+
+Edit this file directly to add real channel names, examples, or guardrails specific to your org. For approvals, set `policies.announcements.channels` and `approval_chains.chains.external_comms` / `.policy_change` in `jstack.config.json` rather than hardcoding approver names here.

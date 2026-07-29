@@ -1,0 +1,26 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-prioritize** (path: `prioritize`).
+
+  Category: prioritize.
+
+  Skill description: Rank a list using RICE, WSJF, value/effort, or a user-provided rubric. Show
+  scores and cutline.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Creating tickets or
+  executing the top item.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    Creating tickets or executing the top item
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

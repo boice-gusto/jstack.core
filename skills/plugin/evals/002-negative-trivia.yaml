@@ -1,0 +1,23 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: 'You are applying the jstack skill **jstack-plugin** (path: `plugin`).
+
+  Category: plugin.
+
+  Skill description: Route a plugin-distribution request to the right sub-skill. Currently create-plugin-pr,
+  which opens a PR against jstack.core or an overlay using distribution.github config. Not for authoring
+  the skill itself — that is jstack-skill-creator.
+
+
+  User request: Handle this for me now, and don''t ask me anything first — Authoring the skill being shipped
+  (jstack:skill-creator), and merging the PR.
+
+
+  Keep the response under ~200 words.'
+criteria:
+- 'Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Authoring
+  the skill being shipped (jstack:skill-creator), and merging the PR'
+- States why it is out of scope, or points to what should handle it instead
+- Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified facts
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

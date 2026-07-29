@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Nothing yet.
+
+## 0.2.0 — 2026-07-27
+
 - **Setup wizard (schema-driven, opt-in):** `jstack setup --schema` walks every meaningful config field with five per-question actions — **Default / Custom / Skip / Example / Discuss**. Skip explicitly omits the key (no empty-string artifacts). Section gates let users take all defaults or skip entire sections. `--section <prefix>` filters to one area; `--non-interactive` accepts every Default for CI. Recovery file written to `.jstack/setup-recovery.json` only on validation failure, deleted on next successful write. Concurrency lockfile at `.jstack/setup.lock` with stale-pid detection.
 - **Doctor `--fix`:** `jstack doctor --fix` prints structured `DependencyIssue` list with proposed `RepairAction`s (mkdir, write_file, set_config, shell_hint). Dry-run by default. `--fix --apply` applies repairs with per-group consent (`set_config` defaults to No). Shell hints are never auto-executed.
 - **Bug fixes (5 critical):** (B1) `mergeMcpRegistry` now preserves user-curated MCP entries on collision and reports merges; (B2) new `SKIP_SENTINEL` + `pruneSkipped` so skipped fields are omitted, not empty-string; (B3) legacy `jstack setup --reconfigure` now layers existing config so re-runs don't lose customizations; (B4) cancellation in either wizard exits 130 with a clean message instead of a stack trace; (B5) `doctor --fix` adds the missing dependency-resolver surface.

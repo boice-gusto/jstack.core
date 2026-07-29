@@ -2,9 +2,10 @@
 name: jstack-jira-transition
 description: Move a Jira issue between workflow states after validating the transition is legal and required fields are set.
 category: jira
+argument-hint: "[PROJ-123] [Done|In Progress|etc]"
+arguments: "[ticket_id, status]"
 disable-model-invocation: true
-arguments: [ticket_id, status]
-argument-hint: [PROJ-123] [Done|In Progress|etc]
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -42,7 +43,7 @@ Move an issue between workflow states. Validate the transition is legal for the 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Search before you create — a duplicate ticket is worse than a missing one. Read the issue's current status and its legal transitions before transitioning; do not assume a workflow. Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk change, show the count, the field diff, and a sample of affected keys, then wait for confirmation.
 
 ### Step 3 — Execute
 Resolve the transition id from API metadata — never hardcode. Validate the transition is legal for the current state.
@@ -50,7 +51,7 @@ Resolve the transition id from API metadata — never hardcode. Validate the tra
 - Output: from-status → to-status with timestamp; link to view issue.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -75,7 +76,7 @@ Use a domain-appropriate heading, then:
 | Required field missing for transition | Collect the field before retrying the transition. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-jira-intake` then `jstack-jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

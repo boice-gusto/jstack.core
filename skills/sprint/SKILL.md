@@ -1,7 +1,8 @@
 ---
 name: jstack-sprint
-description: Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira.
+description: "Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira."
 category: sprint
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -20,9 +21,7 @@ Route sprint requests to the right sub-skill (planning, mid-sprint re-plan). Pro
 - If historical velocity data is missing, use T-shirt estimates with a conversion note.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/sprint/`:** prep (inputs / goals / scope), refinement (backlog grooming), planning (capacity, commitment, Jira board / sprint create or continue)
-
-- **New sprint / carryover:** Operational steps (move incomplete issues vs copy board layout) live in **`planning`** together with Jira MCP moves; spill **narrative** (reasons, themes) can be a separate write-up or future `sprint/carryover` skill if your pack adds one. Prefer **`jira/sprint-board`** (or host Jira tools) for bulk moves only after user confirms.
+**Under `skills/sprint/`:** prep, refinement, planning
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
@@ -43,13 +42,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Read the board's actual state before planning against it. When something spilled, diagnose which of scope growth, underestimation, or blockage caused it rather than re-committing the same item. Change the plan or the scope, not the record of what happened.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/sprint/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the numbers match the board rather than the narrative, and that carryover is explained rather than silently re-committed.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

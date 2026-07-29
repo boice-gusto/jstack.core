@@ -2,6 +2,7 @@
 name: jstack-routines
 description: Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).
 category: routines
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -12,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).
+Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, morning-kickoff, custom). Resolve the routine id against `config/defaults.json` `routines` and `config/schedules/<id>.json` before running; if the two disagree, say so.
+- **Out of scope:** Creating or editing a routine definition (`jstack:workflow-builder`), and firing integrations for a routine whose `enabled` is false.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.
@@ -20,7 +22,7 @@ Route to the right routine sub-skill (standup, weekly-digest, sprint-close, heal
 - Output is often a Slack block — keep under channel norms (length, @here rules).
 
 ## Sub-skills (pick the most specific)
-**Under `skills/routines/`:** standup, weekly-digest, sprint-close, health-check, custom
+**Under `skills/routines/`:** standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
@@ -41,13 +43,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled job that fails silently goes unnoticed for weeks.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/routines/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

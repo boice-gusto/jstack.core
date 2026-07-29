@@ -1,6 +1,6 @@
 {
   "name": "jstack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Team operations toolkit: project management, sprint ops, engineering metrics, incident response, knowledge management, session lifecycle, personal productivity (diary/remember/focus/9-grid-eval), JIRA CRUD with enforcement rules, Notion CRUD with templates, reports, GitHub metrics, browser workflow automation, scheduled routines, research, meetings, MCP discovery, evals, and telemetry (opt-in).",
   "author": { "name": "jstack contributors" },
   "keywords": [

@@ -3,6 +3,8 @@ name: jstack-share-html-publish
 description: Publish or download HTML via a share-some-html style MCP (update/get) or JSON-RPC curl fallback; writes all artifacts under a config-defined directory (default /tmp). Optional access password when the server supports it.
 category: reports
 data_class: internal
+disable-model-invocation: true
+effort: medium
 gbrain_destination: none
 ---
 
@@ -14,7 +16,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Publish or download HTML via a share-some-html style MCP (update/get) or JSON-RPC curl fallback; writes all artifacts under a config-defined directory (default /tmp). Optional access password when the server supports it.
+Publish an already-reviewed HTML artifact and return the resulting link.
+- **Out of scope:** Authoring or editing the report content, and publishing anything the user has not seen. Never publish to a public or unfamiliar destination without explicit confirmation of the audience.
 
 ## Domain rules — reports
 - Fill `templates/reports/*` with data from config, tools, and user-supplied facts only — never invent velocity, incidents, or goals.
@@ -38,13 +41,13 @@ Publish or download HTML via a share-some-html style MCP (update/get) or JSON-RP
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Every figure traces to a named source with an as-of time. Mark a missing metric as `[no data]` — never interpolate it, and never drop the row silently, because omission in an authoritative-looking report misleads exactly as much as fabrication.
 
 ### Step 3 — Execute
 Apply the `jstack-share-html-publish` workflow using config and any applicable templates under `templates/reports/`.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm every figure has a source and as-of time, that gaps read `[no data]`, and that the footer and scope match this report's kind. Re-run the render and confirm identical output from identical inputs.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -68,7 +71,7 @@ Use a domain-appropriate heading, then:
 | Tone mismatch | Offer 2 tone options from `prompts/tones/` in one question. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-team-report` then `jstack-share-html-publish`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

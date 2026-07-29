@@ -12,5 +12,8 @@ prompt: >-
 criteria:
   - Names a concrete child route, child skill folder, or one focused clarifying question
   - Does not present fictional ticket keys, channel IDs, or verified API results
+  - 'Any named route is one this orchestrator actually owns: oncall-summary, find-sme, retro'
+  - Does not absorb work the skill declares out of scope; routes or declines it
 expect_skill: true
 timeout: 120
+generated-by: scripts/generate-skill-evals.ts

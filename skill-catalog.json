@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-06-17T03:25:45.805Z",
-  "count": 135,
+  "generatedAt": "2026-07-28T10:09:19.165Z",
+  "count": 137,
   "skills": [
     {
       "id": "adr",
@@ -8,7 +8,7 @@
       "path": "skills/adr/SKILL.md",
       "relPath": "skills/adr/SKILL.md",
       "gateId": "jstack:adr",
-      "description": "Create or update a local markdown Architecture Decision Record (ADR) with typed context (engineering, design, team, codebase, org), discovery of adr/docs/adr folders, intake questions, and numbered filenames — writes only after confirmation.",
+      "description": "Create or update a local markdown Architecture Decision Record (ADR) with typed context (engineering, design, team, codebase, org), discovery of adr/docs/adr folders, intake questions, and numbered filenames \u2014 writes only after confirmation.",
       "whenToUse": "",
       "category": "Adr",
       "categoryKey": "adr"
@@ -19,21 +19,10 @@
       "path": "skills/advice/SKILL.md",
       "relPath": "skills/advice/SKILL.md",
       "gateId": "jstack:advice",
-      "description": "Strategic and design counsel—stakeholder-aware options, tradeoffs, and a clear recommendation. Use for leadership/EM/product/design dilemmas, prioritization of principles, 1:1 or exec prep, or when the user wants named perspectives (not generic brainstorming). Grounds in team KB and gbrain when configured; never invents org policy.",
+      "description": "Strategic and design counsel\u2014stakeholder-aware options, tradeoffs, and a clear recommendation. Use for leadership/EM/product/design dilemmas, prioritization of principles, 1:1 or exec prep, or when the user wants named perspectives (not generic brainstorming). Grounds in team KB and gbrain when configured; never invents org policy.",
       "whenToUse": "",
       "category": "Advice",
       "categoryKey": "advice"
-    },
-    {
-      "id": "review-announcement-review",
-      "name": "jstack-announcement-review",
-      "path": "skills/review/announcement-review/SKILL.md",
-      "relPath": "skills/review/announcement-review/SKILL.md",
-      "gateId": "jstack:review/announcement-review",
-      "description": "Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.",
-      "whenToUse": "",
-      "category": "Review",
-      "categoryKey": "review"
     },
     {
       "id": "announcements",
@@ -47,24 +36,13 @@
       "categoryKey": "announcements"
     },
     {
-      "id": "shortcuts-ceo-brainstorm",
-      "name": "jstack-ceo-brainstorm",
-      "path": "skills/shortcuts/ceo-brainstorm/SKILL.md",
-      "relPath": "skills/shortcuts/ceo-brainstorm/SKILL.md",
-      "gateId": "jstack:shortcuts/ceo-brainstorm",
-      "description": "\"Alias jstack:ceo-brainstorm — CEO persona + executive tone, then superpowers:brainstorming. Use when the user wants exec-lens ideation.\"",
-      "whenToUse": "",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
-    },
-    {
       "id": "computer-use",
       "name": "jstack-computer-use",
       "path": "skills/computer-use/SKILL.md",
       "relPath": "skills/computer-use/SKILL.md",
       "gateId": "jstack:computer-use",
-      "description": "Route computer-use requests — native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.",
-      "whenToUse": "User mentions computer-use, desktop automation, native app UI, macOS accessibility automation, ambiguous \"automate my app\", CUA, trycua, cua-driver, cuabot, sandbox, or choosing between browser and non-browser automation. Use before picking jstack-workflows or jstack-computer-use-cua alone.",
+      "description": "Route computer-use requests \u2014 native macOS/desktop UI (CUA) vs web automation (jstack workflows, Playwright MCP) vs org YAML workflow definitions.",
+      "whenToUse": "",
       "category": "Computer Use",
       "categoryKey": "computer-use"
     },
@@ -80,59 +58,48 @@
       "categoryKey": "computer-use"
     },
     {
-      "id": "review-counsel-review",
-      "name": "jstack-counsel-review",
-      "path": "skills/review/counsel-review/SKILL.md",
-      "relPath": "skills/review/counsel-review/SKILL.md",
-      "gateId": "jstack:review/counsel-review",
-      "description": "Multi-persona review (CEO/design/eng/QA) with synthesis and tensions. Not vote-counting by title.",
+      "id": "crew",
+      "name": "jstack-crew",
+      "path": "skills/crew/SKILL.md",
+      "relPath": "skills/crew/SKILL.md",
+      "gateId": "jstack:crew",
+      "description": "Inspect and manage the background Slack agents (crew) that watch a DM and answer in it \u2014 list, show, create, edit, enable, disable, remove agents, check status, explain why a message got no reply, and halt everything. Use when the user asks about \"my agents\", \"background agents\", \"Ralph\", \"crew\", \"why didn't it respond\", or wants to add/disable an agent. Do NOT use to compose or send a Slack message, and do NOT use to switch the crew to live posting \u2014 that is a deliberate human step (`jstack crew go-live`).",
       "whenToUse": "",
-      "category": "Review",
-      "categoryKey": "review"
+      "category": "Crew",
+      "categoryKey": "crew"
     },
     {
-      "id": "plugin-create-plugin-pr",
-      "name": "jstack-create-plugin-pr",
-      "path": "skills/plugin/create-plugin-pr/SKILL.md",
-      "relPath": "skills/plugin/create-plugin-pr/SKILL.md",
-      "gateId": "jstack:plugin/create-plugin-pr",
-      "description": "Open a PR to jstack.core or jstack.gusto using distribution.github from config; block secrets via path_deny_globs.",
-      "whenToUse": "Contributor has local changes and wants a PR against the configured core or gusto distribution repo.",
-      "category": "Plugin",
-      "categoryKey": "plugin"
+      "id": "design",
+      "name": "jstack-design",
+      "path": "skills/design/SKILL.md",
+      "relPath": "skills/design/SKILL.md",
+      "gateId": "jstack:design",
+      "description": "Route a design request to the right sub-skill: Figma handoff (design-to-implementation contract) or a self-contained single-page HTML artifact. Not for writing component code.",
+      "whenToUse": "",
+      "category": "Design",
+      "categoryKey": "design"
     },
     {
-      "id": "routines-custom",
-      "name": "jstack-custom",
-      "path": "skills/routines/custom/SKILL.md",
-      "relPath": "skills/routines/custom/SKILL.md",
-      "gateId": "jstack:routines/custom",
-      "description": "Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.",
+      "id": "design-figma-handoff",
+      "name": "jstack-figma-handoff",
+      "path": "skills/design/figma-handoff/SKILL.md",
+      "relPath": "skills/design/figma-handoff/SKILL.md",
+      "gateId": "jstack:design/figma-handoff",
+      "description": "Load jstack Figma workflow guidance before design-to-code or MCP Figma work; chain to figma-use when the host provides it.",
       "whenToUse": "",
-      "category": "Routines",
-      "categoryKey": "routines"
+      "category": "Design",
+      "categoryKey": "design"
     },
     {
-      "id": "session-end",
-      "name": "jstack-end-session",
-      "path": "skills/session/end/SKILL.md",
-      "relPath": "skills/session/end/SKILL.md",
-      "gateId": "jstack:session/end",
-      "description": "End the current session: summarize, flush carryover items, optionally run eval hooks.",
-      "whenToUse": "",
-      "category": "Session",
-      "categoryKey": "session"
-    },
-    {
-      "id": "reports-engineer-report",
-      "name": "jstack-engineer-report",
-      "path": "skills/reports/engineer-report/SKILL.md",
-      "relPath": "skills/reports/engineer-report/SKILL.md",
-      "gateId": "jstack:reports/engineer-report",
-      "description": "Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics.",
-      "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
+      "id": "design-visual-single-page-html",
+      "name": "jstack-visual-single-page-html",
+      "path": "skills/design/visual-single-page-html/SKILL.md",
+      "relPath": "skills/design/visual-single-page-html/SKILL.md",
+      "gateId": "jstack:design/visual-single-page-html",
+      "description": "Build one standalone HTML file with React, Tailwind 4-style tokens, Chart.js/D3 via CDN, shadcn-compatible CSS themes, citations to design theory, report IA hierarchy, and typographic markdown rendering\u2014not a Next.js bundle.",
+      "whenToUse": "User wants a single downloadable HTML dashboard, branded report viewer, slide-like page, or interactive viz page without a build step; mentions React Tailwind Chart.js D3 shadcn themes SPA CDN; asks for markdown on page with professional layout or report/presentation design.",
+      "category": "Design",
+      "categoryKey": "design"
     },
     {
       "id": "engineering",
@@ -151,7 +118,7 @@
       "path": "skills/engineering/health/SKILL.md",
       "relPath": "skills/engineering/health/SKILL.md",
       "gateId": "jstack:engineering/health",
-      "description": "Summarize engineering health — CI status, PR queue, flaky tests, revert risk — from configured repos only.",
+      "description": "Summarize engineering health \u2014 CI status, PR queue, flaky tests, revert risk \u2014 from configured repos only.",
       "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"
@@ -162,32 +129,10 @@
       "path": "skills/engineering/silo-scan/SKILL.md",
       "relPath": "skills/engineering/silo-scan/SKILL.md",
       "gateId": "jstack:engineering/silo-scan",
-      "description": "Detect overlapping work — same files or similar tickets/PRs — from a Jira ticket or GitHub PR; confidence-thresholded; read-only unless user approves comments.",
+      "description": "Detect overlapping work \u2014 same files or similar tickets/PRs \u2014 from a Jira ticket or GitHub PR; confidence-thresholded; read-only unless user approves comments.",
       "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"
-    },
-    {
-      "id": "reports-eval-report",
-      "name": "jstack-eval-report",
-      "path": "skills/reports/eval-report/SKILL.md",
-      "relPath": "skills/reports/eval-report/SKILL.md",
-      "gateId": "jstack:reports/eval-report",
-      "description": "Generate a 9-grid evaluation report with growth framing. Sensitive — mark manager-only if needed.",
-      "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
-    },
-    {
-      "id": "shortcuts-executive-research-brief",
-      "name": "jstack-executive-research-brief",
-      "path": "skills/shortcuts/executive-research-brief/SKILL.md",
-      "relPath": "skills/shortcuts/executive-research-brief/SKILL.md",
-      "gateId": "jstack:shortcuts/executive-research-brief",
-      "description": "\"Alias jstack:executive-research-brief — CEO lens + executive tone, then jstack competitive research for leadership.\"",
-      "whenToUse": "",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
     },
     {
       "id": "federated-search",
@@ -195,21 +140,10 @@
       "path": "skills/federated-search/SKILL.md",
       "relPath": "skills/federated-search/SKILL.md",
       "gateId": "jstack:federated-search",
-      "description": "Multi-provider federated search — selects N backends (Jira, Notion, Slack, GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits, ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis. Reads jstack.config.json mcp_servers and integrations; does not invent credentials.",
+      "description": "Multi-provider federated search \u2014 selects N backends (Jira, Notion, Slack, GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits, ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis. Reads jstack.config.json mcp_servers and integrations; does not invent credentials.",
       "whenToUse": "",
       "category": "Research",
       "categoryKey": "research"
-    },
-    {
-      "id": "design-figma-handoff",
-      "name": "jstack-figma-handoff",
-      "path": "skills/design/figma-handoff/SKILL.md",
-      "relPath": "skills/design/figma-handoff/SKILL.md",
-      "gateId": "jstack:design/figma-handoff",
-      "description": "Load jstack Figma workflow guidance before design-to-code or MCP Figma work; chain to figma-use when the host provides it.",
-      "whenToUse": "",
-      "category": "Design",
-      "categoryKey": "design"
     },
     {
       "id": "granola-daily-summary",
@@ -217,8 +151,8 @@
       "path": "skills/granola-daily-summary/SKILL.md",
       "relPath": "skills/granola-daily-summary/SKILL.md",
       "gateId": "jstack:granola-daily-summary",
-      "description": "\"Summarize Granola (or meeting) notes into a daily digest.\"",
-      "whenToUse": "\"End-of-day summary from meeting notes or Granola exports.\"",
+      "description": "Summarize Granola (or meeting) notes into a daily digest.",
+      "whenToUse": "End-of-day summary from meeting notes or Granola exports.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -228,32 +162,10 @@
       "path": "skills/granola-daily-summary-6pm/SKILL.md",
       "relPath": "skills/granola-daily-summary-6pm/SKILL.md",
       "gateId": "jstack:granola-daily-summary-6pm",
-      "description": "\"Scheduled variant of daily Granola/meeting summary (6pm cadence).\"",
-      "whenToUse": "\"Automated or scheduled daily summary workflow.\"",
+      "description": "Scheduled variant of daily Granola/meeting summary (6pm cadence).",
+      "whenToUse": "Automated or scheduled daily summary workflow.",
       "category": "Workflows",
       "categoryKey": "workflows"
-    },
-    {
-      "id": "routines-health-check",
-      "name": "jstack-healthcheck",
-      "path": "skills/routines/health-check/SKILL.md",
-      "relPath": "skills/routines/health-check/SKILL.md",
-      "gateId": "jstack:routines/health-check",
-      "description": "Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.",
-      "whenToUse": "",
-      "category": "Routines",
-      "categoryKey": "routines"
-    },
-    {
-      "id": "skill-creator-improve-claude-md",
-      "name": "jstack-improve-claude-md",
-      "path": "skills/skill-creator/improve-claude-md/SKILL.md",
-      "relPath": "skills/skill-creator/improve-claude-md/SKILL.md",
-      "gateId": "jstack:skill-creator/improve-claude-md",
-      "description": "Audit a project's CLAUDE.md against commits, session transcripts, and working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or as a monthly hygiene routine.",
-      "whenToUse": "",
-      "category": "Skill Creator",
-      "categoryKey": "skill-creator"
     },
     {
       "id": "incident",
@@ -289,26 +201,15 @@
       "categoryKey": "incident"
     },
     {
-      "id": "knowledge-ingest-all",
-      "name": "jstack-ingest-all",
-      "path": "skills/knowledge/ingest-all/SKILL.md",
-      "relPath": "skills/knowledge/ingest-all/SKILL.md",
-      "gateId": "jstack:knowledge/ingest-all",
-      "description": "Run configured ingest_all skill+prompt chain for new artifacts; finish with GBrain when configured.",
-      "whenToUse": "User wants batch ingest of new transcripts/exports using the ordered ingest_all array in config.",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
-    },
-    {
-      "id": "session-init",
-      "name": "jstack-init-session",
-      "path": "skills/session/init/SKILL.md",
-      "relPath": "skills/session/init/SKILL.md",
-      "gateId": "jstack:session/init",
-      "description": "Start a jstack session: set gbrain target (personal vs team), load sprint/timezone context, confirm integrations.",
+      "id": "incident-retro",
+      "name": "jstack-retro",
+      "path": "skills/incident/retro/SKILL.md",
+      "relPath": "skills/incident/retro/SKILL.md",
+      "gateId": "jstack:incident/retro",
+      "description": "Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.",
       "whenToUse": "",
-      "category": "Session",
-      "categoryKey": "session"
+      "category": "Incident",
+      "categoryKey": "incident"
     },
     {
       "id": "intake",
@@ -415,8 +316,19 @@
       "path": "skills/knowledge/SKILL.md",
       "relPath": "skills/knowledge/SKILL.md",
       "gateId": "jstack:knowledge",
-      "description": "Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, shortcuts, skill-finder, or ingest-all.",
+      "description": "Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, or shortcuts.",
       "whenToUse": "Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
+    },
+    {
+      "id": "knowledge-ingest-all",
+      "name": "jstack-ingest-all",
+      "path": "skills/knowledge/ingest-all/SKILL.md",
+      "relPath": "skills/knowledge/ingest-all/SKILL.md",
+      "gateId": "jstack:knowledge/ingest-all",
+      "description": "Run configured ingest_all skill+prompt chain for new artifacts; finish with GBrain when configured.",
+      "whenToUse": "User wants batch ingest of new transcripts/exports using the ordered ingest_all array in config.",
       "category": "Knowledge",
       "categoryKey": "knowledge"
     },
@@ -448,7 +360,18 @@
       "path": "skills/knowledge/search/SKILL.md",
       "relPath": "skills/knowledge/search/SKILL.md",
       "gateId": "jstack:knowledge/search",
-      "description": "Look up answers from configured knowledge sources (local paths, doc URLs, GitHub repos) using jstack.config.json knowledge_base — cite sources; do not guess from general knowledge when a source list exists. For storing notes use knowledge-intake, not this skill.",
+      "description": "Look up answers from configured knowledge sources (local paths, doc URLs, GitHub repos) using jstack.config.json knowledge_base \u2014 cite sources; do not guess from general knowledge when a source list exists. For storing notes use knowledge-intake, not this skill.",
+      "whenToUse": "",
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
+    },
+    {
+      "id": "knowledge-self-knowledge",
+      "name": "jstack-self-knowledge",
+      "path": "skills/knowledge/self-knowledge/SKILL.md",
+      "relPath": "skills/knowledge/self-knowledge/SKILL.md",
+      "gateId": "jstack:knowledge/self-knowledge",
+      "description": "Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.",
       "whenToUse": "",
       "category": "Knowledge",
       "categoryKey": "knowledge"
@@ -465,15 +388,26 @@
       "categoryKey": "knowledge"
     },
     {
-      "id": "reports-manager-report",
-      "name": "jstack-manager-report",
-      "path": "skills/reports/manager-report/SKILL.md",
-      "relPath": "skills/reports/manager-report/SKILL.md",
-      "gateId": "jstack:reports/manager-report",
-      "description": "Generate a manager rollup across teams without stack-ranking individuals.",
+      "id": "knowledge-skill-finder",
+      "name": "jstack-skill-finder",
+      "path": "skills/knowledge/skill-finder/SKILL.md",
+      "relPath": "skills/knowledge/skill-finder/SKILL.md",
+      "gateId": "jstack:knowledge/skill-finder",
+      "description": "Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers.",
+      "whenToUse": "User asks how to do something or which jstack skill to use; keep answers to 1\u20133 skills with rationale.",
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
+    },
+    {
+      "id": "knowledge-team-knowledge",
+      "name": "jstack-team-knowledge",
+      "path": "skills/knowledge/team-knowledge/SKILL.md",
+      "relPath": "skills/knowledge/team-knowledge/SKILL.md",
+      "gateId": "jstack:knowledge/team-knowledge",
+      "description": "Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages.",
       "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
     },
     {
       "id": "meetings",
@@ -597,6 +531,17 @@
       "categoryKey": "meetings"
     },
     {
+      "id": "meetings-transcripts-ingest",
+      "name": "jstack-transcripts-ingest",
+      "path": "skills/meetings/transcripts-ingest/SKILL.md",
+      "relPath": "skills/meetings/transcripts-ingest/SKILL.md",
+      "gateId": "jstack:meetings/transcripts-ingest",
+      "description": "Ingest new transcript files from Google Drive (or paste) into meetings pipeline; classify source and route to child skills.",
+      "whenToUse": "New meeting transcripts arrived in Drive or user pastes a file; route to highlights, transcribe, or action-items flows.",
+      "category": "Meetings",
+      "categoryKey": "meetings"
+    },
+    {
       "id": "metrics",
       "name": "jstack-metrics",
       "path": "skills/metrics/SKILL.md",
@@ -608,23 +553,23 @@
       "categoryKey": "metrics"
     },
     {
-      "id": "routines-morning-kickoff",
-      "name": "jstack-morning-kickoff",
-      "path": "skills/routines/morning-kickoff/SKILL.md",
-      "relPath": "skills/routines/morning-kickoff/SKILL.md",
-      "gateId": "jstack:routines/morning-kickoff",
-      "description": "Config-driven morning routine — ordered jstack skill steps with PASS/FAIL/SKIP/BLOCKED, markdown checklist, on_fail stop|continue|ask; not browser workflow runner.",
-      "whenToUse": "",
-      "category": "Routines",
-      "categoryKey": "routines"
-    },
-    {
       "id": "metrics-my-metrics",
       "name": "jstack-my-metrics",
       "path": "skills/metrics/my-metrics/SKILL.md",
       "relPath": "skills/metrics/my-metrics/SKILL.md",
       "gateId": "jstack:metrics/my-metrics",
       "description": "Personal throughput and review latency from GitHub/Jira. No peer comparison unless user is a people manager.",
+      "whenToUse": "",
+      "category": "Metrics",
+      "categoryKey": "metrics"
+    },
+    {
+      "id": "metrics-team-metrics",
+      "name": "jstack-team-metrics",
+      "path": "skills/metrics/team-metrics/SKILL.md",
+      "relPath": "skills/metrics/team-metrics/SKILL.md",
+      "gateId": "jstack:metrics/team-metrics",
+      "description": "Team DORA-style signals with caveats for sample size. Separate unplanned work % when labels exist.",
       "whenToUse": "",
       "category": "Metrics",
       "categoryKey": "metrics"
@@ -762,23 +707,23 @@
       "categoryKey": "notion"
     },
     {
-      "id": "notion-team-report",
-      "name": "jstack-notion-team-report",
-      "path": "skills/notion/team-report/SKILL.md",
-      "relPath": "skills/notion/team-report/SKILL.md",
-      "gateId": "jstack:notion/team-report",
-      "description": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack:reports-team-report.",
-      "whenToUse": "",
-      "category": "Notion",
-      "categoryKey": "notion"
-    },
-    {
       "id": "notion-team-note",
       "name": "jstack-notion-teamnote",
       "path": "skills/notion/team-note/SKILL.md",
       "relPath": "skills/notion/team-note/SKILL.md",
       "gateId": "jstack:notion/team-note",
       "description": "Create a lightweight team note in Notion. Suggest ADR for binding decisions instead.",
+      "whenToUse": "",
+      "category": "Notion",
+      "categoryKey": "notion"
+    },
+    {
+      "id": "notion-team-report",
+      "name": "jstack-notion-team-report",
+      "path": "skills/notion/team-report/SKILL.md",
+      "relPath": "skills/notion/team-report/SKILL.md",
+      "gateId": "jstack:notion/team-report",
+      "description": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack-team-report.",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -795,6 +740,17 @@
       "categoryKey": "notion"
     },
     {
+      "id": "pe",
+      "name": "jstack-pe",
+      "path": "skills/pe/SKILL.md",
+      "relPath": "skills/pe/SKILL.md",
+      "gateId": "jstack:pe",
+      "description": "Route a people/performance-engineering request to the right sub-skill. Currently report-context, which assembles the validated reporting window and team scope. Not for writing performance narrative about a named individual.",
+      "whenToUse": "",
+      "category": "Pe",
+      "categoryKey": "pe"
+    },
+    {
       "id": "pe-report-context",
       "name": "jstack-pe-report-context",
       "path": "skills/pe/report-context/SKILL.md",
@@ -804,6 +760,28 @@
       "whenToUse": "Building or validating performance/team report context JSON before render or Notion/ HTML publish.",
       "category": "Reports",
       "categoryKey": "reports"
+    },
+    {
+      "id": "plugin",
+      "name": "jstack-plugin",
+      "path": "skills/plugin/SKILL.md",
+      "relPath": "skills/plugin/SKILL.md",
+      "gateId": "jstack:plugin",
+      "description": "Route a plugin-distribution request to the right sub-skill. Currently create-plugin-pr, which opens a PR against jstack.core or an overlay using distribution.github config. Not for authoring the skill itself \u2014 that is jstack-skill-creator.",
+      "whenToUse": "",
+      "category": "Plugin",
+      "categoryKey": "plugin"
+    },
+    {
+      "id": "plugin-create-plugin-pr",
+      "name": "jstack-create-plugin-pr",
+      "path": "skills/plugin/create-plugin-pr/SKILL.md",
+      "relPath": "skills/plugin/create-plugin-pr/SKILL.md",
+      "gateId": "jstack:plugin/create-plugin-pr",
+      "description": "Open a PR to jstack.core or jstack.gusto using distribution.github from config; block secrets via path_deny_globs.",
+      "whenToUse": "Contributor has local changes and wants a PR against the configured core or gusto distribution repo.",
+      "category": "Plugin",
+      "categoryKey": "plugin"
     },
     {
       "id": "prioritize",
@@ -828,6 +806,61 @@
       "categoryKey": "project"
     },
     {
+      "id": "recon",
+      "name": "jstack-recon",
+      "path": "skills/recon/SKILL.md",
+      "relPath": "skills/recon/SKILL.md",
+      "gateId": "jstack:recon",
+      "description": "Read-oriented sweep across configured Slack, Jira, and similar integrations to answer \"what needs attention\"\u2014P1s, stale work, open questions, and standup-ready action items. Produces a bounded summary plus an explicit action_items count line for evals. Does not open tickets, post to Slack, or change external state unless a different skill is invoked after user approval.",
+      "whenToUse": "",
+      "category": "Recon",
+      "categoryKey": "recon"
+    },
+    {
+      "id": "reports",
+      "name": "jstack-reports",
+      "path": "skills/reports/SKILL.md",
+      "relPath": "skills/reports/SKILL.md",
+      "gateId": "jstack:reports",
+      "description": "Route report requests to the right sub-skill (team, engineer, manager, project, self, eval).",
+      "whenToUse": "",
+      "category": "Reports",
+      "categoryKey": "reports"
+    },
+    {
+      "id": "reports-engineer-report",
+      "name": "jstack-engineer-report",
+      "path": "skills/reports/engineer-report/SKILL.md",
+      "relPath": "skills/reports/engineer-report/SKILL.md",
+      "gateId": "jstack:reports/engineer-report",
+      "description": "Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics.",
+      "whenToUse": "",
+      "category": "Reports",
+      "categoryKey": "reports"
+    },
+    {
+      "id": "reports-eval-report",
+      "name": "jstack-eval-report",
+      "path": "skills/reports/eval-report/SKILL.md",
+      "relPath": "skills/reports/eval-report/SKILL.md",
+      "gateId": "jstack:reports/eval-report",
+      "description": "Generate a 9-grid evaluation report with growth framing. Sensitive \u2014 mark manager-only if needed.",
+      "whenToUse": "",
+      "category": "Reports",
+      "categoryKey": "reports"
+    },
+    {
+      "id": "reports-manager-report",
+      "name": "jstack-manager-report",
+      "path": "skills/reports/manager-report/SKILL.md",
+      "relPath": "skills/reports/manager-report/SKILL.md",
+      "gateId": "jstack:reports/manager-report",
+      "description": "Generate a manager rollup across teams without stack-ranking individuals.",
+      "whenToUse": "",
+      "category": "Reports",
+      "categoryKey": "reports"
+    },
+    {
       "id": "reports-project-report",
       "name": "jstack-project-report",
       "path": "skills/reports/project-report/SKILL.md",
@@ -837,28 +870,6 @@
       "whenToUse": "",
       "category": "Reports",
       "categoryKey": "reports"
-    },
-    {
-      "id": "review-project-review",
-      "name": "jstack-project-review",
-      "path": "skills/review/project-review/SKILL.md",
-      "relPath": "skills/review/project-review/SKILL.md",
-      "gateId": "jstack:review/project-review",
-      "description": "Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.",
-      "whenToUse": "",
-      "category": "Review",
-      "categoryKey": "review"
-    },
-    {
-      "id": "recon",
-      "name": "jstack-recon",
-      "path": "skills/recon/SKILL.md",
-      "relPath": "skills/recon/SKILL.md",
-      "gateId": "jstack:recon",
-      "description": "Read-oriented sweep across configured Slack, Jira, and similar integrations to answer \"what needs attention\"—P1s, stale work, open questions, and standup-ready action items. Produces a bounded summary plus an explicit action_items count line for evals. Does not open tickets, post to Slack, or change external state unless a different skill is invoked after user approval.",
-      "whenToUse": "",
-      "category": "Recon",
-      "categoryKey": "recon"
     },
     {
       "id": "reports-report-design",
@@ -872,12 +883,34 @@
       "categoryKey": "reports"
     },
     {
-      "id": "reports",
-      "name": "jstack-reports",
-      "path": "skills/reports/SKILL.md",
-      "relPath": "skills/reports/SKILL.md",
-      "gateId": "jstack:reports",
-      "description": "Route report requests to the right sub-skill (team, engineer, manager, project, self, eval).",
+      "id": "reports-self-report",
+      "name": "jstack-self-report",
+      "path": "skills/reports/self-report/SKILL.md",
+      "relPath": "skills/reports/self-report/SKILL.md",
+      "gateId": "jstack:reports/self-report",
+      "description": "Generate a self-authored accomplishments narrative for performance context. User-editable voice.",
+      "whenToUse": "",
+      "category": "Reports",
+      "categoryKey": "reports"
+    },
+    {
+      "id": "reports-share-html-publish",
+      "name": "jstack-share-html-publish",
+      "path": "skills/reports/share-html-publish/SKILL.md",
+      "relPath": "skills/reports/share-html-publish/SKILL.md",
+      "gateId": "jstack:reports/share-html-publish",
+      "description": "Publish or download HTML via a share-some-html style MCP (update/get) or JSON-RPC curl fallback; writes all artifacts under a config-defined directory (default /tmp). Optional access password when the server supports it.",
+      "whenToUse": "",
+      "category": "Reports",
+      "categoryKey": "reports"
+    },
+    {
+      "id": "reports-team-report",
+      "name": "jstack-team-report",
+      "path": "skills/reports/team-report/SKILL.md",
+      "relPath": "skills/reports/team-report/SKILL.md",
+      "gateId": "jstack:reports/team-report",
+      "description": "Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.",
       "whenToUse": "",
       "category": "Reports",
       "categoryKey": "reports"
@@ -949,17 +982,6 @@
       "categoryKey": "research"
     },
     {
-      "id": "incident-retro",
-      "name": "jstack-retro",
-      "path": "skills/incident/retro/SKILL.md",
-      "relPath": "skills/incident/retro/SKILL.md",
-      "gateId": "jstack:incident/retro",
-      "description": "Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.",
-      "whenToUse": "",
-      "category": "Incident",
-      "categoryKey": "incident"
-    },
-    {
       "id": "review",
       "name": "jstack-review",
       "path": "skills/review/SKILL.md",
@@ -971,12 +993,45 @@
       "categoryKey": "review"
     },
     {
+      "id": "review-announcement-review",
+      "name": "jstack-announcement-review",
+      "path": "skills/review/announcement-review/SKILL.md",
+      "relPath": "skills/review/announcement-review/SKILL.md",
+      "gateId": "jstack:review/announcement-review",
+      "description": "Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
       "id": "review-code-review",
       "name": "jstack-review-code-review",
       "path": "skills/review/code-review/SKILL.md",
       "relPath": "skills/review/code-review/SKILL.md",
       "gateId": "jstack:review/code-review",
-      "description": "PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch).",
+      "description": "PR workflow \u2014 seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch).",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
+      "id": "review-counsel-review",
+      "name": "jstack-counsel-review",
+      "path": "skills/review/counsel-review/SKILL.md",
+      "relPath": "skills/review/counsel-review/SKILL.md",
+      "gateId": "jstack:review/counsel-review",
+      "description": "Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
+      "id": "review-project-review",
+      "name": "jstack-project-review",
+      "path": "skills/review/project-review/SKILL.md",
+      "relPath": "skills/review/project-review/SKILL.md",
+      "gateId": "jstack:review/project-review",
+      "description": "Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"
@@ -993,13 +1048,79 @@
       "categoryKey": "routines"
     },
     {
+      "id": "routines-custom",
+      "name": "jstack-custom",
+      "path": "skills/routines/custom/SKILL.md",
+      "relPath": "skills/routines/custom/SKILL.md",
+      "gateId": "jstack:routines/custom",
+      "description": "Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.",
+      "whenToUse": "",
+      "category": "Routines",
+      "categoryKey": "routines"
+    },
+    {
+      "id": "routines-health-check",
+      "name": "jstack-healthcheck",
+      "path": "skills/routines/health-check/SKILL.md",
+      "relPath": "skills/routines/health-check/SKILL.md",
+      "gateId": "jstack:routines/health-check",
+      "description": "Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.",
+      "whenToUse": "",
+      "category": "Routines",
+      "categoryKey": "routines"
+    },
+    {
+      "id": "routines-morning-kickoff",
+      "name": "jstack-morning-kickoff",
+      "path": "skills/routines/morning-kickoff/SKILL.md",
+      "relPath": "skills/routines/morning-kickoff/SKILL.md",
+      "gateId": "jstack:routines/morning-kickoff",
+      "description": "Config-driven morning routine \u2014 ordered jstack skill steps with PASS/FAIL/SKIP/BLOCKED, markdown checklist, on_fail stop|continue|ask; not browser workflow runner.",
+      "whenToUse": "",
+      "category": "Routines",
+      "categoryKey": "routines"
+    },
+    {
+      "id": "routines-sprint-close",
+      "name": "jstack-sprintclose",
+      "path": "skills/routines/sprint-close/SKILL.md",
+      "relPath": "skills/routines/sprint-close/SKILL.md",
+      "gateId": "jstack:routines/sprint-close",
+      "description": "Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.",
+      "whenToUse": "",
+      "category": "Routines",
+      "categoryKey": "routines"
+    },
+    {
+      "id": "routines-standup",
+      "name": "jstack-standup",
+      "path": "skills/routines/standup/SKILL.md",
+      "relPath": "skills/routines/standup/SKILL.md",
+      "gateId": "jstack:routines/standup",
+      "description": "Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.",
+      "whenToUse": "",
+      "category": "Routines",
+      "categoryKey": "routines"
+    },
+    {
+      "id": "routines-weekly-digest",
+      "name": "jstack-weeklydigest",
+      "path": "skills/routines/weekly-digest/SKILL.md",
+      "relPath": "skills/routines/weekly-digest/SKILL.md",
+      "gateId": "jstack:routines/weekly-digest",
+      "description": "Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.",
+      "whenToUse": "",
+      "category": "Routines",
+      "categoryKey": "routines"
+    },
+    {
       "id": "scaffold",
       "name": "jstack-scaffold",
       "path": "skills/scaffold/SKILL.md",
       "relPath": "skills/scaffold/SKILL.md",
       "gateId": "jstack:scaffold",
-      "description": "\"Scaffold a new skill or plugin using org conventions and checklists.\"",
-      "whenToUse": "\"User wants to create a new skill pack or plugin structure.\"",
+      "description": "Scaffold a new skill or plugin using org conventions and checklists.",
+      "whenToUse": "User wants to create a new skill pack or plugin structure.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -1086,21 +1207,10 @@
       "path": "skills/self/impact-prep/SKILL.md",
       "relPath": "skills/self/impact-prep/SKILL.md",
       "gateId": "jstack:self/impact-prep",
-      "description": "IC impact prep — Growth Check-in (quick) or Quarterly sweep with artifact gather, gap questions, config rubrics; personal gbrain default.",
+      "description": "IC impact prep \u2014 Growth Check-in (quick) or Quarterly sweep with artifact gather, gap questions, config rubrics; personal gbrain default.",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"
-    },
-    {
-      "id": "knowledge-self-knowledge",
-      "name": "jstack-self-knowledge",
-      "path": "skills/knowledge/self-knowledge/SKILL.md",
-      "relPath": "skills/knowledge/self-knowledge/SKILL.md",
-      "gateId": "jstack:knowledge/self-knowledge",
-      "description": "Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.",
-      "whenToUse": "",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
     },
     {
       "id": "self-lookback",
@@ -1125,17 +1235,6 @@
       "categoryKey": "self"
     },
     {
-      "id": "reports-self-report",
-      "name": "jstack-self-report",
-      "path": "skills/reports/self-report/SKILL.md",
-      "relPath": "skills/reports/self-report/SKILL.md",
-      "gateId": "jstack:reports/self-report",
-      "description": "Generate a self-authored accomplishments narrative for performance context. User-editable voice.",
-      "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
-    },
-    {
       "id": "self-tasks",
       "name": "jstack-self-tasks",
       "path": "skills/self/tasks/SKILL.md",
@@ -1158,6 +1257,28 @@
       "categoryKey": "session"
     },
     {
+      "id": "session-end",
+      "name": "jstack-end-session",
+      "path": "skills/session/end/SKILL.md",
+      "relPath": "skills/session/end/SKILL.md",
+      "gateId": "jstack:session/end",
+      "description": "End the current session: summarize, flush carryover items, optionally run eval hooks.",
+      "whenToUse": "",
+      "category": "Session",
+      "categoryKey": "session"
+    },
+    {
+      "id": "session-init",
+      "name": "jstack-init-session",
+      "path": "skills/session/init/SKILL.md",
+      "relPath": "skills/session/init/SKILL.md",
+      "gateId": "jstack:session/init",
+      "description": "Start a jstack session: set gbrain target (personal vs team), load sprint/timezone context, confirm integrations.",
+      "whenToUse": "",
+      "category": "Session",
+      "categoryKey": "session"
+    },
+    {
       "id": "setup",
       "name": "jstack-setup",
       "path": "skills/setup/SKILL.md",
@@ -1169,15 +1290,48 @@
       "categoryKey": "setup"
     },
     {
-      "id": "reports-share-html-publish",
-      "name": "jstack-share-html-publish",
-      "path": "skills/reports/share-html-publish/SKILL.md",
-      "relPath": "skills/reports/share-html-publish/SKILL.md",
-      "gateId": "jstack:reports/share-html-publish",
-      "description": "Publish or download HTML via a share-some-html style MCP (update/get) or JSON-RPC curl fallback; writes all artifacts under a config-defined directory (default /tmp). Optional access password when the server supports it.",
+      "id": "setup-onboarding",
+      "name": "jstack-onboarding",
+      "path": "skills/setup/onboarding/SKILL.md",
+      "relPath": "skills/setup/onboarding/SKILL.md",
+      "gateId": "jstack:setup/onboarding",
+      "description": "Conversational first-run onboarding \u2014 walks a new user from install to a validated jstack.config.json to their first real skill invocation, in one guided pass. Use for \"get me set up\", \"onboard me\", \"I just installed jstack\", or when jstack.config.json is missing. Not for editing an existing working config (use jstack:update-config) and not for diagnosing a specific doctor failure (use jstack:setup).",
       "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
+      "category": "Setup",
+      "categoryKey": "setup"
+    },
+    {
+      "id": "shortcuts",
+      "name": "jstack-shortcuts",
+      "path": "skills/shortcuts/SKILL.md",
+      "relPath": "skills/shortcuts/SKILL.md",
+      "gateId": "jstack:shortcuts",
+      "description": "Route a named composite shortcut to its sub-skill (ceo-brainstorm, executive-research-brief). Each composite pins a specific persona plus tone. Not for generic brainstorming or research \u2014 use the underlying skill directly when no named composite fits.",
+      "whenToUse": "",
+      "category": "Shortcuts",
+      "categoryKey": "shortcuts"
+    },
+    {
+      "id": "shortcuts-ceo-brainstorm",
+      "name": "jstack-ceo-brainstorm",
+      "path": "skills/shortcuts/ceo-brainstorm/SKILL.md",
+      "relPath": "skills/shortcuts/ceo-brainstorm/SKILL.md",
+      "gateId": "jstack:shortcuts/ceo-brainstorm",
+      "description": "\"Alias jstack:ceo-brainstorm \u2014 CEO persona + executive tone, then superpowers:brainstorming. Use when the user wants exec-lens ideation.\"",
+      "whenToUse": "",
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
+    },
+    {
+      "id": "shortcuts-executive-research-brief",
+      "name": "jstack-executive-research-brief",
+      "path": "skills/shortcuts/executive-research-brief/SKILL.md",
+      "relPath": "skills/shortcuts/executive-research-brief/SKILL.md",
+      "gateId": "jstack:shortcuts/executive-research-brief",
+      "description": "\"Alias jstack:executive-research-brief \u2014 CEO lens + executive tone, then jstack competitive research for leadership.\"",
+      "whenToUse": "",
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
     },
     {
       "id": "skill-creator",
@@ -1185,21 +1339,21 @@
       "path": "skills/skill-creator/SKILL.md",
       "relPath": "skills/skill-creator/SKILL.md",
       "gateId": "jstack:skill-creator",
-      "description": "Create or revise jstack plugin skills (SKILL.md) using repo conventions, Anthropic-aligned directives, and config-first rules. Use when adding capabilities, forking a skill, or fixing discovery/failure coverage — not for running product workflows.",
+      "description": "Create or revise jstack plugin skills (SKILL.md) using repo conventions, Anthropic-aligned directives, and config-first rules. Use when adding capabilities, forking a skill, or fixing discovery/failure coverage \u2014 not for running product workflows.",
       "whenToUse": "",
       "category": "Skill Creator",
       "categoryKey": "skill-creator"
     },
     {
-      "id": "knowledge-skill-finder",
-      "name": "jstack-skill-finder",
-      "path": "skills/knowledge/skill-finder/SKILL.md",
-      "relPath": "skills/knowledge/skill-finder/SKILL.md",
-      "gateId": "jstack:knowledge/skill-finder",
-      "description": "Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers.",
-      "whenToUse": "User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale.",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
+      "id": "skill-creator-improve-claude-md",
+      "name": "jstack-improve-claude-md",
+      "path": "skills/skill-creator/improve-claude-md/SKILL.md",
+      "relPath": "skills/skill-creator/improve-claude-md/SKILL.md",
+      "gateId": "jstack:skill-creator/improve-claude-md",
+      "description": "Audit a project's CLAUDE.md against commits, session transcripts, and working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or as a monthly hygiene routine.",
+      "whenToUse": "",
+      "category": "Skill Creator",
+      "categoryKey": "skill-creator"
     },
     {
       "id": "sop",
@@ -1262,7 +1416,7 @@
       "path": "skills/sprint/prep/SKILL.md",
       "relPath": "skills/sprint/prep/SKILL.md",
       "gateId": "jstack:sprint/prep",
-      "description": "Pre-refinement prep — curate needs-refinement queue vs sprint goals, flag stale work, suggest new tickets for gaps, priority order draft.",
+      "description": "Pre-refinement prep \u2014 curate needs-refinement queue vs sprint goals, flag stale work, suggest new tickets for gaps, priority order draft.",
       "whenToUse": "",
       "category": "Sprint",
       "categoryKey": "sprint"
@@ -1273,32 +1427,10 @@
       "path": "skills/sprint/refinement/SKILL.md",
       "relPath": "skills/sprint/refinement/SKILL.md",
       "gateId": "jstack:sprint/refinement",
-      "description": "Refinement ceremony — five questions per ticket, capacity snapshot, sprint-ready checklist; no bulk Jira writes without confirmation.",
+      "description": "Refinement ceremony \u2014 five questions per ticket, capacity snapshot, sprint-ready checklist; no bulk Jira writes without confirmation.",
       "whenToUse": "",
       "category": "Sprint",
       "categoryKey": "sprint"
-    },
-    {
-      "id": "routines-sprint-close",
-      "name": "jstack-sprintclose",
-      "path": "skills/routines/sprint-close/SKILL.md",
-      "relPath": "skills/routines/sprint-close/SKILL.md",
-      "gateId": "jstack:routines/sprint-close",
-      "description": "Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.",
-      "whenToUse": "",
-      "category": "Routines",
-      "categoryKey": "routines"
-    },
-    {
-      "id": "routines-standup",
-      "name": "jstack-standup",
-      "path": "skills/routines/standup/SKILL.md",
-      "relPath": "skills/routines/standup/SKILL.md",
-      "gateId": "jstack:routines/standup",
-      "description": "Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.",
-      "whenToUse": "",
-      "category": "Routines",
-      "categoryKey": "routines"
     },
     {
       "id": "task-intake",
@@ -1306,8 +1438,8 @@
       "path": "skills/task-intake/SKILL.md",
       "relPath": "skills/task-intake/SKILL.md",
       "gateId": "jstack:task-intake",
-      "description": "\"Config-driven task intake wizard — from idea to ticket, sizing, prioritization, and optional announcements.\"",
-      "whenToUse": "\"User asks to intake work, run a task wizard, size/prioritize, or announce a project.\"",
+      "description": "Config-driven task intake wizard \u2014 from idea to ticket, sizing, prioritization, and optional announcements.",
+      "whenToUse": "User asks to intake work, run a task wizard, size/prioritize, or announce a project.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
@@ -1323,50 +1455,6 @@
       "categoryKey": "team"
     },
     {
-      "id": "knowledge-team-knowledge",
-      "name": "jstack-team-knowledge",
-      "path": "skills/knowledge/team-knowledge/SKILL.md",
-      "relPath": "skills/knowledge/team-knowledge/SKILL.md",
-      "gateId": "jstack:knowledge/team-knowledge",
-      "description": "Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages.",
-      "whenToUse": "",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
-    },
-    {
-      "id": "metrics-team-metrics",
-      "name": "jstack-team-metrics",
-      "path": "skills/metrics/team-metrics/SKILL.md",
-      "relPath": "skills/metrics/team-metrics/SKILL.md",
-      "gateId": "jstack:metrics/team-metrics",
-      "description": "Team DORA-style signals with caveats for sample size. Separate unplanned work % when labels exist.",
-      "whenToUse": "",
-      "category": "Metrics",
-      "categoryKey": "metrics"
-    },
-    {
-      "id": "reports-team-report",
-      "name": "jstack-team-report",
-      "path": "skills/reports/team-report/SKILL.md",
-      "relPath": "skills/reports/team-report/SKILL.md",
-      "gateId": "jstack:reports/team-report",
-      "description": "Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.",
-      "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
-    },
-    {
-      "id": "meetings-transcripts-ingest",
-      "name": "jstack-transcripts-ingest",
-      "path": "skills/meetings/transcripts-ingest/SKILL.md",
-      "relPath": "skills/meetings/transcripts-ingest/SKILL.md",
-      "gateId": "jstack:meetings/transcripts-ingest",
-      "description": "Ingest new transcript files from Google Drive (or paste) into meetings pipeline; classify source and route to child skills.",
-      "whenToUse": "New meeting transcripts arrived in Drive or user pastes a file; route to highlights, transcribe, or action-items flows.",
-      "category": "Meetings",
-      "categoryKey": "meetings"
-    },
-    {
       "id": "update-config",
       "name": "jstack-update-config",
       "path": "skills/update-config/SKILL.md",
@@ -1378,37 +1466,37 @@
       "categoryKey": "setup"
     },
     {
-      "id": "design-visual-single-page-html",
-      "name": "jstack-visual-single-page-html",
-      "path": "skills/design/visual-single-page-html/SKILL.md",
-      "relPath": "skills/design/visual-single-page-html/SKILL.md",
-      "gateId": "jstack:design/visual-single-page-html",
-      "description": "Build one standalone HTML file with React, Tailwind 4-style tokens, Chart.js/D3 via CDN, shadcn-compatible CSS themes, citations to design theory, report IA hierarchy, and typographic markdown rendering—not a Next.js bundle.",
-      "whenToUse": "User wants a single downloadable HTML dashboard, branded report viewer, slide-like page, or interactive viz page without a build step; mentions React Tailwind Chart.js D3 shadcn themes SPA CDN; asks for markdown on page with professional layout or report/presentation design.",
-      "category": "Design",
-      "categoryKey": "design"
-    },
-    {
-      "id": "routines-weekly-digest",
-      "name": "jstack-weeklydigest",
-      "path": "skills/routines/weekly-digest/SKILL.md",
-      "relPath": "skills/routines/weekly-digest/SKILL.md",
-      "gateId": "jstack:routines/weekly-digest",
-      "description": "Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.",
-      "whenToUse": "",
-      "category": "Routines",
-      "categoryKey": "routines"
-    },
-    {
       "id": "workflow-builder",
       "name": "jstack-workflow-builder",
       "path": "skills/workflow-builder/SKILL.md",
       "relPath": "skills/workflow-builder/SKILL.md",
       "gateId": "jstack:workflow-builder",
-      "description": "Design or update multi-step team workflows (chains, routines, policies, approvals) from sprint, comms, SDLC, and incident patterns. Produces chain markdown and config-ready snippets — use after install to customize the plugin without editing skills by hand. Not for one-off Jira tickets.",
+      "description": "Design or update multi-step team workflows (chains, routines, policies, approvals) from sprint, comms, SDLC, and incident patterns. Produces chain markdown and config-ready snippets \u2014 use after install to customize the plugin without editing skills by hand. Not for one-off Jira tickets.",
       "whenToUse": "",
       "category": "Workflow Builder",
       "categoryKey": "workflow-builder"
+    },
+    {
+      "id": "workflows",
+      "name": "jstack-workflows",
+      "path": "skills/workflows/SKILL.md",
+      "relPath": "skills/workflows/SKILL.md",
+      "gateId": "jstack:workflows",
+      "description": "Route workflow requests to builder, runner, recorder, or viewer.",
+      "whenToUse": "Also for Playwright-style flows, browser automation YAML/JSON, recording steps, running jstack workflow, or comparing two runs.",
+      "category": "Workflows",
+      "categoryKey": "workflows"
+    },
+    {
+      "id": "workflows-builder",
+      "name": "jstack-workflows-builder",
+      "path": "skills/workflows/builder/SKILL.md",
+      "relPath": "skills/workflows/builder/SKILL.md",
+      "gateId": "jstack:workflows/builder",
+      "description": "Build a workflow definition (YAML/JSON): start URL, steps, waits, assertions. No credentials in the file.",
+      "whenToUse": "",
+      "category": "Workflows",
+      "categoryKey": "workflows"
     },
     {
       "id": "workflows-execute",
@@ -1462,28 +1550,6 @@
       "gateId": "jstack:workflows/workflow-wizard",
       "description": "Multi-step choices to define a browser workflow; emits jstack workflow CLI commands.",
       "whenToUse": "User wants to create or adjust a stored workflow and needs copy-pastable jstack workflow CLI steps.",
-      "category": "Workflows",
-      "categoryKey": "workflows"
-    },
-    {
-      "id": "workflows",
-      "name": "jstack-workflows",
-      "path": "skills/workflows/SKILL.md",
-      "relPath": "skills/workflows/SKILL.md",
-      "gateId": "jstack:workflows",
-      "description": "Route workflow requests to builder, runner, recorder, viewer, **workflow-wizard** (interactive CLI command emit), or **execute** (confirmed `jstack workflow run`).",
-      "whenToUse": "Also for Playwright-style flows, browser automation YAML/JSON, recording steps, running jstack workflow, or comparing two runs.",
-      "category": "Workflows",
-      "categoryKey": "workflows"
-    },
-    {
-      "id": "workflows-builder",
-      "name": "jstack-workflows-builder",
-      "path": "skills/workflows/builder/SKILL.md",
-      "relPath": "skills/workflows/builder/SKILL.md",
-      "gateId": "jstack:workflows/builder",
-      "description": "Build a workflow definition (YAML/JSON): start URL, steps, waits, assertions. No credentials in the file.",
-      "whenToUse": "",
       "category": "Workflows",
       "categoryKey": "workflows"
     }

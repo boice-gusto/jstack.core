@@ -25,6 +25,7 @@ DESCRIPTIONS: dict[str, str] = {
     "notion/article": "Create a Notion article (blog/eng journal) with title, audience tag, and Draft status until approved.",
     "notion/knowledge-base": "Add or update a knowledge-base entry in Notion with tags, deduplicating on title+topic.",
     "notion/team-note": "Create a lightweight team note in Notion. Suggest ADR for binding decisions instead.",
+    "notion/team-report": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack-team-report.",
     # --- meetings ---
     "meetings": "Route meeting requests to the right sub-skill (prepare, transcribe, action-items, post-slack, etc.).",
     "meetings/prepare": "Build a 1-page meeting prep brief from calendar context, Jira in-progress items, and blockers for attendees.",
@@ -80,7 +81,7 @@ DESCRIPTIONS: dict[str, str] = {
     "review": "Route review requests to project-review, announcement-review, or counsel-review.",
     "review/project-review": "Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.",
     "review/announcement-review": "Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.",
-    "review/counsel-review": "Multi-persona review (CEO/design/eng/QA) with synthesis and tensions. Not vote-counting by title.",
+    "review/counsel-review": "Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",
     # --- routines ---
     "routines": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).",
     "routines/standup": "Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.",
@@ -90,10 +91,10 @@ DESCRIPTIONS: dict[str, str] = {
     "routines/custom": "Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.",
     # --- workflows ---
     "workflows": "Route workflow requests to builder, runner, recorder, or viewer.",
-    "workflows/builder": "Build a workflow definition (YAML/JSON): start URL, steps, waits, assertions. No credentials in the file.",
-    "workflows/runner": "Execute a workflow with jstack workflow run. Capture log + screenshot paths. Abort on first assertion failure.",
-    "workflows/recorder": "Record user browser actions into a workflow definition. Add stability notes (selectors) before promoting to CI.",
-    "workflows/viewer": "Diff two workflow runs: timing, flakiness, visual diff summary. Do not assert pixel equality as pass/fail.",
+    "workflows/builder": "Build a BROWSER workflow definition as JSON at `config/workflows/<id>.json`: start URL and ordered steps drawn from the six kinds the schema allows (goto, click, fill, wait, screenshot, ai). No credentials in the file. Not for skill-chain, routine, or policy design — that is `jstack-workflow-builder` (singular), a different skill one letter away.",
+    "workflows/runner": "Execute a saved workflow with jstack workflow run and report each step's outcome against captured evidence. The shipped executor is a stub, so outcomes are unverified rather than passing.",
+    "workflows/recorder": "Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.",
+    "workflows/viewer": "Summarize what a workflow run log contains: steps taken and artifacts produced. Never reconstruct a result for a run with no report.",
     # --- incident ---
     "incident": "Route incident requests to the main commander flow or retro sub-skill.",
     "incident/retro": "Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.",
@@ -126,13 +127,26 @@ WHEN_TO_USE: dict[str, str] = {
     "setup": "Also for first-time install, onboarding, jstack doctor failures, MCP setup, or fixing missing jstack.config.json.",
     "adr": "Also when the user mentions docs/decisions, RFC-lite, supersede ADR-NNN, or recording architecture or org decisions in git markdown.",
     "intake": "Also when shaping a feature idea, PRD snippet, messy notes, or Slack thread into ticket-ready fields (before Jira create).",
-    "workflows": "Also for Playwright-style flows, browser automation YAML/JSON, recording steps, running jstack workflow, or comparing two runs.",
+    "workflows": "Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, running jstack workflow, or comparing two runs.",
 }
 
 # ---------------------------------------------------------------------------
 # MISSIONS — the "What this skill is for" body (unique per skill/category)
 # ---------------------------------------------------------------------------
 MISSIONS: dict[str, str] = {
+    'knowledge/intake': 'Turn raw pasted or captured text into one structured record — title, body, tags, source, and as-of time — flagging PII or secrets before anything is stored.\n- **Out of scope:** Judging whether the knowledge is correct, and merging it against existing entries — dedupe and merge belong to `jstack:knowledge-process`. Never persist without confirmation.',
+    'knowledge/process': 'Reconcile a new record against what is already stored: find near-duplicates, then merge, supersede, or link — and ask before writing.\n- **Out of scope:** Extracting the record from raw text (`jstack:knowledge-intake`) and answering questions from the store (`jstack:knowledge-search`). Never silently overwrite an existing entry.',
+    'knowledge/skill-finder': 'Given a described need, name the skill that fits and say why the near-misses do not.\n- **Out of scope:** Doing the work of the skill it recommends, and inventing a skill that does not exist — if nothing fits, say so plainly.',
+    'plugin/create-plugin-pr': 'Prepare a plugin change as a reviewable pull request: scoped diff, rationale, and the verification command a reviewer can run.\n- **Out of scope:** Merging, pushing to a default branch, or committing unless asked. Never bundle unrelated changes into one PR.',
+    'reports/report-design': "Choose the report's shape before its content: audience, sections, and which figures earn a place.\n- **Out of scope:** Producing the finished report (`jstack:reports`) and inventing figures to fill a section — an empty section is a finding, not a gap to paper over.",
+    'reports/share-html-publish': 'Publish an already-reviewed HTML artifact and return the resulting link.\n- **Out of scope:** Authoring or editing the report content, and publishing anything the user has not seen. Never publish to a public or unfamiliar destination without explicit confirmation of the audience.',
+    'scaffold': "Create the file skeleton for a new skill or plugin that satisfies this repo's conventions and passes its gates.\n- **Out of scope:** Writing the skill's domain content, and hand-editing a generated skill body — most bodies come from the generator, so a hand edit to a non-`SKIP` skill is lost on the next run.",
+    'task-intake': 'Walk an idea to a ticket-ready spec: shape it, size it, place it against existing work, and optionally draft the announcement.\n- **Out of scope:** Creating the ticket itself (`jstack:jira-create`, which is approval-gated). Never invent acceptance criteria the requester did not imply.',
+    'workflows/builder': 'Author a browser workflow definition — start URL and ordered steps — as JSON at `config/workflows/<id>.json`, so a runner can execute it unattended. The schema has no assertion kind, so a check is a `wait` on a selector that only appears in the desired state.\n- **Out of scope:** Running the workflow (`jstack:workflows-execute`) and recording one from live interaction (`jstack:workflows-recorder`). Never place a credential in the definition file.',
+    'workflows/recorder': 'Capture a live interaction as a replayable workflow definition, naming each step by role or label rather than a brittle selector.\n- **Out of scope:** Executing the recording, and hand-tuning it afterwards (`jstack:workflows-builder`). Never record against production data or capture a credential-entry step.',
+    'workflows/viewer': 'Summarize what a recorded run actually did: the steps its log reports and the artifacts it produced.\n- **Out of scope:** Re-running the workflow or editing the definition. Never report an outcome that the run log does not contain, and never fill a gap in the log from the definition.',
+    'workflows/workflow-wizard': 'Ask the few questions needed to produce a valid workflow definition, then emit the exact CLI command that creates it.\n- **Out of scope:** Executing the workflow, and guessing an answer the user did not give — leave a field unset rather than inventing a plausible value.',
+
     # --- jira ---
     "jira": "Route the user's Jira request to the most specific sub-skill. Do not execute Jira operations directly from the orchestrator — each op has its own guardrails.\n- **Out of scope:** Create/delete Jira projects, bulk org reassignment, or production writes without confirmation.",
     "jira/get": "Fetch one or more Jira issues by key or JQL and present a clean table. Read-only — no mutations.\n- **Out of scope:** Creating, updating, or transitioning issues (use the appropriate sibling skill).",
@@ -146,13 +160,41 @@ MISSIONS: dict[str, str] = {
     "notion": "Route Notion requests to the most specific sub-skill. Do not write pages directly from the orchestrator.\n- **Out of scope:** Workspace membership, public sharing, or export settings.",
     "notion/adr": "Create or update an ADR page: sequential numbering, status tracking, superseded links. Rejected ADRs keep honest status.\n- **Out of scope:** Workspace-level permission changes.",
     "notion/article": "Create an article page (blog, eng journal) with audience tag and Draft status. Do not mark Published without user approval.\n- **Out of scope:** Multi-page content or CMS publishing pipelines.",
+    "notion/report": "Create a long-form report page or database row in Notion from the user's content, setting Status to Draft until the user reviews it.\n- **Out of scope:** Marking the page Published without explicit user approval.",
+    "notion/update": "Patch only the named properties on an existing Notion page and return the page's view URL after the update completes.\n- **Out of scope:** Creating new pages or restructuring content — this is a targeted property patch only.",
+    "notion/knowledge-base": "Add or update a knowledge-base entry in Notion with tags, deduplicating against existing rows on title and topic before writing.\n- **Out of scope:** General page creation outside the knowledge-base database.",
+    "notion/performance": "Create or update a performance-cycle page in Notion — goals, impact, growth, feedback summary — from `templates/notion/performance.json`, keeping people-performance data in the personal gbrain, not core.\n- **Out of scope:** Deciding or finalizing a performance rating — this only assembles the page.",
+    "notion/planning": "Create or update a roadmap or OKR planning page in Notion, linking to Jira epics when ids are available.\n- **Out of scope:** Creating the underlying Jira epics — link to existing ones only.",
+    "notion/project": "Create or update a Notion project profile page covering stakeholders, RAG status, and links to Jira and comms threads.\n- **Out of scope:** Updating the underlying Jira board — this only maintains the Notion profile.",
+    "notion/sprint": "Create or update a sprint page in Notion with goal, scope, and the Jira sprint id when it is provided.\n- **Out of scope:** Moving Jira issues between sprints — this only documents the plan.",
+    "notion/standup": "Create or update a standup page or database row in Notion using the configured standup template and gallery page.\n- **Out of scope:** Posting the standup to Slack — use `jstack:meetings-post-slack` for that.",
+    "notion/team-note": "Create a lightweight team note in Notion for information that does not need a formal decision record.\n- **Out of scope:** Binding decisions — suggest `jstack:notion-adr` instead.",
+    "notion/team-report": "Create or update a week-over-week team report page in Notion from `templates/notion/team-report.json`.\n- **Out of scope:** Generating the underlying metrics — pull facts from `jstack:team-report` or user input, never invent numbers.",
+    "notion/setup": "Build the Notion team HQ and private vault page tree from the typed template catalog, keeping team artifacts inside the team space and vault content workspace-private, then write the resulting page ids back into `jstack.config.json`.\n- **Out of scope:** Populating page content beyond the initial scaffold — that is each writer skill's job.",
+    "notion/one-on-one": "Create or update a 1:1 page in Notion with date, topics, and action items from `templates/notion/one-on-one.json`, respecting private-manager visibility defaults.\n- **Out of scope:** Transcribing the meeting itself — use `jstack:meetings-one-on-one-transcript` first.",
     # --- meetings ---
     "meetings": "Route meeting requests to the most specific sub-skill: prepare, transcribe, action-items, post-slack, notion-highlights, or store-note.\n- **Out of scope:** Sending calendar invites or joining calls.",
     "meetings/prepare": "Build a 1-page prep brief: Jira in-progress/blocked for attendees + user-provided calendar context. Read-only output.\n- **Out of scope:** Posting, storing, or modifying external systems.",
     "meetings/action-items": "Extract action items from notes with owner + due. If owner is unclear, mark `TBD` with a suggested ping target.\n- **Out of scope:** Creating Jira tickets directly — hand off to `jstack:jira-intake`.",
+    "meetings/post-slack": "Draft a meeting summary for a Slack channel using tone from `prompts/tones/`. Never post without explicit user approval.\n- **Out of scope:** Transcribing audio or extracting action items — those are separate upstream skills.",
+    "meetings/transcribe": "Convert meeting audio or video into text using approved transcription patterns, marking `[inaudible]` segments and redacting PII before any public summary.\n- **Out of scope:** Extracting action items or highlights — hand off to the appropriate downstream skill.",
+    "meetings/granola-highlights": "Import Granola AI highlights and map each bullet to Decisions, Open Questions, or Action Items.\n- **Out of scope:** Raw audio transcription — this consumes Granola's own output, not audio.",
+    "meetings/notion-highlights": "Insert meeting highlights into a Notion database with title, date, participants, and a link to the transcript.\n- **Out of scope:** Generating the highlights themselves — this only records them in Notion.",
+    "meetings/store-note/personal": "Save meeting notes to the personal gbrain only. Never auto-post personal notes to team channels.\n- **Out of scope:** Team-visible storage — use `jstack:meetings-store-team` for that.",
+    "meetings/store-note/team": "Save meeting notes to the team gbrain or Notion per config, following the team's storage rules.\n- **Out of scope:** Personal-only notes — use `jstack:meetings-store-personal` for that.",
+    "meetings/one-on-one-transcript": "Produce paired 1:1 prep notes and after-meeting notes from configured transcript sources, preferring Lattice MCP when enabled and falling back to Notion private PE or 1:1 parent pages; always append AI attribution.\n- **Out of scope:** Posting notes to team-visible spaces — 1:1 content stays private by default.",
+    "meetings/transcripts-ingest": "Ingest new transcript files from Google Drive or a paste into the meetings pipeline, classify the source, and hand off to the matching highlights, transcribe, or action-items skill.\n- **Out of scope:** Performing the transcription, highlight extraction, or action-item extraction itself — this only hands the file to the right downstream skill.",
     # --- self ---
     "self": "Route personal productivity requests to the right sub-skill. Session gbrain target (personal vs team) must be respected.\n- **Out of scope:** Therapy, HR advice, or storing other people's PII without redaction.",
     "self/diary": "Write a single journal entry to personal gbrain. Never auto-post to team channels; never mix team data in.\n- **Out of scope:** Multi-day lookbacks (use `self/lookback`) or team-visible storage.",
+    "self/brag": "Assemble a daily or weekly brag entry from Slack, GitHub, and Jira activity mapped to configured impact dimensions, weighting significance with tiered PR labels. Save to the personal gbrain by default.\n- **Out of scope:** Formal performance-review narratives — use `jstack:self-eval` or `jstack:self-report`.",
+    "self/tasks": "Roll up personal tasks from Jira and gbrain TODOs into one deduplicated list, returning the top 5 with a parking lot for the rest.\n- **Out of scope:** Creating or updating Jira tickets — use the Jira skills for writes.",
+    "self/eval": "Produce a self-assessment on a 9-grid with one concrete growth goal for the next two weeks. Treat it as personal reflection, not formal HR input, unless the user says otherwise.\n- **Out of scope:** Submitting or publishing the eval anywhere — it stays a draft for the user.",
+    "self/remember": "Store a durable personal fact or decision in gbrain with full provenance attached. Refuse to store, and tell the user to rotate, anything that looks like a secret or credential.\n- **Out of scope:** Team-visible storage — this always writes to the personal gbrain target.",
+    "self/explain": "Write a short narrative of recent work — commits, tickets, reviews — tying it to user impact for a PR description or standup update. Keep it factual; never invent work that did not happen.\n- **Out of scope:** Full accomplishment reports — use `jstack:self-brag` or `jstack:self-report`.",
+    "self/focus": "Synthesize 2-3 focus blocks for the day or week from tasks and gbrain content, naming one explicit non-goal and a timebox suggestion.\n- **Out of scope:** Calendar writes — suggest blocks, do not create events.",
+    "self/lookback": "Review the last N days of personal gbrain entries and calendar context to surface patterns worth noticing, in a gentle and observational tone, not a therapeutic one.\n- **Out of scope:** Diagnosing mental-health concerns — redirect to professional support if the content warrants it.",
+    "self/impact-prep": "Prepare IC impact evidence — a quick Growth Check-in or a full Quarterly sweep — by gathering artifacts, asking gap-filling questions, and applying configured rubrics. Save to the personal gbrain by default.\n- **Out of scope:** Writing the final performance narrative — hand off to `jstack:self-eval` or `jstack:self-report`.",
     # --- session ---
     "session/init": "Start a session: set gbrain target, load sprint and timezone from `jstack time`, confirm integration health.\n- **Out of scope:** Silently ending a prior session — ask once if ambiguous.",
     "session/end": "End the current session: produce summary, flush carryover items, run eval hooks if configured.\n- **Out of scope:** Starting a new session in the same turn without asking.",
@@ -174,10 +216,17 @@ MISSIONS: dict[str, str] = {
     "team": "Structural team snapshot: roster, on-call, sprint goal, cross-team dependencies. No individual performance commentary.\n- **Out of scope:** Performance reviews or stack-ranking people.",
     # --- engineering ---
     "engineering": "Summarize engineering health from configured repos: CI status, PR queue, flaky tests, revert risk.\n- **Out of scope:** Modifying repos, merging PRs, or fixing CI — surface issues for humans to act on.",
+    "engineering/health": "Summarize engineering health — CI status, PR queue, flaky tests, and revert risk — using only the repos configured for this team.\n- **Out of scope:** Fixing CI, merging PRs, or modifying repos — surface issues for humans to act on.",
+    "engineering/silo-scan": "Detect overlapping work — same files or similar tickets and PRs — starting from a Jira ticket or GitHub PR, flagging matches above a confidence threshold.\n- **Out of scope:** Posting comments on matched items without explicit user approval.",
     # --- sprint ---
     "sprint": "Route sprint requests to the right sub-skill (planning, mid-sprint re-plan). Provide capacity and goal context.\n- **Out of scope:** Moving Jira issues between sprints without user confirmation.",
+    "sprint/planning": "Run sprint planning: assess capacity, compare commit against goal, and explain spill from the prior sprint with root causes.\n- **Out of scope:** Bulk-moving Jira issues into the sprint without user confirmation.",
+    "sprint/prep": "Curate the pre-refinement queue against sprint goals: flag stale work, suggest new tickets for gaps, and draft a priority order.\n- **Out of scope:** Running the refinement ceremony itself — hand off to `jstack:sprint-refinement`.",
+    "sprint/refinement": "Facilitate the refinement ceremony: walk five standard questions per ticket, show a capacity snapshot, and confirm each ticket against a sprint-ready checklist.\n- **Out of scope:** Bulk Jira writes — get explicit confirmation before updating multiple tickets.",
     # --- sop ---
     "sop": "Route SOP requests to the right sub-skill (expectations, resources). Maintain canonical links to Notion/Confluence.\n- **Out of scope:** Enforcing SOPs — surface tensions between policy and reality for the user to resolve.",
+    "sop/expectations": "Maintain the role-expectations document: what success looks like, autonomy boundaries, and escalation paths.\n- **Out of scope:** Enforcing the expectations — surface gaps between policy and reality for the user to resolve.",
+    "sop/resources": "Maintain the resources document: on-call rotation, tools, how to get unblocked, and SLA references.\n- **Out of scope:** Changing on-call schedules or tool access — this only documents them.",
     # --- update-config ---
     "update-config": "Edit `jstack.config.json` with schema validation, diff output, and a rollback one-liner.\n- **Out of scope:** Writing secrets into config — redirect to env/secret store.",
 }
@@ -258,7 +307,7 @@ CATEGORY_DEEP: dict[str, str] = {
     "workflows": (
         "## Domain rules — browser workflows\n"
         "- Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.\n"
-        "- Secrets: form fills must use env; never print passwords in workflow YAML or chat.\n"
+        "- Secrets: `fill` values that are secrets name an env var; never write a credential into the JSON definition or print one in chat.\n"
         "- Same flow definition for CI and local — call out which base URL the user is targeting."
     ),
     "incident": (
@@ -355,12 +404,40 @@ CHAINS_TO: dict[str, str] = {
     "meetings/granola-highlights": "jstack:meetings-action-items",
     "meetings/transcribe": "jstack:meetings-action-items",
     "session/init": "jstack:recon",
-    "session/end": "jstack:session-init",
+    "session/end": "jstack:init-session",
     "knowledge/intake": "jstack:knowledge-process",
     "intake": "jstack:jira-intake",
     "routines/standup": "jstack:meetings-post-slack",
     "routines/sprint-close": "jstack:notion-sprint",
 }
+
+# ---------------------------------------------------------------------------
+# CHAIN_EXAMPLES — category-appropriate "A then B" pair for the generic
+# Chaining section. Only categories with a genuinely sensible in-category (or
+# obviously adjacent) two-step flow get an entry; everything else omits the
+# parenthetical example rather than showing an irrelevant Jira pair.
+# ---------------------------------------------------------------------------
+CHAIN_EXAMPLES: dict[str, tuple[str, str]] = {
+    "jira": ("jstack-jira-intake", "jstack-jira-create"),
+    "meetings": ("jstack-meetings-granola", "jstack-meetings-action-items"),
+    "knowledge": ("jstack-knowledge-intake", "jstack-knowledge-process"),
+    "session": ("jstack-init-session", "jstack-end-session"),
+    "notion": ("jstack-notion-planning", "jstack-notion-sprint"),
+    "reports": ("jstack-team-report", "jstack-share-html-publish"),
+    "sprint": ("jstack-sprint-prep", "jstack-sprint-planning"),
+    "routines": ("jstack-standup", "jstack-meetings-post-slack"),
+    "workflows": ("jstack-workflows-builder", "jstack-workflow-runner"),
+}
+
+
+def chaining_example(category: str) -> str:
+    """Backtick-quoted "`A` then `B`" pair for this category's Chaining section, or "" if none fits."""
+    pair = CHAIN_EXAMPLES.get(category)
+    if not pair:
+        return ""
+    a, b = pair
+    return f"`{a}` then `{b}`"
+
 
 # ---------------------------------------------------------------------------
 # FAILURE_EXTRAS — additional failure table rows per category or path
@@ -375,7 +452,7 @@ FAILURE_EXTRAS: dict[str, str] = {
     "session": "| Prior session still open | Ask once whether to end it or continue. Do not silently close. |",
     "knowledge": "| Duplicate entry detected | Show the existing canonical and ask: merge, update, or skip. |",
     "routines": "| Schedule JSON invalid | Return the validation error and a minimal valid example. |\n| Routine failed mid-way | Report which steps succeeded and which failed; suggest re-run. |",
-    "workflows": "| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |\n| Assertion failure | Abort with screenshot ref and suggest selector fix. |",
+    "workflows": "| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |\n| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |\n| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |\n| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |",
     "incident": "| Impact unverified | Do not announce resolved; state current known status only. |",
     "setup": "| User pastes token in chat | Tell them to move to env/secret store and rotate. Never log it. |",
     "metrics": "| GitHub/Jira not linked | Return import instructions and a manual table template. |",
@@ -506,7 +583,7 @@ def _self(seg: str) -> str:
         "lookback": "Last N days of personal gbrain + calendar. Surface patterns in one short section.\n- Gentle tone; not therapy.",
         "focus": "From tasks + gbrain: 2-3 focus blocks, one explicit non-goal, and a timebox suggestion.",
         "eval": "Self assessment only. Suggest one growth goal for next 2 weeks.\n- Do not use as formal HR input unless user says so.",
-        "remember": "Durable fact storage in gbrain. Attach provenance: `jstack_session_id`, `gbrain_target`, `config_label`, `slack_handle` if resolved, `source_skill: jstack:remember`, `written_at`. See `gbrain-entry-provenance.md`.\n- Rotate or refuse if the user pastes a secret.",
+        "remember": "Durable fact storage in gbrain. Attach provenance: `jstack_session_id`, `gbrain_target`, `config_label`, `slack_handle` if resolved, `source_skill: jstack-self-remember`, `written_at`. See `gbrain-entry-provenance.md`.\n- Rotate or refuse if the user pastes a secret.",
         "tasks": "Roll-up of Jira + gbrain TODOs. Deduplicate. If overload, return top 5 and a parking lot.",
         "explain": "Short narrative of recent work for PR description or standup. Tie commits/tickets to user impact.",
     }
@@ -528,7 +605,7 @@ def _knowledge(seg: str) -> str:
 def _session(seg: str) -> str:
     b = {
         "init": "Set gbrain target. Set or read `session.current_session_id` (opaque). Load team context. Echo sprint and timezone from `jstack time` if available.\n- Do not end prior session silently — ask once if ambiguous.",
-        "end": "Summary, carryover, links. When writing to GBrain, include envelope: session id, gbrain_target, config_label, slack_handle/ids if resolved, `source_skill: jstack:session-end`, `written_at`. See `gbrain-entry-provenance.md`.\n- Optional metrics from eval hooks. Clear ready for next init.",
+        "end": "Summary, carryover, links. When writing to GBrain, include envelope: session id, gbrain_target, config_label, slack_handle/ids if resolved, `source_skill: jstack-end-session`, `written_at`. See `gbrain-entry-provenance.md`.\n- Optional metrics from eval hooks. Clear ready for next init.",
     }
     return b.get(seg, "")
 
@@ -546,10 +623,24 @@ def _routines(seg: str) -> str:
 
 def _workflows(seg: str) -> str:
     b = {
-        "builder": "Build flow YAML/JSON: start URL, steps, waits, assertions. No credentials in the file.",
-        "runner": "Execute with `jstack workflow run`. Capture log + screenshot paths if enabled.\n- Abort on first assertion failure with screenshot ref.",
-        "recorder": "Record user actions → flow. Add stability notes (selectors) before promoting to CI.",
-        "viewer": "Diff two runs: timing, flakiness, visual diff summary when artifacts exist.\n- Do not assert pixel equality as pass/fail if threshold-based.",
+        "builder": (
+            "Write a JSON definition to `config/workflows/<id>.json` matching `WorkflowDefinitionSchema` "
+            "(`cli/src/types/workflow.ts`): `id`, `name`, `start_url`, `steps[]`, where each step is "
+            "`{id, kind, selector?, value?, url?, notes?}`.\n"
+            "- `kind` is one of `goto`, `click`, `fill`, `wait`, `screenshot`, `ai`. There is **no assertion "
+            "kind** — express a check as a `wait` on a selector that only exists in the desired state, plus a "
+            "`screenshot` for evidence.\n"
+            "- No credentials in the file: a `fill` whose value is a secret names an env var, never a literal."
+        ),
+        "runner": (
+            "Run with `jstack workflow run`. The shipped executor is `runWorkflowStub`, which returns "
+            "`ok: true` with one log line and produces no screenshot and no report file — so report the outcome "
+            "as `unverified` and never as a pass until a real driver is wired."
+        ),
+        "recorder": "Record user actions → definition. Scrub captured secrets before saving, add stability notes for generated-looking selectors, and mark the result unvalidated — a recording proves the steps happened once, not that they replay.",
+        "viewer": "Summarize what the run log actually contains, step by step. If no report file exists for the run, say so and stop — do not reconstruct a plausible result from the definition.",
+        "execute": "Load the saved `config/workflows/<id>.json`, print the step list as a preview, get explicit confirmation, then run it. The shipped executor is `runWorkflowStub` — it produces no artifact, so report `unverified` and name the missing driver instead of claiming the browser ran.",
+        "workflow-wizard": "Route only: name the one sub-skill that owns this request (builder, recorder, runner, execute, viewer) and say why. Emit `suggested_next: <skill>` and stop — do not author or run anything here.",
     }
     return b.get(seg, "")
 
@@ -558,7 +649,7 @@ def _review(seg: str) -> str:
     b = {
         "project-review": "Schedule, scope, risk, stakeholders checklists. Separate factual errors from strategy issues.",
         "announcement-review": "Tone + accuracy + channel fit. Flag legal/PR risks if external.",
-        "counsel-review": "Multi-persona (CEO/design/eng/QA) with synthesis and tensions. Not vote-counting by title.",
+        "counsel-review": "Multi-persona (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",
     }
     return b.get(seg, "")
 
@@ -577,6 +668,30 @@ def _metrics(seg: str) -> str:
         "team-metrics": "Team DORA-style table with caveats for sample size.\n- Separate unplanned work % if Jira has labels — else omit.",
     }
     return b.get(seg, "")
+
+
+# Per-key intake addendum, appended to the standard "## Intake" block.
+#
+# Only design/authoring skills belong here. A skill that reads config and acts does not need an
+# interview, and pasting one into all 137 skills would be exactly the uniformity problem this file
+# otherwise avoids — the generic intake already covers "parse args, ask one question if blocked."
+INTAKE_EXTRAS: dict[str, str] = {
+    "workflows/builder": (
+        "Before writing any definition, run the design interview:\n\n"
+        "!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/workflow-design-interview.md\n\n"
+        "For a browser definition specifically, the questions config cannot answer are: what starts "
+        "the flow, what observable on-page state means it succeeded (that state becomes a `wait` "
+        "selector, since the schema has no assertion kind), which fills read from env, and what this "
+        "flow must explicitly not touch. Post the understanding lock before drafting, not after."
+    ),
+    "workflows/workflow-wizard": (
+        "This surface routes; it does not build. Classify the request first — skill chain, routine, "
+        "policy/approval gate, or browser definition — using the table in:\n\n"
+        "!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/workflow-design-interview.md\n\n"
+        "Name one destination sub-skill and why. If the request is one skill and one action, say that "
+        "and point at the skill rather than manufacturing a workflow around it."
+    ),
+}
 
 
 def path_extras(key: str) -> str:
@@ -694,3 +809,465 @@ def path_extras(key: str) -> str:
             "- Include a revert / kill-switch sentence for any prod deploy discussion."
         )
     return ""
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 2 ("plan the safe path") and Step 4 ("validate") used to emit one generic
+# line each into every generated skill: "Prefer read-only first, then idempotent
+# updates..." and "Correct surface, no stray side effects...". Those appeared in
+# 122 and 107 skills respectively and changed nothing about behavior — they named
+# no tool, path, or check. These dicts replace them with guidance specific to the
+# domain. Lookup is key-first, then category, then DEFAULT (same as CATEGORY_DEEP).
+# ─────────────────────────────────────────────────────────────────────────────
+
+SAFE_PATH: dict[str, str] = {
+    "DEFAULT": (
+        "Read current state before changing it. Prefer the reversible action; when an action is "
+        "irreversible, show what will change and get explicit confirmation first. If a required id "
+        "or path is missing from config, stop and ask — never substitute a guess."
+    ),
+    "jira": (
+        "Search before you create — a duplicate ticket is worse than a missing one. Read the issue's "
+        "current status and its legal transitions before transitioning; do not assume a workflow. "
+        "Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk "
+        "change, show the count, the field diff, and a sample of affected keys, then wait for confirmation."
+    ),
+    "notion": (
+        "Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page "
+        "before overwriting its body. Create as a draft and let the user promote it; do not publish "
+        "on their behalf. If the target is unset in config, say so instead of writing somewhere plausible."
+    ),
+    "announcements": (
+        "Draft, get approval, then publish — in that order, always. Resolve the channel from "
+        "`policies.announcements.channels`; if it is unset, ask rather than picking one. Never send to "
+        "an external or unfamiliar destination without explicit confirmation of the audience."
+    ),
+    "review": (
+        "Read the whole change before commenting on any part of it. Separate blocking findings from "
+        "suggestions, and cite `file:line` for each. Do not approve based on a summary you did not verify. "
+        "Rank by severity, not by reading order."
+    ),
+    "research": (
+        "State which sources you searched and which you could not reach — silent partial coverage reads "
+        "as completeness. Distinguish \"not found\" from \"does not exist\". Timestamp findings, because a "
+        "stale answer presented as current is worse than no answer."
+    ),
+    "reports": (
+        "Every figure traces to a named source with an as-of time. Mark a missing metric as `[no data]` — "
+        "never interpolate it, and never drop the row silently, because omission in an authoritative-looking "
+        "report misleads exactly as much as fabrication."
+    ),
+    "metrics": (
+        "State the denominator and the time window before stating the number; a rate without either is "
+        "unusable. Prefer percentiles to averages and say which you used. Note the data's freshness."
+    ),
+    "knowledge": (
+        "Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval "
+        "untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the "
+        "session's team-vs-personal target rather than defaulting to shared."
+    ),
+    "meetings": (
+        "Confirm attribution before recording a decision as someone's — misattributing a commitment is the "
+        "costly error here. Keep personal notes out of team stores. Distinguish what was decided from what "
+        "was merely discussed."
+    ),
+    "incident": (
+        "Stabilize before diagnosing. Record the timeline as you go, not afterwards from memory. Do not state "
+        "a cause until it is established — in anything customer-facing, \"under investigation\" is correct and "
+        "a guess is a liability."
+    ),
+    "sprint": (
+        "Read the board's actual state before planning against it. When something spilled, diagnose which of "
+        "scope growth, underestimation, or blockage caused it rather than re-committing the same item. Change "
+        "the plan or the scope, not the record of what happened."
+    ),
+    "self": (
+        "Personal target by default; write to a shared store only when the user asks explicitly. Never place "
+        "another person's performance data or PII in a personal or team note."
+    ),
+    "session": (
+        "Make init and end idempotent — re-running either must not duplicate state or double-write carryover. "
+        "Read the existing session id before assigning one."
+    ),
+    "setup": (
+        "Show the full proposed config and get confirmation before writing. Validate against the schema. Omit "
+        "a key the user skipped rather than writing an empty string. Never write a credential to a config file."
+    ),
+    "update-config": (
+        "Show a diff of the exact keys changing, and get confirmation before writing. Validate the result "
+        "before saving. Never write a secret, and never silently widen a scope the user did not ask to widen."
+    ),
+    "routines": (
+        "This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a "
+        "retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled "
+        "job that fails silently goes unnoticed for weeks."
+    ),
+    # Fallback for the router and execute — the surfaces that actually drive a browser. The
+    # authoring/recording/reading surfaces get their own entries below: a single "preview before a
+    # destructive action" rule applied to a skill that writes a JSON file checks nothing that skill
+    # can get wrong.
+    "workflows": (
+        "Preview before any destructive UI action and require confirmation. Wait on observable state, never on "
+        "a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim "
+        "the run passed — and the shipped runner is a stub that produces none, so `unverified` is the honest "
+        "ceiling until a real driver is wired."
+    ),
+    "workflows/builder": (
+        "Nothing executes here, so the safety question is what this file will do when someone else runs it "
+        "unattended months from now. Every `click` and `fill` needs a preceding `wait` on its own selector — a "
+        "step that races the page is the defect that only ever reproduces in CI. Secrets are env references, "
+        "never literals, because this file gets committed."
+    ),
+    "workflows/recorder": (
+        "A recording captures whatever was on screen: tokens, session cookies, customer names in test data. "
+        "Scrub before saving, not at review time. Flag auto-generated selectors as brittle instead of promoting "
+        "the recording straight to CI."
+    ),
+    "workflows/viewer": (
+        "This surface only reads, so the risk is not a destructive action — it is inventing a result. If the run "
+        "produced no report, say that, rather than describing what the definition would have done."
+    ),
+    "workflows/workflow-wizard": (
+        "Routing only. Name one sub-skill, say why, and hand off. Never execute, record, or write a definition as "
+        "a side effect of deciding where the request belongs."
+    ),
+    "engineering": (
+        "Name the mechanism, not the symptom, and cite the file or component that shows it. Prefer measuring to "
+        "asserting. If you cannot name the alternative to what you are criticizing, say so plainly."
+    ),
+    "sdlc": (
+        "Gates are not skippable silently. If one must be bypassed, produce a risk-acceptance line naming who "
+        "approved it, what risk was accepted, and the mitigation. Confirm the revert path exists before release."
+    ),
+    "intake": (
+        "Separate bundled asks into distinct candidates before shaping any of them. Name the user and the moment "
+        "the need occurs. Do not invent acceptance criteria the requester did not imply — ask."
+    ),
+    "prioritize": (
+        "State the ranking criteria before you rank, not after the order is chosen. Make the cutline explicit and "
+        "say what falls below it. Do not present a ranking as objective when its inputs were estimates."
+    ),
+    "sop": (
+        "Describe the process that is actually followed, not the aspirational one. Every step names an owner and an "
+        "observable completion condition."
+    ),
+}
+
+VALIDATION: dict[str, str] = {
+    "DEFAULT": (
+        "Before reporting done: confirm the change landed where intended, that nothing outside the stated scope "
+        "was touched, and that every id, path, and figure you emitted came from config or the conversation rather "
+        "than from inference. Name anything you could not verify."
+    ),
+    "jira": (
+        "Re-read the issue after writing: the status, the fields you set, and the links you added are what you "
+        "intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate."
+    ),
+    "notion": (
+        "Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not "
+        "overwrite pre-existing content, and that it is still a draft unless the user asked to publish."
+    ),
+    "announcements": (
+        "Confirm the destination, the audience, and that approval was actually given before send — not assumed. "
+        "Re-read the text for anything that should not leave the org."
+    ),
+    "review": (
+        "Confirm every finding cites a real location and that severities are ordered. Confirm you did not present a "
+        "preference as a defect. State explicitly what you did not review."
+    ),
+    "research": (
+        "Confirm every claim has a source and an as-of time, and that coverage gaps are stated rather than implied. "
+        "No source, no claim."
+    ),
+    "reports": (
+        "Confirm every figure has a source and as-of time, that gaps read `[no data]`, and that the footer and scope "
+        "match this report's kind. Re-run the render and confirm identical output from identical inputs."
+    ),
+    "metrics": (
+        "Confirm each number carries its denominator, window, and freshness, and that no average is hiding a "
+        "distribution you should have shown as percentiles."
+    ),
+    "knowledge": (
+        "Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, "
+        "and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target."
+    ),
+    "meetings": (
+        "Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. "
+        "Confirm personal content did not land in a shared store."
+    ),
+    "incident": (
+        "Confirm the timeline is ordered and sourced, that cause is labelled as established or under investigation, "
+        "and that no customer-facing text asserts more than is known."
+    ),
+    "sprint": (
+        "Confirm the numbers match the board rather than the narrative, and that carryover is explained rather than "
+        "silently re-committed."
+    ),
+    "self": (
+        "Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's "
+        "PII or performance data is present."
+    ),
+    "session": (
+        "Confirm re-running would produce the same state — no duplicated session, no double-written carryover."
+    ),
+    "setup": (
+        "Run `jstack doctor` and interpret the result for the user rather than pasting it. Confirm no secret was "
+        "written and that skipped keys are absent rather than empty."
+    ),
+    "update-config": (
+        "Re-read the config and confirm only the intended keys changed and the file still parses. Confirm no secret "
+        "was written."
+    ),
+    "routines": (
+        "Confirm the run completed without needing interactive input, that a re-run would be safe, and that any "
+        "partial failure is reported as such with the failing step named."
+    ),
+    "workflows": (
+        "Confirm an artifact exists for every claimed step outcome. Without one, downgrade the result to "
+        "unverified rather than reporting a pass."
+    ),
+    "workflows/builder": (
+        "Confirm the definition parses against `WorkflowDefinitionSchema`, that every `kind` is one of the six "
+        "the schema accepts, that every `click`/`fill` is preceded by a `wait`, and that no value is a credential "
+        "literal. Do not claim the flow works — nothing was run."
+    ),
+    "workflows/recorder": (
+        "Confirm no secret survived into the saved definition and that every selector is either stable or "
+        "explicitly flagged. State that the recording is unvalidated until it replays."
+    ),
+    "workflows/viewer": (
+        "Confirm every statement traces to a line in the run log. What is not in the log is absent, not implied."
+    ),
+    "workflows/workflow-wizard": (
+        "Confirm exactly one sub-skill was named with a reason, and that nothing was executed or written here."
+    ),
+    "engineering": (
+        "Confirm each finding names a mechanism and a location, and that any measurement you cite is reproducible."
+    ),
+    "sdlc": (
+        "Confirm each gate is either satisfied with evidence or explicitly bypassed with a recorded risk acceptance."
+    ),
+    "intake": (
+        "Confirm bundled asks were separated, that acceptance criteria are testable, and that nothing was invented "
+        "on the requester's behalf."
+    ),
+    "prioritize": (
+        "Confirm the criteria were stated before ranking, the cutline is explicit, and estimate-based inputs are "
+        "labelled as estimates."
+    ),
+    "sop": (
+        "Confirm every step has an owner and an observable completion condition, and that it describes current "
+        "practice rather than intent."
+    ),
+}
+
+
+def safe_path_for(key: str, category: str) -> str:
+    """Step 2 guidance: key-specific, else category, else default."""
+    return SAFE_PATH.get(key, SAFE_PATH.get(category, SAFE_PATH["DEFAULT"])).strip()
+
+
+def validation_for(key: str, category: str) -> str:
+    """Step 4 guidance: key-specific, else category, else default."""
+    return VALIDATION.get(key, VALIDATION.get(category, VALIDATION["DEFAULT"])).strip()
+
+
+# Per-skill deep domain content (thresholds, anti-patterns, worked examples) for
+# high-judgment skills. Merged over CATEGORY_DEEP so a per-key entry wins over the
+# category default, letting those skills stay generated instead of moving to SKIP.
+try:
+    from skill_deep import load_deep as _load_deep
+
+    CATEGORY_DEEP.update(_load_deep())
+except ImportError:  # pragma: no cover - skill_deep is optional
+    pass
+
+
+# ── Missions added to close the "no declared boundary" gap ────────────────────
+#
+# 53 skills rendered no `- **Out of scope:**` clause because `build_body()` falls back to the raw
+# frontmatter `description` when neither a per-key nor a category MISSIONS entry exists. That gap has
+# two costs: the skill never states what it will not do, and `scripts/generate-skill-evals.ts` cannot
+# derive a per-skill boundary eval, so those skills fall back to a generic trivia case.
+#
+# ROUTERS get routing missions. LEAVES get leaf missions, deliberately per-key rather than by
+# category: `build_body()` resolves `MISSIONS.get(key, MISSIONS.get(category, desc))`, so a bare
+# category entry would make every unkeyed leaf under it describe itself as a router — the exact defect
+# that had to be removed from ~32 leaf skills earlier. Every category that has a router mission today
+# also has a per-key entry for each of its leaves, and that invariant is preserved here.
+MISSIONS.update({
+    # ── Routers ──
+    "computer-use": "Route computer-use requests to the right surface: native macOS/desktop UI (`jstack:computer-use-cua`), web automation (`jstack:workflow-execute`, Playwright MCP), or a saved JSON workflow definition under `config/workflows/`. Pick one surface and say why.\n- **Out of scope:** Driving the machine yourself from this skill, and installing drivers or granting accessibility permissions — those are operator steps.",
+    "incident": "Route an incident request to the right sub-skill (retro, find-sme, oncall-summary). Establish whether the incident is active or closed before routing — an active incident goes to on-call context, a closed one to retro.\n- **Out of scope:** Declaring or resolving an incident, paging anyone, and writing status-page updates.",
+    "knowledge": "Route a knowledge request to the right sub-skill: capture (`intake`), reconcile (`process`), retrieve (`search`), or graph-building (`self-knowledge`, `team-knowledge`). Retrieval and capture are different skills — do not capture as a side effect of answering.\n- **Out of scope:** Writing entries directly from the orchestrator, and deciding team-vs-personal placement without the session gbrain target.",
+    "metrics": "Route a metrics request to `my-metrics` (individual) or `team-metrics` (team roll-up). Both read from configured sources; neither invents a number.\n- **Out of scope:** Performance evaluation of a named person, and defining new org-wide metric definitions.",
+    "reports": "Route a report request to the sub-skill for that audience and artifact (team, engineer, manager, project, self, eval, share-html-publish, report-design). Audience determines the shape, not the data.\n- **Out of scope:** Publishing or sharing the rendered artifact, and inventing figures for a section whose source is unavailable.",
+    "research": "Route a research request to the right sub-skill: technical (tradeoff analysis), competitive (market), user (qualitative), explain-codebase (this repo), or spike (timeboxed feasibility). Deliverable shape differs per sub-skill.\n- **Out of scope:** Presenting an unverified claim as fact, and making the build-vs-buy decision — surface the tradeoffs for a human to decide.",
+    "review": "Route a review request to the right lens: code-review (diff), project-review (schedule/scope/risk), announcement-review (comms), or counsel-review (multi-persona). One lens per request unless the user asks for reconciliation.\n- **Out of scope:** Approving or merging anything, and overriding a named human reviewer's verdict.",
+    "routines": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, morning-kickoff, custom). Resolve the routine id against `config/defaults.json` `routines` and `config/schedules/<id>.json` before running; if the two disagree, say so.\n- **Out of scope:** Creating or editing a routine definition (`jstack:workflow-builder`), and firing integrations for a routine whose `enabled` is false.",
+    "session": "Route a session-lifecycle request to `init` or `end`. Session state (gbrain target, session id) lives in `jstack.config.json` under `session` — read it rather than assuming.\n- **Out of scope:** Doing the work of the session itself, and changing the gbrain target silently mid-session.",
+    "workflows": "Route a browser-workflow request to the right sub-skill (builder, recorder, runner, viewer, execute, workflow-wizard). Authoring a definition and running one are separate sub-skills — do not run as a side effect of building.\n- **Out of scope:** Production mutations without an explicit preview-then-confirm, and storing credentials in a workflow definition — form fills read from env.",
+
+    # ── Leaves: design ──
+    "design/figma-handoff": "Turn a Figma design into an implementable handoff: named components and variants, token references, state coverage, and the accessibility contract each state must meet.\n- **Out of scope:** Writing the component code (`jstack:review-code-review` for the diff, frontend-specialist for implementation), and editing the Figma file itself.",
+    "design/visual-single-page-html": "Produce a single self-contained HTML page — inline CSS, no build step, CDN scripts pinned with SRI — for a visual artifact a reader opens directly.\n- **Out of scope:** Multi-page apps, anything needing a bundler or server, and embedding real customer or employee data in the page.",
+
+    # ── Leaves: research ──
+    "research/technical": "Produce a technical tradeoff analysis: options as rows, decision criteria as columns, and an explicit recommendation with the condition that would reverse it.\n- **Out of scope:** Implementing the chosen option, and asserting a benchmark number you did not measure or cite.",
+    "research/competitive": "Compare named alternatives on capabilities a user would actually choose between, separating verified facts from inference and labelling each.\n- **Out of scope:** Pricing negotiation advice, legal comparison, and presenting a competitor's roadmap claim as shipped fact.",
+    "research/user": "Synthesize qualitative user input into themes with evidence counts, keeping participant quotes attributable to a source and never inventing one.\n- **Out of scope:** Recruiting or interviewing participants, and generalizing from a single session to a population claim.",
+    "research/explain-codebase": "Explain how a codebase actually works — entry points, data flow, module boundaries, and the surprising parts — grounded in files you have read, with paths cited.\n- **Out of scope:** Changing the code, and describing intended architecture as though it were the current state.",
+    "research/spike": "Run a timeboxed feasibility spike: state the question, the box, what was tried, and a go/no-go with the evidence that decided it.\n- **Out of scope:** Turning the spike code into production code, and exceeding the timebox silently — report an unfinished spike as unfinished.",
+
+    # ── Leaves: reports ──
+    "reports/team-report": "Assemble the team report from configured sources, labelling every figure measured, estimated, or assumed.\n- **Out of scope:** Publishing it (`jstack:reports-share-html-publish`), and filling a section whose data source is unavailable.",
+    "reports/engineer-report": "Assemble an individual engineer report for a named period, from configured sources only, with per-figure provenance.\n- **Out of scope:** Performance ratings or promotion recommendations, and comparing engineers against each other.",
+    "reports/manager-report": "Assemble a manager-facing roll-up: delivery, risk, and people-signal sections at the altitude a manager acts on.\n- **Out of scope:** Individual performance verdicts, and IC-identifying detail where the report redacts names by config.",
+    "reports/project-report": "Assemble a project status report: scope, schedule, risk, and the decision the reader needs to make.\n- **Out of scope:** Re-planning the project, and stating a confidence level the underlying data cannot support.",
+    "reports/self-report": "Assemble a self-report for the configured period from the user's own activity and gbrain entries.\n- **Out of scope:** Writing about other people's contributions, and back-filling accomplishments from memory rather than from a dated source.",
+    "reports/eval-report": "Render the eval report from `evals/.reports/` output — pass/fail counts, coverage, and which cases were skipped and why.\n- **Out of scope:** Running the evals (`jstack eval`), and reporting a skipped judge case as a pass.",
+
+    # ── Leaves: review ──
+    "review/code-review": "Review a diff for correctness, security, and maintainability, separating blocking defects from taste, and naming a specific required edit for each blocker.\n- **Out of scope:** Merging or approving, and rewriting the change wholesale instead of reviewing it.",
+    "review/project-review": "Review a project update for schedule, scope, risk, and stakeholder issues, separating factual errors from strategy disagreements.\n- **Out of scope:** Re-planning the project, and overruling the project owner's stated priorities.",
+    "review/announcement-review": "Review a draft announcement against tone and approval policy: audience fit, claim accuracy, and whether anything needs sign-off before it goes out.\n- **Out of scope:** Posting it, and approving on behalf of a named approver.",
+    "review/counsel-review": "Reconcile multiple persona lenses into one verdict, attributing each concern to the lens that raised it and stating what would change the call.\n- **Out of scope:** Manufacturing consensus by dropping a dissenting lens, and issuing a verdict without naming the lenses consulted.",
+
+    # ── Leaves: incident ──
+    "incident/retro": "Run a blameless incident retro: timeline, contributing factors, and action items with owners — describing system and process failure, never individual fault.\n- **Out of scope:** Assigning blame to a person, and closing action items on the participants' behalf.",
+    "incident/find-sme": "Identify the likeliest subject-matter expert for a system from configured history (commits, tickets, docs), with the evidence for each candidate.\n- **Out of scope:** Paging or messaging the person, and treating commit volume alone as expertise.",
+    "incident/oncall-summary": "Summarize the on-call period: what fired, what was actionable, what was noise, and which alerts need tuning.\n- **Out of scope:** Acknowledging or resolving alerts, and changing alert thresholds.",
+
+    # ── Leaves: metrics ──
+    "metrics/my-metrics": "Report the individual's own delivery metrics for a period from configured sources, as distributions rather than single averages.\n- **Out of scope:** Comparing the individual against teammates, and any performance judgement.",
+    "metrics/team-metrics": "Report team delivery metrics (throughput, cycle time, WIP, flow efficiency) from configured sources, stating the population and window for every figure.\n- **Out of scope:** Ranking individuals within the team, and inferring causation from a metric shift.",
+
+    # ── Leaves: knowledge ──
+    "knowledge/self-knowledge": "Link the user's own activity and gbrain entries into a retrievable personal graph, each entry carrying a source and an as-of date.\n- **Out of scope:** Copying personal entries into a team store, and scraping repos or org data beyond the configured token's scope.",
+    "knowledge/team-knowledge": "Build the shared team knowledge graph — issues, ADRs, runbooks — with canonical links, dedupe checks, and staleness flags.\n- **Out of scope:** Writing personal or performance commentary into the shared store, and superseding a canonical entry without saying which one it replaces.",
+    "knowledge/ingest-all": "Run the configured bulk ingest across `ingest_all` sources, reporting per-source counts and every item skipped with its reason.\n- **Out of scope:** Ingesting a source absent from config, and silently dropping items that failed to parse.",
+    "knowledge/shortcuts": "Bridge to allowlisted external skill packs (gstack, superpowers) and name the specific alias to prefer for a request.\n- **Out of scope:** Vendoring an external pack into this repo, and invoking a pack that is not installed — say it is missing instead.",
+
+    # ── Leaves: routines ──
+    "routines/standup": "Produce standup content — yesterday, today, blockers — from Jira and Slack, capped at three bullets per person, as a draft for review.\n- **Out of scope:** Posting to the channel, and inventing an update for someone with no activity — say there is none.",
+    "routines/weekly-digest": "Assemble the weekly digest over the configured window for both team and stakeholder audiences.\n- **Out of scope:** Sending the digest, and padding a quiet week with restated work from a previous one.",
+    "routines/sprint-close": "Run the sprint-close sequence: reconcile committed versus delivered, capture carry-over with reasons, and produce the close summary.\n- **Out of scope:** Moving unfinished issues between sprints without confirmation, and closing the sprint in Jira.",
+    "routines/health-check": "Run the periodic health check across configured sources and report only what changed materially since the last run.\n- **Out of scope:** Fixing anything it finds, and paging on a finding — surface it for a human.",
+    "routines/morning-kickoff": "Run the morning kickoff from `kickoff_workflows`: today's calendar, open threads, and the shortlist worth attention first.\n- **Out of scope:** Acting on any item, and reordering the user's actual priorities for them.",
+    "routines/custom": "Execute a custom routine from its `config/schedules/<id>.json` definition, resolving every step to a real skill before starting.\n- **Out of scope:** Inventing a step the definition does not contain, and returning a plausible result when the definition is invalid — return the fix instead.",
+
+    # ── Leaves: workflows ──
+    "workflows/execute": "Run a saved `config/workflows/*.json` flow through the `jstack workflow` CLI: preview, confirm, then execute, capturing an artifact per step.\n- **Out of scope:** Editing the flow definition, and claiming a browser ran when the runner is the stub.",
+    "workflows/runner": "Drive a recorded flow and report each step's outcome with its captured evidence. The shipped executor is `runWorkflowStub`, so the honest outcome is `unverified`, not a pass.\n- **Out of scope:** Authoring or recording the flow, and reporting a pass the runner did not actually produce.",
+
+    # ── Leaves: standalone ──
+    "federated-search": "Dispatch one query across the configured backends in parallel (Jira, Notion, Slack, GitHub, knowledge_base, gbrain) and fuse the results with per-source attribution.\n- **Out of scope:** Knowledge-base-only lookups — use `jstack:knowledge-search`, which is scoped to the curated `knowledge_base` config. Also out of scope: storing anything it finds.",
+    "granola-daily-summary": "Summarize Granola or meeting notes into a daily digest with owners and follow-ups, from the notes provided.\n- **Out of scope:** Joining or transcribing the call (`jstack:meetings-transcribe`), and inferring a decision the notes do not record.",
+    "granola-daily-summary-6pm": "Scheduled end-of-day variant of the Granola daily summary, run unattended on a cron trigger.\n- **Out of scope:** Blocking on an interactive prompt — there is no human present — and posting the digest anywhere.",
+    "pe/report-context": "Assemble the PE reporting context for a period: teams, projects, and the window the figures cover, validated against config.\n- **Out of scope:** Writing performance narrative about a named individual, and reporting on a team absent from `pe.teams`.",
+})
+
+
+# `scaffold` was mis-tagged `category: workflows`, so it rendered browser-automation domain rules
+# ("Browser driver not available", "Preview/diff before production mutate") for a skill-scaffolder.
+# Recategorized to `skill-creator`, which has no category entry, so it needs a per-key one — the
+# depth gate correctly failed on the missing domain-rules section until this was added.
+CATEGORY_DEEP["scaffold"] = (
+    "## Domain rules — skill and plugin scaffolding\n"
+    "- Generate the directory shape only: `SKILL.md`, `references/`, `evals/`. Never write skill *content* "
+    "the author has not decided on — a plausible-looking body is harder to fix than an empty one.\n"
+    "- Frontmatter must be inline scalars. `read_front_matter()` in `scripts/apply_detailed_skills.py` is "
+    "line-based and keeps only lines containing `:`; a YAML block list is silently dropped and the key "
+    "round-trips empty. Quote any `description` containing a colon.\n"
+    "- A new skill body is GENERATED unless its path is added to `SKIP` in "
+    "`scripts/apply_detailed_skills.py`. Decide which before scaffolding, and say which you chose — a "
+    "hand-edit to a non-SKIP body is lost on the next regeneration.\n"
+    "- Every new skill needs eval cases or `bun run check` fails on coverage. Scaffold "
+    "`evals/` alongside the skill, then run `bun run gen:skill-evals` rather than hand-writing them.\n"
+    "- Set `disable-model-invocation: true` when the skill writes external state, and "
+    "`context: fork` + `agent: Explore` only when it is genuinely read-only — `Explore` has no Write "
+    "or Edit tool, so a write skill configured that way cannot do its job.\n"
+    "- After adding a skill, run `bun run docs:generate` so `skill-catalog.json` includes it."
+)
+
+
+# Router missions for the four container directories that had NO top-level SKILL.md.
+#
+# Measured against a live install (`claude plugin details jstack`): the platform surfaces only
+# top-level `skills/<name>/SKILL.md` — 36 of the 137 files on disk. The other 101 are reachable ONLY
+# through a parent router. `design/`, `pe/`, `plugin/`, and `shortcuts/` had children but no router, so
+# six skills had no discovery path at all: design/figma-handoff, design/visual-single-page-html,
+# pe/report-context, plugin/create-plugin-pr, shortcuts/ceo-brainstorm,
+# shortcuts/executive-research-brief.
+MISSIONS.update({
+    "design": "Route a design request to the right sub-skill: `figma-handoff` for a design-to-implementation contract (tokens, variants, state coverage, accessibility), or `visual-single-page-html` for a self-contained artifact a reader opens directly.\n- **Out of scope:** Writing the component code, and editing the Figma file itself.",
+    "pe": "Route a people/performance-engineering request to the right sub-skill. `report-context` assembles the validated reporting window, teams, and projects from `pe.*` config before any narrative is written.\n- **Out of scope:** Writing performance narrative or a rating about a named individual, and reporting on a team absent from `pe.teams`.",
+    "plugin": "Route a plugin-distribution request to the right sub-skill. `create-plugin-pr` opens a PR against jstack.core or an overlay using `distribution.github`, respecting `plugin_pr.path_deny_globs`.\n- **Out of scope:** Authoring the skill being shipped (`jstack:skill-creator`), and merging the PR.",
+    "shortcuts": "Route a named composite shortcut to its sub-skill. Each composite pins one persona plus one tone — `ceo-brainstorm` (CEO persona + executive tone), `executive-research-brief` (research then executive compression).\n- **Out of scope:** Generic brainstorming or research with no named composite — call the underlying skill directly rather than forcing a persona onto it.",
+})
+
+
+# Domain rules for the four routers added to reach previously-unreachable children.
+# 16 of 20 routers carry a domain-rules block; these four had no CATEGORY_DEEP entry, so they rendered
+# without one and `pe`/`plugin` failed the depth gate.
+CATEGORY_DEEP.update({
+    "design": (
+        "## Domain rules — design\n"
+        "- Two very different outputs live here. `figma-handoff` produces an implementation CONTRACT "
+        "(named components and variants, token references, state coverage, the accessibility criterion "
+        "each state must meet). `visual-single-page-html` produces a self-contained ARTIFACT a reader "
+        "opens directly. Pick by deliverable, not by topic.\n"
+        "- Never claim pixel parity without a screenshot reference; say `[no screenshot available]` "
+        "rather than asserting visual accuracy from a description.\n"
+        "- Accessibility is a named criterion, not an adjective — cite the WCAG rule and the measured "
+        "value (`#999 on #fff is 2.85:1`), never \"contrast looks low\".\n"
+        "- A single-page artifact pins its CDN scripts with SRI and embeds no real customer or employee "
+        "data. Use synthetic values in examples."
+    ),
+    "pe": (
+        "## Domain rules — people and performance engineering\n"
+        "- Assemble the reporting CONTEXT before any narrative: which teams, which projects, and the "
+        "exact window, all validated against `pe.*` in config. A narrative written before the window is "
+        "fixed cannot be checked later.\n"
+        "- Report on a team only if it appears in `pe.teams`. An unlisted team means the scope is "
+        "unconfirmed — say so instead of inferring it.\n"
+        "- Separate observation from evaluation. Describe what happened with a date and a source; do not "
+        "attach a rating, a level, or a promotion opinion about a named person.\n"
+        "- Single incidents are not patterns. One data point gets labelled as one data point."
+    ),
+    "plugin": (
+        "## Domain rules — plugin distribution\n"
+        "- Read the target from `distribution.github` — owner, repo, default branch. Unset means stop "
+        "and say which key is missing; never guess a repository.\n"
+        "- Honour `distribution.plugin_pr.path_deny_globs`. A PR that touches a denied path is a "
+        "packaging mistake, not a review question.\n"
+        "- Open the PR; do not merge it. Merging is a human decision with CI attached.\n"
+        "- Never vendor an upstream marketplace tree into this repo — reference it, or take an "
+        "allowlisted `plugins/<id>/` subtree only."
+    ),
+    "shortcuts": (
+        "## Domain rules — named composites\n"
+        "- A composite pins exactly one persona plus one tone and loads both verbatim with `!cat`. "
+        "Paraphrasing either from memory defeats the point of having the file.\n"
+        "- The composite must change the OUTPUT, not just the preamble. If the answer reads the same as "
+        "the underlying skill without the persona, the composite added nothing.\n"
+        "- Prefer the underlying skill when no named composite fits. Forcing a persona onto an unrelated "
+        "request produces confident-sounding output in the wrong register.\n"
+        "- Cross-plugin bridges (gstack, superpowers) only work when that pack is installed — say it is "
+        "missing rather than inventing its behaviour."
+    ),
+})
+
+# The last router without a domain-rules block (19 of 20 had one).
+CATEGORY_DEEP["computer-use"] = (
+    "## Domain rules — computer use\n"
+    "- Three distinct surfaces, and picking the wrong one wastes the whole attempt: native desktop UI "
+    "(`jstack:computer-use-cua`), web automation via a saved flow (`jstack:workflow-execute`), or an org "
+    "YAML workflow definition. Name the surface and why before acting.\n"
+    "- Driving a real machine is destructive by default. Preview the action, then require explicit "
+    "confirmation; `restart` and `destroy` against a live sandbox are never implicit.\n"
+    "- Never type a credential into a driven UI. Form fills read from env, and no secret appears in a "
+    "flow definition or in chat.\n"
+    "- Capture evidence per step (screenshot, trace, or log). An automation run with no artifact cannot "
+    "be reviewed after the fact."
+)

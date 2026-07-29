@@ -3,6 +3,19 @@
 # Dependencies
 node_modules/
 
+# npm/yarn/pnpm lockfiles — this repo is bun-only (see CLAUDE.md). bun.lock is the
+# only authoritative lockfile. These are ignored everywhere, at any depth, so a stray
+# `npm install` can't commit a lockfile that disagrees with bun.lock.
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+# Exceptions: fixtures that intentionally contain a package-lock.json as test input.
+!skills/skill-creator/improve-claude-md/**/package-lock.json
+!cli/src/lib/__fixtures__/**/package-lock.json
+
 # Builds & caches
 dist/
 build/
@@ -52,3 +65,8 @@ evals/.reports/
 .idea/
 *.swp
 *.swo
+
+# The a2a CLI cases run `doctor` and `config show` against a real project config. The blanket
+# jstack.config.json rule above matches by basename anywhere, which hid this fixture and made
+# those six cases impossible to pass in CI (the repo root config is, correctly, never committed).
+!evals/a2a/fixtures/project/jstack.config.json

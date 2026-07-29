@@ -1,25 +1,90 @@
 #!/usr/bin/env bun
 /**
- * Ensures every skill under skills/ has at least two semantic eval YAML files (smoke + negative)
- * and, when still missing, a third `003-graded-assert.yaml` with `grading.rubric` + `assert` blocks
- * (LLM judge + programmatic checks, merged in evals/grade.ts).
+ * Generate per-skill semantic eval YAML: smoke (001), boundary (002), graded rubric (003), plus a
+ * routing case (004) for canonical orchestrators.
  *
- * Usage: bun run scripts/generate-skill-evals.ts [--dry-run]
+ * The problem this rewrite fixes: 249 of 419 eval files were byte-identical scaffold once the skill
+ * name was normalized away, because the negative and rubric documents were module-level constants.
+ * 107 skills shared a negative case whose entire prompt was "Reply with only the single word: pong",
+ * and 97 shared a rubric asking each skill to describe itself with `pass_threshold: 1` of two generic
+ * items. None could fail for a reason specific to the skill under test. The document builders now
+ * live in `scripts/lib/skill-eval-docs.ts` and derive their assertions from each SKILL.md's declared
+ * out-of-scope clause, unique description, and failure-mode table. (`## Output shape` was tried and
+ * rejected: it is templated boilerplate, so 133 skills yield identical labels.)
+ *
+ * Two modes, because the old generator could only ever CREATE:
+ *   (default)   fill gaps only — a skill that already has enough cases is left alone
+ *   --rewrite   also upgrade files that are recognizably generated scaffold
+ *
+ * `--rewrite` will never touch a hand-authored eval. A file is only eligible if it carries the
+ * `generated-by:` marker this script writes, or matches a known legacy template signature. Anything
+ * else is counted as "kept hand-authored" and left exactly as it is — the same protection the `SKIP`
+ * set provides for hand-maintained SKILL.md bodies.
+ *
+ * Usage:
+ *   bun run scripts/generate-skill-evals.ts [--dry-run]
+ *   bun run scripts/generate-skill-evals.ts --rewrite [--dry-run]
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 import { discoverAllSkillRelativePaths, discoverEvalCases } from "../evals/discover.js";
+import { extractSkillFacts } from "./lib/skill-eval-facts.js";
+import {
+  GENERATED_MARKER,
+  NEG_NAME,
+  RUBRIC_NAME,
+  SMOKE_NAME,
+  boundaryDoc,
+  rubricDoc,
+  smokeDoc,
+  type EvalDoc,
+} from "./lib/skill-eval-docs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const skillsRoot = join(root, "skills");
-
-const SMOKE_NAME = "001-skill-smoke.yaml";
-const NEG_NAME = "002-negative-trivia.yaml";
-const RUBRIC_NAME = "003-graded-assert.yaml";
 const PARAPHRASE_NAME = "004-paraphrase-routing.yaml";
+
+const dry = process.argv.includes("--dry-run");
+const rewrite = process.argv.includes("--rewrite");
+
+/** The marker value written into every generated file (without the `generated-by: ` key prefix). */
+const MARKER_VALUE = GENERATED_MARKER.split(": ")[1];
+
+/**
+ * Signatures of the scaffold this script used to emit.
+ *
+ * Needed because the 249 pre-existing files predate the `generated-by:` marker. Each signature is a
+ * string only the old template contains, so a match is proof the file was machine-written.
+ */
+const LEGACY_SIGNATURES: Record<string, string[]> = {
+  [NEG_NAME]: ["Reply with only the single word: pong"],
+  [RUBRIC_NAME]: [
+    "Identifies a purpose, audience, or primary use of the skill",
+    "response states what the skill is for, when to use it, or which role it helps",
+  ],
+  [SMOKE_NAME]: ["Outline what you would produce for a **hypothetical** internal request"],
+  // All 16 orchestrator routing cases were byte-identical: the old template had no per-skill part.
+  [PARAPHRASE_NAME]: [
+    "Names a concrete child route, child skill folder, or one focused clarifying question",
+    "Does not present fictional ticket keys, channel IDs, or verified API results",
+  ],
+};
+
+/** Is this file safe to overwrite? Only marker-bearing or known-legacy files are. */
+function isGenerated(path: string, filename: string): boolean {
+  if (!existsSync(path)) return true; // nothing to lose
+  const body = readFileSync(path, "utf8");
+  if (body.includes(MARKER_VALUE)) return true;
+  const sigs = LEGACY_SIGNATURES[filename] ?? [];
+  return sigs.length > 0 && sigs.every((s) => body.includes(s));
+}
+
+function dumpDoc(doc: EvalDoc | Record<string, unknown>): string {
+  return yaml.dump(doc, { lineWidth: 100, noRefs: true });
+}
 
 function loadCanonicalRouters(): Set<string> {
   const path = join(root, "evals", "router-skills.json");
@@ -27,32 +92,8 @@ function loadCanonicalRouters(): Set<string> {
     throw new Error(`Missing ${path} (canonical router list for paraphrase eval generation)`);
   }
   const raw = JSON.parse(readFileSync(path, "utf8")) as { routers?: unknown };
-  if (!Array.isArray(raw.routers)) {
-    throw new Error(`${path}: expected { routers: string[] }`);
-  }
+  if (!Array.isArray(raw.routers)) throw new Error(`${path}: expected { routers: string[] }`);
   return new Set(raw.routers.map((r) => String(r)));
-}
-
-function countEvalCaseFiles(evalsDir: string): number {
-  if (!existsSync(evalsDir)) return 0;
-  return readdirSync(evalsDir).filter(
-    (f) =>
-      (f.endsWith(".yaml") || f.endsWith(".yml")) &&
-      f !== "eval-config.yaml" &&
-      f !== "eval-config.yml",
-  ).length;
-}
-
-function parseFrontmatter(md: string): Record<string, unknown> {
-  if (!md.startsWith("---\n")) return {};
-  const end = md.indexOf("\n---\n", 4);
-  if (end === -1) return {};
-  try {
-    const block = md.slice(4, end);
-    return (yaml.load(block) as Record<string, unknown>) ?? {};
-  } catch {
-    return {};
-  }
 }
 
 function str(v: unknown, max = 400): string {
@@ -61,170 +102,122 @@ function str(v: unknown, max = 400): string {
   return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
 }
 
-function main() {
+function parseFrontmatter(md: string): Record<string, unknown> {
+  if (!md.startsWith("---\n")) return {};
+  const end = md.indexOf("\n---\n", 4);
+  if (end === -1) return {};
+  try {
+    return (yaml.load(md.slice(4, end)) as Record<string, unknown>) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+interface Tally {
+  created: number;
+  upgraded: number;
+  keptHandAuthored: number;
+  unchanged: number;
+  fallbacks: Map<string, string[]>;
+}
+
+function main(): void {
   const canonicalRouters = loadCanonicalRouters();
-  const dry = process.argv.includes("--dry-run");
-  let created = 0;
-  let skipped = 0;
-  let createdRubric = 0;
-  let skippedRubric = 0;
+  const t: Tally = {
+    created: 0,
+    upgraded: 0,
+    keptHandAuthored: 0,
+    unchanged: 0,
+    fallbacks: new Map(),
+  };
 
   for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
     const skillPath = join(skillsRoot, ...rel.split("/"));
     const evalsDir = join(skillPath, "evals");
-    const skillMd = join(skillPath, "SKILL.md");
-    const md = readFileSync(skillMd, "utf8");
-    const fm = parseFrontmatter(md);
-    const skillId = str(fm.name) || `jstack-${rel.replace(/\//g, "-")}`;
-    const description = str(fm.description, 350);
-    const category = str(fm.category);
+    const facts = extractSkillFacts(join(skillPath, "SKILL.md"), rel);
 
-    const existing = discoverEvalCases(skillPath, 120);
-    if (existing.length >= 2) {
-      skipped++;
-      continue;
-    }
+    const planned: Array<[string, EvalDoc]> = [
+      [SMOKE_NAME, smokeDoc(facts)],
+      [NEG_NAME, boundaryDoc(facts)],
+      [RUBRIC_NAME, rubricDoc(facts)],
+    ];
 
-    const hasSmoke = existsSync(join(evalsDir, SMOKE_NAME));
-    const hasNeg = existsSync(join(evalsDir, NEG_NAME));
-    mkdirSync(evalsDir, { recursive: true });
+    // Gap-fill mode preserves the old behavior: leave a skill alone once it has enough cases.
+    const enough = discoverEvalCases(skillPath, 120).length >= 3;
 
-    const smokeDoc = {
-      name: "Skill smoke — outline without live integrations",
-      prompt: [
-        `You are applying the jstack skill **${skillId}** (path: \`${rel}\`).`,
-        category ? `Category: ${category}.` : "",
-        description ? `Skill description: ${description}` : "",
-        "",
-        "User request: Outline what you would produce for a **hypothetical** internal request. Include section headings or a short numbered plan and **one example bullet** per section. Do **not** claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from config or the user if required.",
-        "",
-        "Keep the response under ~400 words.",
-      ]
-        .filter(Boolean)
-        .join("\n"),
-      criteria: [
-        "Provides more than one section, step, or labeled part (not a single-sentence stub)",
-        "Explicitly avoids presenting fictional ticket IDs, channel IDs, customer names, or real URLs as verified facts",
-        "Mentions configuration, user approval, pasted context, or tool limits where the skill would need them, OR states assumptions clearly",
-      ],
-      expect_skill: true,
-      timeout: 120,
-    };
+    for (const [filename, doc] of planned) {
+      const out = join(evalsDir, filename);
+      const exists = existsSync(out);
 
-    const negDoc = {
-      name: "Negative — minimal reply (no full skill run)",
-      prompt: "Reply with only the single word: pong",
-      criteria: [
-        "Response is very short (roughly one word or a tiny phrase, optionally with light punctuation)",
-        "Does not produce a long multi-section report, checklist, or workflow as the main content",
-      ],
-      expect_skill: false,
-      timeout: 90,
-    };
-
-    if (existing.length === 0) {
-      if (!hasSmoke) {
-        const out = join(evalsDir, SMOKE_NAME);
-        if (!dry) writeFileSync(out, yaml.dump(smokeDoc, { lineWidth: 100, noRefs: true }));
-        console.log(`${dry ? "[dry-run] " : ""}write ${out}`);
-        created++;
+      if (exists && !rewrite) {
+        t.unchanged++;
+        continue;
       }
-      if (!hasNeg) {
-        const out = join(evalsDir, NEG_NAME);
-        if (!dry) writeFileSync(out, yaml.dump(negDoc, { lineWidth: 100, noRefs: true }));
-        console.log(`${dry ? "[dry-run] " : ""}write ${out}`);
-        created++;
+      if (!exists && enough && !rewrite) {
+        t.unchanged++;
+        continue;
       }
-    } else {
-      if (!hasNeg) {
-        const out = join(evalsDir, NEG_NAME);
-        if (!dry) writeFileSync(out, yaml.dump(negDoc, { lineWidth: 100, noRefs: true }));
-        console.log(`${dry ? "[dry-run] " : ""}write ${out}`);
-        created++;
-      } else if (!hasSmoke) {
-        const out = join(evalsDir, SMOKE_NAME);
-        if (!dry) writeFileSync(out, yaml.dump(smokeDoc, { lineWidth: 100, noRefs: true }));
-        console.log(`${dry ? "[dry-run] " : ""}write ${out}`);
-        created++;
+      if (exists && !isGenerated(out, filename)) {
+        t.keptHandAuthored++;
+        continue;
+      }
+
+      const body = dumpDoc(doc);
+      if (exists && readFileSync(out, "utf8") === body) {
+        t.unchanged++;
+        continue;
+      }
+
+      if (!dry) {
+        mkdirSync(evalsDir, { recursive: true });
+        writeFileSync(out, body);
+      }
+      if (exists) t.upgraded++;
+      else t.created++;
+
+      if (doc["generic-fallback"]) {
+        const list = t.fallbacks.get(filename) ?? [];
+        list.push(rel);
+        t.fallbacks.set(filename, list);
       }
     }
   }
 
-  for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
-    const skillPath = join(skillsRoot, ...rel.split("/"));
-    const evalsDir = join(skillPath, "evals");
-    const rubricPath = join(evalsDir, RUBRIC_NAME);
-    if (!existsSync(evalsDir)) {
-      skippedRubric++;
-      continue;
-    }
-    if (countEvalCaseFiles(evalsDir) >= 3 || existsSync(rubricPath)) {
-      skippedRubric++;
-      continue;
-    }
-
-    const skillMd = join(skillPath, "SKILL.md");
-    const md = readFileSync(skillMd, "utf8");
-    const fm = parseFrontmatter(md);
-    const skillId = str(fm.name) || `jstack-${rel.replace(/\//g, "-")}`;
-
-    const rubricDoc = {
-      name: "Graded rubric + programmatic assert",
-      prompt: [
-        `You are applying the jstack skill **${skillId}** (path: \`${rel}\`).`,
-        "",
-        "User: In 2–4 short bullet points, say what this skill is for, who it helps, and one limitation or thing it does *not* do. Under ~200 words. Do not claim to have run external tools or APIs.",
-      ].join("\n"),
-      grading: {
-        rubric: [
-          {
-            description: "Identifies a purpose, audience, or primary use of the skill",
-            pass_if: "response states what the skill is for, when to use it, or which role it helps",
-          },
-          {
-            description: "Names a boundary, limitation, prerequisite, or non-goal",
-            pass_if: "response mentions a constraint, what is out of scope, or what the user must provide",
-          },
-        ],
-        pass_threshold: 1,
-      },
-      assert: {
-        response_not_contains: ["<script"],
-        response_min_length: 15,
-      },
-      expect_skill: true,
-      timeout: 120,
-    };
-
-    if (!dry) {
-      mkdirSync(evalsDir, { recursive: true });
-      writeFileSync(rubricPath, yaml.dump(rubricDoc, { lineWidth: 100, noRefs: true }));
-    }
-    console.log(`${dry ? "[dry-run] " : ""}write ${rubricPath}`);
-    createdRubric++;
-  }
-
-  console.log(
-    `\nDone. Smoke/negative: ${created} file(s) ${dry ? "would be " : ""}created, ${skipped} skill(s) already had 2+ cases.`,
-  );
-  console.log(
-    `Rubric+assert: ${createdRubric} file(s) ${dry ? "would be " : ""}created, ${skippedRubric} skill(s) skipped (already 3+ cases or ${RUBRIC_NAME} present).`,
-  );
-
-  let createdParaphrase = 0;
+  // ── Paraphrase routing, canonical orchestrators only ────────────────────────
+  let paraphrase = 0;
   for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
     if (!canonicalRouters.has(rel)) continue;
     const skillPath = join(skillsRoot, ...rel.split("/"));
     const evalsDir = join(skillPath, "evals");
     const paraphrasePath = join(evalsDir, PARAPHRASE_NAME);
-    if (!existsSync(evalsDir) || existsSync(paraphrasePath)) continue;
+    if (!existsSync(evalsDir)) continue;
+    if (existsSync(paraphrasePath) && !isGenerated(paraphrasePath, PARAPHRASE_NAME)) {
+      t.keptHandAuthored++;
+      continue;
+    }
+    if (existsSync(paraphrasePath) && !rewrite) continue;
 
-    const skillMd = join(skillPath, "SKILL.md");
-    const md = readFileSync(skillMd, "utf8");
+    const md = readFileSync(join(skillPath, "SKILL.md"), "utf8");
     const fm = parseFrontmatter(md);
     const skillId = str(fm.name) || `jstack-${rel.replace(/\//g, "-")}`;
-    const whenRaw = fm.when_to_use;
-    const whenToUse = typeof whenRaw === "string" ? str(whenRaw, 400) : "";
+    const whenToUse = typeof fm.when_to_use === "string" ? str(fm.when_to_use, 400) : "";
+    const facts = extractSkillFacts(join(skillPath, "SKILL.md"), rel);
+
+    // Real child routes, so the criterion can name what this orchestrator actually owns.
+    const children = readdirSync(skillPath, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && existsSync(join(skillPath, d.name, "SKILL.md")))
+      .map((d) => d.name);
+
+    const criteria = [
+      "Names a concrete child route, child skill folder, or one focused clarifying question",
+      "Does not present fictional ticket keys, channel IDs, or verified API results",
+    ];
+    if (children.length > 0) {
+      criteria.push(`Any named route is one this orchestrator actually owns: ${children.join(", ")}`);
+    }
+    if (facts.outOfScope) {
+      criteria.push("Does not absorb work the skill declares out of scope; routes or declines it");
+    }
 
     const paraphraseDoc: Record<string, unknown> = {
       name: "Orchestrator routing — paraphrased user request",
@@ -238,24 +231,36 @@ function main() {
       ]
         .filter(Boolean)
         .join("\n"),
-      criteria: [
-        "Names a concrete child route, child skill folder, or one focused clarifying question",
-        "Does not present fictional ticket keys, channel IDs, or verified API results",
-      ],
+      criteria,
       expect_skill: true,
       timeout: 120,
+      "generated-by": MARKER_VALUE,
     };
 
-    if (!dry) {
-      writeFileSync(paraphrasePath, yaml.dump(paraphraseDoc, { lineWidth: 100, noRefs: true }));
-    }
-    console.log(`${dry ? "[dry-run] " : ""}write ${paraphrasePath}`);
-    createdParaphrase++;
+    const body = dumpDoc(paraphraseDoc);
+    if (existsSync(paraphrasePath) && readFileSync(paraphrasePath, "utf8") === body) continue;
+    if (!dry) writeFileSync(paraphrasePath, body);
+    paraphrase++;
   }
 
-  console.log(
-    `\nParaphrase routing: ${createdParaphrase} file(s) ${dry ? "would be " : ""}created.`,
-  );
+  // ── Report ──────────────────────────────────────────────────────────────────
+  const p = dry ? "[dry-run] would " : "";
+  console.log(`${p}create ${t.created}, ${p}upgrade ${t.upgraded} scaffold file(s).`);
+  console.log(`kept hand-authored: ${t.keptHandAuthored}   already current: ${t.unchanged}`);
+  console.log(`paraphrase routing: ${p}write ${paraphrase}`);
+
+  // Never let a weaker generic form pass silently. A skill with no out-of-scope clause falls back to
+  // the old trivia case, and that is a real coverage gap worth naming rather than burying in a count.
+  if (t.fallbacks.size > 0) {
+    console.log("\nGeneric fallbacks used (per-skill fact missing from SKILL.md):");
+    for (const [filename, skills] of [...t.fallbacks].sort()) {
+      console.log(`  ${filename}: ${skills.length} skill(s)`);
+      if (filename === NEG_NAME) {
+        console.log("    No `- **Out of scope:**` clause, so no per-skill boundary test could be");
+        console.log("    derived. Adding one upgrades these to real refusal tests.");
+      }
+    }
+  }
 }
 
 main();

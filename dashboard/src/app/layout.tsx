@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   title: "jstack dashboard",
   description: "Team operations dashboard",
   icons: {
-    icon: "/logo-placeholder.png",
-    apple: "/logo-placeholder.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 

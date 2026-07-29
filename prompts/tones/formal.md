@@ -1,57 +1,55 @@
 # Tone: Formal
 
-> **Owner:** PM, legal liaison, or comms lead. Edit this file for external-facing documents, compliance artifacts, and customer communications.
+Use for external-facing documents, compliance artifacts, incident communications, and customer
+comms.
+
+This file is injected verbatim into prompts. It asserts **no facts about your product or org** —
+never invent a product name, customer name, timestamp, percentage, or region. In formal output an
+invented detail is not a style error, it is a false public statement.
 
 ## Audience
 
-<!-- [CUSTOMIZE] Who sees formal output from your team? -->
-External stakeholders, customers, compliance auditors, partners, board documentation.
+External stakeholders, customers, auditors, partners, board documentation. They have no internal
+context and will read the text literally and durably.
 
-## Voice
+## Shape
 
-<!-- [CUSTOMIZE] Paste a paragraph from a real external doc your org approved. -->
 ```
-Example: "Acme Platform experienced elevated error rates between 14:02 and 
-14:47 UTC on March 12, affecting approximately 3% of API requests in the 
-US-East region. The root cause was identified as a configuration change in 
-the load balancer. Service was fully restored at 14:47 UTC with no data loss."
+<Subject> experienced <observable condition> between <start> and <end> <timezone>,
+affecting <scope, quantified>.
+The cause was <cause — only if determined; otherwise state "under investigation">.
+<Resolution and current status, with time.>
+<Data impact, stated explicitly — including "no data loss" when that is confirmed.>
 ```
+
+Every placeholder must be filled from verified fact. If a value is unknown, say it is under
+investigation rather than estimating.
 
 ## Structure
 
-1. **Complete sentences** — no bullet shorthand in body text. Bullets are for lists of items, not narrative.
-2. **Third person** — "The team completed..." not "We shipped..."
-3. **Precise language** — state facts. If uncertain, say "under investigation" not "probably fine."
-4. **Product name consistency:**
-   <!-- [CUSTOMIZE] Your product names as they appear externally -->
-   | Internal name | External name |
-   |--------------|---------------|
-   | the platform | Acme Platform |
-   | auth service | Sign-in |
-   | admin panel | Management Console |
-5. **Legal/compliance language:**
-   <!-- [CUSTOMIZE] Any required disclaimers or phrasing your legal team mandates -->
-   - Data handling references must use approved privacy language
-   - Pricing/terms changes require legal sign-off before publish
+1. **Complete sentences.** Bullets list items; they don't carry narrative.
+2. **Third person.** "The team completed the migration," not "we shipped it."
+3. **Precision over reassurance.** State what is known. "Under investigation" is acceptable;
+   "probably fine" is not.
+4. **External names only.** Refer to products and features by their public names. If you have not
+   been given the public name for something internal, do not guess — flag that it needs
+   confirmation. Maintain that internal→external mapping in this file for your own product.
+5. **Timestamps carry a timezone.** Always. Prefer UTC unless told otherwise.
+6. **Compliance and legal phrasing is not improvised.** Data-handling, privacy, pricing, and
+   contractual language must use approved wording and clear the required review before publication.
 
-## What to avoid
+## Avoid
 
-<!-- [CUSTOMIZE] Phrases your comms team has flagged -->
-- Internal codenames or project names
-- Casual phrasing, contractions, emoji
-- Committing to timelines without engineering sign-off
-- Mentioning competitors by name in incident comms
+- Internal codenames, project names, service names, or ticket ids.
+- Contractions, casual phrasing, emoji.
+- Timelines committed without engineering sign-off.
+- Naming competitors, especially in incident comms.
+- Speculating on cause before it is determined.
+- Minimizing language a reader could later contrast against the facts.
 
-## Config hook
+## Adapting this file
 
-```json
-{
-  "tones": {
-    "formal": {
-      "product_name": "Acme Platform",
-      "legal_review_required": true,
-      "name_map": { "auth service": "Sign-in" }
-    }
-  }
-}
-```
+Edit this file directly to add your public product vocabulary and the phrasing your legal or comms
+team requires. There is no config-based override for tones; `jstack.config.json` does not drive
+this file. Keep genuinely sensitive material out of a repo that ships publicly — use a private
+overlay.

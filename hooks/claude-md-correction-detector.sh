@@ -5,15 +5,42 @@
 set -euo pipefail
 
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
-SESSION_ID="${CLAUDE_SESSION_ID:-}"
+
+# Claude Code delivers the hook payload (including session_id) on STDIN as JSON.
+# This script previously read $CLAUDE_SESSION_ID, which Claude Code does not export
+# (the env var is CLAUDE_CODE_SESSION_ID), so the -z guard below always fired and this
+# hook never once evaluated corrections. Read stdin first, then fall back to the env.
+HOOK_STDIN=""
+if [ ! -t 0 ]; then
+  HOOK_STDIN=$(cat 2>/dev/null || true)
+fi
+
+SESSION_ID=""
+if [ -n "$HOOK_STDIN" ] && command -v node >/dev/null 2>&1; then
+  SESSION_ID=$(printf '%s' "$HOOK_STDIN" | node -e "
+    let s='';
+    process.stdin.on('data', d => s += d).on('end', () => {
+      try { process.stdout.write(String(JSON.parse(s).session_id ?? '')); } catch { process.stdout.write(''); }
+    });
+  " 2>/dev/null || true)
+fi
+[ -z "$SESSION_ID" ] && SESSION_ID="${CLAUDE_CODE_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
 
 [ -z "$SESSION_ID" ] && exit 0
 [ ! -f "$PROJECT_ROOT/jstack.config.json" ] && exit 0
+command -v node >/dev/null 2>&1 || exit 0
 
-ENABLED=$(node -e "try { const j=JSON.parse(require('fs').readFileSync('$PROJECT_ROOT/jstack.config.json','utf8')); console.log(j.claude_md_improver?.enabled ?? false); } catch { console.log('false'); }")
+# Single node call for both config values (was two separate subprocess spawns).
+CFG=$(node -e "
+  try {
+    const j = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));
+    const c = j.claude_md_improver ?? {};
+    console.log([c.enabled ?? false, c.high_correction_session_threshold ?? 5].join(' '));
+  } catch { console.log('false 5'); }
+" "$PROJECT_ROOT/jstack.config.json")
+ENABLED="${CFG%% *}"
+THRESHOLD="${CFG##* }"
 [ "$ENABLED" != "true" ] && exit 0
-
-THRESHOLD=$(node -e "try { const j=JSON.parse(require('fs').readFileSync('$PROJECT_ROOT/jstack.config.json','utf8')); console.log(j.claude_md_improver?.high_correction_session_threshold ?? 5); } catch { console.log('5'); }")
 
 ENCODED=$(echo "$PROJECT_ROOT" | sed 's:/:-:g')
 TRANSCRIPT="$HOME/.claude/projects/$ENCODED/${SESSION_ID}.jsonl"

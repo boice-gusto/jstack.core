@@ -1,0 +1,79 @@
+# Hook behavioral cases. Deterministic — hooks are spawned exactly as Claude Code spawns
+# them, with the payload on STDIN as JSON.
+#
+# This surface is why the A2A harness exists. The Stop hook read $CLAUDE_SESSION_ID, an env
+# var Claude Code never exports, so its guard short-circuited on every single invocation and
+# it had never once done its job. Nothing detected that, because "the hook exited 0" was
+# indistinguishable from "the hook worked". These cases assert observable behavior instead.
+
+- id: stop-hook-parses-session-id-from-stdin
+  surface: hooks
+  description: >-
+    The correction detector must read session_id from the stdin JSON payload. Reading an env
+    var instead is the exact bug that kept it dead.
+  subject:
+    kind: hook
+    script: hooks/claude-md-correction-detector.sh
+    stdin: '{"session_id":"a2a-probe-session","hook_event_name":"Stop"}'
+    env:
+      CLAUDE_PROJECT_DIR: /tmp/a2a-nonexistent-project
+  expect:
+    # No config in that dir, so it must exit cleanly and silently rather than erroring.
+    exit_code: 0
+    stdout_not_contains: ["CLAUDE_SESSION_ID", "unbound variable", "command not found"]
+
+- id: stop-hook-exits-clean-on-empty-stdin
+  surface: hooks
+  description: >-
+    A hook must never break a session. With no payload it should exit 0 quietly, not error
+    under `set -euo pipefail`.
+  subject:
+    kind: hook
+    script: hooks/claude-md-correction-detector.sh
+    stdin: ""
+    env:
+      CLAUDE_PROJECT_DIR: /tmp/a2a-nonexistent-project
+  expect:
+    exit_code: 0
+
+- id: stop-hook-survives-malformed-payload
+  surface: hooks
+  description: >-
+    Malformed JSON on stdin must not produce a stack trace or a non-zero exit that would
+    surface as a session error.
+  subject:
+    kind: hook
+    script: hooks/claude-md-correction-detector.sh
+    stdin: '{"session_id": '
+    env:
+      CLAUDE_PROJECT_DIR: /tmp/a2a-nonexistent-project
+  expect:
+    exit_code: 0
+    stdout_not_contains: ["SyntaxError", "Traceback"]
+
+- id: stop-hook-tolerates-hostile-project-path
+  surface: hooks
+  description: >-
+    PROJECT_ROOT is interpolated into a node -e invocation. A path containing shell
+    metacharacters must not execute, or a directory name becomes a code-execution vector.
+  subject:
+    kind: hook
+    script: hooks/claude-md-correction-detector.sh
+    stdin: '{"session_id":"a2a-probe","hook_event_name":"Stop"}'
+    env:
+      CLAUDE_PROJECT_DIR: "/tmp/a2a-$(touch /tmp/a2a-pwned)-`id`-dir"
+  expect:
+    exit_code: 0
+    stdout_not_contains: ["uid=", "gid=", "a2a-pwned"]
+
+- id: hooks-json-declares-valid-events
+  surface: hooks
+  description: >-
+    An invalid or misspelled hook event name is silently ignored by the host, so the hook
+    never runs and nothing reports it.
+  subject:
+    kind: file
+    paths: ["hooks/hooks.json"]
+  expect:
+    stdout_matches: ['"(SessionStart|Stop|SessionEnd|PreToolUse|PostToolUse)"']
+    stdout_not_contains: ["OnStart", "onStop", "SessionBegin"]

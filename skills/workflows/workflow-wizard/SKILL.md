@@ -1,76 +1,85 @@
 ---
 name: jstack-workflow-wizard
 description: Multi-step choices to define a browser workflow; emits jstack workflow CLI commands.
-category: workflows
-gbrain_destination: inherit
-data_class: internal
 when_to_use: User wants to create or adjust a stored workflow and needs copy-pastable jstack workflow CLI steps.
+category: workflows
+data_class: internal
+effort: medium
+gbrain_destination: inherit
 ---
 
 <!-- Chain Contract -->
-<!-- inputs: user_request, ask_user_questions optional -->
-<!-- outputs: cli_commands, structured_result -->
-<!-- chains-to: jstack workflow create/edit, workflows/execute -->
+<!-- inputs: user_request, jstack_config -->
+<!-- outputs: structured_result -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
+Ask the few questions needed to produce a valid workflow definition, then emit the exact CLI command that creates it.
+- **Out of scope:** Executing the workflow, and guessing an answer the user did not give — leave a field unset rather than inventing a plausible value.
 
-Guide the user through **id**, **start URL**, and optional **name** using discrete choices (when the host supports AskUserQuestion or equivalent). Finish with copy-pastable **`jstack workflow`** shell commands. **No** live Playwright in this skill: recording and execution depend on the **workflow** CLI and engine (`cli/src/lib/workflow-engine.ts`); **`run` without `--yes`** previews, **`--yes` runs the stub** until a real driver is wired.
-
-## Out of scope
-
-- Generating `config/workflows/<id>.json` bytes inside chat without user approval — use CLI `create` / `edit` or file templates.
-- Running against production with `--yes` without an explicit user confirmation step in the transcript.
-
-## Domain rules — wizard
-
-- **Slug id:** `id` is filesystem-safe, no spaces (matches `config/workflows/<id>.json`).
-- **HTTPS start_url:** Reject non-`https` for external starts unless the user documents a local dev exception as `[assumption]`.
-- **Links:** **## Links** only when a real file path, PR, or share URL exists (`response-artifacts.md`).
+## Domain rules — browser workflows
+- Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
+- Secrets: `fill` values that are secrets name an env var; never write a credential into the JSON definition or print one in chat.
+- Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Config and references
-
-- `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/response-artifacts.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md` (if using discrete choices)
-- `${CLAUDE_PLUGIN_ROOT}/skills/workflows/runner/SKILL.md` — runbook and safety
-- `${CLAUDE_PLUGIN_ROOT}/skills/workflows/execute/SKILL.md` — `run` / stub behavior
-- Team roster, 1:1 Notion wiring, and **`team.canonical_group.mode`** (Slack user group vs Google Group vs manual): `${CLAUDE_PLUGIN_ROOT}/skills/team/references/team-canonical-identity.md` and `${CLAUDE_PLUGIN_ROOT}/skills/notion/setup/SKILL.md` — use when the user is combining **org setup** with workflows.
-- CLI source of truth: `jstack.core/cli/src/commands/workflow.ts` (list, show, run, create, edit, export, import)
+- `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
+- Questions (open-ended, one at a time): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
+- Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
+- Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
+- Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
 
 ## Intake
+1. Parse `$ARGUMENTS` — note whether the user **pasted** data or is asking you to **query** a system.
+2. If a required id is missing, ask **one** focused question; otherwise use config defaults (label assumptions as `[assumption]`).
+3. If the request bundles multiple unrelated goals, handle the first and offer to continue.
 
-1. If **id** or **url** is already in `$ARGUMENTS`, skip redundant questions.
-2. If the user needs **deletion** or import, use `jstack workflow --help` patterns (import/export) instead of this wizard.
+This surface routes; it does not build. Classify the request first — skill chain, routine, policy/approval gate, or browser definition — using the table in:
+
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/workflow-design-interview.md
+
+Name one destination sub-skill and why. If the request is one skill and one action, say that and point at the skill rather than manufacturing a workflow around it.
 
 ## Procedure
+### Step 1 — Load config
+Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
-1. Ask: workflow **id** (slug, no spaces).
-2. Ask: **start_url** (https).
-3. Optional: friendly **name**.
-4. Emit commands for the user to run in their shell:
-   - `jstack workflow create <id> --url <start_url>`
-   - If editing: `jstack workflow edit <id> --url … --name …`
-5. For export/share: `jstack workflow export <id> --out /tmp/<id>.json` (path user-adjustable)
-6. End with **## Links** only when a path or URL exists; otherwise “no links — local file only” is fine.
-7. **suggested_next:** **`jstack-workflow-execute`** for preview run (`run` without `--yes` first)
+### Step 2 — Plan the safe path
+Routing only. Name one sub-skill, say why, and hand off. Never execute, record, or write a definition as a side effect of deciding where the request belongs.
+
+### Step 3 — Execute
+Route only: name the one sub-skill that owns this request (builder, recorder, runner, execute, viewer) and say why. Emit `suggested_next: <skill>` and stop — do not author or run anything here.
+
+### Step 4 — Validate
+Confirm exactly one sub-skill was named with a reason, and that nothing was executed or written here.
+
+### Step 5 — Summarize and hand off
+State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
 
 ## Output shape
-
-- **Emitted commands** — Fenced `bash` block, ready to copy.
-- **Checklist** — create → (optional) edit → show → run without `--yes` → run with `--yes` when user accepts stub/real behavior.
+Use a domain-appropriate heading, then:
+- **Summary** (2–4 sentences)
+- **Details** (bullets, table, or structured fields)
+- **Next steps** with owner + timeline if known
+- **Limitations** (partial data, no write access, etc.)
+- For eval-gated skills, end with `result_ok: true` or `result_ok: false` + reason
 
 ## Failure modes
 
 | Symptom | Recovery |
 |---------|----------|
-| Host can’t ask questions | Output all commands with `<id>` and `<start_url>` placeholders. |
-| User wants recording | Point to product recorder path if present in their build; do not claim Playwright is bundled unless `doctor` / docs say so. |
+| Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
+| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
+| Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
+| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
+| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
+| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
-
-- After commands are run, `suggested_next: jstack-workflow-execute` with workflow id in the handoff line.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

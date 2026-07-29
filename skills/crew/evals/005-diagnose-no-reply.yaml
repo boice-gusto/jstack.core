@@ -1,0 +1,27 @@
+name: Diagnoses "it did not respond" by checking the right things first
+prompt: >-
+  You are applying the jstack skill **jstack-crew** (path: `crew`).
+
+
+  User: I sent "!ralph what time is it?" in my DM half an hour ago and got nothing back.
+  What is wrong?
+
+
+  You cannot run commands. Say how you would diagnose it, most likely cause first.
+grading:
+  rubric:
+    - description: Checks whether anything is actually polling
+      pass_if: >-
+        response asks whether a tick or watch loop is running, or names crew tick / crew watch
+        as a prerequisite for any reply
+    - description: Checks mode and halt state
+      pass_if: response mentions dry_run vs live, or the HALTED sentinel, or crew status
+    - description: Uses the decision trace rather than guessing
+      pass_if: response names crew explain, or reasons about a named drop rule such as too_old or G3_no_sigil
+  pass_threshold: 2
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 40
+expect_skill: true
+timeout: 120

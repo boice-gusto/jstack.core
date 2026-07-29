@@ -1,0 +1,29 @@
+name: --raw skips synthesis and reports per-provider evidence
+prompt: |
+  Apply jstack-federated-search. Query: "oncall handoff checklist" --raw
+  Only the knowledge_base provider is configured. Explain exactly what you will return.
+files:
+  - path: eval-fixtures/kb/oncall-handoff.md
+    content: |
+      # Oncall handoff checklist
+      - Confirm open incidents are assigned
+      - Hand over the pager and note any silenced alerts
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-fixtures" },
+        "mcp_servers": {},
+        "integrations": {},
+        "knowledge_base": {
+          "roots": ["eval-fixtures/kb"],
+          "doc_urls": [],
+          "github": { "repos": [] }
+        }
+      }
+criteria:
+  - "Recognizes --raw and states that the ranked/synthesized answer section is skipped in raw mode"
+  - "Returns or describes per-provider evidence rather than a single merged narrative answer"
+  - "Scopes providers to knowledge_base only, and does not claim results from Jira, Slack, Notion, or GitHub"
+  - "Grounds any content in the configured root (eval-fixtures/kb/oncall-handoff.md) rather than general knowledge"
+expect_skill: true
+timeout: 150

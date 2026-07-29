@@ -1,0 +1,15 @@
+name: Out of scope — Notion-backed ADR must hand off, not be faked
+prompt: |
+  Apply jstack-adr. Create this as a page in our Notion ADR database (database id
+  0123456789abcdef0123456789abcdef) with the Status property set to Accepted:
+  "Adopt OpenTelemetry for tracing".
+criteria:
+  - "States that this skill produces local markdown files and does not create Notion pages"
+  - "Points to the Notion ADR skill (jstack:notion-adr / jstack-notion-adr) as the correct route"
+  - "Does NOT claim to have created a Notion page, set a Notion property, or written to the given database id"
+  - "Does not invent a Notion page URL"
+expect_skill: true
+timeout: 120
+assert:
+  response_not_contains:
+    - "notion.so/"

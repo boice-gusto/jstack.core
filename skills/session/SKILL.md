@@ -3,6 +3,7 @@ name: jstack-session
 description: Route to session init or end.
 when_to_use: Also when starting or ending a jstack session, choosing personal vs team gbrain target, or wrapping up with a session summary.
 category: session
+effort: low
 ---
 
 <!-- Chain Contract -->
@@ -13,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route to session init or end.
+Route a session-lifecycle request to `init` or `end`. Session state (gbrain target, session id) lives in `jstack.config.json` under `session` — read it rather than assuming.
+- **Out of scope:** Doing the work of the session itself, and changing the gbrain target silently mid-session.
 
 ## Domain rules — session lifecycle
 - `init` sets gbrain target, issues or reads `session.current_session_id`, loads context; `end` flushes to GBrain with **provenance** per `gbrain.provenance` and `gbrain-entry-provenance.md`.
@@ -42,13 +44,13 @@ If the user is vague, ask **one** question to disambiguate, then route to the ch
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Make init and end idempotent — re-running either must not duplicate state or double-write carryover. Read the existing session id before assigning one.
 
 ### Step 3 — Execute
 Route to the most specific child skill under `skills/session/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Confirm re-running would produce the same state — no duplicated session, no double-written carryover.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

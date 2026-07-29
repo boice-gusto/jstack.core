@@ -1,7 +1,8 @@
 ---
 name: jstack-workflow-builder
-description: Design or update multi-step team workflows (chains, routines, policies, approvals) from sprint, comms, SDLC, and incident patterns. Produces chain markdown and config-ready snippets — use after install to customize the plugin without editing skills by hand. Not for one-off Jira tickets.
+description: "Design or update multi-step team workflows (chains, routines, policies, approvals) from sprint, comms, SDLC, and incident patterns. Produces chain markdown and config-ready snippets — use after install to customize the plugin without editing skills by hand. Not for one-off Jira tickets. Not for browser/Playwright flows — that is `jstack-workflows-builder` (note the plural), which authors a clickable UI script; this skill authors skill-chain, routine, and policy definitions."
 category: workflow-builder
+effort: high
 ---
 
 <!-- Chain Contract -->
@@ -25,9 +26,33 @@ Read the setup preamble first:
 - If required keys are empty, follow `skills/_core/references/config-wizard.md` (templates for sprint, SDLC, incidents live under `templates/config/`).
 - Approval-bound actions must resolve `approval_chains` per `skills/_core/references/approval-chains.md`.
 
+### Thresholds — when a request needs a chain vs a single skill
+
+| Signal | Gate |
+|---|---|
+| Request names one skill and one action | No chain — point directly to that `jstack:*` skill |
+| Request spans ≥2 skills with a fixed order and a handoff between them | Draft a chain in `prompts/chains/<name>.md` |
+| Request recurs on a schedule (daily standup, weekly report) | Chain **and** a `routines.<name>` entry with `cron` |
+| Any step posts or writes without the user in the loop | Blocked until an `approval_chains` entry covers it |
+
+### Named anti-patterns
+
+| Anti-pattern | Why it's wrong | What to do instead |
+|---|---|---|
+| Inventing a `jstack:*` skill id not in the catalog | Produces a chain that fails at execution time | Verify every step against `name:` fields in `skills/**/SKILL.md` before drafting (Step 5 already requires this — treat it as load-bearing) |
+| Designing an approval chain without checking existing `policies` | Creates two conflicting authorities for the same action | Read current `policies` and `approval_chains` first; call out conflicts explicitly |
+| Having a chain step call Slack/email directly instead of delegating to the target skill | Bypasses that skill's own safety rails (confirmation, redaction, `disable-model-invocation`) | Chain steps name the skill to invoke; execution logic stays inside that skill |
+| Proposing a full config file replacement when a merge snippet would do | Overwrites unrelated config the user already set | Emit a JSON merge snippet unless the user explicitly asked to seed from a `templates/config/<profile>.json` |
+
+### Worked example
+
+- *Weak chain:* "Step 1: do sprint planning. Step 2: tell the team."
+- *Sharp chain:* "**Flow:** weekly sprint kickoff. **Steps:** 1. `jstack:sprint-planning` (produces backlog + capacity). 2. `jstack:jira-intake` for each committed item (owner, story points from step 1). 3. `jstack:notion-sprint` to publish the sprint page. **Handoff rules:** user confirms the committed list between steps 1 and 2; no fabricated velocity numbers — pull from `sprint.velocity_history` or ask. **Config hook:** `{\"routines\": {\"sprint_kickoff\": {\"cron\": \"0 9 * * 1\", \"chain\": [\"sprint-planning\", \"jira-intake\", \"notion-sprint\"]}}}`"
+
 ## Config and references
 
 - Domain map: `skills/workflow-builder/references/domain-map.md`
+- **Design interview (read at intake): `skills/_core/references/workflow-design-interview.md`**
 - Questions: `skills/_core/references/question-patterns.md`; discrete choices: `skills/_core/references/ask-user-question-patterns.md`
 - Chaining conventions: `skills/_core/references/chaining-guide.md`
 - Config wizard: `skills/_core/references/config-wizard.md`
@@ -35,9 +60,24 @@ Read the setup preamble first:
 
 ## Intake
 
-1. Parse `$ARGUMENTS` — new workflow name, or edit existing chain/routine.
-2. Ask **one** clarifying question if missing: (a) primary domain: sprint / comms / sdlc / incident / mixed, or (b) existing chain file to extend.
-3. If user wants a **template bundle**, offer `startup` | `scaleup` | `enterprise` from `templates/config/*.json` as a starting point, then customize.
+Run the interview — do not skip to drafting:
+
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/workflow-design-interview.md
+
+It sets the order that matters here: recon first (config, existing chains, the catalog, and the
+conversation above), then **classify the artifact** — chain vs. chain+routine vs. policy vs. browser
+definition vs. "this is one skill, point at it" — then only the questions that kind actually needs,
+then one batched understanding lock before any draft exists.
+
+Specific to this skill:
+
+1. Parse `$ARGUMENTS` — new workflow name, or an existing chain/routine to extend.
+2. The three questions you may not skip, because config cannot answer them: **trigger**, **what
+   observable state means done**, and **explicit non-goals**. If the flow writes anything or recurs,
+   add re-run safety, partial-failure behavior, and the approval boundary.
+3. If the user wants a **template bundle**, offer `startup` | `scaleup` | `enterprise` from
+   `templates/config/*.json` as a starting point, then customize — a bundle is a starting shape, not
+   the answer to the interview.
 
 ## Procedure
 
@@ -67,6 +107,11 @@ Read the setup preamble first:
 ## Output shape
 
 - **Chain (markdown)** — Full `[DRAFT]` block for `prompts/chains/…` or file write instructions.
+- **Decision log** — `| Decision | Alternatives considered | Why this one |`, written **into** the
+  chain file, not just the chat. A chain whose shape nobody can explain in six months gets rewritten
+  instead of maintained.
+- **Failure and re-run behavior** — one line each: what happens when a step fails partway, and what
+  happens if the whole chain runs twice.
 - **Config snippet** — Valid JSON fragment for `jstack.config.json` merge.
 - **Checklist** — Config keys to fill; integrations required.
 - `result_ok: true` | `result_ok: false` + reason

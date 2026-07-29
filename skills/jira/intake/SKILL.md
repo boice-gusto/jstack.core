@@ -2,8 +2,9 @@
 name: jstack-jira-intake
 description: Convert raw text or a jstack:intake payload into Jira-ready fields (summary, description, AC, labels).
 category: jira
-arguments: [ticket_url]
-argument-hint: [URL or PROJ-123]
+argument-hint: "[URL or PROJ-123]"
+arguments: "[ticket_url]"
+effort: medium
 ---
 
 <!-- Chain Contract -->
@@ -41,7 +42,7 @@ Shape raw text into Jira-ready fields: summary, description with AC, issuetype, 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Prefer read-only first, then idempotent updates, then irreversible changes — each gated by org norms.
+Search before you create — a duplicate ticket is worse than a missing one. Read the issue's current status and its legal transitions before transitioning; do not assume a workflow. Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk change, show the count, the field diff, and a sample of affected keys, then wait for confirmation.
 
 ### Step 3 — Execute
 Convert raw text or `jstack:intake` output to Jira-ready fields: summary, description with AC as checklist markdown, issuetype, priority, labels from policy.
@@ -49,7 +50,7 @@ Convert raw text or `jstack:intake` output to Jira-ready fields: summary, descri
 - Do NOT create the issue. End with `suggested_next: jstack-jira-create` and the payload.
 
 ### Step 4 — Validate
-Correct surface, no stray side effects, tone matches `prompts/tones/` if publishing text.
+Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -74,7 +75,7 @@ Use a domain-appropriate heading, then:
 | Required field missing for transition | Collect the field before retrying the transition. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-jira-intake` then `jstack-jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 
