@@ -71,7 +71,10 @@ export function runCli(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
     return { text: "", exitCode: null, stdout: "", stderr: "", error: "cli subject has no command" };
   }
   const argv = spec.command;
-  const r = spawnSync("bun", ["run", "cli/src/index.ts", ...argv], {
+  // The entrypoint must be ABSOLUTE. It was relative, which silently broke the documented
+  // `cwd:` option: spawning from a fixture directory left bun looking for cli/src/index.ts
+  // there, so the CLI never ran and the case failed with no output rather than a real verdict.
+  const r = spawnSync("bun", ["run", join(pluginRoot, "cli/src/index.ts"), ...argv], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
     encoding: "utf8",
     maxBuffer: 8 * 1024 * 1024,

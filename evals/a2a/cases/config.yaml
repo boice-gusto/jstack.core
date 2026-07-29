@@ -27,6 +27,7 @@
   subject:
     kind: cli
     command: ["config"]
+    cwd: evals/a2a/fixtures/project
   expect:
     exit_code: 0
     stdout_contains: ['"version"', '"onboarding"', '"integrations"']
