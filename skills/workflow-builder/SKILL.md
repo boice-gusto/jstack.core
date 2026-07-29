@@ -1,6 +1,6 @@
 ---
 name: jstack-workflow-builder
-description: Design or update multi-step team workflows (chains, routines, policies, approvals) from sprint, comms, SDLC, and incident patterns. Produces chain markdown and config-ready snippets — use after install to customize the plugin without editing skills by hand. Not for one-off Jira tickets.
+description: "Design or update multi-step team workflows (chains, routines, policies, approvals) from sprint, comms, SDLC, and incident patterns. Produces chain markdown and config-ready snippets — use after install to customize the plugin without editing skills by hand. Not for one-off Jira tickets. Not for browser/Playwright flows — that is `jstack-workflows-builder` (note the plural), which authors a clickable UI script; this skill authors skill-chain, routine, and policy definitions."
 category: workflow-builder
 effort: high
 ---
@@ -52,6 +52,7 @@ Read the setup preamble first:
 ## Config and references
 
 - Domain map: `skills/workflow-builder/references/domain-map.md`
+- **Design interview (read at intake): `skills/_core/references/workflow-design-interview.md`**
 - Questions: `skills/_core/references/question-patterns.md`; discrete choices: `skills/_core/references/ask-user-question-patterns.md`
 - Chaining conventions: `skills/_core/references/chaining-guide.md`
 - Config wizard: `skills/_core/references/config-wizard.md`
@@ -59,9 +60,24 @@ Read the setup preamble first:
 
 ## Intake
 
-1. Parse `$ARGUMENTS` — new workflow name, or edit existing chain/routine.
-2. Ask **one** clarifying question if missing: (a) primary domain: sprint / comms / sdlc / incident / mixed, or (b) existing chain file to extend.
-3. If user wants a **template bundle**, offer `startup` | `scaleup` | `enterprise` from `templates/config/*.json` as a starting point, then customize.
+Run the interview — do not skip to drafting:
+
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/workflow-design-interview.md
+
+It sets the order that matters here: recon first (config, existing chains, the catalog, and the
+conversation above), then **classify the artifact** — chain vs. chain+routine vs. policy vs. browser
+definition vs. "this is one skill, point at it" — then only the questions that kind actually needs,
+then one batched understanding lock before any draft exists.
+
+Specific to this skill:
+
+1. Parse `$ARGUMENTS` — new workflow name, or an existing chain/routine to extend.
+2. The three questions you may not skip, because config cannot answer them: **trigger**, **what
+   observable state means done**, and **explicit non-goals**. If the flow writes anything or recurs,
+   add re-run safety, partial-failure behavior, and the approval boundary.
+3. If the user wants a **template bundle**, offer `startup` | `scaleup` | `enterprise` from
+   `templates/config/*.json` as a starting point, then customize — a bundle is a starting shape, not
+   the answer to the interview.
 
 ## Procedure
 
@@ -91,6 +107,11 @@ Read the setup preamble first:
 ## Output shape
 
 - **Chain (markdown)** — Full `[DRAFT]` block for `prompts/chains/…` or file write instructions.
+- **Decision log** — `| Decision | Alternatives considered | Why this one |`, written **into** the
+  chain file, not just the chat. A chain whose shape nobody can explain in six months gets rewritten
+  instead of maintained.
+- **Failure and re-run behavior** — one line each: what happens when a step fails partway, and what
+  happens if the whole chain runs twice.
 - **Config snippet** — Valid JSON fragment for `jstack.config.json` merge.
 - **Checklist** — Config keys to fill; integrations required.
 - `result_ok: true` | `result_ok: false` + reason

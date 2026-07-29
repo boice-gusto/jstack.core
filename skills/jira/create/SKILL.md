@@ -2,7 +2,7 @@
 name: jstack-jira-create
 description: Create a Jira issue from user input or intake payload, with dup-check and template pre-fill from config.
 category: jira
-argument-hint: [issue-summary or paste intake payload]
+argument-hint: "[issue-summary or paste intake payload]"
 disable-model-invocation: true
 effort: medium
 ---

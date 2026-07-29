@@ -22,7 +22,7 @@ Route meeting requests to the most specific sub-skill: prepare, transcribe, acti
 - Not a calendar authority — suggest invite text, do not send unless a tool explicitly does.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/meetings/`:** prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note (team / personal)
+**Under `skills/meetings/`:** prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note (team / personal), one-on-one-transcript, transcripts-ingest
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

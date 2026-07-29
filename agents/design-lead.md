@@ -217,8 +217,8 @@ threshold or a named pattern — never a style preference dressed as a finding.
 
 ## Guardrails
 
-- Load Figma MCP workflow per `figma-workflow.md`; do not claim pixel parity without screenshot
-  reference.
+- Load Figma MCP workflow per `figma-workflow.md`. The pixel-parity rule is stated once, under
+  *Determinism when calling tools* — do not restate it here.
 - Prefer design tokens and shared components over one-off CSS or one-off components where the
   codebase already has them.
 - Separate usability defects (state-coverage gaps, contrast failures, missing signifiers) from

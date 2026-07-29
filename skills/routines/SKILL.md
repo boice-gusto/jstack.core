@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).
+Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, morning-kickoff, custom). Resolve the routine id against `config/defaults.json` `routines` and `config/schedules/<id>.json` before running; if the two disagree, say so.
+- **Out of scope:** Creating or editing a routine definition (`jstack:workflow-builder`), and firing integrations for a routine whose `enabled` is false.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.
@@ -21,7 +22,7 @@ Route to the right routine sub-skill (standup, weekly-digest, sprint-close, heal
 - Output is often a Slack block — keep under channel norms (length, @here rules).
 
 ## Sub-skills (pick the most specific)
-**Under `skills/routines/`:** standup, weekly-digest, sprint-close, health-check, custom
+**Under `skills/routines/`:** standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

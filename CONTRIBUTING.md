@@ -78,4 +78,4 @@ This validates YAML frontmatter and checks every `jstack:*` token against live `
 
 ## Config changes
 
-Org-specific values (sprint length, approvers, channel ids, integration ids) belong in `jstack.config.json`, never hardcoded in skill prose or TS source. If you change `config/schema.json` or `config/defaults.json`, run `bun run validate-config` to confirm they stay in sync.
+Org-specific values (sprint length, approvers, channel ids, integration ids) belong in `jstack.config.json`, never hardcoded in skill prose or TS source. `config/schema.json` is generated — to change the config contract, edit the Zod schema in `cli/src/types/config.ts`, run `bun run schema:generate`, and commit both. Run `bun run validate-config` to confirm `config/defaults.json` still satisfies the contract.

@@ -1,6 +1,6 @@
 ---
 name: jstack-healthcheck
-description: Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.
+description: "Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line."
 category: routines
 disallowed-tools: AskUserQuestion
 effort: low
@@ -14,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.
+Run the periodic health check across configured sources and report only what changed materially since the last run.
+- **Out of scope:** Fixing anything it finds, and paging on a finding — surface it for a human.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.

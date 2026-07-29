@@ -1,6 +1,6 @@
 ---
 name: jstack-retro
-description: Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.
+description: "Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates."
 category: incident
 effort: high
 ---
@@ -11,9 +11,13 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/incident-policy.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/chains/incident-response-chain.md
 
 ## What this skill is for
-Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.
+Run a blameless incident retro: timeline, contributing factors, and action items with owners — describing system and process failure, never individual fault.
+- **Out of scope:** Assigning blame to a person, and closing action items on the participants' behalf.
 
 ## Domain rules — retro
 

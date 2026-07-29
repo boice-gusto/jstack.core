@@ -1,6 +1,6 @@
 ---
 name: jstack-project-report
-description: Generate a stakeholder 1-pager: RAG status, milestones, risk register snapshot.
+description: "Generate a stakeholder 1-pager: RAG status, milestones, risk register snapshot."
 category: reports
 effort: high
 ---
@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate a stakeholder 1-pager: RAG status, milestones, risk register snapshot.
+Assemble a project status report: scope, schedule, risk, and the decision the reader needs to make.
+- **Out of scope:** Re-planning the project, and stating a confidence level the underlying data cannot support.
 
 ## Domain rules — project-report
 

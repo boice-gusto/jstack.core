@@ -1,5 +1,8 @@
-import { describe, expect, it } from "bun:test";
-import { SKIP_SENTINEL, isSkipSentinel, mergeDeep, pruneSkipped } from "./config.js";
+import { afterEach, describe, expect, it, test } from "bun:test";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { SKIP_SENTINEL, findProjectRoot, isSkipSentinel, mergeDeep, pruneSkipped } from "./config.js";
 
 describe("config", () => {
   describe("SKIP_SENTINEL", () => {
@@ -104,5 +107,36 @@ describe("config", () => {
       expect(pruneSkipped(null)).toBe(null);
       expect(pruneSkipped(true)).toBe(true);
     });
+  });
+});
+
+describe("findProjectRoot honours JSTACK_PROJECT_ROOT", () => {
+  /**
+   * The variable already drove `crewd` (launchd gives it no useful cwd) but the CLI ignored
+   * it, so one name meant two different things across the system.
+   */
+  const saved = process.env.JSTACK_PROJECT_ROOT;
+  afterEach(() => {
+    if (saved === undefined) delete process.env.JSTACK_PROJECT_ROOT;
+    else process.env.JSTACK_PROJECT_ROOT = saved;
+  });
+
+  test("a pinned root containing a config wins over the cwd walk", () => {
+    const root = mkdtempSync(join(tmpdir(), "jstack-pinned-"));
+    writeFileSync(join(root, "jstack.config.json"), "{}");
+    process.env.JSTACK_PROJECT_ROOT = root;
+    expect(findProjectRoot(tmpdir())).toBe(root);
+  });
+
+  test("a pinned root WITHOUT a config is ignored, so a bad env var cannot break the CLI", () => {
+    const empty = mkdtempSync(join(tmpdir(), "jstack-empty-"));
+    process.env.JSTACK_PROJECT_ROOT = empty;
+    expect(findProjectRoot(empty)).toBe(empty); // falls through to the normal walk
+  });
+
+  test("unset behaves exactly as before", () => {
+    delete process.env.JSTACK_PROJECT_ROOT;
+    const d = mkdtempSync(join(tmpdir(), "jstack-nocfg-"));
+    expect(findProjectRoot(d)).toBe(d);
   });
 });

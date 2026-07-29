@@ -42,7 +42,7 @@ import { registerClaudeMdCommand } from "./commands/claude-md.js";
 import { registerCrewCommand } from "./commands/crew.js";
 
 const program = new Command();
-program.name("jstack").description("jstack Team Operations CLI").version("0.1.0");
+program.name("jstackc").description("jstack Team Operations CLI").version("0.1.0");
 
 if (process.argv.includes("--help-json")) {
   console.log(cliRegistryJson());
@@ -138,8 +138,13 @@ doctorCmd
   .command("skills")
   .description("List skills from plugin catalog (same parsing as jstack docs generate / docs:generate / skill-catalog.json)")
   .option("--json", "full catalog JSON", false)
-  .action(async (o: { json?: boolean }) => {
-    await runDoctorSkills({ json: o.json });
+  .action(async (o: { json?: boolean }, cmd: Command) => {
+    // `doctor` (the parent) also declares `--json`, and commander resolves the PARENT's option first
+    // regardless of flag position — so `doctor skills --json` left the child's `o.json` false and set
+    // the parent's instead. The result was human-readable text on stdout at exit 0, which crashes any
+    // caller piping to JSON.parse. Honor either source: typing `--json` here is unambiguous intent.
+    const wantsJson = o.json === true || cmd.parent?.opts?.().json === true;
+    await runDoctorSkills({ json: wantsJson });
   });
 doctorCmd
   .option("--fix", "run dependency resolver and print proposed repairs (dry-run)", false)
@@ -326,8 +331,46 @@ tel
   .description("Write a local self-test JSONL line + show paths (privacy-safe)")
   .action(() => runTelemetry("test"));
 
-program.action(() => {
-  console.log(chalk.bold("jstack") + " — run with --help or jstack setup");
+/**
+ * Bare `jstack` prints a hint; an UNKNOWN command is an error.
+ *
+ * This catch-all previously swallowed both cases: `jstack doctr` printed the friendly hint and exited
+ * 0, so a typo in a script, a Makefile, or a CI job reported success while doing nothing. Commander
+ * only errors on an unmatched command when no default action is registered, and this one matched
+ * everything.
+ */
+program.action((_opts: unknown, cmd: Command) => {
+  const extra = cmd.args ?? [];
+  if (extra.length === 0) {
+    console.log(chalk.bold("jstack") + " — run with --help or jstack setup");
+    return;
+  }
+  console.error(chalk.red(`unknown command: ${extra[0]}`));
+  console.error("Run `jstack --help` for the command list, or `jstack --help-json` for the registry.");
+  process.exitCode = 1;
 });
 
-await program.parseAsync(process.argv);
+// Print a "did you mean" for a near-miss rather than only the raw error.
+program.showSuggestionAfterError();
+
+/**
+ * The fully-registered command tree, exported so tests can introspect it.
+ *
+ * `cli/src/types/cli-registry.ts` is a hand-maintained parallel list, and `--help-json` serves it as
+ * "the authoritative command registry" (README says so, and agents consult it to decide what to
+ * invoke). Nothing connected the two, so it drifted: eight `--json` options were registered here
+ * while the registry advertised five. `cli/src/index.test.ts` diffs the live tree against the
+ * registry to keep that from happening again.
+ */
+export { program };
+
+/**
+ * Parse unless a caller only wants the command tree.
+ *
+ * An `import.meta.main` guard would be wrong here: `cli/bin/jstack` imports this module (so main is
+ * the bin, not this file), and the A2A harness plus every package script invoke
+ * `bun run cli/src/index.ts`. Both must keep parsing. Only introspection opts out, explicitly.
+ */
+if (!process.env.JSTACK_INTROSPECT) {
+  await program.parseAsync(process.argv);
+}

@@ -16,7 +16,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Build one standalone HTML file with React, Tailwind 4-style tokens, Chart.js/D3 via CDN, shadcn-compatible CSS themes, citations to design theory, report IA hierarchy, and typographic markdown rendering—not a Next.js bundle.
+Produce a single self-contained HTML page — inline CSS, no build step, CDN scripts pinned with SRI — for a visual artifact a reader opens directly.
+- **Out of scope:** Multi-page apps, anything needing a bundler or server, and embedding real customer or employee data in the page.
 
 ## Domain rules — visual-single-page-html
 
@@ -108,7 +109,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-visual-single-page-html` workflow using config and any applicable templates under `templates/design/`.
+Apply the `jstack-visual-single-page-html` workflow using values from `jstack.config.json`. There is no `templates/design/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.

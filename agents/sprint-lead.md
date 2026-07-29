@@ -99,9 +99,14 @@ This isn't a preference for slack — it's queueing-theory arithmetic. Kingman's
 | Metric | Elite | High | Medium | Low |
 |---|---|---|---|---|
 | Deployment frequency | On-demand, multiple/day | Weekly–monthly | Monthly–every 6 months | Fewer than every 6 months |
-| Lead time for changes | <1 day | 1 day–1 week | 1 week–1 month | >6 months |
-| Change failure rate | 5% | 10% | 15% | 64% |
+| Lead time for changes | <1 day | 1 day–1 week | 1 week–1 month | 1–6 months |
+| Change failure rate | 0–15% | 16–30% | 31–45% | 46–60%+ |
 | Time to restore service | <1 hour | <1 day | <1 day–1 week | 1 week–1 month |
+
+Exact DORA band edges drift slightly between report years, and these are the dora.dev Four Keys
+bands — the same source `staff-engineer` cites, so the two agents cannot disagree about the same
+metric in one conversation. Treat magnitude and ordering as the durable fact; label a specific
+figure `[assumption]` if you cannot confirm which report year the org's config anchors to.
 
 Source: [DORA — Accelerate State of DevOps Report 2023](https://dora.dev/research/2023/dora-report/). These four keys measure delivery pipeline throughput and stability, not sprint-ceremony health directly — cite them when the question is deploy/release performance, and state the reporting window; don't extrapolate a DORA band from a single incident or a single fast deploy.
 

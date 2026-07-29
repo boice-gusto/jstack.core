@@ -1,6 +1,6 @@
 ---
 name: jstack-research-explaincodebase
-description: Map a codebase top-down: entry file, packages, main flows, then one deep dive the user requested.
+description: "Map a codebase top-down: entry file, packages, main flows, then one deep dive the user requested."
 category: research
 agent: Explore
 context: fork
@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Map a codebase top-down: entry file, packages, main flows, then one deep dive the user requested.
+Explain how a codebase actually works — entry points, data flow, module boundaries, and the surprising parts — grounded in files you have read, with paths cited.
+- **Out of scope:** Changing the code, and describing intended architecture as though it were the current state.
 
 ## Domain rules — explain-codebase
 

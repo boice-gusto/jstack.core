@@ -2,7 +2,7 @@
 name: jstack-scaffold
 description: Scaffold a new skill or plugin using org conventions and checklists.
 when_to_use: User wants to create a new skill pack or plugin structure.
-category: workflows
+category: skill-creator
 data_class: internal
 disable-model-invocation: true
 effort: medium
@@ -20,10 +20,13 @@ Read the setup preamble first:
 Create the file skeleton for a new skill or plugin that satisfies this repo's conventions and passes its gates.
 - **Out of scope:** Writing the skill's domain content, and hand-editing a generated skill body — most bodies come from the generator, so a hand edit to a non-`SKIP` skill is lost on the next run.
 
-## Domain rules — browser workflows
-- Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
-- Same flow definition for CI and local — call out which base URL the user is targeting.
+## Domain rules — skill and plugin scaffolding
+- Generate the directory shape only: `SKILL.md`, `references/`, `evals/`. Never write skill *content* the author has not decided on — a plausible-looking body is harder to fix than an empty one.
+- Frontmatter must be inline scalars. `read_front_matter()` in `scripts/apply_detailed_skills.py` is line-based and keeps only lines containing `:`; a YAML block list is silently dropped and the key round-trips empty. Quote any `description` containing a colon.
+- A new skill body is GENERATED unless its path is added to `SKIP` in `scripts/apply_detailed_skills.py`. Decide which before scaffolding, and say which you chose — a hand-edit to a non-SKIP body is lost on the next regeneration.
+- Every new skill needs eval cases or `bun run check` fails on coverage. Scaffold `evals/` alongside the skill, then run `bun run gen:skill-evals` rather than hand-writing them.
+- Set `disable-model-invocation: true` when the skill writes external state, and `context: fork` + `agent: Explore` only when it is genuinely read-only — `Explore` has no Write or Edit tool, so a write skill configured that way cannot do its job.
+- After adding a skill, run `bun run docs:generate` so `skill-catalog.json` includes it.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -42,13 +45,13 @@ Create the file skeleton for a new skill or plugin that satisfies this repo's co
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
+Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-scaffold` workflow using config and any applicable templates under `templates/workflows/`.
+Apply the `jstack-scaffold` workflow using values from `jstack.config.json`. There is no `templates/skill-creator/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
-Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
+Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -68,11 +71,9 @@ Use a domain-appropriate heading, then:
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

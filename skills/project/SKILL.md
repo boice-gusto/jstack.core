@@ -1,6 +1,6 @@
 ---
 name: jstack-project
-description: Cross-surface project status (Notion/Jira): RAG health, 3 risks, 3 asks, milestone table.
+description: "Cross-surface project status (Notion/Jira): RAG health, 3 risks, 3 asks, milestone table."
 category: project
 effort: high
 ---

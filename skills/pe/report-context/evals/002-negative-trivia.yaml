@@ -1,0 +1,26 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-pe-report-context** (path: `pe/report-context`).
+
+  Category: reports.
+
+  Skill description: Validate and normalize PE / team report JSON against schemas/pe; gate skills
+  until pe.configured is true.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Writing performance
+  narrative about a named individual, and reporting on a team absent from pe.teams.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Writing
+    performance narrative about a named individual, and reporting on a team absent from pe.teams
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

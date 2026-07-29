@@ -1,9 +1,8 @@
 ---
 name: jstack-team-knowledge
-description: Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages.
+description: "Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages."
 category: knowledge
-agent: Explore
-context: fork
+disable-model-invocation: true
 effort: high
 ---
 
@@ -15,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages.
+Build the shared team knowledge graph — issues, ADRs, runbooks — with canonical links, dedupe checks, and staleness flags.
+- **Out of scope:** Writing personal or performance commentary into the shared store, and superseding a canonical entry without saying which one it replaces.
 
 ## Domain rules — team-knowledge
 

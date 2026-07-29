@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate a self-authored accomplishments narrative for performance context. User-editable voice.
+Assemble a self-report for the configured period from the user's own activity and gbrain entries.
+- **Out of scope:** Writing about other people's contributions, and back-filling accomplishments from memory rather than from a dated source.
 
 ## Domain rules — reports
 - Fill `templates/reports/*` with data from config, tools, and user-supplied facts only — never invent velocity, incidents, or goals.

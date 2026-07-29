@@ -14,6 +14,18 @@ import {
 import { JstackConfigSchema, type JstackConfig } from "../types/config.js";
 
 export function findProjectRoot(cwd = process.cwd()): string {
+  /**
+   * `JSTACK_PROJECT_ROOT` wins when it points at a real project.
+   *
+   * The variable already existed for `crewd`, which launchd starts with no meaningful cwd, but
+   * the CLI ignored it -- so the same name meant something in one half of the system and
+   * nothing in the other. Honouring it here lets a command run from any directory (`jstackc
+   * crew doctor` from /tmp otherwise fails to find the config), while leaving the default
+   * cwd-walk untouched for everyone who has not set it.
+   */
+  const pinned = process.env.JSTACK_PROJECT_ROOT;
+  if (pinned && existsSync(join(pinned, JSTACK_CONFIG_FILE))) return pinned;
+
   let dir = cwd;
   for (let i = 0; i < WALK_LIMITS.PROJECT_ROOT_MAX_STEPS; i++) {
     if (existsSync(join(dir, JSTACK_CONFIG_FILE))) return dir;

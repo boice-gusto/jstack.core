@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Load jstack Figma workflow guidance before design-to-code or MCP Figma work; chain to figma-use when the host provides it.
+Turn a Figma design into an implementable handoff: named components and variants, token references, state coverage, and the accessibility contract each state must meet.
+- **Out of scope:** Writing the component code (`jstack:review-code-review` for the diff, frontend-specialist for implementation), and editing the Figma file itself.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -37,7 +38,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-figma-handoff` workflow using config and any applicable templates under `templates/design/`.
+Apply the `jstack-figma-handoff` workflow using values from `jstack.config.json`. There is no `templates/design/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.

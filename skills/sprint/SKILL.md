@@ -1,6 +1,6 @@
 ---
 name: jstack-sprint
-description: Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira.
+description: "Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira."
 category: sprint
 effort: low
 ---
@@ -21,7 +21,7 @@ Route sprint requests to the right sub-skill (planning, mid-sprint re-plan). Pro
 - If historical velocity data is missing, use T-shirt estimates with a conversion note.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/sprint/`:** planning
+**Under `skills/sprint/`:** prep, refinement, planning
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

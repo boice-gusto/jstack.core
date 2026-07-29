@@ -1,6 +1,6 @@
 ---
 name: jstack-sprintclose
-description: Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.
+description: "Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links."
 category: routines
 disable-model-invocation: true
 disallowed-tools: AskUserQuestion
@@ -14,9 +14,12 @@ effort: low
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/chains/sprint-close-chain.md
 
 ## What this skill is for
-Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.
+Run the sprint-close sequence: reconcile committed versus delivered, capture carry-over with reasons, and produce the close summary.
+- **Out of scope:** Moving unfinished issues between sprints without confirmation, and closing the sprint in Jira.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.

@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Personal throughput and review latency from GitHub/Jira. No peer comparison unless user is a people manager.
+Report the individual's own delivery metrics for a period from configured sources, as distributions rather than single averages.
+- **Out of scope:** Comparing the individual against teammates, and any performance judgement.
 
 ## Domain rules — metrics
 - Derive rollups from Jira/GitHub only; label gaps when data is partial.

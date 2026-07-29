@@ -1,7 +1,27 @@
-name: Negative — minimal reply (no full skill run)
-prompt: 'Reply with only the single word: pong'
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-ceo-brainstorm** (path: `shortcuts/ceo-brainstorm`).
+
+  Category: knowledge.
+
+  Skill description: Alias jstack:ceo-brainstorm — CEO persona + executive tone, then
+  superpowers:brainstorming. Use when the user wants exec-lens ideation.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Implementing ideas, filing
+  tickets, or replacing the full superpowers skill content (link only).
+
+
+  Keep the response under ~200 words.
 criteria:
-  - Response is very short (roughly one word or a tiny phrase, optionally with light punctuation)
-  - Does not produce a long multi-section report, checklist, or workflow as the main content
-expect_skill: false
-timeout: 90
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    Implementing ideas, filing tickets, or replacing the full superpowers skill content (link only)
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to superpowers:brainstorming)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

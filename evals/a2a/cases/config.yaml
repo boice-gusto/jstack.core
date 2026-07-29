@@ -1,0 +1,175 @@
+# Config behavioral cases — surface: config. Deterministic only: this surface is a distributed
+# default file, a generated JSON Schema, a chain resolver, and a supply-chain gate — all of which a
+# program can decide. Nothing here needs a judge, and paying for one would tell us less than an
+# exit code does.
+#
+# Context that shaped these cases:
+#   - The enforced contract is the Zod schema in `cli/src/types/config.ts`. `config/schema.json` is
+#     GENERATED from it (`bun run schema:generate`) and a drift gate fails if they disagree. It was
+#     previously hand-maintained and loaded by nothing: 29 of its 43 sections were empty
+#     `{"type":"object"}` shells with zero enum/pattern/required/format constraints anywhere in the
+#     file, so "validate against the schema" pointed skills at a document asserting almost nothing.
+#     Wiring ajv to that file would have produced a green gate that proved nothing — hence
+#     generate-from-Zod plus a drift gate instead.
+#   - `config/schedules/<id>.json` is looked up by routine id verbatim (no hyphen/underscore
+#     normalization). `scripts/validate-chains.ts` (`bun run validate-chains`) is the gate that
+#     catches an id/filename mismatch; it is invoked as `kind: script` so the case asserts the
+#     validator's real verdict rather than a copy of its logic.
+#   - Cases here prefer running a gate (`kind: script`) over pinning its source text. A source pin
+#     only proves a check is mentioned; it stays green after the check stops working.
+
+- id: config-cli-show-prints-parseable-config
+  surface: config
+  description: >-
+    `jstack config` (see `--help`: the only read-only, no-flag subcommand for inspecting
+    `jstack.config.json`) must succeed and print the file path followed by parseable JSON, not
+    swallow a read/parse error into a clean exit.
+  subject:
+    kind: cli
+    command: ["config"]
+  expect:
+    exit_code: 0
+    stdout_contains: ['"version"', '"onboarding"', '"integrations"']
+    stdout_matches: ['\{']
+
+- id: config-schedules-resolve-for-every-routine-id
+  surface: config
+  description: >-
+    `loadScheduleFile()` reads `config/schedules/<routine-id>.json` by exact filename. Every
+    routine key under `config/defaults.json` routines (standup, weekly_digest, sprint_close,
+    health_check) must have a schedule file with that exact underscored name — a hyphenated
+    filename (the bug this repo actually shipped) makes `readFiles` 404 here, which fails the
+    case before any content assertion runs.
+  subject:
+    kind: file
+    paths:
+      - "config/defaults.json"
+      - "config/schedules/standup.json"
+      - "config/schedules/weekly_digest.json"
+      - "config/schedules/sprint_close.json"
+      - "config/schedules/health_check.json"
+  expect:
+    stdout_contains: ['"standup"', '"weekly_digest"', '"sprint_close"', '"health_check"']
+
+- id: config-routine-schedule-drift-is-detected-by-the-validator
+  surface: config
+  description: >-
+    Routine chains live in two independently-read sources — `routines.<id>.chain` in
+    `config/defaults.json` and `config/schedules/<id>.json`. They once disagreed about which
+    skills a routine runs, and 3 of 4 routine ids could never resolve their schedule file because
+    ids use underscores while the filenames used hyphens. Runs the real validator and asserts its
+    verdict, rather than pinning its source text: a source pin proves only that the check is
+    mentioned, not that it still works. Deliberately overlaps the prompts-surface case on the same
+    validator — both are deterministic and cheap, and each names the invariant its own surface owns.
+  subject:
+    kind: script
+    script: validate-chains
+  expect:
+    exit_code: 0
+    stdout_contains: ["validate-chains OK"]
+    stdout_not_contains:
+      - "cannot resolve its schedule file"
+      - "chain differs between sources"
+      - "references missing skill"
+
+- id: config-schema-json-is-generated-from-the-zod-contract
+  surface: config
+  description: >-
+    `config/schema.json` must be generated from `cli/src/types/config.ts`, never hand-maintained.
+    Hand-maintained, it drifted badly: 29 of its 43 sections were empty `{"type":"object"}` shells
+    and the whole 17KB file carried zero `enum`, `pattern`, `required` or `format` constraints — so
+    every skill told to "validate against the schema" was consulting a document that asserted
+    almost nothing. Asserts the generated banner survives and that the drift gate is still wired
+    into `check`, because a generated file with no gate silently becomes hand-maintained again the
+    first time somebody edits it.
+  subject:
+    kind: file
+    paths: ["config/schema.json", "package.json"]
+  expect:
+    stdout_contains:
+      - "GENERATED FILE — do not edit by hand"
+      - "bun run schema:generate"
+      - "schema:check"
+
+- id: config-schema-drift-gate-actually-detects-drift
+  surface: config
+  description: >-
+    Runs the drift gate itself rather than pinning its source: it must agree that the committed
+    `config/schema.json` matches the Zod contract. A stale reference is exactly the failure this
+    whole mechanism exists to prevent, so the gate's own verdict is the assertion.
+  subject:
+    kind: script
+    script: schema:check
+  expect:
+    exit_code: 0
+    stdout_contains: ["OK config/schema.json matches the Zod contract"]
+    stdout_not_contains: ["out of date", "sections to add", "sections changed"]
+
+- id: config-schema-json-not-loaded-by-enforcement-code
+  surface: config
+  description: >-
+    `config/schema.json` is a generated REFERENCE; the contract that runs is the Zod schema. No
+    enforcement path may load the JSON file — doing so would create a second validator that can
+    disagree with the first, which is how the original drift started.
+    Note the assertion is about LOADING, not mentioning: `validate-config.ts` names the file in an
+    error message so a failing user knows where the generated reference lives, and that is correct.
+    An earlier version of this case forbade the substring `schema.json` outright and therefore
+    failed on that guidance text — the invariant was never "don't mention it".
+  subject:
+    kind: file
+    paths:
+      - "scripts/validate-config.ts"
+      - "cli/src/lib/config.ts"
+      - "cli/src/types/config.ts"
+  expect:
+    stdout_not_contains:
+      # A JSON-Schema validator in the enforcement path would mean two competing contracts.
+      - "Ajv"
+      - "ajv"
+      - "addSchema"
+      # Importing or reading the generated file back in.
+      - 'from "../../config/schema.json"'
+      - 'from "../config/schema.json"'
+      - 'require("../config/schema.json")'
+      - 'readFileSync(schemaPath'
+
+- id: config-defaults-json-has-no-credential-shapes
+  surface: config
+  description: >-
+    `config/defaults.json` ships verbatim to every install. It must never carry a real-looking
+    credential prefix — this is the base config every project merges against, not a user's local
+    file, so a leaked-looking token here would be distributed, not just misplaced.
+  subject:
+    kind: file
+    paths: ["config/defaults.json"]
+  expect:
+    stdout_not_contains:
+      - "ghp_"
+      - "xox"
+      - "sk-"
+      - "AKIA"
+      - "ATATT"
+      - "github_pat_"
+      - "-----BEGIN"
+
+- id: config-third-party-scripts-are-sri-pinned-and-not-vulnerable
+  surface: config
+  description: >-
+    Runs the SRI gate. Report HTML loads three scripts from a public CDN and is shared externally via
+    `share_html`, so a substituted script reads whatever the viewer can see. A version pin alone still
+    trusts the CDN's bytes; `integrity` + `crossorigin` make the browser refuse a swap.
+    The gate also enforces a DOMPurify floor: the shell template shipped `dompurify@3.1.6` — affected
+    by the mXSS issue fixed in 3.2.4 — for as long as it took to notice, because `package.json` had
+    been bumped to `^3.2.4` and nothing tied the HTML to it. Asserting the gate's verdict covers all
+    three failure modes (missing integrity, missing crossorigin, stale version) rather than pinning
+    one hash string.
+  subject:
+    kind: script
+    script: check-sri
+  expect:
+    exit_code: 0
+    stdout_contains: ["check-sri OK"]
+    stdout_not_contains:
+      - "missing integrity="
+      - "no crossorigin="
+      - "below the required"

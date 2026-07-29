@@ -1,0 +1,267 @@
+# Agent behavioral cases — A2A: a candidate agent is given one agents/*.md file plus a task,
+# and an independent judge assesses whether the file's specific directives actually changed the
+# output, versus what a generic assistant would say unprompted.
+#
+# Agentic cases here are judge-backed and report SKIPPED with no ANTHROPIC_API_KEY / no `claude`
+# on PATH — that is expected (see evals/a2a/run.ts). The `kind: file` cases at the bottom need no
+# judge and must actually pass in any environment; they encode two real constraints from
+# scripts/agents-check.ts: frontmatter keys plugin agents don't support, and the fact that
+# `jstack:<slug>` is a skill-resolution token (scripts/agents-check.ts only ever builds its
+# resolvable-suffix set from skills/**/SKILL.md's `name:` line) — an agent file that names a
+# sibling agent with that syntax would fail `bun run agents-check`, not just read oddly.
+
+- id: agent-architect-names-availability-math-for-new-sync-call
+  surface: agents
+  description: >-
+    architect.md must raise the compounded-availability arithmetic and the coupling/failure mode
+    for a new synchronous cross-service call, not give generic "consider scalability" advice.
+  subject:
+    kind: agentic
+    paths: ["agents/architect.md"]
+    task: >-
+      Review this design note: "To let the reporting service show live inventory counts, we're
+      adding a new synchronous HTTP call from reporting-service directly to inventory-service's
+      internal API on every page load. No caching yet, and no timeout is configured — we'll add
+      one later if it becomes a problem."
+  criteria:
+    - The response does the compounded-availability arithmetic for the added synchronous hop (e.g. multiplying per-hop availability, or explicitly stating the chain's failure rate now compounds) rather than a vague "this could be a problem."
+    - The response states that the missing timeout on the new synchronous call is a hidden failure domain (e.g. can hang the caller or cascade), not merely a style nit to fix "later."
+    - The response names the coupling/dependency being introduced specifically (a new synchronous cross-service call on the request path), not generic advice like "add more tests" or "consider scalability."
+    - The response does not simply approve the proposal as-is or defer entirely to "we'll add a timeout later."
+
+- id: agent-qa-engineer-rejects-sleep-and-coverage-as-proof
+  surface: agents
+  description: >-
+    qa-engineer.md must name the sleep-based wait as a flake source and explicitly reject the
+    100% coverage claim as proof, not just say "looks reasonable."
+  subject:
+    kind: agentic
+    paths: ["agents/qa-engineer.md"]
+    task: >-
+      Assess this test suite as a reviewer: "Our end-to-end suite waits three seconds after
+      clicking submit (`await sleep(3000)`) before checking that the confirmation banner appeared.
+      Our team also reports 100% code coverage on the checkout module, so we consider it fully
+      tested."
+  criteria:
+    - The response names the fixed-duration sleep as a specific flake source — waiting on elapsed wall-clock time instead of an observable state change — not a vague "this might be flaky."
+    - The response explicitly rejects "100% coverage" as proof the module is fully tested, stating or clearly implying that coverage measures lines executed rather than behavior verified.
+    - The response recommends replacing the sleep with a wait on an explicit signal (e.g. the confirmation banner becoming visible, or a specific network response) rather than accepting a longer sleep as an adequate fix.
+
+- id: agent-backend-specialist-dispatches-server-change-to-itself
+  surface: agents
+  description: >-
+    Dispatch boundary test. Given one clearly client-side change and one clearly server-side
+    change, backend-specialist.md must claim the server-side one and hand off the client-side one,
+    per its own "What this agent does NOT own" table.
+  subject:
+    kind: agentic
+    paths: ["agents/backend-specialist.md"]
+    task: >-
+      Two changes are up for review. Change A: `OrderList.tsx` renders each row with
+      `<div key={index}>` inside a `.map()` over 500 orders, and clicking a row's "star" button
+      sometimes stars the wrong row after the list re-sorts. Change B: `POST /orders/:id/charge`
+      retries the payment provider call on timeout with exponential backoff, but the request
+      carries no idempotency key, so a retried timeout can double-charge the customer. Which of
+      these is in your lane, and what is your assessment of it?
+  criteria:
+    - The response claims ownership of Change B and gives a concrete finding naming the missing idempotency-key mechanism as the defect, not a vague "this looks risky."
+    - The response explicitly declines or hands off Change A to a frontend specialist rather than analyzing the React `key`/rendering mechanism itself.
+    - The response does not present a diagnosis of the index-as-key rendering bug as its own finding.
+
+- id: agent-frontend-specialist-dispatches-client-change-to-itself
+  surface: agents
+  description: >-
+    Dispatch boundary test, mirror of the backend case. Given the same two changes,
+    frontend-specialist.md must claim the client-side one and hand off the server-side one.
+  subject:
+    kind: agentic
+    paths: ["agents/frontend-specialist.md"]
+    task: >-
+      Two changes are up for review. Change A: `OrderList.tsx` renders each row with
+      `<div key={index}>` inside a `.map()` over 500 orders, and clicking a row's "star" button
+      sometimes stars the wrong row after the list re-sorts. Change B: `POST /orders/:id/charge`
+      retries the payment provider call on timeout with exponential backoff, but the request
+      carries no idempotency key, so a retried timeout can double-charge the customer. Which of
+      these is in your lane, and what is your assessment of it?
+  criteria:
+    - The response claims ownership of Change A and names the specific mechanism (index-as-key causing row-local state such as focus/selection to attach to the wrong item after a reorder), not a vague "this could cause bugs."
+    - The response explicitly declines or hands off Change B to a backend specialist rather than assessing the payment retry/idempotency mechanism itself.
+    - The response does not present the missing-idempotency-key fix for Change B as its own finding.
+
+- id: agent-technical-writer-flags-filler-and-unrun-command
+  surface: agents
+  description: >-
+    technical-writer.md must flag the banned filler word AND that an unrun command cannot be
+    documented as fact, not just polish the prose.
+  subject:
+    kind: agentic
+    paths: ["agents/technical-writer.md"]
+    task: >-
+      Review this doc section before it ships: "Setup: simply configure the client and you're
+      good to go. Run `jstack sync --force` to pull the latest data." The author says they have
+      not actually run the sync command yet, but is confident it works.
+  criteria:
+    - The response flags "simply" (or "you're good to go") as a banned reader-blame/filler phrase per this agent's own rules, not merely a generic style suggestion.
+    - The response states that `jstack sync --force` must actually be run and its real output verified before the doc can present it as fact, given the author admits it has not been run.
+    - The response does not approve the doc section as ready to ship in its current, unverified form.
+
+- id: agent-chain-orchestrator-catches-shared-write-and-missing-check
+  surface: agents
+  description: >-
+    chain-orchestrator.md must catch the shared write target between two parallel steps AND the
+    absence of any machine-checkable success condition across the whole plan.
+  subject:
+    kind: agentic
+    paths: ["agents/chain-orchestrator.md"]
+    task: >-
+      Review this 3-step plan before we execute it: "Step 1: Agent A updates
+      `docs/release-notes.md` with the new version's changes. Step 2: Agent B updates
+      `docs/release-notes.md` to add the deprecation notice, running in parallel with Step 1 to
+      save time. Step 3: Agent C announces the release is done." No step names how we would
+      confirm it actually worked.
+  criteria:
+    - The response identifies that Step 1 and Step 2 both write to `docs/release-notes.md` while running in parallel, naming this as a shared write-target conflict rather than a vague "coordination issue."
+    - The response identifies that none of the three steps declares a machine-checkable verification command (an exit code, diff, or test), not just "more detail would help."
+    - The response proposes resolving the conflict by making the two writing steps sequential or splitting them onto disjoint files, rather than leaving both proceeding in parallel.
+
+- id: agent-analytics-lead-refuses-averaged-percentile-rollup
+  surface: agents
+  description: >-
+    analytics-lead.md must reject averaging per-team p85 values into an "overall p85" as
+    mathematically invalid and name the correct alternative, not merely caveat the number as
+    approximate.
+  subject:
+    kind: agentic
+    paths: ["agents/analytics-lead.md"]
+    task: >-
+      Validate this figure for a leadership deck. "Across our four platform teams the p85 cycle
+      time is 6.4 days." It was produced by reading each team's p85 cycle time off the dashboard
+      (5.1, 6.0, 6.8, 7.7 days) and averaging the four values. Is 6.4 days publishable?
+  criteria:
+    - The response states that averaging percentiles does not yield a percentile of the pooled data, identifying percentiles as non-additive rather than describing the result as merely approximate or slightly imprecise.
+    - The response names a correct alternative — merging the underlying histograms or distribution sketches, or recomputing the percentile from the pooled raw cycle-time rows — rather than only asserting the number is wrong.
+    - The response declines to publish 6.4 days as a p85 at all, rather than accepting it with a caveat attached.
+
+- id: agent-analytics-lead-sizes-skewed-segment-without-n30
+  surface: agents
+  description: >-
+    analytics-lead.md must reject a 12-row cycle-time segment as a trendable figure on
+    distribution-shape grounds, and must not treat the n>=30 heuristic as the applicable floor for a
+    right-skewed duration metric.
+  subject:
+    kind: agentic
+    paths: ["agents/analytics-lead.md"]
+    task: >-
+      The Payments team closed 12 issues last sprint. Mean cycle time across those 12 was 3.4 days,
+      down from 4.1 the sprint before. Two of the 12 took over 20 days. Leadership wants this as a
+      trend line in the quarterly deck. Confirm the figure.
+  criteria:
+    - The response rejects the 12-item segment as too small to trend and grounds that on cycle time being right-skewed, rather than citing a flat n>=30 threshold as the applicable floor.
+    - The response objects to the mean specifically, calls for a median or a tail percentile instead, and connects the two 20-day items to why the mean misleads on this distribution.
+    - The response declines to certify the figure as a trend line and names what would be required to make it reportable, rather than approving it with a low-sample caveat.
+
+# --- Deterministic file cases (no judge required) ---
+
+- id: agents-no-unsupported-plugin-frontmatter-keys
+  surface: agents
+  description: >-
+    Plugin agents don't support `hooks:`, `mcpServers:`, or `permissionMode:` frontmatter keys.
+    Nothing in agents-check.ts enforces this today, so it is worth a standing deterministic check
+    rather than relying on someone noticing at review time.
+  subject:
+    kind: file
+    paths:
+      - "agents/analytics-lead.md"
+      - "agents/architect.md"
+      - "agents/authoring-helper.md"
+      - "agents/backend-specialist.md"
+      - "agents/brainstorm-facilitator.md"
+      - "agents/chain-orchestrator.md"
+      - "agents/design-lead.md"
+      - "agents/executive-brief.md"
+      - "agents/frontend-specialist.md"
+      - "agents/jira-coordinator.md"
+      - "agents/knowledge-curator.md"
+      - "agents/product-pm.md"
+      - "agents/qa-engineer.md"
+      - "agents/recon-scanner.md"
+      - "agents/report-generator.md"
+      - "agents/review-counsel.md"
+      - "agents/routine-runner.md"
+      - "agents/sprint-lead.md"
+      - "agents/staff-engineer.md"
+      - "agents/technical-writer.md"
+      - "agents/workflow-executor.md"
+      - "agents/workflows-coach.md"
+  expect:
+    stdout_not_contains: ["hooks:", "mcpServers:", "permissionMode:"]
+
+- id: agents-no-sibling-agent-jstack-colon-token
+  surface: agents
+  description: >-
+    scripts/agents-check.ts resolves every `jstack:<slug>` token in agents/*.md against skill
+    `name:` lines only (skills/**/SKILL.md) — never against agent names. An agent file that
+    references a sibling agent as `jstack:<agent-suffix>` (instead of its plain name) would fail
+    `bun run agents-check` outright, not just be a style inconsistency.
+  subject:
+    kind: file
+    paths:
+      - "agents/analytics-lead.md"
+      - "agents/architect.md"
+      - "agents/authoring-helper.md"
+      - "agents/backend-specialist.md"
+      - "agents/brainstorm-facilitator.md"
+      - "agents/chain-orchestrator.md"
+      - "agents/design-lead.md"
+      - "agents/executive-brief.md"
+      - "agents/frontend-specialist.md"
+      - "agents/jira-coordinator.md"
+      - "agents/knowledge-curator.md"
+      - "agents/product-pm.md"
+      - "agents/qa-engineer.md"
+      - "agents/recon-scanner.md"
+      - "agents/report-generator.md"
+      - "agents/review-counsel.md"
+      - "agents/routine-runner.md"
+      - "agents/sprint-lead.md"
+      - "agents/staff-engineer.md"
+      - "agents/technical-writer.md"
+      - "agents/workflow-executor.md"
+      - "agents/workflows-coach.md"
+  expect:
+    stdout_not_contains:
+      - "jstack:architect"
+      - "jstack:authoring-helper"
+      - "jstack:analytics-lead"
+      - "jstack:backend-specialist"
+      - "jstack:chain-orchestrator"
+      - "jstack:design-lead"
+      - "jstack:brainstorm-facilitator"
+      - "jstack:executive-brief"
+      - "jstack:jira-coordinator"
+      - "jstack:knowledge-curator"
+      - "jstack:product-pm"
+      - "jstack:frontend-specialist"
+      - "jstack:recon-scanner"
+      - "jstack:report-generator"
+      - "jstack:review-counsel"
+      - "jstack:qa-engineer"
+      - "jstack:sprint-lead"
+      - "jstack:staff-engineer"
+      - "jstack:technical-writer"
+      - "jstack:routine-runner"
+      - "jstack:workflows-coach"
+      - "jstack:workflow-executor"
+
+- id: agents-backend-and-frontend-both-declare-ownership-boundary
+  surface: agents
+  description: >-
+    Both specialists claim to respect a client/server dispatch boundary in their descriptions;
+    this confirms each file actually contains its own "What this agent does NOT own" section
+    (order-sensitive regex, so a heading present in only one of the two files fails this).
+  subject:
+    kind: file
+    paths: ["agents/backend-specialist.md", "agents/frontend-specialist.md"]
+  expect:
+    stdout_matches:
+      - "===== agents/backend-specialist\\.md =====[\\s\\S]*?## What this agent does NOT own[\\s\\S]*?===== agents/frontend-specialist\\.md =====[\\s\\S]*?## What this agent does NOT own"

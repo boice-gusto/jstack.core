@@ -1,6 +1,6 @@
 ---
 name: jstack-research-spike
-description: Time-boxed technical spike: hypothesis, method, go/no-go criteria up front. Report findings even if spike fails.
+description: "Time-boxed technical spike: hypothesis, method, go/no-go criteria up front. Report findings even if spike fails."
 category: research
 agent: Explore
 context: fork
@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Time-boxed technical spike: hypothesis, method, go/no-go criteria up front. Report findings even if spike fails.
+Run a timeboxed feasibility spike: state the question, the box, what was tried, and a go/no-go with the evidence that decided it.
+- **Out of scope:** Turning the spike code into production code, and exceeding the timebox silently — report an unfinished spike as unfinished.
 
 ## Domain rules — technical spike
 

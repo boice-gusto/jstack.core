@@ -11,9 +11,12 @@ effort: low
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/incident-policy.md
 
 ## What this skill is for
-Route incident requests to the main commander flow or retro sub-skill.
+Route an incident request to the right sub-skill (retro, find-sme, oncall-summary). Establish whether the incident is active or closed before routing — an active incident goes to on-call context, a closed one to retro.
+- **Out of scope:** Declaring or resolving an incident, paging anyone, and writing status-page updates.
 
 ## Domain rules — incident
 - Tight SEV-scoped loop: status, comms, mitigations, customer impact, timeline.
@@ -21,7 +24,7 @@ Route incident requests to the main commander flow or retro sub-skill.
 - After stabilization, hand off to `incident/retro` for blameless follow-ups.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/incident/`:** retro
+**Under `skills/incident/`:** retro, find-sme, oncall-summary
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

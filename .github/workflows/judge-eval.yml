@@ -1,0 +1,95 @@
+# LLM-graded evaluation. Costs money per run, so it is NOT part of `check.yml`.
+#
+# Why this workflow exists: nothing in CI ever executed a model-graded eval. `bun run check` runs the
+# deterministic A2A cases and reports the judge-backed ones as SKIPPED when no API key is present —
+# correct behaviour, but it means the judge path itself, and every judging criterion, was never once
+# exercised. A criterion that is too vague to discriminate, or a prompt that no longer elicits the
+# behaviour it describes, would look identical to "skipped".
+#
+# Two triggers, both deliberate:
+#   - workflow_dispatch — run it on demand, before a release or after editing personas/policies.
+#   - schedule — weekly, so drift is caught within a week instead of whenever someone remembers.
+#
+# `--require-judge` is the point: it makes a SKIP fatal. Without it a missing or misconfigured
+# credential would produce a green run that graded nothing, which is precisely the failure mode this
+# repo has been cleaning up. Requires the ANTHROPIC_API_KEY secret; the guard below fails loudly
+# rather than silently degrading when it is absent.
+name: judge-eval
+
+on:
+  workflow_dispatch:
+    inputs:
+      surface:
+        description: "Limit to one A2A surface (agents, skills, personas, prompts, docs, onboarding). Blank = all."
+        required: false
+        default: ""
+      semantic_skill:
+        description: "Also run `eval semantic` for this skill id (e.g. recon). Blank = skip semantic."
+        required: false
+        default: ""
+  schedule:
+    # Mondays 07:00 UTC — before the working week, after any weekend merges.
+    - cron: "0 7 * * 1"
+
+# One judge run at a time: these calls cost money and a queued duplicate buys nothing.
+concurrency:
+  group: judge-eval-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+
+      # Fail before spending anything if the credential is missing. A judge run without a key would
+      # otherwise skip every case and exit 0, reporting success for work never done.
+      - name: Require ANTHROPIC_API_KEY
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not set. This workflow grades with a model and cannot"
+            echo "::error::run without it. Add the secret, or use `bun run check` for the"
+            echo "::error::deterministic cases that need no key."
+            exit 1
+          fi
+          echo "credential present"
+
+      # Cheap deterministic pass first. If a factual assertion is already broken there is no reason
+      # to spend judge calls proving it.
+      - name: Deterministic A2A cases (no judge)
+        run: bun run a2a
+
+      - name: Judge-backed A2A cases (--require-judge makes a skip fatal)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "${{ github.event.inputs.surface }}" ]; then
+            bun evals/a2a/run.ts --require-judge --surface "${{ github.event.inputs.surface }}"
+          else
+            bun evals/a2a/run.ts --require-judge
+          fi
+
+      - name: Semantic eval for one skill (opt-in via input)
+        if: ${{ github.event.inputs.semantic_skill != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: bun run eval semantic --skill "${{ github.event.inputs.semantic_skill }}"
+
+      # Verdicts and judge messages are the actual output; keep them even when the job fails, since
+      # a failure is when you most want to read what the judge said.
+      - name: Upload judge reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-eval-reports
+          path: |
+            evals/.reports/
+          if-no-files-found: warn
+          retention-days: 30

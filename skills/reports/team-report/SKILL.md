@@ -1,6 +1,6 @@
 ---
 name: jstack-team-report
-description: Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.
+description: "Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership."
 category: reports
 effort: high
 ---
@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.
+Assemble the team report from configured sources, labelling every figure measured, estimated, or assumed.
+- **Out of scope:** Publishing it (`jstack:reports-share-html-publish`), and filling a section whose data source is unavailable.
 
 ## Domain rules — team-report
 

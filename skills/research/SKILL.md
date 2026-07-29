@@ -13,7 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route research requests to the right sub-skill (technical, competitive, user, spike, explain-codebase).
+Route a research request to the right sub-skill: technical (tradeoff analysis), competitive (market), user (qualitative), explain-codebase (this repo), or spike (timeboxed feasibility). Deliverable shape differs per sub-skill.
+- **Out of scope:** Presenting an unverified claim as fact, and making the build-vs-buy decision — surface the tradeoffs for a human to decide.
 
 ## Domain rules — research
 - Distinguish **findings** from **recommendation**. Cite sources; if web/tools unavailable, return assumptions + a to-verify list.

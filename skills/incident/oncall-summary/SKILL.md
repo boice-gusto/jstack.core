@@ -11,9 +11,12 @@ effort: medium
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/incident-policy.md
 
 ## What this skill is for
-Summarize on-call window from Slack channel + incident tool + schedule; group alerts; optional per-issue investigation; config-driven targets.
+Summarize the on-call period: what fired, what was actionable, what was noise, and which alerts need tuning.
+- **Out of scope:** Acknowledging or resolving alerts, and changing alert thresholds.
 
 ## Domain rules — incident/oncall-summary
 
@@ -77,7 +80,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Stabilize before diagnosing. Record the timeline as you go, not afterwards from memory. Do not state a cause until it is established — in anything customer-facing, "under investigation" is correct and a guess is a liability.
 
 ### Step 3 — Execute
-Apply the `jstack-incident-oncall-summary` workflow using config and any applicable templates under `templates/incident/`.
+Apply the `jstack-incident-oncall-summary` workflow using values from `jstack.config.json`. There is no `templates/incident/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm the timeline is ordered and sourced, that cause is labelled as established or under investigation, and that no customer-facing text asserts more than is known.

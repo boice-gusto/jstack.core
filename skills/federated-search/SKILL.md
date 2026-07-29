@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Multi-provider federated search — selects N backends (Jira, Notion, Slack, GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits, ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis. Reads jstack.config.json mcp_servers and integrations; does not invent credentials.
+Dispatch one query across the configured backends in parallel (Jira, Notion, Slack, GitHub, knowledge_base, gbrain) and fuse the results with per-source attribution.
+- **Out of scope:** Knowledge-base-only lookups — use `jstack:knowledge-search`, which is scoped to the curated `knowledge_base` config. Also out of scope: storing anything it finds.
 
 ## Domain rules — federated-search
 

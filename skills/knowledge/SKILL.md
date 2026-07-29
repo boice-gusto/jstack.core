@@ -14,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, or shortcuts.
+Route a knowledge request to the right sub-skill: capture (`intake`), reconcile (`process`), retrieve (`search`), or graph-building (`self-knowledge`, `team-knowledge`). Retrieval and capture are different skills — do not capture as a side effect of answering.
+- **Out of scope:** Writing entries directly from the orchestrator, and deciding team-vs-personal placement without the session gbrain target.
 
 ## Domain rules — knowledge
 - **Lookup vs store:** `jstack:knowledge-search` answers from configured sources (`knowledge_base` in config). Intake/process store into gbrain/Notion. See `skills/knowledge/references/gbrain-patterns.md`.
@@ -23,7 +24,7 @@ Route knowledge requests to intake, process, search, self-knowledge, team-knowle
 - Deduplication: merge duplicates; keep the oldest decision link as canonical.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, shortcuts
+**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, shortcuts, ingest-all, skill-finder
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

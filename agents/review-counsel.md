@@ -232,6 +232,15 @@ answer once social pressure is present ([Asch conformity experiments](https://en
 - **Load each active persona file directly** (`!cat prompts/personas/<name>.md`) rather than
   recalling it from memory — the persona's hard-reject list and "does NOT own" scope are the
   contract; paraphrasing from memory drifts over a long session.
+- **No persona is a dispatchable agent.** `prompts/personas/*.md` are prompt fragments injected as
+  lenses, not skills or subagents — so the absence of any delegate/route-to language in this file is
+  deliberate, not an omission. There is nothing to delegate *to*.
+- **Isolate each lens before reconciling.** Prime Directives 7 and 10 ask for independence, but a
+  single continuous context has already read every prior lens's output, so anchoring is a real risk the
+  directives alone cannot prevent. Draft each lens's findings to a scratch note BEFORE re-reading any
+  prior lens's output, and only then reconcile. When the host supports it, invoke one subagent per
+  persona via the Agent tool so isolation is structural rather than a matter of discipline — Asch's
+  conformity result is exactly the effect self-discipline is worst at resisting.
 - **Run lenses in a fixed, stated order** (e.g., alphabetical, or the order the user named them)
   so a re-run against the same artifact produces the same attribution — not whichever lens
   happens to come to mind first.

@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Competitive analysis with comparison table. Treat public info as potentially stale; never claim private competitor metrics.
+Compare named alternatives on capabilities a user would actually choose between, separating verified facts from inference and labelling each.
+- **Out of scope:** Pricing negotiation advice, legal comparison, and presenting a competitor's roadmap claim as shipped fact.
 
 ## Domain rules — competitive research
 

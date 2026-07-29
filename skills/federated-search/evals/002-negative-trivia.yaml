@@ -1,0 +1,29 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-federated-search** (path: `federated-search`).
+
+  Category: research.
+
+  Skill description: Multi-provider federated search — selects N backends (Jira, Notion, Slack,
+  GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit
+  flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits,
+  ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis.
+  Reads jstack.config.json mcp_servers and integrations; does not invent credentials.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Knowledge-base-only
+  lookups.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    Knowledge-base-only lookups
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

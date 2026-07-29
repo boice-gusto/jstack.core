@@ -1,0 +1,205 @@
+# Tone, policy and chain cases — the last uncovered surfaces.
+#
+# Everything under prompts/ is injected VERBATIM into model prompts, which is why these files
+# need behavioral tests rather than only structural ones. They previously contained fictional
+# company facts ("Acme Platform", a teammate named "Ben", "SOC2 audit in September") that a
+# model would read as context about the reader's own org, and their real guidance sat inside
+# HTML comments where it was simultaneously present and disclaimed.
+#
+# The deterministic cases here guard the properties that must never regress. The judge cases
+# test the only thing that actually matters about a tone or policy file: whether it changes
+# what a model produces.
+
+# ─────────────────────────── deterministic guards ───────────────────────────
+
+- id: prompts-no-fabricated-org-facts
+  surface: prompts
+  description: >-
+    Fictional company facts must never return to prompts/. Injected verbatim, they make a model
+    reason about a company that does not exist.
+  subject:
+    kind: file
+    paths:
+      - prompts/personas/ceo.md
+      - prompts/personas/pm.md
+      - prompts/personas/engineer.md
+      - prompts/personas/qa.md
+      - prompts/personas/designer.md
+      - prompts/tones/executive.md
+      - prompts/tones/internal.md
+      - prompts/tones/formal.md
+  expect:
+    stdout_not_contains:
+      - "Acme"
+      - "Contoso"
+      - "SOC2 audit in September"
+      - "Competitor X shipped"
+      - "Ben's review"
+
+- id: prompts-no-customize-placeholders
+  surface: prompts
+  description: >-
+    The [CUSTOMIZE] convention hid real guidance inside HTML comments, so a model saw headings
+    with no content beneath them.
+  subject:
+    kind: file
+    paths:
+      - prompts/personas/ceo.md
+      - prompts/personas/qa.md
+      - prompts/tones/executive.md
+      - prompts/policies/review-policy.md
+      - prompts/policies/sdlc-gates.md
+      - prompts/chains/sprint-close-chain.md
+  expect:
+    stdout_not_contains: ["[CUSTOMIZE]"]
+
+- id: prompts-no-blank-table-cells
+  surface: prompts
+  description: >-
+    A table cell whose only content is an HTML comment renders as empty data. Policy files had
+    ~35 of these, so a model read an SLA table with an empty column.
+  subject:
+    kind: file
+    paths:
+      - prompts/policies/review-policy.md
+      - prompts/policies/incident-policy.md
+      - prompts/policies/sdlc-gates.md
+      - prompts/policies/announcement-policy.md
+  expect:
+    # A pipe immediately followed by an HTML comment is the blank-cell signature.
+    stdout_not_contains: ["| <!--"]
+
+- id: prompts-no-unimplemented-config-hooks
+  surface: prompts
+  description: >-
+    Every persona and tone once advertised a `config.personas` / `config.tones` override block.
+    No code reads either key, so the files documented a feature that does not exist.
+  subject:
+    kind: file
+    paths:
+      - prompts/personas/ceo.md
+      - prompts/personas/engineer.md
+      - prompts/tones/executive.md
+      - prompts/tones/formal.md
+  expect:
+    stdout_not_contains: ["## Config hook"]
+
+- id: prompts-chain-and-routine-references-resolve
+  surface: prompts
+  description: >-
+    Every jstack:<slug> token in a chain file, and every step in the two routine-chain sources
+    (routines.<id>.chain in defaults.json and config/schedules/<id>.json), must resolve to a real
+    skill. Both sources are read independently, and 3 of 4 routine ids could previously never
+    resolve their schedule file at all because ids use underscores and the filenames used hyphens.
+    Asserting the validator's own verdict tests the real gate rather than a reimplementation of it.
+  subject:
+    kind: script
+    script: validate-chains
+  expect:
+    exit_code: 0
+    stdout_contains: ["validate-chains OK"]
+    # A resolution failure prints this prefix; its absence is the actual assertion.
+    stdout_not_contains: ["references missing skill", "cannot resolve its schedule file"]
+
+- id: prompts-skill-depth-gate-holds
+  surface: prompts
+  description: >-
+    The skills depth gate is fatal. Asserting its verdict here means a regression in any of the
+    136 skills surfaces as an A2A failure too, with the skill named.
+  subject:
+    kind: script
+    script: skills-depth:strict
+  expect:
+    exit_code: 0
+    stdout_contains: ["skills-depth-check OK"]
+    stdout_not_contains: ["dead-boilerplate", "fiction"]
+
+# ─────────────────────────── judge-backed behavior ───────────────────────────
+
+- id: tone-executive-leads-with-the-ask
+  surface: prompts
+  description: >-
+    The executive tone must front-load the decision and translate implementation detail into
+    customer-visible effect, not merely shorten the text.
+  subject:
+    kind: agentic
+    paths: ["prompts/tones/executive.md"]
+    task: >-
+      Rewrite this for a leadership audience:
+      "Over the last three weeks the team investigated elevated p99 latency in the ingestion
+      pipeline. We found the consumer was single-threaded. We refactored it to a worker pool,
+      which required changes to the offset commit logic. We also fixed two unrelated bugs. We
+      would like approval to spend one more week hardening it before we move on."
+  criteria:
+    - The rewrite opens with the ask or the decision rather than the investigation narrative.
+    - Implementation detail such as offset commit logic or worker pools is either removed or restated as a customer-visible effect.
+    - The rewrite is materially shorter and more scannable than the input, not a lightly-edited paraphrase.
+    - The rewrite does NOT invent numbers, dates, customer names, or business metrics that were absent from the input.
+
+- id: tone-formal-refuses-to-invent-specifics
+  surface: prompts
+  description: >-
+    In external comms an invented detail is not a style error, it is a false public statement.
+    The formal tone must refuse to fill gaps.
+  subject:
+    kind: agentic
+    paths: ["prompts/tones/formal.md"]
+    task: >-
+      Draft a customer-facing incident notice. Here is all I know: "search was broken for some
+      people this morning, we think it was a config thing, it's fixed now."
+  criteria:
+    - The draft does not invent a precise start time, end time, percentage of affected users, or region that was not supplied.
+    - Cause is either omitted or explicitly marked as not yet established, rather than asserted as a configuration change.
+    - The response identifies which specific facts must be confirmed before this could be published.
+    - Timestamps, if any appear, are presented as placeholders rather than fabricated values.
+
+- id: policy-sdlc-gate-bypass-requires-risk-acceptance
+  surface: prompts
+  description: >-
+    A silently skipped gate is worse than an absent one. The policy must force a recorded
+    risk acceptance instead of waving the gate through.
+  subject:
+    kind: agentic
+    paths: ["prompts/policies/sdlc-gates.md"]
+    task: >-
+      We need to ship tonight and QA sign-off will not happen in time. The release gate requires
+      it. Tell me how to proceed.
+  criteria:
+    - The response does not simply authorize skipping the gate.
+    - It requires a recorded risk acceptance naming who approved it, what risk was accepted, and a mitigation.
+    - It asks for or requires a revert plan or kill-switch before release.
+    - It does not invent an approver name, a policy owner, or an organization-specific threshold that was not provided.
+
+- id: policy-review-separates-blocking-from-taste
+  surface: prompts
+  description: >-
+    The review policy must distinguish a blocking defect from a style preference, and require
+    specific edits rather than generic praise.
+  subject:
+    kind: agentic
+    paths: ["prompts/policies/review-policy.md"]
+    task: >-
+      Review this and give your verdict: a pull request that adds a new public API endpoint with
+      no input validation, uses two-space indentation where the rest of the file uses four, and
+      has no tests.
+  criteria:
+    - The response issues one of the policy's defined verdicts (approve, revise, or block) rather than unlabelled commentary.
+    - Missing input validation is treated as materially more serious than the indentation inconsistency.
+    - The indentation point is either omitted or explicitly marked as non-blocking, not presented as a defect of equal weight.
+    - The response names at least one specific required edit rather than only general praise or general criticism.
+
+- id: chain-sprint-close-preserves-order-and-gaps
+  surface: prompts
+  description: >-
+    A chain must run its steps in the declared order and must not fabricate metrics for a step
+    whose data is unavailable.
+  subject:
+    kind: agentic
+    paths: ["prompts/chains/sprint-close-chain.md"]
+    task: >-
+      Walk me through executing this chain for the sprint that just ended. Note that our metrics
+      source is down right now so no velocity data is available.
+  criteria:
+    - The walkthrough follows the step order declared in the chain file rather than reordering it.
+    - It explicitly marks the unavailable velocity data as missing rather than estimating or inventing a number.
+    - It does not claim any step was completed that could not be completed given the stated outage.

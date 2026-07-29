@@ -2,7 +2,7 @@
 name: jstack-task-intake
 description: Config-driven task intake wizard — from idea to ticket, sizing, prioritization, and optional announcements.
 when_to_use: User asks to intake work, run a task wizard, size/prioritize, or announce a project.
-category: workflows
+category: intake
 data_class: internal
 effort: medium
 gbrain_destination: team
@@ -14,15 +14,18 @@ gbrain_destination: team
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/chains/intake-to-sprint-chain.md
 
 ## What this skill is for
 Walk an idea to a ticket-ready spec: shape it, size it, place it against existing work, and optionally draft the announcement.
 - **Out of scope:** Creating the ticket itself (`jstack:jira-create`, which is approval-gated). Never invent acceptance criteria the requester did not imply.
 
-## Domain rules — browser workflows
-- Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
-- Secrets: form fills must use env; never print passwords in workflow YAML or chat.
-- Same flow definition for CI and local — call out which base URL the user is targeting.
+## Domain rules — intake
+- Shape raw feature requests, bug reports, or task descriptions into structured fields.
+- Split bundled requests: one candidate per distinct ask; label splits so the user can recombine.
+- If the text is too vague for a ticket, return a short form (summary, AC, type, priority) the user can fill in one pass.
+- Never create tickets directly — output is a payload for `jstack:jira-intake` or clipboard.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -41,13 +44,13 @@ Walk an idea to a ticket-ready spec: shape it, size it, place it against existin
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed.
+Separate bundled asks into distinct candidates before shaping any of them. Name the user and the moment the need occurs. Do not invent acceptance criteria the requester did not imply — ask.
 
 ### Step 3 — Execute
-Apply the `jstack-task-intake` workflow using config and any applicable templates under `templates/workflows/`.
+Apply the `jstack-task-intake` workflow using values from `jstack.config.json`. There is no `templates/intake/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
-Confirm an artifact exists for every claimed assertion. Without the artifact, downgrade the result to unverified rather than reporting a pass.
+Confirm bundled asks were separated, that acceptance criteria are testable, and that nothing was invented on the requester's behalf.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -67,11 +70,11 @@ Use a domain-appropriate heading, then:
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
-| Assertion failure | Abort with screenshot ref and suggest selector fix. |
+| Bundled request too large | Split into first candidate + remainder; confirm split with user. |
+| Ambiguous priority/type | Return a 2-option form; do not guess. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists, add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

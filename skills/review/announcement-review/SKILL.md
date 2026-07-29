@@ -11,9 +11,12 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md
 
 ## What this skill is for
-Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.
+Review a draft announcement against tone and approval policy: audience fit, claim accuracy, and whether anything needs sign-off before it goes out.
+- **Out of scope:** Posting it, and approving on behalf of a named approver.
 
 ## Domain rules — announcement-review
 

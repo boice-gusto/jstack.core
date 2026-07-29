@@ -2,6 +2,7 @@
 name: jstack-self-impact-prep
 description: IC impact prep — Growth Check-in (quick) or Quarterly sweep with artifact gather, gap questions, config rubrics; personal gbrain default.
 category: self
+disable-model-invocation: true
 effort: high
 ---
 
@@ -96,7 +97,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
-Apply the `jstack-self-impact-prep` workflow using config and any applicable templates under `templates/self/`.
+Apply the `jstack-self-impact-prep` workflow using values from `jstack.config.json`. There is no `templates/self/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

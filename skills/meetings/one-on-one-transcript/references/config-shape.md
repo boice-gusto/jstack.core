@@ -31,6 +31,6 @@ Both phases should reference **which transcript files** informed the draft when 
 
 **Per-person parents:** When `team.members[]` includes **`notion.one_on_one_parent_page_id`** for the relevant person, create prep/after pages **under that page** (or as children per org convention). When **`notion.template_page_id`** is set for that member, duplicate from that page for new cycles; otherwise duplicate from `notion_defaults.template_pages[default_template_page_key]`.
 
-Roster + group identity: [`skills/team/references/team-canonical-identity.md`](../../team/references/team-canonical-identity.md).
+Roster + group identity: [`skills/team/references/team-canonical-identity.md`](../../../team/references/team-canonical-identity.md).
 
 Never invent API endpoints or page IDs — only config and user-supplied URLs.

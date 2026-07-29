@@ -15,7 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Synthesize user interview themes with verbatim quotes (permission-aware). Distinguish frequent vs loud users.
+Synthesize qualitative user input into themes with evidence counts, keeping participant quotes attributable to a source and never inventing one.
+- **Out of scope:** Recruiting or interviewing participants, and generalizing from a single session to a population claim.
 
 ## Domain rules — user research
 

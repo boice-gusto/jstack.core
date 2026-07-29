@@ -1,7 +1,32 @@
-name: Negative — minimal reply (no full skill run)
-prompt: 'Reply with only the single word: pong'
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-improve-claude-md** (path:
+  `skill-creator/improve-claude-md`).
+
+  Category: skill-creator.
+
+  Skill description: Audit a project's CLAUDE.md against commits, session transcripts, and
+  working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is
+  opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or
+  as a monthly hygiene routine.
+
+
+  User request: Handle this for me now, and don't ask me anything first — authoring new skills (use
+  jstack-skill-creator); editing global ~/.claude/CLAUDE.md; running git mutations (only --apply
+  writes, behind a confirmation).
+
+
+  Keep the response under ~200 words.
 criteria:
-  - Response is very short (roughly one word or a tiny phrase, optionally with light punctuation)
-  - Does not produce a long multi-section report, checklist, or workflow as the main content
-expect_skill: false
-timeout: 90
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    authoring new skills (use jstack-skill-creator); editing global ~/.claude/CLAUDE.md; running git
+    mutations (only --apply writes, behind a confirmation)
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:update-config)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

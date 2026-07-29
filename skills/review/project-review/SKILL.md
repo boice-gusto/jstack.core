@@ -11,9 +11,12 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md
 
 ## What this skill is for
-Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.
+Review a project update for schedule, scope, risk, and stakeholder issues, separating factual errors from strategy disagreements.
+- **Out of scope:** Re-planning the project, and overruling the project owner's stated priorities.
 
 ## Domain rules — project-review
 

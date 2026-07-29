@@ -1,7 +1,8 @@
 ---
 name: jstack-end-session
-description: End the current session: summarize, flush carryover items, optionally run eval hooks.
+description: "End the current session: summarize, flush carryover items, optionally run eval hooks."
 category: session
+disable-model-invocation: true
 effort: low
 ---
 

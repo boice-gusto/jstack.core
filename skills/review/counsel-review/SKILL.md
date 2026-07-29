@@ -11,9 +11,17 @@ effort: high
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/ceo.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/pm.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/engineer.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/qa.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/designer.md
 
 ## What this skill is for
-Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.
+Reconcile multiple persona lenses into one verdict, attributing each concern to the lens that raised it and stating what would change the call.
+- **Out of scope:** Manufacturing consensus by dropping a dissenting lens, and issuing a verdict without naming the lenses consulted.
 
 ## Domain rules — counsel-review
 

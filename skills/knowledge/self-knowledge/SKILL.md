@@ -2,8 +2,7 @@
 name: jstack-self-knowledge
 description: Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.
 category: knowledge
-agent: Explore
-context: fork
+disable-model-invocation: true
 effort: high
 ---
 
@@ -15,7 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.
+Link the user's own activity and gbrain entries into a retrievable personal graph, each entry carrying a source and an as-of date.
+- **Out of scope:** Copying personal entries into a team store, and scraping repos or org data beyond the configured token's scope.
 
 ## Domain rules — self-knowledge
 

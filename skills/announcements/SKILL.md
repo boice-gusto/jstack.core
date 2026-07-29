@@ -12,6 +12,11 @@ effort: medium
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/announcement-policy.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/tones/internal.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/tones/executive.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/tones/formal.md
 
 ## What this skill is for
 Turn rough notes into channel-ready copy. Distinguish internal vs public; never leak unreleased product detail unless user confirmed external audience.

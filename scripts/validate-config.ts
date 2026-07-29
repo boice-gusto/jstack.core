@@ -7,6 +7,7 @@ import {
   ENCODING_UTF8,
   JSTACK_CONFIG_FILE,
 } from "../constants/paths.js";
+import { JstackConfigSchema, formatConfigIssues } from "../cli/src/types/config.js";
 
 const root = process.cwd();
 const cfgPath = join(root, JSTACK_CONFIG_FILE);
@@ -40,6 +41,71 @@ function merge(a: Record<string, unknown>, b: Record<string, unknown>): Record<s
 
 const merged = merge(defaults as Record<string, unknown>, cfg as Record<string, unknown>);
 console.log("OK keys:", Object.keys(merged).sort().join(", "));
+
+/**
+ * Enforce the Zod contract.
+ *
+ * This script is what CI runs and what skills are told to use, but until now it only merged the two
+ * files and probed a handful of integration keys — it never checked a single value's type. The
+ * schema was therefore "enforced" only incidentally, whenever a CLI command happened to call
+ * `readConfig`. A malformed cron or a threshold typed as a string sailed through `bun run check`.
+ *
+ * Both inputs are validated, because they fail for different reasons and the fix differs:
+ *   - `jstack.config.json` — what the user wrote; this is what `readConfig` will parse and reject.
+ *   - the merged result — catches a bad value shipped in `config/defaults.json` itself.
+ */
+let schemaErrors = 0;
+for (const [label, value] of [
+  [JSTACK_CONFIG_FILE, cfg],
+  ["merged defaults + config", merged],
+] as const) {
+  const parsed = JstackConfigSchema.safeParse(value);
+  if (parsed.success) {
+    console.log(`OK schema: ${label}`);
+    continue;
+  }
+  const issues = formatConfigIssues(parsed.error);
+  schemaErrors += issues.length;
+  console.error(`\nFAIL schema: ${label} — ${issues.length} issue(s)`);
+  for (const i of issues) console.error(`  ${i}`);
+}
+/**
+ * Also validate the shipped config presets.
+ *
+ * `templates/config/{startup,scaleup,enterprise}.json` are complete, valid `jstack.config.json` files
+ * — and nothing loaded or validated them. `setup` never offers them, no code reads them, and no gate
+ * covered them, so the next time the Zod contract tightened they would have broken silently and
+ * nobody would have noticed until a user copied one.
+ */
+for (const preset of ["startup", "scaleup", "enterprise"]) {
+  const path = join(root, "templates", "config", `${preset}.json`);
+  if (!existsSync(path)) continue;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(path, ENCODING_UTF8));
+  } catch (e) {
+    console.error(`FAIL preset templates/config/${preset}.json is not valid JSON: ${String(e)}`);
+    schemaErrors += 1;
+    continue;
+  }
+  const r = JstackConfigSchema.safeParse(parsed);
+  if (r.success) {
+    console.log(`OK preset: templates/config/${preset}.json`);
+  } else {
+    const issues = formatConfigIssues(r.error);
+    schemaErrors += issues.length;
+    console.error(`\nFAIL preset templates/config/${preset}.json — ${issues.length} issue(s)`);
+    for (const i of issues) console.error(`  ${i}`);
+  }
+}
+
+if (schemaErrors > 0) {
+  console.error(
+    `\n${schemaErrors} schema issue(s). The contract is cli/src/types/config.ts; ` +
+      `config/schema.json is its generated reference (bun run schema:generate).`,
+  );
+  process.exit(1);
+}
 
 const strictIntegrations = process.env.JSTACK_STRICT_INTEGRATIONS === "1";
 

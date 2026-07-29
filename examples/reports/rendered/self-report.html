@@ -5,10 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>jstack report</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20128%20128%22%20role%3D%22img%22%20aria-label%3D%22jstack%22%3E%3Cpath%20fill%3D%22%233d5a73%22%20d%3D%22M16%2090%2042%2076%2048%2080%2022%2094z%22%2F%3E%3Cpath%20fill%3D%22%234d6f86%22%20d%3D%22M22%2076%2048%2062%2048%2074%2022%2088z%22%2F%3E%3Cpath%20fill%3D%22%236a8fa8%22%20d%3D%22M22%2062%2048%2048%2048%2060%2022%2074z%22%2F%3E%3Cpath%20fill%3D%22%237ba3d4%22%20fill-rule%3D%22evenodd%22%20d%3D%22M54%2024h46v12H66v38c0%2016%2012%2026%2030%2026h4v12H94c-26%200-42-16-42-42V24z%22%2F%3E%3C%2Fsvg%3E" />
+  <!--
+    Third-party scripts are version-pinned AND subresource-integrity pinned. Without `integrity`,
+    a pinned version still trusts whatever bytes the CDN returns; SRI makes the browser refuse a
+    substituted file. Regenerate a hash with:
+      curl -sS <url> | openssl dgst -sha384 -binary | openssl base64 -A
+    `crossorigin="anonymous"` is required for SRI to be enforced on a cross-origin script.
+
+    dompurify is held at >= 3.2.4: 3.1.6 shipped here previously and is affected by the mXSS issue
+    fixed in 3.2.4 (package.json was bumped for it, but this template was missed). DOMPurify is the
+    sanitizer standing between report markdown and the DOM, so a stale copy is the one dependency
+    here that matters most.
+
+    Tailwind is deliberately NOT pinned: cdn.tailwindcss.com is a versionless JIT compiler with no
+    stable artifact to hash. It is a dev/preview convenience — published reports should use the
+    bundled asset path (constants/reportPluginAssets.ts) rather than any CDN.
+  -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
+          integrity="sha384-Sse/HDqcypGpyTDpvZOJNnG0TT3feGQUkF9H+mnRvic+LjR+K1NhTt8f51KIQ3v3"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"
+          integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"
+          integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu"
+          crossorigin="anonymous"></script>
   <style>
 :root {
   --color-main: #0f172a;
