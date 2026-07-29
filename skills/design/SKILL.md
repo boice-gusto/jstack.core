@@ -16,6 +16,12 @@ Read the setup preamble first:
 Route a design request to the right sub-skill: `figma-handoff` for a design-to-implementation contract (tokens, variants, state coverage, accessibility), or `visual-single-page-html` for a self-contained artifact a reader opens directly.
 - **Out of scope:** Writing the component code, and editing the Figma file itself.
 
+## Domain rules — design
+- Two very different outputs live here. `figma-handoff` produces an implementation CONTRACT (named components and variants, token references, state coverage, the accessibility criterion each state must meet). `visual-single-page-html` produces a self-contained ARTIFACT a reader opens directly. Pick by deliverable, not by topic.
+- Never claim pixel parity without a screenshot reference; say `[no screenshot available]` rather than asserting visual accuracy from a description.
+- Accessibility is a named criterion, not an adjective — cite the WCAG rule and the measured value (`#999 on #fff is 2.85:1`), never "contrast looks low".
+- A single-page artifact pins its CDN scripts with SRI and embeds no real customer or employee data. Use synthetic values in examples.
+
 ## Sub-skills (pick the most specific)
 **Under `skills/design/`:** figma-handoff, visual-single-page-html
 
