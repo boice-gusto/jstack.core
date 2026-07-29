@@ -17,13 +17,22 @@ import type { DependencyIssue } from "../lib/dependency-resolver.js";
  * always say "yes" — the containment check must hold regardless of consent, since
  * consent only covers "do the repairs I was shown", not "and anything else".
  */
+/**
+ * `mock.module` is PROCESS-WIDE and is never restored, so anything stubbed here is what every
+ * other test file in the same run imports. Stubbing `nonInteractiveHint` as `() => ""` made
+ * cli/src/lib/cliUi.test.ts fail whenever bun happened to load this file first -- which differs
+ * between macOS and Linux, so the suite was green locally and red in CI for a reason that had
+ * nothing to do with either test. Delegate everything not deliberately overridden to the real
+ * module, so the blast radius is only what these tests actually need to change.
+ */
+const realCliUi = await import("../lib/cliUi.js");
 mock.module("../lib/cliUi.js", () => ({
+  ...realCliUi,
   isInteractive: () => true,
   handleCancel: () => false,
   exitCancelled: () => {
     throw new Error("exitCancelled() should not be called in these tests");
   },
-  nonInteractiveHint: () => "",
 }));
 mock.module("@clack/prompts", () => ({
   confirm: async () => true,
