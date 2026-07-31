@@ -191,3 +191,28 @@ describe("polling spend is recorded, not just displayed", () => {
     s.close();
   });
 });
+
+describe("findTaskById makes the printed handle resolvable", () => {
+  test("a recorded task is found, with its agent and session", () => {
+    const s = freshStore();
+    s.createTask("ral-aaaa", "D0TESTDM001", "1785141296.398489", "1785141296.398489", "sess-uuid-1", "ralph");
+    const t = s.findTaskById("ral-aaaa");
+    expect(t).not.toBeNull();
+    expect(t!.agentId).toBe("ralph");
+    expect(t!.sessionId).toBe("sess-uuid-1");
+    s.close();
+  });
+
+  test("an unknown handle returns null rather than throwing", () => {
+    const s = freshStore();
+    expect(s.findTaskById("ral-zzzz")).toBeNull();
+    s.close();
+  });
+
+  test("it reports the owning agent, which is what blocks cross-agent recall", () => {
+    const s = freshStore();
+    s.createTask("sco-bbbb", "D0TESTDM001", "1785141297.000000", "1785141297.000000", "sess-uuid-2", "scout");
+    expect(s.findTaskById("sco-bbbb")!.agentId).toBe("scout");
+    s.close();
+  });
+});

@@ -50,8 +50,47 @@ function tickId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function taskId(): string {
-  return `ral-${Math.random().toString(36).slice(2, 6)}`;
+/**
+ * A handle the operator can actually type, prefixed with the agent that owns it.
+ *
+ * The prefix used to be a hardcoded `ral-` for every agent, which was harmless while the
+ * handle was decorative -- but the real ledger shows Scout's tasks as `ral-qatq` and
+ * `ral-oiu4`, so the moment the handle becomes something you type at an agent, `ral-`
+ * claiming Ralph is actively misleading. Derived from the agent id rather than the display
+ * name, because the id is what routing and config key off.
+ */
+export function taskId(agentId: string): string {
+  const prefix = (agentId.replace(/[^a-z0-9]/gi, "").slice(0, 3) || "tsk").toLowerCase();
+  return `${prefix}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/**
+ * A recall reference: `#ral-qatq`, as printed in a reply's footer.
+ *
+ * Only matched outside quotes and code fences, reusing the same rule as sigils -- a handle
+ * inside a blockquote is being discussed, not invoked, which matters because every reply
+ * carries its own handle and the operator quoting a reply must not be read as a recall.
+ */
+export const RECALL_RE = /#([a-z]{2,4}-[a-z0-9]{4,8})\b/i;
+
+export function findRecallRef(text: string): string | null {
+  let inFence = false;
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (line.startsWith("```")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence || line.startsWith(">")) continue;
+    const m = RECALL_RE.exec(line);
+    if (m) return m[1]!.toLowerCase();
+  }
+  return null;
+}
+
+/** Strip the recall marker so the worker sees the request, not the plumbing. */
+export function stripRecallRef(text: string): string {
+  return text.replace(new RegExp(RECALL_RE.source, "gi"), "").replace(/\s{2,}/g, " ").trim();
 }
 
 /**
@@ -376,14 +415,45 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         return;
       }
 
-      const id = existing?.id ?? taskId();
+      const id = existing?.id ?? taskId(agentId);
+
+      /**
+       * Explicit recall: `#<handle>` names a session to continue.
+       *
+       * It WINS over thread membership, because the operator typed it deliberately while
+       * thread continuity is merely implied by where they clicked. Two continuity mechanisms
+       * that can disagree need a stated precedence, or the behaviour is whichever branch was
+       * written first.
+       *
+       * Refused across agents: a session carries a workspace and a tool set, so letting one
+       * agent resume another's conversation would ground it in the wrong repository.
+       */
+      const ref = findRecallRef(m.text);
+      let recall: { sessionId: string; note?: string } | null = null;
+      if (ref) {
+        const found = store.findTaskById(ref);
+        if (!found) {
+          recall = { sessionId: "", note: `I could not find session \`${ref}\`, so this starts fresh.` };
+        } else if (found.agentId && found.agentId !== agentId) {
+          recall = {
+            sessionId: "",
+            note: `\`${ref}\` belongs to *${found.agentId}*, not me — I cannot resume another agent's session, so this starts fresh.`,
+          };
+        } else if (!found.sessionId.trim()) {
+          recall = { sessionId: "", note: `Session \`${ref}\` has no resumable id recorded, so this starts fresh.` };
+        } else {
+          recall = { sessionId: found.sessionId.trim() };
+          log(`  recall ${ref} -> session ${found.sessionId.slice(0, 8)}`);
+        }
+      }
+
       /**
        * A task can legitimately lack a usable session id: an older schema, a crash before
        * the id was stored, or a seeded row. `--resume ""` is a hard error, so fall back to
        * a fresh session rather than failing the turn. The conversation loses its memory,
        * which is worse than remembering but far better than refusing to answer.
        */
-      const prior = existing?.sessionId?.trim();
+      const prior = recall?.sessionId?.trim() || existing?.sessionId?.trim();
       const canResume = !!prior;
       const sessionId = prior || randomUUID();
       // A follow-up threads on the SAME parent, so the whole exchange stays in one place.
@@ -427,16 +497,43 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         log(`  no session id on ${id}; answering without prior context`);
         store.logEvent({ tickId: kid, kind: "session_missing", channelId: m.channelId, msgTs: m.ts, detail: id });
       }
-      const w = await runWorker(cfg, agent, stripSigils(m.text, allSigils(cfg.agents)), nonce, {
-        id: sessionId,
-        resume: isFollowUp && canResume,
-      });
+      // A recall resumes even on a FIRST turn -- that is the whole point of naming a session.
+      const wantResume = canResume && (isFollowUp || !!recall?.sessionId);
+      const request = stripRecallRef(stripSigils(m.text, allSigils(cfg.agents)));
+      let w = await runWorker(cfg, agent, request, nonce, { id: sessionId, resume: wantResume });
+
+      /**
+       * If resuming FAILED, answer cold and say so.
+       *
+       * Session transcripts live under ~/.claude/projects and can be cleaned or rotated, so a
+       * recorded id is not proof the session still exists. Silently answering without the
+       * prior context is the exact failure the operator originally reported -- an agent that
+       * appears to remember and does not. Retry once without --resume, and mark the reply.
+       */
+      let recallFailed = false;
+      if (!w.ok && wantResume) {
+        log(`  resume of ${sessionId.slice(0, 8)} failed; retrying without prior context`);
+        store.logEvent({ tickId: kid, kind: "resume_failed", channelId: m.channelId, msgTs: m.ts, detail: id });
+        recallFailed = true;
+        const fresh = randomUUID();
+        w = await runWorker(cfg, agent, request, nonce, { id: fresh, resume: false });
+      }
       // Persist the session so the NEXT follow-up can resume, even if this one could not.
       if (persist && w.sessionId) store.setTaskSession(id, w.sessionId);
       summary.costUsd += w.cost;
       if (persist) store.settle(cfg.budget.per_task_usd, w.cost);
 
-      const body = w.ok ? w.text : `Task failed.\n\n\`\`\`\n${w.text.slice(0, 400)}\n\`\`\``;
+      // Surface a recall problem in the REPLY, not just the log: the operator is the one who
+      // needs to know the answer was written without the context they asked for.
+      const notes = [
+        recall?.note,
+        recallFailed ? `That session could no longer be resumed, so I answered without its history.` : null,
+      ].filter(Boolean);
+      const prefixNote = notes.length ? `_${notes.join(" ")}_\n\n` : "";
+
+      const body = w.ok
+        ? `${prefixNote}${w.text}`
+        : `${prefixNote}Task failed.\n\n\`\`\`\n${w.text.slice(0, 400)}\n\`\`\``;
       const out = renderResult(cfg, agent, body, id, w.cost);
 
       if (cfg.mode === "live") {

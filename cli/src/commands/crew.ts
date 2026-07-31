@@ -341,6 +341,52 @@ export function runCrewUninstall(): void {
   console.log(chalk.dim("  Remember to remove it from Full Disk Access if you granted it."));
 }
 
+/* ----------------------------------------------------------------- session ---- */
+
+/**
+ * Resolve the handle printed in a Slack reply to the Claude session behind it.
+ *
+ * Named `session` rather than `resume` because `crew resume` already means "clear the HALTED
+ * sentinel", and overloading a word that currently un-halts a stopped system would be a
+ * genuinely dangerous ambiguity.
+ *
+ * Prints the command rather than running it: `claude --resume` is interactive and wants your
+ * terminal, and the agent's session store is keyed to the workspace, so the cwd matters.
+ */
+export function runCrewSession(taskIdArg: string, json: boolean): void {
+  const cfg = loadCrewConfig();
+  const store = new CrewStore(cfg.state_dir);
+  const t = store.findTaskById(taskIdArg.replace(/^#/, "").toLowerCase());
+  store.close();
+
+  if (!t) {
+    if (json) console.log(JSON.stringify({ ok: false, error: "no such task" }, null, 2));
+    else console.error(chalk.red(`no task ${taskIdArg}. See: jstackc crew status`));
+    process.exitCode = 1;
+    return;
+  }
+
+  const agent = cfg.agents[t.agentId];
+  const workspace = agent ? expandHome(agent.workspace) : null;
+
+  if (json) {
+    console.log(JSON.stringify({ ok: true, ...t, workspace }, null, 2));
+    return;
+  }
+
+  console.log(chalk.bold(`\nSession behind ${t.id}\n`));
+  console.log(`  agent      ${t.agentId || chalk.dim("(unknown)")}`);
+  console.log(`  session    ${t.sessionId || chalk.yellow("(none recorded — not resumable)")}`);
+  console.log(`  thread     ${t.threadTs || chalk.dim("(none)")}`);
+  if (workspace) console.log(`  workspace  ${workspace}`);
+  if (t.sessionId) {
+    console.log(chalk.dim("\n  Continue it in your terminal:"));
+    console.log(`    cd ${workspace ?? "<workspace>"} && claude --resume ${t.sessionId}`);
+    console.log(chalk.dim("\n  Or from Slack, to have the agent continue it:"));
+    console.log(`    ${agent?.sigils[0] ?? "!agent"} #${t.id} <your next question>`);
+  }
+}
+
 /* -------------------------------------------------------------------- eval ---- */
 
 /**
@@ -1191,4 +1237,10 @@ export function registerCrewCommand(program: Command): void {
     .action((o: { reason: string }) => runCrewPanic(o.reason));
 
   crew.command("resume").description("Clear HALTED").action(() => runCrewResume());
+
+  crew
+    .command("session <taskId>")
+    .description("Show the Claude session behind a reply handle, so you can continue it locally")
+    .option("--json", "machine-readable", false)
+    .action((taskIdArg: string, o: { json: boolean }) => runCrewSession(taskIdArg, o.json));
 }
