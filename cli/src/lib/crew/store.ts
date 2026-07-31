@@ -229,6 +229,23 @@ export class CrewStore {
   }
 
   /** Record the session id the child actually used, so the next follow-up can resume it. */
+  /**
+   * Look a task up by the handle printed in its Slack message footer.
+   *
+   * That handle was decorative until now: it was rendered on every reply but nothing could
+   * resolve it, so continuity was available only by staying inside the thread. This is what
+   * makes `#<handle>` recall -- and the CLI handoff -- possible.
+   */
+  findTaskById(id: string): { id: string; agentId: string; sessionId: string; threadTs: string } | null {
+    const r = this.db
+      .query<{ id: string; agent_id: string; session_id: string; thread_ts: string }, [string]>(
+        "SELECT id, agent_id, session_id, thread_ts FROM task WHERE id = ?",
+      )
+      .get(id);
+    if (!r) return null;
+    return { id: r.id, agentId: r.agent_id ?? "", sessionId: r.session_id ?? "", threadTs: r.thread_ts ?? "" };
+  }
+
   setTaskSession(id: string, sessionId: string): void {
     this.db.query("UPDATE task SET session_id=? WHERE id=? AND (session_id IS NULL OR session_id='')").run(sessionId, id);
   }
