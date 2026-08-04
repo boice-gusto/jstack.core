@@ -30,9 +30,13 @@ export function skillGateIdFromRelPath(repoRelPath: string): string {
   return `jstack:${slug}`;
 }
 
-const FRONTMATTER_KEY_LINE = /^(name|description|when_to_use|category):\s*(.*)$/;
+const FRONTMATTER_KEY_LINE =
+  /^(name|description|when_to_use|category):\s*(.*)$/;
 
-export function parseFrontmatter(raw: string): { meta: Record<string, string>; rest: string } {
+export function parseFrontmatter(raw: string): {
+  meta: Record<string, string>;
+  rest: string;
+} {
   if (!raw.startsWith("---")) {
     return { meta: {}, rest: raw };
   }
@@ -63,7 +67,13 @@ export function parseFrontmatter(raw: string): { meta: Record<string, string>; r
     const k = m[1];
     let v = (m[2] ?? "").trimEnd();
     const t = v.trim();
-    if (t === ">-" || t === ">" || t === "|" || t === "|-" || (k === "description" && t === "")) {
+    if (
+      t === ">-" ||
+      t === ">" ||
+      t === "|" ||
+      t === "|-" ||
+      (k === "description" && t === "")
+    ) {
       const parts: string[] = [];
       if (t !== ">-" && t !== ">" && t !== "|" && t !== "|-" && v.length > 0) {
         parts.push(v);
@@ -92,7 +102,10 @@ export function parseFrontmatter(raw: string): { meta: Record<string, string>; r
   return { meta, rest };
 }
 
-export async function walkSkillMds(dir: string, out: string[] = []): Promise<string[]> {
+export async function walkSkillMds(
+  dir: string,
+  out: string[] = [],
+): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const e of entries) {
     const p = join(dir, e.name);
@@ -105,7 +118,10 @@ export async function walkSkillMds(dir: string, out: string[] = []): Promise<str
   return out;
 }
 
-export async function walkAllMarkdownUnderSkills(dir: string, out: string[] = []): Promise<string[]> {
+export async function walkAllMarkdownUnderSkills(
+  dir: string,
+  out: string[] = [],
+): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const e of entries) {
     const p = join(dir, e.name);
@@ -126,7 +142,10 @@ export function formatCategoryLabel(key: string): string {
     .join(" ");
 }
 
-export async function buildSkillRecords(repoRoot: string, skillsRoot: string): Promise<SkillRecord[]> {
+export async function buildSkillRecords(
+  repoRoot: string,
+  skillsRoot: string,
+): Promise<SkillRecord[]> {
   const absPaths = await walkSkillMds(skillsRoot);
   const records: SkillRecord[] = [];
 
@@ -134,12 +153,16 @@ export async function buildSkillRecords(repoRoot: string, skillsRoot: string): P
     const raw = await readFile(abs, "utf8");
     const { meta } = parseFrontmatter(raw);
     const rel = relative(repoRoot, abs).split("\\").join("/");
-    const name = meta.name ?? rel.replace(/^skills\//, "").replace(/\/SKILL\.md$/, "");
+    const name =
+      meta.name ?? rel.replace(/^skills\//, "").replace(/\/SKILL\.md$/, "");
     const description = meta.description ?? "";
     const whenToUse = meta.when_to_use ?? "";
     const categoryField = meta.category?.trim();
     const pathParts = rel.replace(/^skills\//, "").split("/");
-    const categoryKey = categoryField && categoryField.length > 0 ? categoryField : pathParts[0] ?? "general";
+    const categoryKey =
+      categoryField && categoryField.length > 0
+        ? categoryField
+        : (pathParts[0] ?? "general");
     const uniqueId = rel
       .toLowerCase()
       .replace(/^skills\//, "")

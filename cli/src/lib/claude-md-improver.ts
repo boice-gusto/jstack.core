@@ -48,14 +48,22 @@ export type ProposedEdit = {
 };
 
 export type ParsedLine = { line_number: number; text: string };
-export type ParsedSection = { heading: string; line_start: number; lines: ParsedLine[] };
+export type ParsedSection = {
+  heading: string;
+  line_start: number;
+  lines: ParsedLine[];
+};
 export type ParsedClaudeMd = { lines: ParsedLine[]; sections: ParsedSection[] };
 
 export function parseClaudeMd(input: string): ParsedClaudeMd {
   const rawLines = input.split(/\r?\n/);
   // Drop a single trailing empty string produced by a final newline
-  if (rawLines.length > 0 && rawLines[rawLines.length - 1] === "") rawLines.pop();
-  const lines: ParsedLine[] = rawLines.map((text, i) => ({ line_number: i + 1, text }));
+  if (rawLines.length > 0 && rawLines[rawLines.length - 1] === "")
+    rawLines.pop();
+  const lines: ParsedLine[] = rawLines.map((text, i) => ({
+    line_number: i + 1,
+    text,
+  }));
   const sections: ParsedSection[] = [];
   let current: ParsedSection | null = null;
   for (const l of lines) {
@@ -125,7 +133,10 @@ export function collect(input: CollectInput): CollectOutput {
 
   const lockfiles = LOCKFILES.filter((f) => exists(join(input.projectRoot, f)));
   const transcriptDir = resolveTranscriptDir(input.homeDir, input.projectRoot);
-  if (!transcriptDir) notes.push("No session transcripts found; running without session-derived detectors.");
+  if (!transcriptDir)
+    notes.push(
+      "No session transcripts found; running without session-derived detectors.",
+    );
 
   return {
     project_root: input.projectRoot,
@@ -138,19 +149,40 @@ export function collect(input: CollectInput): CollectOutput {
   };
 }
 
-export const PII_PATTERNS: { name: string; re: RegExp; replacement: string }[] = [
-  { name: "key", re: /\b(?:sk|pk|api[_-]?key)[_=:-][\w-]{16,}/gi, replacement: "[redacted-key]" },
-  {
-    name: "jwt",
-    re: /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g,
-    replacement: "[redacted-jwt]",
-  },
-  { name: "email", re: /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g, replacement: "[redacted-email]" },
-  { name: "aws", re: /\bAKIA[0-9A-Z]{16}\b/g, replacement: "[redacted-aws]" },
-  { name: "ghp", re: /\bghp_[A-Za-z0-9]{20,}\b/g, replacement: "[redacted-key]" },
-  { name: "glpat", re: /\bglpat-[A-Za-z0-9_-]{8,}\b/g, replacement: "[redacted-key]" },
-  { name: "slack", re: /\bxox[bp]-[A-Za-z0-9-]{8,}\b/g, replacement: "[redacted-key]" },
-];
+export const PII_PATTERNS: { name: string; re: RegExp; replacement: string }[] =
+  [
+    {
+      name: "key",
+      re: /\b(?:sk|pk|api[_-]?key)[_=:-][\w-]{16,}/gi,
+      replacement: "[redacted-key]",
+    },
+    {
+      name: "jwt",
+      re: /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/g,
+      replacement: "[redacted-jwt]",
+    },
+    {
+      name: "email",
+      re: /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g,
+      replacement: "[redacted-email]",
+    },
+    { name: "aws", re: /\bAKIA[0-9A-Z]{16}\b/g, replacement: "[redacted-aws]" },
+    {
+      name: "ghp",
+      re: /\bghp_[A-Za-z0-9]{20,}\b/g,
+      replacement: "[redacted-key]",
+    },
+    {
+      name: "glpat",
+      re: /\bglpat-[A-Za-z0-9_-]{8,}\b/g,
+      replacement: "[redacted-key]",
+    },
+    {
+      name: "slack",
+      re: /\bxox[bp]-[A-Za-z0-9-]{8,}\b/g,
+      replacement: "[redacted-key]",
+    },
+  ];
 
 const FENCE_RE = /```[\s\S]*?```/g;
 
@@ -162,7 +194,10 @@ export function encodeProjectPath(projectRoot: string): string {
   return trimmed.replace(/\//g, "-");
 }
 
-export function resolveTranscriptDir(homeDir: string, projectRoot: string): string | null {
+export function resolveTranscriptDir(
+  homeDir: string,
+  projectRoot: string,
+): string | null {
   const encoded = encodeProjectPath(projectRoot);
   const dir = join(homeDir, ".claude", "projects", encoded);
   return existsSync(dir) ? dir : null;
@@ -180,7 +215,11 @@ import { readdirSync } from "node:fs";
 
 export type UserPrompt = { session_id: string; text: string; timestamp: Date };
 
-export function readTranscriptUserPrompts(dir: string, now: Date, lookbackDays: number): UserPrompt[] {
+export function readTranscriptUserPrompts(
+  dir: string,
+  now: Date,
+  lookbackDays: number,
+): UserPrompt[] {
   const files = readdirSync(dir).filter((f) => f.endsWith(".jsonl"));
   const cutoff = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
   const out: UserPrompt[] = [];
@@ -206,7 +245,11 @@ export function readTranscriptUserPrompts(dir: string, now: Date, lookbackDays: 
               ? obj.message.content
               : "";
         if (!text) continue;
-        out.push({ session_id: sessionId, text: redact(text), timestamp: ts ?? now });
+        out.push({
+          session_id: sessionId,
+          text: redact(text),
+          timestamp: ts ?? now,
+        });
       } catch {
         // skip malformed line
       }
@@ -218,8 +261,26 @@ export function readTranscriptUserPrompts(dir: string, now: Date, lookbackDays: 
 const CORRECTION_RE = /^(no|don't|stop|wait|that's wrong)\b/i;
 const NOUN_RE = /\b([a-z]{3,})\b/gi;
 const STOP_NOUNS = new Set([
-  "no", "don't", "dont", "stop", "wait", "that", "wrong", "use", "the", "and",
-  "for", "not", "but", "with", "its", "this", "that", "from", "into", "onto",
+  "no",
+  "don't",
+  "dont",
+  "stop",
+  "wait",
+  "that",
+  "wrong",
+  "use",
+  "the",
+  "and",
+  "for",
+  "not",
+  "but",
+  "with",
+  "its",
+  "this",
+  "that",
+  "from",
+  "into",
+  "onto",
 ]);
 
 export function detectD4RepeatedCorrection(prompts: UserPrompt[]): Issue[] {
@@ -271,7 +332,8 @@ function levenshtein(a: string, b: string): number {
     dp[0] = i;
     for (let j = 1; j <= b.length; j++) {
       const tmp = dp[j];
-      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      dp[j] =
+        a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
       prev = tmp;
     }
   }
@@ -290,14 +352,20 @@ function topicTokens(text: string): string[] {
     .filter((n) => !STOP_NOUNS.has(n));
 }
 
-export function detectD5RepeatedReask(prompts: UserPrompt[], claudeMd: ParsedClaudeMd): Issue[] {
+export function detectD5RepeatedReask(
+  prompts: UserPrompt[],
+  claudeMd: ParsedClaudeMd,
+): Issue[] {
   const buckets: UserPrompt[][] = [];
   for (const p of prompts) {
     const matched = buckets.find((b) => similar(b[0].text, p.text));
     if (matched) matched.push(p);
     else buckets.push([p]);
   }
-  const claudeText = claudeMd.lines.map((l) => l.text).join(" ").toLowerCase();
+  const claudeText = claudeMd.lines
+    .map((l) => l.text)
+    .join(" ")
+    .toLowerCase();
   const issues: Issue[] = [];
   let counter = 1;
   for (const bucket of buckets) {
@@ -327,7 +395,9 @@ export function detectD5RepeatedReask(prompts: UserPrompt[], claudeMd: ParsedCla
 const POSITIVE_RE = /\b(always|prefer|use)\b/i;
 const NEGATIVE_RE = /\b(never|don't|avoid|do not)\b/i;
 
-export function detectD6ContradictionCandidates(parsed: ParsedClaudeMd): Issue[] {
+export function detectD6ContradictionCandidates(
+  parsed: ParsedClaudeMd,
+): Issue[] {
   type Tagged = { line: ParsedLine; tokens: Set<string>; polarity: "+" | "-" };
   const tagged: Tagged[] = [];
   for (const line of parsed.lines) {
@@ -351,7 +421,10 @@ export function detectD6ContradictionCandidates(parsed: ParsedClaudeMd): Issue[]
         id: `i-d6-${String(counter++).padStart(3, "0")}`,
         detector: "D6",
         category: "fix-contradiction",
-        claude_md_anchor: { line_start: a.line.line_number, line_end: b.line.line_number },
+        claude_md_anchor: {
+          line_start: a.line.line_number,
+          line_end: b.line.line_number,
+        },
         evidence: { related_rules: [a.line.line_number, b.line.line_number] },
         raw_summary: `Candidate contradiction on "${overlap.join(", ")}"`,
         estimated_corrections_avoided_per_week: 0.25,
@@ -373,7 +446,10 @@ export function detectD7MissingExample(collected: CollectOutput): Issue[] {
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
     if (!STYLE_RE.test(l.text)) continue;
-    const window = lines.slice(i, Math.min(lines.length, i + 4)).map((x) => x.text).join("\n");
+    const window = lines
+      .slice(i, Math.min(lines.length, i + 4))
+      .map((x) => x.text)
+      .join("\n");
     if (FENCE_OR_LINK_RE.test(window)) continue;
     issues.push({
       id: `i-d7-${String(counter++).padStart(3, "0")}`,
@@ -443,7 +519,10 @@ export function detectD9ReadmeDuplication(collected: CollectOutput): Issue[] {
       id: `i-d9-${String(counter++).padStart(3, "0")}`,
       detector: "D9",
       category: "dedupe",
-      claude_md_anchor: { line_start: line.line_number, line_end: line.line_number },
+      claude_md_anchor: {
+        line_start: line.line_number,
+        line_end: line.line_number,
+      },
       evidence: { related_rules: [line.line_number] },
       raw_summary: `Rule duplicates README content verbatim`,
       estimated_corrections_avoided_per_week: 0.1,
@@ -455,7 +534,10 @@ export function detectD9ReadmeDuplication(collected: CollectOutput): Issue[] {
 
 const DONT_RE = /^(don't|do not|avoid|never)\b/i;
 
-export function detectD10DontGap(prompts: UserPrompt[], claudeMd: ParsedClaudeMd): Issue[] {
+export function detectD10DontGap(
+  prompts: UserPrompt[],
+  claudeMd: ParsedClaudeMd,
+): Issue[] {
   const hasNegative = claudeMd.lines.some((l) => NEGATIVE_RE.test(l.text));
   if (hasNegative) return [];
   const buckets = new Map<string, UserPrompt[]>();
@@ -476,7 +558,10 @@ export function detectD10DontGap(prompts: UserPrompt[], claudeMd: ParsedClaudeMd
       category: "add-rule",
       claude_md_anchor: null,
       evidence: {
-        session_excerpts: list.slice(0, 3).map((p) => ({ session_id: p.session_id, excerpt: p.text.slice(0, 80) })),
+        session_excerpts: list.slice(0, 3).map((p) => ({
+          session_id: p.session_id,
+          excerpt: p.text.slice(0, 80),
+        })),
       },
       raw_summary: `Recurring "don't" pattern not in CLAUDE.md: "${key.slice(0, 40)}"`,
       estimated_corrections_avoided_per_week: list.length / 4,
@@ -487,7 +572,8 @@ export function detectD10DontGap(prompts: UserPrompt[], claudeMd: ParsedClaudeMd
 }
 
 const VAGUE_TRIGGER_RE = /\b(always|never|prefer|use|avoid)\b/i;
-const SPECIFIC_INDICATOR_RE = /(`[^`]+`|\bhttps?:\/\/|[A-Z][a-zA-Z]+(?:\.[A-Z][a-zA-Z]+)+|\/[\w./-]+|\b[\w-]+\.[\w]{2,}\b)/;
+const SPECIFIC_INDICATOR_RE =
+  /(`[^`]+`|\bhttps?:\/\/|[A-Z][a-zA-Z]+(?:\.[A-Z][a-zA-Z]+)+|\/[\w./-]+|\b[\w-]+\.[\w]{2,}\b)/;
 
 export function detectD3VagueRule(collected: CollectOutput): Issue[] {
   if (!collected.claude_md) return [];
@@ -501,7 +587,10 @@ export function detectD3VagueRule(collected: CollectOutput): Issue[] {
       id: `i-d3-${String(counter++).padStart(3, "0")}`,
       detector: "D3",
       category: "sharpen-rule",
-      claude_md_anchor: { line_start: line.line_number, line_end: line.line_number },
+      claude_md_anchor: {
+        line_start: line.line_number,
+        line_end: line.line_number,
+      },
       evidence: { related_rules: [line.line_number] },
       raw_summary: `Rule lacks a concrete subject: "${line.text.trim().slice(0, 60)}"`,
       estimated_corrections_avoided_per_week: 0.5,
@@ -527,7 +616,10 @@ export function detectD2StalePath(collected: CollectOutput): Issue[] {
         id: `i-d2-${String(counter++).padStart(3, "0")}`,
         detector: "D2",
         category: "remove-stale-rule",
-        claude_md_anchor: { line_start: line.line_number, line_end: line.line_number },
+        claude_md_anchor: {
+          line_start: line.line_number,
+          line_end: line.line_number,
+        },
         evidence: { file_paths: [candidate] },
         raw_summary: `CLAUDE.md references path \`${candidate}\` which does not exist`,
         estimated_corrections_avoided_per_week: 0.5,
@@ -541,7 +633,7 @@ export function detectD2StalePath(collected: CollectOutput): Issue[] {
 export function detectD1StalePackageManager(collected: CollectOutput): Issue[] {
   if (!collected.claude_md) return [];
   const managersInRepo = new Set(
-    collected.lockfiles.map((l) => LOCKFILE_TO_MANAGER[l]).filter(Boolean)
+    collected.lockfiles.map((l) => LOCKFILE_TO_MANAGER[l]).filter(Boolean),
   );
   if (managersInRepo.size === 0) return [];
   const issues: Issue[] = [];
@@ -555,7 +647,10 @@ export function detectD1StalePackageManager(collected: CollectOutput): Issue[] {
       id: `i-d1-${String(counter++).padStart(3, "0")}`,
       detector: "D1",
       category: "remove-stale-rule",
-      claude_md_anchor: { line_start: line.line_number, line_end: line.line_number },
+      claude_md_anchor: {
+        line_start: line.line_number,
+        line_end: line.line_number,
+      },
       evidence: { file_paths: collected.lockfiles },
       raw_summary: `CLAUDE.md says "${mentioned}" but lockfile is ${[...managersInRepo].join(", ")}`,
       estimated_corrections_avoided_per_week: 1,
@@ -584,28 +679,40 @@ export type RenderInput = {
 
 export function renderProse(input: RenderInput): string {
   const lines: string[] = [];
-  lines.push(`# CLAUDE.md Improvements — ${input.collected.project_root} — ${input.generated_at}`);
+  lines.push(
+    `# CLAUDE.md Improvements — ${input.collected.project_root} — ${input.generated_at}`,
+  );
   lines.push("");
   if (input.collected.notes.length > 0) {
     lines.push("> Notes:");
     for (const n of input.collected.notes) lines.push(`> - ${n}`);
     lines.push("");
   }
-  lines.push(`Detected ${input.scored.length} candidate issues (LLM proposes patches in stage 3 of the skill).`);
+  lines.push(
+    `Detected ${input.scored.length} candidate issues (LLM proposes patches in stage 3 of the skill).`,
+  );
   lines.push("");
   let n = 1;
   for (const i of input.scored) {
-    lines.push(`## ${n}. ${i.raw_summary}   [priority: ${i.priority_score.toFixed(1)}]`);
+    lines.push(
+      `## ${n}. ${i.raw_summary}   [priority: ${i.priority_score.toFixed(1)}]`,
+    );
     lines.push(`- Detector: ${i.detector}`);
     lines.push(`- Category: ${i.category}`);
     lines.push(`- Confidence: ${i.confidence}`);
     lines.push(`- Saves ~${i.monthly_savings_min.toFixed(0)} min/month`);
-    if (i.claude_md_anchor) lines.push(`- CLAUDE.md line(s): ${i.claude_md_anchor.line_start}–${i.claude_md_anchor.line_end}`);
-    if (i.evidence.commits?.length) lines.push(`- Commits: ${i.evidence.commits.join(", ")}`);
-    if (i.evidence.file_paths?.length) lines.push(`- Files: ${i.evidence.file_paths.join(", ")}`);
+    if (i.claude_md_anchor)
+      lines.push(
+        `- CLAUDE.md line(s): ${i.claude_md_anchor.line_start}–${i.claude_md_anchor.line_end}`,
+      );
+    if (i.evidence.commits?.length)
+      lines.push(`- Commits: ${i.evidence.commits.join(", ")}`);
+    if (i.evidence.file_paths?.length)
+      lines.push(`- Files: ${i.evidence.file_paths.join(", ")}`);
     if (i.evidence.session_excerpts?.length) {
       lines.push(`- Sessions:`);
-      for (const e of i.evidence.session_excerpts) lines.push(`  - \`${e.session_id}\`: ${e.excerpt}`);
+      for (const e of i.evidence.session_excerpts)
+        lines.push(`  - \`${e.session_id}\`: ${e.excerpt}`);
     }
     lines.push("");
     n++;
@@ -615,7 +722,10 @@ export function renderProse(input: RenderInput): string {
 
 export type RenderOutput = { format: "json" | "prose"; text: string };
 
-export function render(input: RenderInput, format: "json" | "prose"): RenderOutput {
+export function render(
+  input: RenderInput,
+  format: "json" | "prose",
+): RenderOutput {
   if (format === "json") {
     return {
       format: "json",
@@ -645,7 +755,10 @@ export function confidenceWeight(c: Confidence): number {
 }
 
 export function scoreIssue(issue: Issue): number {
-  const monthly = issue.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION * WEEKS_PER_MONTH;
+  const monthly =
+    issue.estimated_corrections_avoided_per_week *
+    MINUTES_PER_CORRECTION *
+    WEEKS_PER_MONTH;
   return monthly * confidenceWeight(issue.confidence);
 }
 
@@ -678,12 +791,18 @@ export function detect(
     ...detectD9ReadmeDuplication(collected),
     ...detectD10DontGap(prompts, md),
   ];
-  const filteredIssues = rawIssues.filter((i) => !isDeclined(collected.project_root, i));
+  const filteredIssues = rawIssues.filter(
+    (i) => !isDeclined(collected.project_root, i),
+  );
   const scored: ScoredIssue[] = filteredIssues
     .map((i) => ({
       ...i,
-      time_saved_min_per_week: i.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION,
-      monthly_savings_min: i.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION * WEEKS_PER_MONTH,
+      time_saved_min_per_week:
+        i.estimated_corrections_avoided_per_week * MINUTES_PER_CORRECTION,
+      monthly_savings_min:
+        i.estimated_corrections_avoided_per_week *
+        MINUTES_PER_CORRECTION *
+        WEEKS_PER_MONTH,
       priority_score: scoreIssue(i),
     }))
     .sort((a, b) => b.priority_score - a.priority_score);
@@ -728,7 +847,9 @@ export function isDeclined(projectRoot: string, issue: Issue): boolean {
   const path = join(projectRoot, HISTORY_REL);
   if (!existsSync(path)) return false;
   try {
-    const prior: { fingerprint: string }[] = JSON.parse(readFileSync(path, "utf8"));
+    const prior: { fingerprint: string }[] = JSON.parse(
+      readFileSync(path, "utf8"),
+    );
     return prior.some((p) => p.fingerprint === evidenceFingerprint(issue));
   } catch {
     return false;

@@ -3,7 +3,12 @@ import { join, relative } from "node:path";
 import chalk from "chalk";
 import * as p from "@clack/prompts";
 import { findPluginRoot } from "../lib/config.js";
-import { exitCancelled, handleCancel, isInteractive, nonInteractiveHint } from "../lib/cliUi.js";
+import {
+  exitCancelled,
+  handleCancel,
+  isInteractive,
+  nonInteractiveHint,
+} from "../lib/cliUi.js";
 
 export type SkillIndexEntry = {
   path: string;
@@ -12,13 +17,18 @@ export type SkillIndexEntry = {
   description: string;
 };
 
-function walkSkillMd(dir: string, base: string, out: { path: string; rel: string }[]): void {
+function walkSkillMd(
+  dir: string,
+  base: string,
+  out: { path: string; rel: string }[],
+): void {
   if (!existsSync(dir)) return;
   for (const ent of readdirSync(dir, { withFileTypes: true })) {
     if (ent.name.startsWith(".")) continue;
     const p = join(dir, ent.name);
     if (ent.isDirectory()) walkSkillMd(p, base, out);
-    else if (ent.name === "SKILL.md") out.push({ path: p, rel: relative(base, p) });
+    else if (ent.name === "SKILL.md")
+      out.push({ path: p, rel: relative(base, p) });
   }
 }
 
@@ -60,7 +70,10 @@ function parseFrontmatter(raw: string): { name: string; description: string } {
 }
 
 /** Collect SKILL.md entries under plugin `skills/` (and optional overlay). Exported for browse/pick and tests. */
-export function collectSkills(pluginRoot: string, extraRoot?: string): SkillIndexEntry[] {
+export function collectSkills(
+  pluginRoot: string,
+  extraRoot?: string,
+): SkillIndexEntry[] {
   const skillsDir = join(pluginRoot, "skills");
   const found: { path: string; rel: string }[] = [];
   walkSkillMd(skillsDir, pluginRoot, found);
@@ -94,10 +107,16 @@ export function collectSkills(pluginRoot: string, extraRoot?: string): SkillInde
   return entries;
 }
 
-export function runSkillsIndex(opts: { json?: boolean; overlay?: string }): void {
+export function runSkillsIndex(opts: {
+  json?: boolean;
+  overlay?: string;
+}): void {
   const pluginRoot = findPluginRoot();
   const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(pluginRoot, overlay && overlay.length > 0 ? overlay : undefined);
+  const entries = collectSkills(
+    pluginRoot,
+    overlay && overlay.length > 0 ? overlay : undefined,
+  );
   if (opts.json) {
     console.log(JSON.stringify({ skills: entries }, null, 2));
     return;
@@ -108,10 +127,16 @@ export function runSkillsIndex(opts: { json?: boolean; overlay?: string }): void
 }
 
 /** Interactive picker over all skills; `--json` matches `skills index`. */
-export async function runSkillsBrowse(opts: { json?: boolean; overlay?: string }): Promise<void> {
+export async function runSkillsBrowse(opts: {
+  json?: boolean;
+  overlay?: string;
+}): Promise<void> {
   const pluginRoot = findPluginRoot();
   const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(pluginRoot, overlay && overlay.length > 0 ? overlay : undefined);
+  const entries = collectSkills(
+    pluginRoot,
+    overlay && overlay.length > 0 ? overlay : undefined,
+  );
 
   if (opts.json) {
     console.log(JSON.stringify({ skills: entries }, null, 2));
@@ -135,7 +160,9 @@ export async function runSkillsBrowse(opts: { json?: boolean; overlay?: string }
       value: e.rel,
       label: e.name.length > 0 ? e.name : e.rel,
       hint:
-        e.description.length > 72 ? `${e.description.slice(0, 72)}…` : e.description || undefined,
+        e.description.length > 72
+          ? `${e.description.slice(0, 72)}…`
+          : e.description || undefined,
     })),
   });
 
@@ -152,14 +179,24 @@ export async function runSkillsBrowse(opts: { json?: boolean; overlay?: string }
   console.log(chalk.dim(`SKILL.md: ${hit.rel}`));
   console.log("");
   console.log(chalk.dim("Tip: open the path in your editor or run:"));
-  console.log(chalk.dim(`  jstack skills show ${hit.name || hit.rel.split("/")[0] || hit.rel}`));
+  console.log(
+    chalk.dim(
+      `  jstack skills show ${hit.name || hit.rel.split("/")[0] || hit.rel}`,
+    ),
+  );
 }
 
 /** Filter by substring then pick; `--json` matches `skills index`. */
-export async function runSkillsPick(opts: { json?: boolean; overlay?: string }): Promise<void> {
+export async function runSkillsPick(opts: {
+  json?: boolean;
+  overlay?: string;
+}): Promise<void> {
   const pluginRoot = findPluginRoot();
   const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(pluginRoot, overlay && overlay.length > 0 ? overlay : undefined);
+  const entries = collectSkills(
+    pluginRoot,
+    overlay && overlay.length > 0 ? overlay : undefined,
+  );
 
   if (opts.json) {
     console.log(JSON.stringify({ skills: entries }, null, 2));
@@ -222,11 +259,20 @@ export async function runSkillsPick(opts: { json?: boolean; overlay?: string }):
   console.log(chalk.dim(`SKILL.md: ${hit.rel}`));
 }
 
-export function runSkillsShow(id: string, opts: { json?: boolean; overlay?: string }): void {
+export function runSkillsShow(
+  id: string,
+  opts: { json?: boolean; overlay?: string },
+): void {
   const pluginRoot = findPluginRoot();
   const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(pluginRoot, overlay && overlay.length > 0 ? overlay : undefined);
-  const needle = id.trim().toLowerCase().replace(/^jstack:/, "");
+  const entries = collectSkills(
+    pluginRoot,
+    overlay && overlay.length > 0 ? overlay : undefined,
+  );
+  const needle = id
+    .trim()
+    .toLowerCase()
+    .replace(/^jstack:/, "");
   const hit = entries.find(
     (e) =>
       e.name.toLowerCase() === needle ||

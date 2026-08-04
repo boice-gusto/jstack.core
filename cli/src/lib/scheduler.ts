@@ -10,7 +10,9 @@ export interface RoutineRow {
 }
 
 export function listRoutinesFromConfig(cfg: JstackConfig): RoutineRow[] {
-  const r = cfg.routines as Record<string, { cron?: string; enabled?: boolean; chain?: string[] }> | undefined;
+  const r = cfg.routines as
+    | Record<string, { cron?: string; enabled?: boolean; chain?: string[] }>
+    | undefined;
   if (!r) return [];
   return Object.entries(r).map(([id, v]) => ({
     id,
@@ -20,7 +22,10 @@ export function listRoutinesFromConfig(cfg: JstackConfig): RoutineRow[] {
   }));
 }
 
-export function loadScheduleFile(pluginRoot: string, id: string): unknown | null {
+export function loadScheduleFile(
+  pluginRoot: string,
+  id: string,
+): unknown | null {
   const p = join(pluginRoot, "config", "schedules", `${id}.json`);
   if (!existsSync(p)) return null;
   return JSON.parse(readFileSync(p, "utf8"));

@@ -12,7 +12,13 @@
  * One tick, then exit. There is no loop here on purpose: a short-lived process cannot wedge
  * silently, and launchd re-running it on a schedule is the supervision.
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+  mkdirSync,
+} from "node:fs";
 import { join } from "node:path";
 import { CrewConfigSchema } from "./lib/crew/types.js";
 import { tick } from "./lib/crew/tick.js";
@@ -65,19 +71,33 @@ function findConfig(): string | null {
  * Snapshot first, always. Falling back to the project file is correct only when there is no
  * snapshot yet, and it is the one path that can still hang, so the caller preflights it.
  */
-function loadConfig(): { cfg: ReturnType<typeof CrewConfigSchema.parse>; source: string } | { error: string } {
+function loadConfig():
+  | { cfg: ReturnType<typeof CrewConfigSchema.parse>; source: string }
+  | { error: string } {
   const snap = snapshotPath();
   if (existsSync(snap)) {
     try {
-      return { cfg: CrewConfigSchema.parse(JSON.parse(readFileSync(snap, "utf8"))), source: snap };
+      return {
+        cfg: CrewConfigSchema.parse(JSON.parse(readFileSync(snap, "utf8"))),
+        source: snap,
+      };
     } catch (e) {
-      return { error: `snapshot at ${snap} is invalid: ${(e as Error).message}` };
+      return {
+        error: `snapshot at ${snap} is invalid: ${(e as Error).message}`,
+      };
     }
   }
   const path = findConfig();
-  if (!path) return { error: "no config snapshot and no jstack.config.json found. Run: jstack crew install" };
+  if (!path)
+    return {
+      error:
+        "no config snapshot and no jstack.config.json found. Run: jstack crew install",
+    };
   try {
-    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<
+      string,
+      unknown
+    >;
     if (!raw.crew) return { error: `no "crew" key in ${path}` };
     return { cfg: CrewConfigSchema.parse(raw.crew), source: path };
   } catch (e) {
@@ -99,10 +119,15 @@ function tccProbe(): number {
     return 0;
   }
   try {
-    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<
+      string,
+      unknown
+    >;
     const cfg = CrewConfigSchema.parse((raw as { crew: unknown }).crew);
     for (const a of Object.values(cfg.agents)) {
-      const w = a.workspace.startsWith("~/") ? join(process.env.HOME ?? "", a.workspace.slice(2)) : a.workspace;
+      const w = a.workspace.startsWith("~/")
+        ? join(process.env.HOME ?? "", a.workspace.slice(2))
+        : a.workspace;
       try {
         readdirSync(w);
       } catch {
@@ -126,7 +151,11 @@ function tccProbe(): number {
  * even when the LaunchAgent is denied. A check that passes when the real thing fails is
  * worse than no check, so the only trustworthy answer comes from the daemon itself.
  */
-function writeHealth(stateDir: string, workspaces: Record<string, string>, configSource: string): void {
+function writeHealth(
+  stateDir: string,
+  workspaces: Record<string, string>,
+  configSource: string,
+): void {
   /**
    * Probe only what the PARENT is allowed to touch.
    *
@@ -137,8 +166,11 @@ function writeHealth(stateDir: string, workspaces: Record<string, string>, confi
    * working with the parent ungranted. The worker's own success or failure is the real
    * evidence, and it lands in the task ledger.
    */
-  const protectedRoots = ["Documents", "Desktop", "Downloads"].map((d) => join(process.env.HOME ?? "", d));
-  const isProtected = (p: string) => protectedRoots.some((r) => p === r || p.startsWith(`${r}/`));
+  const protectedRoots = ["Documents", "Desktop", "Downloads"].map((d) =>
+    join(process.env.HOME ?? "", d),
+  );
+  const isProtected = (p: string) =>
+    protectedRoots.some((r) => p === r || p.startsWith(`${r}/`));
 
   const readable: Record<string, boolean | "delegated"> = {};
   for (const [id, w] of Object.entries(workspaces)) {
@@ -148,7 +180,9 @@ function writeHealth(stateDir: string, workspaces: Record<string, string>, confi
     }
     try {
       const entries = readdirSync(w);
-      const probe = entries.find((f) => f.endsWith(".json") || f.endsWith(".md"));
+      const probe = entries.find(
+        (f) => f.endsWith(".json") || f.endsWith(".md"),
+      );
       if (probe) readFileSync(join(w, probe), "utf8").slice(0, 16);
       readable[id] = true;
     } catch {
@@ -164,7 +198,10 @@ function writeHealth(stateDir: string, workspaces: Record<string, string>, confi
         {
           at: new Date().toISOString(),
           // launchd sets this; absent when run by hand from a shell.
-          launchd: Boolean(process.env.XPC_SERVICE_NAME && process.env.XPC_SERVICE_NAME !== "0"),
+          launchd: Boolean(
+            process.env.XPC_SERVICE_NAME &&
+              process.env.XPC_SERVICE_NAME !== "0",
+          ),
           xpc_service: process.env.XPC_SERVICE_NAME ?? null,
           workspaces_readable: readable,
           config_source: configSource,
@@ -236,7 +273,9 @@ async function main(): Promise<number> {
   if (!usingSnapshot && process.env.JSTACK_CREW_SKIP_PREFLIGHT !== "1") {
     const pre = preflightAccess();
     if (!pre.ok) {
-      console.error(`${stamp()} crewd: PREFLIGHT FAILED, skipping tick. ${pre.detail}`);
+      console.error(
+        `${stamp()} crewd: PREFLIGHT FAILED, skipping tick. ${pre.detail}`,
+      );
       // Exit 0: a non-zero exit invites launchd to treat this as a crash and throttle the
       // job into permanent death, which is the very failure this check exists to prevent.
       return 0;
@@ -261,14 +300,19 @@ async function main(): Promise<number> {
     Object.fromEntries(
       Object.entries(cfg.agents).map(([id, a]) => [
         id,
-        a.workspace.startsWith("~/") ? join(process.env.HOME ?? "", a.workspace.slice(2)) : a.workspace,
+        a.workspace.startsWith("~/")
+          ? join(process.env.HOME ?? "", a.workspace.slice(2))
+          : a.workspace,
       ]),
     ),
     configSource,
   );
 
   try {
-    const s = await tick({ config: cfg, log: (l) => console.log(`${stamp()} ${l}`) });
+    const s = await tick({
+      config: cfg,
+      log: (l) => console.log(`${stamp()} ${l}`),
+    });
     console.log(
       `${stamp()} tick read=${s.read} handled=${s.handled} dropped=${s.dropped.length} cost=$${s.costUsd.toFixed(4)}` +
         (s.backlogSkipped ? " backlog_skipped" : "") +

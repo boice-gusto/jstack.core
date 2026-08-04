@@ -3,7 +3,10 @@
  * Intercepts primary clicks on markdown links inside <main>. Sheet UI is plain CSS (no React; shadcn is React-only).
  */
 
-import { ensureMarkdownLibs, markdownToSafeFragment } from "./markdown-render.js";
+import {
+  ensureMarkdownLibs,
+  markdownToSafeFragment,
+} from "./markdown-render.js";
 import { hydrateJstackGlobalsFromEmbed } from "./docs-embed-hydrate.js";
 
 const SHEET_SEL = "#md-sheet";
@@ -254,7 +257,10 @@ function init() {
       return;
     }
     const sheet = document.querySelector(SHEET_SEL);
-    if (sheet instanceof HTMLElement && sheet.classList.contains("md-sheet--open")) {
+    if (
+      sheet instanceof HTMLElement &&
+      sheet.classList.contains("md-sheet--open")
+    ) {
       ev.preventDefault();
       closeSheet();
     }

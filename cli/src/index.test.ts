@@ -59,11 +59,16 @@ function run(args: string[]) {
 }
 
 /** Walk the commander tree into `{ path, options }` rows. */
-function walk(cmd: Command, prefix: string[] = []): Array<{ path: string; options: string[] }> {
+function walk(
+  cmd: Command,
+  prefix: string[] = [],
+): Array<{ path: string; options: string[] }> {
   const rows: Array<{ path: string; options: string[] }> = [];
   for (const sub of cmd.commands as Command[]) {
     const path = [...prefix, sub.name()];
-    const options = sub.options.map((o) => o.long ?? o.short ?? "").filter(Boolean);
+    const options = sub.options
+      .map((o) => o.long ?? o.short ?? "")
+      .filter(Boolean);
     rows.push({ path: path.join(" "), options });
     rows.push(...walk(sub, path));
   }
@@ -80,7 +85,10 @@ describe("command tree is introspectable without side effects", () => {
 
   test("both entrypoints still parse normally", () => {
     expect(run(["--version"]).stdout.trim()).toBe("0.1.0");
-    const bin = spawnSync("./cli/bin/jstack", ["--version"], { cwd: repoRoot, encoding: "utf8" });
+    const bin = spawnSync("./cli/bin/jstack", ["--version"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    });
     expect((bin.stdout ?? "").trim()).toBe("0.1.0");
   });
 });
@@ -89,7 +97,8 @@ describe("registry matches the live command tree", () => {
   test("every registry entry validates against its own schema", () => {
     for (const entry of CLI_COMMANDS) {
       const r = CliCommandSchema.safeParse(entry);
-      if (!r.success) throw new Error(`${entry.name}: ${JSON.stringify(r.error.issues)}`);
+      if (!r.success)
+        throw new Error(`${entry.name}: ${JSON.stringify(r.error.issues)}`);
     }
   });
 
@@ -154,7 +163,9 @@ describe("registry matches the live command tree", () => {
   });
 
   test("every registry-declared flag exists on the live command", () => {
-    const rows = new Map(walk(program).map((r) => [`jstack ${r.path}`, r.options]));
+    const rows = new Map(
+      walk(program).map((r) => [`jstack ${r.path}`, r.options]),
+    );
     const bogus: string[] = [];
     for (const entry of CLI_COMMANDS) {
       const opts = rows.get(entry.name);
@@ -250,8 +261,10 @@ describe("every command loads and can print help", () => {
     for (const cmd of program.commands as Command[]) {
       const name = cmd.name();
       const { code, stdout, stderr } = run([name, "--help"]);
-      if (code !== 0) failures.push(`${name}: exit ${code} ${stderr.slice(0, 120)}`);
-      else if (!stdout.includes("Usage")) failures.push(`${name}: help printed no Usage line`);
+      if (code !== 0)
+        failures.push(`${name}: exit ${code} ${stderr.slice(0, 120)}`);
+      else if (!stdout.includes("Usage"))
+        failures.push(`${name}: help printed no Usage line`);
     }
     expect(failures).toEqual([]);
   });

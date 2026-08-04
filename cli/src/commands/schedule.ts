@@ -1,10 +1,18 @@
 import chalk from "chalk";
 import * as p from "@clack/prompts";
 import { findProjectRoot, readConfig, writeConfig } from "../lib/config.js";
-import { exitCancelled, handleCancel, isInteractive, nonInteractiveHint } from "../lib/cliUi.js";
+import {
+  exitCancelled,
+  handleCancel,
+  isInteractive,
+  nonInteractiveHint,
+} from "../lib/cliUi.js";
 import { listRoutinesFromConfig, type RoutineRow } from "../lib/scheduler.js";
 
-async function pickRoutineId(rows: RoutineRow[], message: string): Promise<string | null> {
+async function pickRoutineId(
+  rows: RoutineRow[],
+  message: string,
+): Promise<string | null> {
   if (rows.length === 0) {
     console.error(chalk.yellow("No routines in jstack.config.json."));
     return null;
@@ -26,7 +34,9 @@ export function runScheduleList(): void {
   const rows = listRoutinesFromConfig(cfg);
   console.log(chalk.bold("Routines"));
   for (const r of rows) {
-    console.log(`  ${r.enabled ? "●" : "○"} ${r.id.padEnd(16)} ${r.cron || "-"}  → ${r.chain.join(", ")}`);
+    console.log(
+      `  ${r.enabled ? "●" : "○"} ${r.id.padEnd(16)} ${r.cron || "-"}  → ${r.chain.join(", ")}`,
+    );
   }
 }
 
@@ -39,7 +49,8 @@ export async function runScheduleEnable(idMaybe?: string): Promise<void> {
   if (!id.length) {
     if (!isInteractive()) {
       console.error(
-        chalk.red("Usage: jstack schedule enable <id>. ") + chalk.dim(nonInteractiveHint("`jstack schedule list`")),
+        chalk.red("Usage: jstack schedule enable <id>. ") +
+          chalk.dim(nonInteractiveHint("`jstack schedule list`")),
       );
       process.exitCode = 1;
       return;
@@ -52,7 +63,9 @@ export async function runScheduleEnable(idMaybe?: string): Promise<void> {
     id = picked;
   }
 
-  const routines = { ...(cfg.routines as Record<string, Record<string, unknown>>) };
+  const routines = {
+    ...(cfg.routines as Record<string, Record<string, unknown>>),
+  };
   if (!routines[id]) {
     console.error(`Unknown routine: ${id}`);
     process.exitCode = 1;
@@ -86,7 +99,9 @@ export async function runScheduleDisable(idMaybe?: string): Promise<void> {
     id = picked;
   }
 
-  const routines = { ...(cfg.routines as Record<string, Record<string, unknown>>) };
+  const routines = {
+    ...(cfg.routines as Record<string, Record<string, unknown>>),
+  };
   if (!routines[id]) {
     console.error(`Unknown routine: ${id}`);
     process.exitCode = 1;

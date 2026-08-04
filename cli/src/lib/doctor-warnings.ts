@@ -21,7 +21,6 @@ export function sessionTarget(cfg: Record<string, unknown>): string {
     .toLowerCase();
 }
 
-
 /** Config-shape warnings (knowledge_base roots, knowledge_storage, optional GBrain when merged search is on). */
 export function collectDoctorConfigWarnings(
   projectRoot: string,
@@ -30,7 +29,7 @@ export function collectDoctorConfigWarnings(
 ): string[] {
   const warnings: string[] = [];
   const kb = cfg.knowledge_base as Record<string, unknown> | undefined;
-  const roots = (kb?.roots as unknown) as string[] | undefined;
+  const roots = kb?.roots as unknown as string[] | undefined;
   if (Array.isArray(roots) && roots.length > 0) {
     for (const r of roots) {
       const rel = String(r).trim();
@@ -70,13 +69,16 @@ export function collectDoctorConfigWarnings(
     if (!rel) continue;
     const abs = isAbsolute(rel) ? rel : resolve(projectRoot, rel);
     if (!existsSync(abs)) {
-      warnings.push(`${label} missing on disk: ${rel} (resolved: ${abs}) — clone/create or fix config.`);
+      warnings.push(
+        `${label} missing on disk: ${rel} (resolved: ${abs}) — clone/create or fix config.`,
+      );
     }
   }
 
   const teamU = gbrainTeamUrl(cfg);
   const personalU = gbrainPersonalUrl(cfg);
-  const kbGbrainInclude = (kb?.gbrain as Record<string, unknown> | undefined)?.include === true;
+  const kbGbrainInclude =
+    (kb?.gbrain as Record<string, unknown> | undefined)?.include === true;
   if (kbGbrainInclude && !teamU && !personalU) {
     warnings.push(
       "knowledge_base.gbrain.include is true but neither gbrain.team.url nor gbrain.personal.url is set — set URLs or turn off gbrain.include.",
@@ -109,7 +111,9 @@ export function collectDoctorConfigWarnings(
   if (gb?.enabled === true) {
     const skills = gb.skills as unknown;
     if (!Array.isArray(skills) || skills.length === 0) {
-      warnings.push("cross_plugins.gbrain.enabled but skills[] is empty — list expected gbrain:* skill ids.");
+      warnings.push(
+        "cross_plugins.gbrain.enabled but skills[] is empty — list expected gbrain:* skill ids.",
+      );
     }
   }
 
@@ -133,13 +137,18 @@ function readMcpFixtureRootFromDisk(projectRoot: string): string | null {
   if (!existsSync(mcpPath)) return null;
   try {
     const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as {
-      mcpServers?: Record<string, { args?: string[]; command?: string; env?: Record<string, string> }>;
+      mcpServers?: Record<
+        string,
+        { args?: string[]; command?: string; env?: Record<string, string> }
+      >;
     };
     const servers = raw.mcpServers ?? {};
     for (const [key, spec] of Object.entries(servers)) {
       const isMockName = key.toLowerCase() === "jstack-mock";
       const args = spec.args ?? [];
-      const argsLookLikeMock = args.some((a) => String(a).includes("mcp-mock/server"));
+      const argsLookLikeMock = args.some((a) =>
+        String(a).includes("mcp-mock/server"),
+      );
       if (!isMockName && !argsLookLikeMock) continue;
       const fromEnv = spec.env?.JSTACK_MCP_FIXTURE_ROOT?.trim();
       if (fromEnv && fromEnv.length > 0) {
@@ -170,7 +179,7 @@ export function collectMockMcpDoctorWarnings(
   const mcpPath = join(projectRoot, ".mcp.json");
   if (!existsSync(mcpPath)) {
     warnings.push(
-      'debug.mock_mcp is true but .mcp.json is missing — run `jstack mcp add jstack-mock` or merge the mock server entry.',
+      "debug.mock_mcp is true but .mcp.json is missing — run `jstack mcp add jstack-mock` or merge the mock server entry.",
     );
     return warnings;
   }
@@ -197,11 +206,13 @@ export function collectMockMcpDoctorWarnings(
     });
     if (!hasMock) {
       warnings.push(
-        'debug.mock_mcp is true but .mcp.json has no jstack-mock server (or path containing mcp-mock/server) — run `jstack mcp add jstack-mock`.',
+        "debug.mock_mcp is true but .mcp.json has no jstack-mock server (or path containing mcp-mock/server) — run `jstack mcp add jstack-mock`.",
       );
     }
   } catch {
-    warnings.push("debug.mock_mcp is true but .mcp.json could not be parsed — fix JSON.");
+    warnings.push(
+      "debug.mock_mcp is true but .mcp.json could not be parsed — fix JSON.",
+    );
   }
 
   return warnings;

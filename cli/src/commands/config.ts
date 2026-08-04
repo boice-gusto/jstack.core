@@ -18,7 +18,9 @@ export function runConfigShow(): void {
 
   if (!existsSync(p)) {
     console.error(chalk.yellow(`No config at ${p}`));
-    console.error("Run: jstack setup   (or `jstack setup --schema` for the field-by-field wizard)");
+    console.error(
+      "Run: jstack setup   (or `jstack setup --schema` for the field-by-field wizard)",
+    );
     process.exitCode = 1;
     return;
   }

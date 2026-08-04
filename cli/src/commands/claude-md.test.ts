@@ -1,8 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runClaudeMdScan, runClaudeMdRender, runClaudeMdApply } from "./claude-md.js";
+import {
+  runClaudeMdScan,
+  runClaudeMdRender,
+  runClaudeMdApply,
+} from "./claude-md.js";
 
 describe("runClaudeMdScan", () => {
   test("emits JSON with issues + meta when --output=json", async () => {
@@ -89,7 +99,11 @@ describe("runClaudeMdApply", () => {
       const before = statSync(join(project, "CLAUDE.md")).mtime;
       // Touch the file to bump mtime (use utimes to ensure >1s delta on fast filesystems).
       writeFileSync(join(project, "CLAUDE.md"), "Use yarn (edited).\n");
-      utimesSync(join(project, "CLAUDE.md"), new Date(before.getTime() + 2000), new Date(before.getTime() + 2000));
+      utimesSync(
+        join(project, "CLAUDE.md"),
+        new Date(before.getTime() + 2000),
+        new Date(before.getTime() + 2000),
+      );
       const result = await runClaudeMdApply({
         projectRoot: project,
         patchPath: join(project, "noop.patch"),

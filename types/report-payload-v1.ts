@@ -67,7 +67,8 @@ export const ReportSectionSchema = z
   .refine(
     (s) =>
       s.chart != null ||
-      (typeof s.body_markdown === "string" && s.body_markdown.trim().length > 0),
+      (typeof s.body_markdown === "string" &&
+        s.body_markdown.trim().length > 0),
     { message: "Section must include chart and/or non-empty body_markdown" },
   );
 

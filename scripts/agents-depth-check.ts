@@ -91,7 +91,10 @@ const DEPTH_RULES: DepthRule[] = [
       // Trailing \b must NOT be applied to non-word-character units: `%\b` and `:1\b`
       // can never match, which previously undercounted agents whose thresholds are
       // percentages or contrast ratios. Split word-units from symbol-units.
-      const wordUnits = b.match(/\b\d+(\.\d+)?\s*(ms|kb|mb|gb|px|rows?|req|rps|qps|days?|chars?|nodes?|items?|lines?|words?|steps?|attempts?|workers?|s)\b/gi) ?? [];
+      const wordUnits =
+        b.match(
+          /\b\d+(\.\d+)?\s*(ms|kb|mb|gb|px|rows?|req|rps|qps|days?|chars?|nodes?|items?|lines?|words?|steps?|attempts?|workers?|s)\b/gi,
+        ) ?? [];
       const symbolUnits = b.match(/\b\d+(\.\d+)?\s*(%|:1|×|x(?=\s|$))/gi) ?? [];
       // A comparison against a number is itself a threshold, unit or not — orchestration and
       // review domains express limits as counts (≤3 retries, >400 LOC) rather than units.
@@ -112,12 +115,15 @@ const DEPTH_RULES: DepthRule[] = [
     // appears. A tight window perversely penalised the most detailed examples.
     test: (b) =>
       /^##+ .*(Worked example|Examples?)\b/im.test(b) &&
-      /(weak|bad|vague|before)\b[\s\S]{0,2000}?(sharp|good|better|after)\b/i.test(b),
+      /(weak|bad|vague|before)\b[\s\S]{0,2000}?(sharp|good|better|after)\b/i.test(
+        b,
+      ),
     hint: "add worked examples contrasting a weak finding with a sharp one (name the mechanism and the fix)",
   },
   {
     id: "ownership-boundary",
-    test: (b) => /does\s+NOT\s+own|not\s+own\b|out of scope for this agent/i.test(b),
+    test: (b) =>
+      /does\s+NOT\s+own|not\s+own\b|out of scope for this agent/i.test(b),
     hint: "declare what this agent does NOT own, naming the neighbouring agents, so dispatch is unambiguous",
   },
   {
@@ -140,7 +146,9 @@ interface Finding {
 }
 
 const findings: Finding[] = [];
-const files = readdirSync(agentsDir).filter((f) => f.endsWith(".md")).sort();
+const files = readdirSync(agentsDir)
+  .filter((f) => f.endsWith(".md"))
+  .sort();
 if (files.length === 0) {
   console.error("No agents found in agents/");
   process.exit(1);
@@ -153,7 +161,12 @@ for (const file of files) {
   const raw = readFileSync(join(agentsDir, file), "utf8");
   const fm = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!fm) {
-    findings.push({ file, kind: "correctness", id: "frontmatter", message: "missing YAML frontmatter" });
+    findings.push({
+      file,
+      kind: "correctness",
+      id: "frontmatter",
+      message: "missing YAML frontmatter",
+    });
     continue;
   }
   const body = raw.slice(fm[0].length);
@@ -200,7 +213,8 @@ for (const file of files) {
     });
   }
 
-  const description = typeof meta.description === "string" ? meta.description.trim() : "";
+  const description =
+    typeof meta.description === "string" ? meta.description.trim() : "";
   if (description.length < 80) {
     findings.push({
       file,
@@ -265,11 +279,17 @@ for (const file of files) {
 
 // --- dispatch ambiguity: near-duplicate descriptions route unpredictably ---
 const STOP = new Set(
-  "the a an and or of to for with when use uses using this that in on at by from as is are be it its user users ask asks".split(" "),
+  "the a an and or of to for with when use uses using this that in on at by from as is are be it its user users ask asks".split(
+    " ",
+  ),
 );
 const tokenize = (s: string) =>
   new Set(
-    s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length > 3 && !STOP.has(w)),
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !STOP.has(w)),
   );
 
 /**
@@ -290,8 +310,11 @@ for (const [route, owners] of primaryRoutes) {
   // A description is "differentiated" when it says when NOT to pick this agent, however
   // that's phrased. `not when …` and `only when …` are as explicit as `prefer` — an
   // earlier, narrower pattern flagged well-differentiated descriptions as ambiguous.
-  const CUE = /\bprefer\b|\binstead\b|\brather than\b|\bnot for\b|\bnot when\b|\bonly when\b|\bunlike\b|\bnot the right fit\b/;
-  const differentiated = owners.every((f) => CUE.test((descriptions.get(f) ?? "").toLowerCase()));
+  const CUE =
+    /\bprefer\b|\binstead\b|\brather than\b|\bnot for\b|\bnot when\b|\bonly when\b|\bunlike\b|\bnot the right fit\b/;
+  const differentiated = owners.every((f) =>
+    CUE.test((descriptions.get(f) ?? "").toLowerCase()),
+  );
   if (differentiated) continue;
   findings.push({
     file: owners.join(" ~ "),
@@ -336,7 +359,10 @@ if (asJson) {
         depth_warnings: depth.length,
         dispatch_warnings: dispatch.length,
         depth_scores: Object.fromEntries(
-          [...depthScores.entries()].map(([f, s]) => [f, `${s}/${DEPTH_RULES.length}`]),
+          [...depthScores.entries()].map(([f, s]) => [
+            f,
+            `${s}/${DEPTH_RULES.length}`,
+          ]),
         ),
         findings,
       },
@@ -349,7 +375,8 @@ if (asJson) {
     if (items.length === 0) return;
     console.log(`\n${label}`);
     const byFile = new Map<string, Finding[]>();
-    for (const f of items) (byFile.get(f.file) ?? byFile.set(f.file, []).get(f.file)!).push(f);
+    for (const f of items)
+      (byFile.get(f.file) ?? byFile.set(f.file, []).get(f.file)!).push(f);
     for (const [file, fs] of byFile) {
       console.log(`  ${file}`);
       for (const f of fs) console.log(`    [${f.id}] ${f.message}`);
@@ -357,17 +384,24 @@ if (asJson) {
   };
 
   group(`CORRECTNESS (${correctness.length}) — always fatal`, correctness);
-  group(`DISPATCH (${dispatch.length}) — ${strict ? "fatal" : "advisory"}`, dispatch);
+  group(
+    `DISPATCH (${dispatch.length}) — ${strict ? "fatal" : "advisory"}`,
+    dispatch,
+  );
   group(`DEPTH (${depth.length}) — ${strict ? "fatal" : "advisory"}`, depth);
 
   console.log("\nDepth score by agent (higher is more specialist):");
-  for (const [file, score] of [...depthScores.entries()].sort((a, b) => a[1] - b[1])) {
+  for (const [file, score] of [...depthScores.entries()].sort(
+    (a, b) => a[1] - b[1],
+  )) {
     const bar = "█".repeat(score) + "·".repeat(DEPTH_RULES.length - score);
     console.log(`  ${bar}  ${score}/${DEPTH_RULES.length}  ${file}`);
   }
 }
 
-const fatal = correctness.length > 0 || (strict && (depth.length > 0 || dispatch.length > 0));
+const fatal =
+  correctness.length > 0 ||
+  (strict && (depth.length > 0 || dispatch.length > 0));
 
 // In --json mode stdout must contain ONLY the JSON payload so it stays machine-parseable
 // (CLAUDE.md: never interleave prose into a JSON output mode). Diagnostics go to stderr.

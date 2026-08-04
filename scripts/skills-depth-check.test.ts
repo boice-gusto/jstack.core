@@ -16,7 +16,15 @@
  * The script is run as a subprocess against a temp skills tree so the real repo is untouched.
  */
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, existsSync, symlinkSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  cpSync,
+  existsSync,
+  symlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -50,12 +58,18 @@ function writeSkill(dir: string, rel: string, effort: string, body: string) {
 }
 
 async function run(dir: string, args: string[] = []) {
-  const proc = Bun.spawn(["bun", join(dir, "scripts", "skills-depth-check.ts"), ...args], {
-    cwd: dir,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+  const proc = Bun.spawn(
+    ["bun", join(dir, "scripts", "skills-depth-check.ts"), ...args],
+    {
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
+  const [out, err] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
   return { code: await proc.exited, out, err };
 }
 
@@ -110,7 +124,13 @@ describe("skills-depth-check — tiering by effort", () => {
   test("a thin HIGH-effort skill is flagged on every Tier A rule", async () => {
     writeSkill(sandbox, "analysis/deep", "max", THIN_BODY);
     const { out } = await run(sandbox);
-    for (const rule of ["domain-rules", "thresholds", "anti-patterns", "worked-example", "scope-edge"]) {
+    for (const rule of [
+      "domain-rules",
+      "thresholds",
+      "anti-patterns",
+      "worked-example",
+      "scope-edge",
+    ]) {
       expect(out).toContain(rule);
     }
     rmSync(join(sandbox, "skills", "analysis"), { recursive: true });
@@ -177,7 +197,12 @@ describe("skills-depth-check — correctness (always fatal)", () => {
   });
 
   test("flags fabricated org data ASSERTED as fact", async () => {
-    writeSkill(sandbox, "x/y", "low", "Our SOC2 audit in September blocks any data handling change.");
+    writeSkill(
+      sandbox,
+      "x/y",
+      "low",
+      "Our SOC2 audit in September blocks any data handling change.",
+    );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
     expect(out).toContain("fiction");
@@ -201,7 +226,10 @@ describe("skills-depth-check — correctness (always fatal)", () => {
   test("requires effort frontmatter, since it drives the tier", async () => {
     const d = join(sandbox, "skills", "noeffort");
     mkdirSync(d, { recursive: true });
-    writeFileSync(join(d, "SKILL.md"), `---\nname: jstack-noeffort\ndescription: Missing effort.\ncategory: x\n---\n\nbody\n`);
+    writeFileSync(
+      join(d, "SKILL.md"),
+      `---\nname: jstack-noeffort\ndescription: Missing effort.\ncategory: x\n---\n\nbody\n`,
+    );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
     expect(out).toContain("missing-effort");
@@ -273,7 +301,11 @@ describe("skills-depth-check — reasoned exemptions", () => {
   // An exemption must be visible in output and must waive only the rule it names, so a
   // waiver can never be a silent way to turn a number green.
   test("the real exemption is reported with its reason, not hidden", async () => {
-    const proc = Bun.spawn(["bun", script], { cwd: repoRoot, stdout: "pipe", stderr: "pipe" });
+    const proc = Bun.spawn(["bun", script], {
+      cwd: repoRoot,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const out = await new Response(proc.stdout).text();
     await proc.exited;
     expect(out).toContain("EXEMPTED");
@@ -284,7 +316,11 @@ describe("skills-depth-check — reasoned exemptions", () => {
 
   test("an exemption waives only the named rule", async () => {
     // cua is exempt from `thresholds` only; it must still be held to the other Tier A rules.
-    const proc = Bun.spawn(["bun", script, "--json"], { cwd: repoRoot, stdout: "pipe", stderr: "pipe" });
+    const proc = Bun.spawn(["bun", script, "--json"], {
+      cwd: repoRoot,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const out = await new Response(proc.stdout).text();
     await proc.exited;
     const j = JSON.parse(out);

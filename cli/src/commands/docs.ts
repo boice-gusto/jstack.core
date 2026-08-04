@@ -23,12 +23,17 @@ export function runDocs(action: DocsAction): void {
   const pkgJson = join(pluginRoot, "package.json");
   if (!existsSync(pkgJson)) {
     console.error(
-      chalk.red("package.json not found at plugin root; set CLAUDE_PLUGIN_ROOT or run from jstack.core"),
+      chalk.red(
+        "package.json not found at plugin root; set CLAUDE_PLUGIN_ROOT or run from jstack.core",
+      ),
     );
     process.exitCode = 1;
     return;
   }
   const script = NPM_SCRIPT[action];
-  const res = spawnSync("bun", ["run", script], { cwd: pluginRoot, stdio: "inherit" });
+  const res = spawnSync("bun", ["run", script], {
+    cwd: pluginRoot,
+    stdio: "inherit",
+  });
   process.exitCode = res.status ?? 0;
 }

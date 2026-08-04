@@ -41,7 +41,10 @@ function writeMinimalFixture(root: string): void {
       standup: { enabled: false, cron: "0 9 * * *", chain: ["recon"] },
     },
   };
-  writeFileSync(join(root, "jstack.config.json"), `${JSON.stringify(cfg, null, 2)}\n`);
+  writeFileSync(
+    join(root, "jstack.config.json"),
+    `${JSON.stringify(cfg, null, 2)}\n`,
+  );
   writeFileSync(join(root, ".mcp.json"), "{}\n");
 }
 
@@ -65,7 +68,9 @@ describe("non-interactive CLI contracts (CI)", () => {
   test("schedule enable unknown routine exits 1", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-ci-sched-"));
     writeMinimalFixture(root);
-    const r = runCli(["schedule", "enable", "not-a-real-routine"], root, { CI: "1" });
+    const r = runCli(["schedule", "enable", "not-a-real-routine"], root, {
+      CI: "1",
+    });
     expect(r.status).toBe(1);
     expect(r.combined).toContain("Unknown routine");
   });

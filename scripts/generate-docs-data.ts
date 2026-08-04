@@ -2,10 +2,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  buildSkillsPayload,
-  buildSkillRecords,
-} from "./docs-data-shared.ts";
+import { buildSkillsPayload, buildSkillRecords } from "./docs-data-shared.ts";
 import { patchDocsIndexPngBranding } from "./docs-index-png-branding.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,12 +37,16 @@ window.__JSTACK_SKILLS__ = ${payloadJson};
     count: payload.count,
     skills: records,
   };
-  await writeFile(CATALOG_JSON, `${JSON.stringify(catalogBody, null, 2)}\n`, "utf8");
+  await writeFile(
+    CATALOG_JSON,
+    `${JSON.stringify(catalogBody, null, 2)}\n`,
+    "utf8",
+  );
   console.log(`Wrote ${CATALOG_JSON}`);
 
   const bootstrapScript = [
     "(function () {",
-    '  function parseJsonScript(id) {',
+    "  function parseJsonScript(id) {",
     "    var el = document.getElementById(id);",
     "    if (!el) return null;",
     "    try {",
@@ -82,7 +83,9 @@ window.__JSTACK_SKILLS__ = ${payloadJson};
     REPO_ROOT,
   );
   await writeFile(INDEX_FILE, nextHtml, "utf8");
-  console.log(`Patched ${INDEX_FILE} inline skills payload (${records.length} skills)`);
+  console.log(
+    `Patched ${INDEX_FILE} inline skills payload (${records.length} skills)`,
+  );
 }
 
 main().catch((err) => {

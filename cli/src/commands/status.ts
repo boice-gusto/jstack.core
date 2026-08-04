@@ -17,6 +17,8 @@ export function runStatus(): void {
   console.log(`  MCP srv:  ${Object.keys(mcp).length} registered`);
   const routines = listRoutinesFromConfig(cfg);
   for (const r of routines) {
-    console.log(`  Routine:  ${r.id} ${r.enabled ? "on" : "off"} ${r.cron || "(manual)"}`);
+    console.log(
+      `  Routine:  ${r.id} ${r.enabled ? "on" : "off"} ${r.cron || "(manual)"}`,
+    );
   }
 }

@@ -86,7 +86,10 @@ export function buildSemanticSummary(
   };
 }
 
-export function printSkillTable(summary: SemanticSummary, passThreshold: number): void {
+export function printSkillTable(
+  summary: SemanticSummary,
+  passThreshold: number,
+): void {
   const ok = summary.pass_rate >= passThreshold;
   console.log("\n" + "=".repeat(72));
   console.log(
@@ -94,14 +97,17 @@ export function printSkillTable(summary: SemanticSummary, passThreshold: number)
   );
   console.log("=".repeat(72));
   summary.results.forEach((r, i) => {
-    const criteriaOk = r.criteria_passed === r.criteria_total && r.status === "completed";
+    const criteriaOk =
+      r.criteria_passed === r.criteria_total && r.status === "completed";
     const gateOk = !r.gate_failures?.length;
     const pass = criteriaOk && gateOk;
     console.log(
       `  ${i + 1}. [${pass ? "PASS" : "FAIL"}] ${r.name} — ${r.criteria_passed}/${r.criteria_total} criteria (${r.elapsed}s, ${r.tokens} tokens)${r.gate_failures?.length ? ` | gates: ${r.gate_failures.join("; ")}` : ""}`,
     );
   });
-  console.log(`\nTotal: ${summary.total_time}s | ${summary.total_tokens} tokens | ~$${summary.total_cost_usd}\n`);
+  console.log(
+    `\nTotal: ${summary.total_time}s | ${summary.total_tokens} tokens | ~$${summary.total_cost_usd}\n`,
+  );
 }
 
 export function writeSemanticReportFiles(
@@ -147,10 +153,15 @@ export function writeSemanticReportFiles(
       summary,
     };
     const dataJson = JSON.stringify(data);
-    const html =
-      template.includes("/*__EMBEDDED_DATA__*/") ?
-        template.replace("/*__EMBEDDED_DATA__*/", `const EMBEDDED_DATA = ${dataJson};`)
-      : template.replace("</head>", `<script>const EMBEDDED_DATA = ${dataJson};</script>\n</head>`);
+    const html = template.includes("/*__EMBEDDED_DATA__*/")
+      ? template.replace(
+          "/*__EMBEDDED_DATA__*/",
+          `const EMBEDDED_DATA = ${dataJson};`,
+        )
+      : template.replace(
+          "</head>",
+          `<script>const EMBEDDED_DATA = ${dataJson};</script>\n</head>`,
+        );
     viewerPath = join(outDir, `${skillSlug}-viewer-${stamp}.html`);
     writeFileSync(viewerPath, html);
   }
@@ -160,12 +171,20 @@ export function writeSemanticReportFiles(
 
 export interface MultiSkillReport {
   generated_at: string;
-  skills: { skill: string; summary: SemanticSummary; passed_threshold: boolean }[];
+  skills: {
+    skill: string;
+    summary: SemanticSummary;
+    passed_threshold: boolean;
+  }[];
   overall_pass_rate: number;
   skills_below_threshold: string[];
 }
 
-export function writeMultiReport(outDir: string, parts: MultiSkillReport["skills"], threshold: number): string {
+export function writeMultiReport(
+  outDir: string,
+  parts: MultiSkillReport["skills"],
+  threshold: number,
+): string {
   mkdirSync(outDir, { recursive: true });
   let totalPassed = 0;
   let totalCrit = 0;
@@ -175,14 +194,18 @@ export function writeMultiReport(outDir: string, parts: MultiSkillReport["skills
     totalCrit += p.summary.total_criteria;
     if (!p.passed_threshold) below.push(p.skill);
   }
-  const overall = totalCrit > 0 ? Math.round((totalPassed / totalCrit) * 1000) / 10 : 0;
+  const overall =
+    totalCrit > 0 ? Math.round((totalPassed / totalCrit) * 1000) / 10 : 0;
   const report: MultiSkillReport = {
     generated_at: new Date().toISOString(),
     skills: parts,
     overall_pass_rate: overall,
     skills_below_threshold: below,
   };
-  const path = join(outDir, `semantic-multi-${report.generated_at.replace(/[:.]/g, "-")}.json`);
+  const path = join(
+    outDir,
+    `semantic-multi-${report.generated_at.replace(/[:.]/g, "-")}.json`,
+  );
   writeFileSync(path, JSON.stringify(report, null, 2) + "\n");
 
   const mdPath = join(outDir, "REPORT_LATEST.md");

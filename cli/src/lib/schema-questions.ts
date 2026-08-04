@@ -8,7 +8,14 @@
  * Add new entries here rather than hardcoding prompts in setup.ts.
  */
 
-export type QuestionType = "string" | "boolean" | "select" | "list" | "url" | "path" | "ianaTz";
+export type QuestionType =
+  | "string"
+  | "boolean"
+  | "select"
+  | "list"
+  | "url"
+  | "path"
+  | "ianaTz";
 
 export type QuestionSpec = {
   /** Stable, unique kebab-case id. Safe to reference from telemetry, dep checks, tests. */
@@ -33,7 +40,10 @@ export type QuestionSpec = {
    * Returns the value to use when the user picks "Default".
    * Falls through: existing value at path → default value at path → undefined.
    */
-  default?: (defaults: Record<string, unknown>, existing: Record<string, unknown>) => unknown;
+  default?: (
+    defaults: Record<string, unknown>,
+    existing: Record<string, unknown>,
+  ) => unknown;
   /**
    * What to do when the user skips. "omit" leaves the path absent in the patch (recommended);
    * "empty" writes a typed-empty value (e.g. "" or []).
@@ -57,17 +67,24 @@ function validateUrl(v: unknown): string | null {
 function validateIanaTz(v: unknown): string | null {
   if (typeof v !== "string") return "expected a string";
   if (v === "UTC") return null;
-  if (!v.includes("/")) return "expected an IANA timezone like 'America/New_York' or 'UTC'";
+  if (!v.includes("/"))
+    return "expected an IANA timezone like 'America/New_York' or 'UTC'";
   return null;
 }
 
 // ---------- Deep-get helpers ----------
 
-export function getDefaultsAt(defaults: Record<string, unknown>, path: string[]): unknown {
+export function getDefaultsAt(
+  defaults: Record<string, unknown>,
+  path: string[],
+): unknown {
   return deepGet(defaults, path);
 }
 
-export function getExistingAt(existing: Record<string, unknown>, path: string[]): unknown {
+export function getExistingAt(
+  existing: Record<string, unknown>,
+  path: string[],
+): unknown {
   return deepGet(existing, path);
 }
 
@@ -87,7 +104,10 @@ function deepGet(obj: unknown, path: string[]): unknown {
  * Optional `fallback` is used only when neither existing nor defaults has a value.
  */
 function existingOrDefault(path: string[], fallback?: unknown) {
-  return (defaults: Record<string, unknown>, existing: Record<string, unknown>): unknown => {
+  return (
+    defaults: Record<string, unknown>,
+    existing: Record<string, unknown>,
+  ): unknown => {
     const e = deepGet(existing, path);
     if (e !== undefined && e !== "") return e;
     const d = deepGet(defaults, path);
@@ -105,7 +125,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "name"],
     section: "Team",
     question: "Team name",
-    describe: "Human-readable label for the team this config represents. Used in reports and prompts.",
+    describe:
+      "Human-readable label for the team this config represents. Used in reports and prompts.",
     type: "string",
     example: "Platform Eng",
     discussion:
@@ -121,7 +142,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "timezone"],
     section: "Team",
     question: "Team timezone (IANA)",
-    describe: "Default timezone used to interpret business hours, cron expressions, and digest windows.",
+    describe:
+      "Default timezone used to interpret business hours, cron expressions, and digest windows.",
     type: "ianaTz",
     example: "America/New_York",
     discussion:
@@ -138,7 +160,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "business_hours", "start"],
     section: "Team",
     question: "Business hours start (HH:MM, 24h)",
-    describe: "Local-time start of the working day, used by routines and scheduling helpers.",
+    describe:
+      "Local-time start of the working day, used by routines and scheduling helpers.",
     type: "string",
     example: "09:00",
     discussion:
@@ -154,7 +177,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "business_hours", "end"],
     section: "Team",
     question: "Business hours end (HH:MM, 24h)",
-    describe: "Local-time end of the working day. Pairs with business_hours.start.",
+    describe:
+      "Local-time end of the working day. Pairs with business_hours.start.",
     type: "string",
     example: "17:00",
     discussion:
@@ -169,13 +193,23 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "canonical_group", "mode"],
     section: "Team",
     question: "How should tools resolve the team membership?",
-    describe: "Selects the source of truth for 'who is on this team' beyond the local roster.",
+    describe:
+      "Selects the source of truth for 'who is on this team' beyond the local roster.",
     type: "select",
     options: [
       { value: "none", label: "none — no external group" },
-      { value: "manual_list", label: "manual_list — team.members is the source of truth" },
-      { value: "slack_user_group", label: "slack_user_group — resolve from a Slack user group" },
-      { value: "google_group", label: "google_group — resolve from a Google Group email" },
+      {
+        value: "manual_list",
+        label: "manual_list — team.members is the source of truth",
+      },
+      {
+        value: "slack_user_group",
+        label: "slack_user_group — resolve from a Slack user group",
+      },
+      {
+        value: "google_group",
+        label: "google_group — resolve from a Google Group email",
+      },
     ],
     example: "manual_list",
     discussion:
@@ -183,7 +217,10 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "slack_user_group lets membership track Slack reality automatically (good for fast-moving teams) " +
       "but requires Slack auth and the group ID. google_group is similar but for orgs that gate " +
       "membership through Google Workspace. Pick 'none' only if this config isn't tied to a real team.",
-    default: existingOrDefault(["team", "canonical_group", "mode"], "manual_list"),
+    default: existingOrDefault(
+      ["team", "canonical_group", "mode"],
+      "manual_list",
+    ),
     skipBehavior: "omit",
   },
   {
@@ -191,7 +228,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "canonical_group", "slack_user_group_id"],
     section: "Team",
     question: "Slack user group ID (e.g. S01234567)",
-    describe: "Used when canonical_group.mode = slack_user_group to resolve members at runtime.",
+    describe:
+      "Used when canonical_group.mode = slack_user_group to resolve members at runtime.",
     type: "string",
     example: "S01234567",
     discussion:
@@ -199,7 +237,11 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "Slack API (usergroups.list). The display handle (@eng-platform) is not the ID — store the ID here " +
       "so renames don't break resolution. Only relevant when mode = slack_user_group; safe to leave empty " +
       "otherwise.",
-    default: existingOrDefault(["team", "canonical_group", "slack_user_group_id"]),
+    default: existingOrDefault([
+      "team",
+      "canonical_group",
+      "slack_user_group_id",
+    ]),
     skipBehavior: "omit",
   },
   {
@@ -207,7 +249,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["team", "canonical_group", "google_group_email"],
     section: "Team",
     question: "Google Group email (e.g. team@company.com)",
-    describe: "Used when canonical_group.mode = google_group to resolve members at runtime.",
+    describe:
+      "Used when canonical_group.mode = google_group to resolve members at runtime.",
     type: "string",
     example: "eng-platform@company.com",
     discussion:
@@ -215,7 +258,11 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "Resolution requires Google auth wired up via MCP or a service account. If your group is private, " +
       "double-check that the runtime identity has list-members permission, otherwise resolution will " +
       "silently return empty.",
-    default: existingOrDefault(["team", "canonical_group", "google_group_email"]),
+    default: existingOrDefault([
+      "team",
+      "canonical_group",
+      "google_group_email",
+    ]),
     skipBehavior: "omit",
   },
 
@@ -225,7 +272,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "jira", "base_url"],
     section: "Integrations / JIRA",
     question: "JIRA base URL",
-    describe: "Root URL of your JIRA Cloud or Server instance. Issue links are built relative to this.",
+    describe:
+      "Root URL of your JIRA Cloud or Server instance. Issue links are built relative to this.",
     type: "url",
     example: "https://acme.atlassian.net",
     discussion:
@@ -275,7 +323,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "slack", "private_channel"],
     section: "Integrations / Slack",
     question: "Default private Slack channel",
-    describe: "Channel for sensitive output (drafts, manager-only notes, internal incidents).",
+    describe:
+      "Channel for sensitive output (drafts, manager-only notes, internal incidents).",
     type: "string",
     example: "#eng-platform-private",
     discussion:
@@ -291,7 +340,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "slack", "webhook_url"],
     section: "Integrations / Slack",
     question: "Slack incoming webhook URL",
-    describe: "Optional incoming webhook used as a low-auth fallback for posting messages.",
+    describe:
+      "Optional incoming webhook used as a low-auth fallback for posting messages.",
     type: "url",
     example: "https://hooks.slack.com/services/T000/B000/XXX",
     discussion:
@@ -310,7 +360,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "notion", "workspace_id"],
     section: "Integrations / Notion",
     question: "Notion workspace ID",
-    describe: "Identifies which Notion workspace this config targets when you have access to several.",
+    describe:
+      "Identifies which Notion workspace this config targets when you have access to several.",
     type: "string",
     example: "abcdef12-3456-7890-abcd-ef1234567890",
     discussion:
@@ -328,7 +379,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "github", "org"],
     section: "Integrations / GitHub",
     question: "GitHub organization",
-    describe: "Default GitHub org for repo lookups, search scope, and PR creation.",
+    describe:
+      "Default GitHub org for repo lookups, search scope, and PR creation.",
     type: "string",
     example: "acme-corp",
     discussion:
@@ -343,7 +395,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "github", "default_repo"],
     section: "Integrations / GitHub",
     question: "Default GitHub repository (org/name or just name)",
-    describe: "Repo used when a skill needs a target repo and none is explicitly provided.",
+    describe:
+      "Repo used when a skill needs a target repo and none is explicitly provided.",
     type: "string",
     example: "platform-services",
     discussion:
@@ -361,7 +414,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["integrations", "gcal", "primary_calendar_id"],
     section: "Integrations / Google",
     question: "Primary Google Calendar ID",
-    describe: "Calendar used for scheduling, free/busy lookups, and meeting creation.",
+    describe:
+      "Calendar used for scheduling, free/busy lookups, and meeting creation.",
     type: "string",
     example: "team-platform@company.com",
     discussion:
@@ -384,7 +438,11 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "The long ID from the spreadsheet URL between '/d/' and '/edit'. Tools that log metrics or roster " +
       "info will use this sheet by default; per-skill overrides still work. Make sure the runtime identity " +
       "(service account or OAuth user) has edit access — read-only access will fail silently on appends.",
-    default: existingOrDefault(["integrations", "sheets", "default_spreadsheet_id"]),
+    default: existingOrDefault([
+      "integrations",
+      "sheets",
+      "default_spreadsheet_id",
+    ]),
     skipBehavior: "empty",
   },
 
@@ -429,7 +487,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["session", "default_gbrain_target"],
     section: "GBrain & Knowledge",
     question: "Default GBrain target for new sessions",
-    describe: "Whether new sessions write to team or personal GBrain unless overridden.",
+    describe:
+      "Whether new sessions write to team or personal GBrain unless overridden.",
     type: "select",
     options: [
       { value: "team", label: "team — share session memory with the team" },
@@ -448,7 +507,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["knowledge_base", "roots"],
     section: "GBrain & Knowledge",
     question: "Knowledge base roots (paths or files, comma-separated)",
-    describe: "Directories or files that retrieval should crawl as ground truth.",
+    describe:
+      "Directories or files that retrieval should crawl as ground truth.",
     type: "list",
     example: "docs,README.md",
     discussion:
@@ -456,7 +516,10 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "'README.md') and grow as needed — adding the whole repo bloats indexing and dilutes results. " +
       "Paths are relative to the workspace. Combine with knowledge_base.include_globs / exclude_globs to " +
       "filter file types. If empty, retrieval has nothing to ground answers in.",
-    default: existingOrDefault(["knowledge_base", "roots"], ["docs", "README.md"]),
+    default: existingOrDefault(
+      ["knowledge_base", "roots"],
+      ["docs", "README.md"],
+    ),
     depId: "kb-root-missing",
     skipBehavior: "omit",
   },
@@ -465,7 +528,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["knowledge_base", "gbrain", "include"],
     section: "GBrain & Knowledge",
     question: "Include GBrain memory in retrieval?",
-    describe: "When true, retrieval blends GBrain entries with file-based knowledge.",
+    describe:
+      "When true, retrieval blends GBrain entries with file-based knowledge.",
     type: "boolean",
     example: "false",
     discussion:
@@ -539,7 +603,11 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "Same shape as the team checkout, but for your personal repo. Keep it outside the team workspace " +
       "if possible so accidental indexing/sharing is harder. If you have a personal config overlay, " +
       "set it there rather than the shared file.",
-    default: existingOrDefault(["knowledge_storage", "personal", "local_checkout"]),
+    default: existingOrDefault([
+      "knowledge_storage",
+      "personal",
+      "local_checkout",
+    ]),
     skipBehavior: "empty",
   },
   {
@@ -547,7 +615,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["knowledge_storage", "disk_fallback_root"],
     section: "GBrain & Knowledge",
     question: "Disk fallback root for unconfigured knowledge writes",
-    describe: "Where intake writes markdown when no git_remote/local_checkout is configured.",
+    describe:
+      "Where intake writes markdown when no git_remote/local_checkout is configured.",
     type: "path",
     example: "/tmp/knowledgebase",
     discussion:
@@ -555,7 +624,10 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "land here under team/ or personal/ subdirs. Default '/tmp/knowledgebase' is fine for trying " +
       "things out, but '/tmp' is volatile on most systems — switch to a real path under your home dir " +
       "once you're past the experimentation phase.",
-    default: existingOrDefault(["knowledge_storage", "disk_fallback_root"], "/tmp/knowledgebase"),
+    default: existingOrDefault(
+      ["knowledge_storage", "disk_fallback_root"],
+      "/tmp/knowledgebase",
+    ),
     skipBehavior: "omit",
   },
 
@@ -565,7 +637,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["telemetry", "enabled"],
     section: "Telemetry & Debug",
     question: "Enable telemetry?",
-    describe: "When true, jstack emits usage and error events to telemetry.endpoint.",
+    describe:
+      "When true, jstack emits usage and error events to telemetry.endpoint.",
     type: "boolean",
     example: "false",
     discussion:
@@ -598,7 +671,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["debug", "enabled"],
     section: "Telemetry & Debug",
     question: "Enable debug mode?",
-    describe: "Master switch for verbose logging, trace output, and skill instrumentation.",
+    describe:
+      "Master switch for verbose logging, trace output, and skill instrumentation.",
     type: "boolean",
     example: "false",
     discussion:
@@ -613,7 +687,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["debug", "mock_mcp"],
     section: "Telemetry & Debug",
     question: "Mock MCP servers (for offline / CI)?",
-    describe: "When true, MCP calls return canned fixtures instead of hitting real servers.",
+    describe:
+      "When true, MCP calls return canned fixtures instead of hitting real servers.",
     type: "boolean",
     example: "false",
     discussion:
@@ -677,7 +752,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["routines", "weekly_digest", "enabled"],
     section: "Routines",
     question: "Enable weekly digest routine?",
-    describe: "When true, the weekly digest chain runs on routines.weekly_digest.cron.",
+    describe:
+      "When true, the weekly digest chain runs on routines.weekly_digest.cron.",
     type: "boolean",
     example: "false",
     discussion:
@@ -699,7 +775,10 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "Default '0 16 * * 5' = 4pm Friday. Late-Friday timing gives the team a wrap-up read before the " +
       "weekend; some teams prefer Monday morning instead ('0 9 * * 1'). Stay consistent — readers learn " +
       "to expect digests on a known cadence, and shifting it weekly breaks that habit.",
-    default: existingOrDefault(["routines", "weekly_digest", "cron"], "0 16 * * 5"),
+    default: existingOrDefault(
+      ["routines", "weekly_digest", "cron"],
+      "0 16 * * 5",
+    ),
     skipBehavior: "omit",
   },
 
@@ -709,7 +788,8 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     path: ["cross_plugins", "gbrain", "enabled"],
     section: "Cross-plugins",
     question: "Enable gbrain cross-plugin skills?",
-    describe: "When true, gbrain:* skills (plan-review, code-review, qa, etc.) become available.",
+    describe:
+      "When true, gbrain:* skills (plan-review, code-review, qa, etc.) become available.",
     type: "boolean",
     example: "false",
     discussion:

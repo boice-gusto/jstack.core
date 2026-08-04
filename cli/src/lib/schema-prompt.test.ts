@@ -12,7 +12,9 @@ const FIXTURE_CATALOG: QuestionSpec[] = [
     describe: "Display name for reports.",
     type: "string",
     default: (defaults, existing) => {
-      const t = (existing.team ?? defaults.team) as { name?: string } | undefined;
+      const t = (existing.team ?? defaults.team) as
+        | { name?: string }
+        | undefined;
       return t?.name;
     },
   },
@@ -24,7 +26,9 @@ const FIXTURE_CATALOG: QuestionSpec[] = [
     describe: "IANA tz.",
     type: "ianaTz",
     default: (defaults, existing) => {
-      const t = (existing.team ?? defaults.team) as { timezone?: string } | undefined;
+      const t = (existing.team ?? defaults.team) as
+        | { timezone?: string }
+        | undefined;
       return t?.timezone ?? "UTC";
     },
   },
@@ -50,7 +54,9 @@ describe("runSchemaWizard non-interactive", () => {
       nonInteractive: true,
     });
     if (typeof out === "symbol") throw new Error("unexpected cancel");
-    expect(out.patch).toEqual({ team: { name: "Real Team Name", timezone: "UTC" } });
+    expect(out.patch).toEqual({
+      team: { name: "Real Team Name", timezone: "UTC" },
+    });
   });
 
   test("section filter limits scope", async () => {
@@ -79,12 +85,21 @@ describe("runSchemaWizard non-interactive", () => {
 
 describe("skip semantics end-to-end (pruneSkipped + mergeDeep)", () => {
   test("a skipped key is omitted from final config, not written as empty string", () => {
-    const defaults = { team: { name: "ACME", canonical_group: { slack_user_group_id: "" } } };
+    const defaults = {
+      team: { name: "ACME", canonical_group: { slack_user_group_id: "" } },
+    };
     // Wizard "patch" representing the user picking Skip on the slack id.
-    const wizardPatch = { team: { canonical_group: { slack_user_group_id: SKIP_SENTINEL } } };
-    let draft = mergeDeep(defaults as Record<string, unknown>, wizardPatch as unknown as Record<string, unknown>);
+    const wizardPatch = {
+      team: { canonical_group: { slack_user_group_id: SKIP_SENTINEL } },
+    };
+    let draft = mergeDeep(
+      defaults as Record<string, unknown>,
+      wizardPatch as unknown as Record<string, unknown>,
+    );
     draft = pruneSkipped(draft) as Record<string, unknown>;
-    const cg = (draft.team as { canonical_group?: Record<string, unknown> }).canonical_group ?? {};
+    const cg =
+      (draft.team as { canonical_group?: Record<string, unknown> })
+        .canonical_group ?? {};
     expect("slack_user_group_id" in cg).toBe(false);
   });
 
@@ -96,14 +111,20 @@ describe("skip semantics end-to-end (pruneSkipped + mergeDeep)", () => {
     };
     const a = await runSchemaWizard(FIXTURE_CATALOG, opts);
     const b = await runSchemaWizard(FIXTURE_CATALOG, opts);
-    if (typeof a === "symbol" || typeof b === "symbol") throw new Error("unexpected cancel");
+    if (typeof a === "symbol" || typeof b === "symbol")
+      throw new Error("unexpected cancel");
     expect(JSON.stringify(a.patch)).toBe(JSON.stringify(b.patch));
   });
 
   test("SKIP_SENTINEL leak guard: pruned config has zero Symbol values anywhere", () => {
     const draft = {
-      team: { name: "x", canonical_group: { slack_user_group_id: SKIP_SENTINEL } },
-      integrations: { jira: { project_key: SKIP_SENTINEL, base_url: "https://x" } },
+      team: {
+        name: "x",
+        canonical_group: { slack_user_group_id: SKIP_SENTINEL },
+      },
+      integrations: {
+        jira: { project_key: SKIP_SENTINEL, base_url: "https://x" },
+      },
       knowledge_base: { roots: ["docs"] },
     };
     const cleaned = pruneSkipped(draft);

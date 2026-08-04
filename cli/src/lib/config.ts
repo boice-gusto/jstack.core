@@ -99,7 +99,10 @@ export function isSkipSentinel(v: unknown): v is SkipSentinel {
   return v === SKIP_SENTINEL;
 }
 
-export function mergeDeep<T extends Record<string, unknown>>(base: T, over: Partial<T>): T {
+export function mergeDeep<T extends Record<string, unknown>>(
+  base: T,
+  over: Partial<T>,
+): T {
   const out = { ...base };
   for (const k of Object.keys(over)) {
     const v = over[k as keyof T];
@@ -174,7 +177,10 @@ export function findPluginRoot(cwd = process.cwd()): string {
   }
   let dir = cwd;
   for (let i = 0; i < WALK_LIMITS.PLUGIN_ROOT_MAX_STEPS; i++) {
-    if (existsSync(join(dir, CONFIG_DIR, DEFAULTS_FILE)) && existsSync(join(dir, SKILLS_DIR))) {
+    if (
+      existsSync(join(dir, CONFIG_DIR, DEFAULTS_FILE)) &&
+      existsSync(join(dir, SKILLS_DIR))
+    ) {
       return dir;
     }
     // Monorepo layout: prefer org overlay (e.g. jstack.gusto) over jstack.core when both exist
@@ -186,7 +192,10 @@ export function findPluginRoot(cwd = process.cwd()): string {
       return resolve(nestedGusto);
     }
     const nested = join(dir, JSTACK_CORE_PKG_DIR);
-    if (existsSync(join(nested, CONFIG_DIR, DEFAULTS_FILE)) && existsSync(join(nested, SKILLS_DIR))) {
+    if (
+      existsSync(join(nested, CONFIG_DIR, DEFAULTS_FILE)) &&
+      existsSync(join(nested, SKILLS_DIR))
+    ) {
       return resolve(nested);
     }
     const parent = dirname(dir);

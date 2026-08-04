@@ -27,7 +27,10 @@ function parseSemver(v: string): [number, number, number] {
   return [Number(m[1]), Number(m[2]), Number(m[3])];
 }
 
-function gte(a: [number, number, number], b: [number, number, number]): boolean {
+function gte(
+  a: [number, number, number],
+  b: [number, number, number],
+): boolean {
   for (let i = 0; i < 3; i++) {
     if (a[i]! > b[i]!) return true;
     if (a[i]! < b[i]!) return false;

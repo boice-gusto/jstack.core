@@ -102,5 +102,7 @@ Bun.serve({
   },
 });
 
-console.log(`Serving ${REPO_ROOT} (package root; / → docs/index.html when built)`);
+console.log(
+  `Serving ${REPO_ROOT} (package root; / → docs/index.html when built)`,
+);
 console.log(`Open http://${hostname}:${port}/`);

@@ -55,7 +55,9 @@ export type SetupDefaultsSlices = {
 /**
  * Narrow `defaults.json` sections used by setup without casting the full tree to JstackConfig.
  */
-export function extractSetupSlices(defaults: Record<string, unknown>): SetupDefaultsSlices {
+export function extractSetupSlices(
+  defaults: Record<string, unknown>,
+): SetupDefaultsSlices {
   const defGbrain = asRecord(defaults.gbrain);
   const defSession = asRecord(defaults.session);
   const defKb = asRecord(defaults.knowledge_base);
@@ -66,13 +68,17 @@ export function extractSetupSlices(defaults: Record<string, unknown>): SetupDefa
   const defaultsTeam = asRecord(defaults.team);
 
   const gbrainParsed = GbrainSliceSchema.safeParse(defaults.gbrain);
-  const defaultGbrain: GbrainSlice = gbrainParsed.success ? gbrainParsed.data : {};
+  const defaultGbrain: GbrainSlice = gbrainParsed.success
+    ? gbrainParsed.data
+    : {};
 
   const kbParsed = KnowledgeBaseSliceSchema.safeParse(defaults.knowledge_base);
   const defaultKb: KnowledgeBaseSlice = kbParsed.success ? kbParsed.data : {};
 
   const mcpParsed = McpRegistrySchema.safeParse(defaults.mcp_servers);
-  const mcpExisting: McpRegistry | undefined = mcpParsed.success ? mcpParsed.data : undefined;
+  const mcpExisting: McpRegistry | undefined = mcpParsed.success
+    ? mcpParsed.data
+    : undefined;
 
   return {
     defGbrain,

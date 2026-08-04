@@ -61,20 +61,28 @@ describe("setAt", () => {
   describe("prototype pollution guard", () => {
     it("throws instead of traversing __proto__", () => {
       const obj: Record<string, unknown> = {};
-      expect(() => setAt(obj, ["__proto__", "polluted"], "PWNED")).toThrow(/dangerous key/);
+      expect(() => setAt(obj, ["__proto__", "polluted"], "PWNED")).toThrow(
+        /dangerous key/,
+      );
       expect(({} as Record<string, unknown>).polluted).toBeUndefined();
-      expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+      expect(
+        (Object.prototype as Record<string, unknown>).polluted,
+      ).toBeUndefined();
     });
 
     it("throws instead of traversing constructor.prototype", () => {
       const obj: Record<string, unknown> = {};
-      expect(() => setAt(obj, ["constructor", "prototype", "polluted"], "PWNED")).toThrow(/dangerous key/);
+      expect(() =>
+        setAt(obj, ["constructor", "prototype", "polluted"], "PWNED"),
+      ).toThrow(/dangerous key/);
       expect(({} as Record<string, unknown>).polluted).toBeUndefined();
     });
 
     it("throws when the dangerous key is the final segment, not just an intermediate one", () => {
       const obj: Record<string, unknown> = {};
-      expect(() => setAt(obj, ["a", "__proto__"], { polluted: "PWNED" })).toThrow(/dangerous key/);
+      expect(() =>
+        setAt(obj, ["a", "__proto__"], { polluted: "PWNED" }),
+      ).toThrow(/dangerous key/);
     });
 
     it("still allows an ordinary key that merely contains the word proto", () => {
@@ -114,9 +122,9 @@ describe("resolveWithinRoots", () => {
   });
 
   it("allows a path under any one of several roots", () => {
-    expect(resolveWithinRoots("/plugin/templates/x.json", ["/proj", "/plugin"])).toBe(
-      "/plugin/templates/x.json",
-    );
+    expect(
+      resolveWithinRoots("/plugin/templates/x.json", ["/proj", "/plugin"]),
+    ).toBe("/plugin/templates/x.json");
   });
 
   it("resolves a relative target against cwd before checking containment", () => {

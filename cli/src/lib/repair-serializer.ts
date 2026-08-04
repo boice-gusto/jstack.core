@@ -9,8 +9,16 @@ const RepairActionSchema = z.discriminatedUnion("kind", [
     content: z.string(),
     ifMissing: z.literal(true),
   }),
-  z.object({ kind: z.literal("set_config"), path: z.array(z.string()), value: z.unknown() }),
-  z.object({ kind: z.literal("shell_hint"), cmd: z.string(), reason: z.string() }),
+  z.object({
+    kind: z.literal("set_config"),
+    path: z.array(z.string()),
+    value: z.unknown(),
+  }),
+  z.object({
+    kind: z.literal("shell_hint"),
+    cmd: z.string(),
+    reason: z.string(),
+  }),
 ]);
 
 const DependencyIssueSchema = z.object({
@@ -32,7 +40,9 @@ export function deserializeRepairs(json: string): DependencyIssue[] {
   try {
     parsed = JSON.parse(json);
   } catch (err) {
-    throw new TypeError(`JSON parse failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw new TypeError(
+      `JSON parse failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
   const result = IssuesPayloadSchema.safeParse(parsed);
   if (!result.success) {

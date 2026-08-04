@@ -27,5 +27,8 @@ export function getTelemetryInstanceId(): string {
 
 /** Short opaque hash for batch payloads — no PII (not username, cwd, or hostname). */
 export function telemetryInstanceHash16(): string {
-  return createHash("sha256").update(getTelemetryInstanceId(), "utf8").digest("hex").slice(0, 16);
+  return createHash("sha256")
+    .update(getTelemetryInstanceId(), "utf8")
+    .digest("hex")
+    .slice(0, 16);
 }

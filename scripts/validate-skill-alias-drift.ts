@@ -69,14 +69,18 @@ export function validateSkillAliasDrift(): AliasDriftResult {
     const raw: unknown = JSON.parse(readFileSync(mapPath, "utf8"));
     parsed = MapSchema.parse(raw);
   } catch (e) {
-    errors.push(`Invalid skill-alias-map.json: ${e instanceof Error ? e.message : String(e)}`);
+    errors.push(
+      `Invalid skill-alias-map.json: ${e instanceof Error ? e.message : String(e)}`,
+    );
     return { warnings, errors, notes };
   }
 
   for (const row of parsed.mirrors) {
     const coreAbs = join(repoRoot, row.coreRelPath);
     if (!existsSync(coreAbs)) {
-      errors.push(`coreRelPath missing: ${row.coreRelPath} (gateId ${row.gateId})`);
+      errors.push(
+        `coreRelPath missing: ${row.coreRelPath} (gateId ${row.gateId})`,
+      );
       continue;
     }
 
@@ -98,7 +102,9 @@ export function validateSkillAliasDrift(): AliasDriftResult {
       if (rel === undefined || rel.trim() === "") continue;
       const abs = join(repoRoot, rel);
       if (!existsSync(abs)) {
-        notes.push(`Mirror skipped (${label} not in tree): ${rel} — gateId ${row.gateId}`);
+        notes.push(
+          `Mirror skipped (${label} not in tree): ${rel} — gateId ${row.gateId}`,
+        );
         continue;
       }
       existingHashes.push(fileSha256(abs));

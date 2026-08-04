@@ -10,6 +10,7 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 - **Module system:** ESM. Imports of local TypeScript files use the `.js` suffix even though the source is `.ts` (e.g. `import { x } from "./foo.js"`). Match this in new files.
 - **Config schema:** Zod, in `cli/src/types/config.ts` — the single source of truth and the only schema any code enforces. `config/schema.json` is **generated** from it by `bun run schema:generate`; `bun run schema:check` (in `bun run check`) fails on drift. Never hand-edit `config/schema.json`. `config/defaults.json` supplies runtime defaults.
 - **CLI framework:** `commander`. CLI entry: `cli/src/index.ts`.
+- **Formatter:** Biome (`biome.json`), scoped to `cli/src`, `scripts`, `evals`, and a few other TS/JS surfaces — not `dashboard/` (has its own ESLint) or generated files. `bun run format` to write, `bun run format:check` (part of `bun run check`) to verify. Linting is intentionally off in `biome.json`: the recommended ruleset's style opinions (e.g. against non-null assertions) conflict with patterns already used deliberately throughout this codebase, especially in tests.
 
 ## Commands you'll use most
 
@@ -19,6 +20,8 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 | Run one test file | `bun test cli/src/lib/foo.test.ts` |
 | Run one test by name | `bun test cli/src/lib/foo.test.ts -t "fixture name"` |
 | Typecheck (CLI) | `bun run typecheck:cli` |
+| Format (cli/scripts/evals, writes) | `bun run format` |
+| Format check (no write; part of `check`) | `bun run format:check` |
 | Validate config schema + defaults | `bun run validate-config` |
 | Validate skill chain refs | `bun run validate-chains` |
 | Validate router-skill matrix | `bun run eval:routers` |

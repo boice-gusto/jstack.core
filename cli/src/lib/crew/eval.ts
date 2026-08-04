@@ -76,7 +76,8 @@ export interface CrewEvalReport {
 /* ------------------------------------------------------- deterministic ---- */
 
 /** A citation like `cli/src/lib/crew/tick.ts:42`, or the same without a line number. */
-const CITATION_RE = /\b([\w./-]+\.(?:ts|tsx|js|json|md|py|yaml|yml|sh))(?::(\d+))?\b/g;
+const CITATION_RE =
+  /\b([\w./-]+\.(?:ts|tsx|js|json|md|py|yaml|yml|sh))(?::(\d+))?\b/g;
 
 /**
  * Basename -> real paths, built once per workspace.
@@ -93,7 +94,15 @@ function basenameIndex(root: string): Map<string, string[]> {
   const cached = basenameCache.get(root);
   if (cached) return cached;
   const index = new Map<string, string[]>();
-  const skip = new Set(["node_modules", ".git", "dist", "build", ".tmp", "coverage", ".next"]);
+  const skip = new Set([
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".tmp",
+    "coverage",
+    ".next",
+  ]);
   const walk = (dir: string, depth: number): void => {
     if (depth > 8) return;
     let entries;
@@ -152,7 +161,9 @@ export function checkCitations(answer: string, workspace: string): CheckResult {
     // Skip things that are plainly not claims about this workspace.
     if (raw.startsWith("http") || raw.includes("example.")) continue;
 
-    const candidates = isAbsolute(raw) ? [raw] : [join(root, raw), join(root, "cli", raw)];
+    const candidates = isAbsolute(raw)
+      ? [raw]
+      : [join(root, raw), join(root, "cli", raw)];
     let hit = candidates.find((c) => existsSync(c));
 
     /**
@@ -211,12 +222,16 @@ const FALSE_ACTION_RE = [
 ];
 
 export function checkNoFalseActions(answer: string): CheckResult {
-  const hits = FALSE_ACTION_RE.filter((re) => re.test(answer)).map((re) => String(re));
+  const hits = FALSE_ACTION_RE.filter((re) => re.test(answer)).map((re) =>
+    String(re),
+  );
   return {
     name: "no_false_action_claims",
     kind: "deterministic",
     passed: hits.length === 0,
-    detail: hits.length ? `claims an action it cannot perform: ${hits[0]}` : "claims no action it cannot perform",
+    detail: hits.length
+      ? `claims an action it cannot perform: ${hits[0]}`
+      : "claims no action it cannot perform",
   };
 }
 
@@ -227,13 +242,18 @@ export function checkNoFalseActions(answer: string): CheckResult {
  * content guard still active inside a thread we own. A renderer regression here would
  * silently disarm the in-thread loop guard, so it is asserted on real output every run.
  */
-export function checkIdentityPrefix(rendered: string, cfg: CrewConfig): CheckResult {
+export function checkIdentityPrefix(
+  rendered: string,
+  cfg: CrewConfig,
+): CheckResult {
   const who = agentPrefixMatch(rendered, cfg.agents);
   return {
     name: "identity_prefix_present",
     kind: "deterministic",
     passed: who !== null,
-    detail: who ? `opens with ${who}'s prefix, so G2a can recognise it` : "no identity prefix: G2a would not recognise this as ours",
+    detail: who
+      ? `opens with ${who}'s prefix, so G2a can recognise it`
+      : "no identity prefix: G2a would not recognise this as ours",
   };
 }
 
@@ -248,7 +268,9 @@ export function checkNoLiveSigil(body: string, cfg: CrewConfig): CheckResult {
     name: "no_unquoted_sigil",
     kind: "deterministic",
     passed: hit === null,
-    detail: hit ? `emits an unquoted sigil (${hit}), which relies on G2a to not loop` : "no unquoted sigil",
+    detail: hit
+      ? `emits an unquoted sigil (${hit}), which relies on G2a to not loop`
+      : "no unquoted sigil",
   };
 }
 
@@ -262,7 +284,10 @@ export function checkLength(rendered: string, cfg: CrewConfig): CheckResult {
   };
 }
 
-export function checkForbidden(answer: string, forbid: string[] | undefined): CheckResult | null {
+export function checkForbidden(
+  answer: string,
+  forbid: string[] | undefined,
+): CheckResult | null {
   if (!forbid?.length) return null;
   const lower = answer.toLowerCase();
   const hits = forbid.filter((f) => lower.includes(f.toLowerCase()));
@@ -270,7 +295,9 @@ export function checkForbidden(answer: string, forbid: string[] | undefined): Ch
     name: "case_forbidden_absent",
     kind: "deterministic",
     passed: hits.length === 0,
-    detail: hits.length ? `contains forbidden: ${hits.join(", ")}` : `none of ${forbid.length} forbidden phrase(s)`,
+    detail: hits.length
+      ? `contains forbidden: ${hits.join(", ")}`
+      : `none of ${forbid.length} forbidden phrase(s)`,
   };
 }
 
@@ -278,7 +305,8 @@ export function checkForbidden(answer: string, forbid: string[] | undefined): Ch
 
 function stripFence(s: string): string {
   const t = s.trim();
-  if (t.includes("```json")) return t.split("```json")[1]?.split("```")[0]?.trim() ?? t;
+  if (t.includes("```json"))
+    return t.split("```json")[1]?.split("```")[0]?.trim() ?? t;
   if (t.includes("```")) return t.split("```")[1]?.split("```")[0]?.trim() ?? t;
   return t;
 }
@@ -319,7 +347,14 @@ export async function judge(
     // No `--tools` flag here on purpose: it takes values, and a trailing one would swallow
     // the `--` that separates the prompt (runClaude appends `-- <prompt>`). Grading is text-only.
     const r = await runClaude(
-      ["--model", model, "--setting-sources", "", "--permission-mode", "dontAsk"],
+      [
+        "--model",
+        model,
+        "--setting-sources",
+        "",
+        "--permission-mode",
+        "dontAsk",
+      ],
       prompt,
       120_000,
     );
@@ -328,7 +363,9 @@ export async function judge(
       lastDetail = "judge failed to run";
       continue;
     }
-    let parsed: { results?: Array<{ n: number; passed: boolean; evidence?: string }> };
+    let parsed: {
+      results?: Array<{ n: number; passed: boolean; evidence?: string }>;
+    };
     try {
       parsed = JSON.parse(stripFence(r.text)) as typeof parsed;
     } catch {
@@ -378,7 +415,9 @@ export interface RunEvalOptions {
   log: (line: string) => void;
 }
 
-export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport> {
+export async function runCrewEval(
+  opts: RunEvalOptions,
+): Promise<CrewEvalReport> {
   const { config, cases, log } = opts;
   const judgeModel = opts.judgeModel ?? "claude-haiku-4-5-20251001";
   const t0 = Date.now();
@@ -399,7 +438,11 @@ export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport>
      * explained it thrown away.
      */
     const tickLog: string[] = [];
-    const s = await tick({ config, simulate: c.prompt, log: (l) => tickLog.push(l) });
+    const s = await tick({
+      config,
+      simulate: c.prompt,
+      log: (l) => tickLog.push(l),
+    });
     const reply = s.replies[0];
 
     /**
@@ -407,7 +450,11 @@ export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport>
      * and stop, rather than attributing it to the agent case by case.
      */
     const blocked = tickLog.find(
-      (l) => l.includes("holds the lock") || l.includes("HALTED") || l.includes("enabled is false") || l.includes("AUTH LOST"),
+      (l) =>
+        l.includes("holds the lock") ||
+        l.includes("HALTED") ||
+        l.includes("enabled is false") ||
+        l.includes("AUTH LOST"),
     );
     if (blocked && !reply) {
       throw new Error(
@@ -417,7 +464,8 @@ export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport>
     }
 
     if (!reply) {
-      const why = s.dropped[0]?.ruleId ?? tickLog.at(-1)?.trim() ?? "no reply produced";
+      const why =
+        s.dropped[0]?.ruleId ?? tickLog.at(-1)?.trim() ?? "no reply produced";
       results.push({
         id: c.id,
         rationale: c.rationale,
@@ -426,7 +474,14 @@ export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport>
         handled: false,
         costUsd: s.costUsd,
         ms: Date.now() - caseStart,
-        checks: [{ name: "produced_an_answer", kind: "deterministic", passed: false, detail: why }],
+        checks: [
+          {
+            name: "produced_an_answer",
+            kind: "deterministic",
+            passed: false,
+            detail: why,
+          },
+        ],
         passed: false,
       });
       log(`    FAIL — no answer (${why})`);
@@ -435,7 +490,12 @@ export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport>
 
     const agent = config.agents[reply.agentId]!;
     const checks: CheckResult[] = [
-      { name: "produced_an_answer", kind: "deterministic", passed: reply.ok, detail: reply.ok ? "worker succeeded" : "worker reported failure" },
+      {
+        name: "produced_an_answer",
+        kind: "deterministic",
+        passed: reply.ok,
+        detail: reply.ok ? "worker succeeded" : "worker reported failure",
+      },
       checkIdentityPrefix(reply.text, config),
       checkCitations(reply.body, agent.workspace),
       checkNoFalseActions(reply.body),
@@ -464,7 +524,9 @@ export async function runCrewEval(opts: RunEvalOptions): Promise<CrewEvalReport>
       passed,
     });
     const failed = checks.filter((x) => !x.passed);
-    log(`    ${passed ? "PASS" : `FAIL — ${failed.map((f) => f.name).join(", ")}`} ($${reply.costUsd.toFixed(3)}, ${Math.round((Date.now() - caseStart) / 1000)}s)`);
+    log(
+      `    ${passed ? "PASS" : `FAIL — ${failed.map((f) => f.name).join(", ")}`} ($${reply.costUsd.toFixed(3)}, ${Math.round((Date.now() - caseStart) / 1000)}s)`,
+    );
   }
 
   const passedN = results.filter((r) => r.passed).length;

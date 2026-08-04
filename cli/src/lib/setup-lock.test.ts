@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { STALE_AFTER_MS, acquireSetupLock } from "./setup-lock.js";
@@ -59,10 +66,16 @@ describe("acquireSetupLock", () => {
 
   test("steals a lockfile older than STALE_AFTER_MS even if pid is alive", () => {
     mkdirSync(join(root, ".jstack"), { recursive: true });
-    const ancient = new Date(Date.now() - STALE_AFTER_MS - 60_000).toISOString();
+    const ancient = new Date(
+      Date.now() - STALE_AFTER_MS - 60_000,
+    ).toISOString();
     writeFileSync(
       join(root, ".jstack", "setup.lock"),
-      JSON.stringify({ pid: process.pid, started_at: ancient, command: "old run" }),
+      JSON.stringify({
+        pid: process.pid,
+        started_at: ancient,
+        command: "old run",
+      }),
       "utf8",
     );
     const r = acquireSetupLock(root, "jstack setup --schema");
@@ -94,7 +107,9 @@ describe("acquireSetupLock", () => {
     const r = acquireSetupLock(root, "jstack setup --schema --reconfigure");
     expect(r.ok).toBe(true);
     if (r.ok) {
-      const lf = JSON.parse(readFileSync(join(root, ".jstack", "setup.lock"), "utf8"));
+      const lf = JSON.parse(
+        readFileSync(join(root, ".jstack", "setup.lock"), "utf8"),
+      );
       expect(lf.pid).toBe(process.pid);
       expect(typeof lf.started_at).toBe("string");
       expect(lf.command).toContain("jstack setup");

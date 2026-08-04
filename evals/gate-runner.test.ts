@@ -1,8 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { checkGates, evaluateSemanticSummaryGate, normalizeGateSkillId, type GateRule } from "./gate-runner.js";
+import {
+  checkGates,
+  evaluateSemanticSummaryGate,
+  normalizeGateSkillId,
+  type GateRule,
+} from "./gate-runner.js";
 
 const TOKEN_GATE: GateRule[] = [{ skill: "jstack:recon", max_tokens: 1000 }];
-const LATENCY_GATE: GateRule[] = [{ skill: "jstack:recon", max_latency_ms: 60_000 }];
+const LATENCY_GATE: GateRule[] = [
+  { skill: "jstack:recon", max_latency_ms: 60_000 },
+];
 const FULL_GATE: GateRule[] = [
   {
     skill: "jstack:recon",
@@ -25,7 +32,12 @@ describe("checkGates — fails closed on missing/invalid metrics", () => {
   });
 
   test("null tokens does NOT bypass a max_tokens gate", () => {
-    const res = checkGates(TOKEN_GATE, "jstack:recon", { tokens: null as unknown as number }, "");
+    const res = checkGates(
+      TOKEN_GATE,
+      "jstack:recon",
+      { tokens: null as unknown as number },
+      "",
+    );
     expect(res.passed).toBe(false);
   });
 
@@ -36,14 +48,24 @@ describe("checkGates — fails closed on missing/invalid metrics", () => {
   });
 
   test("NaN latency does NOT bypass a max_latency_ms gate", () => {
-    const res = checkGates(LATENCY_GATE, "jstack:recon", { latency_ms: Number.NaN }, "");
+    const res = checkGates(
+      LATENCY_GATE,
+      "jstack:recon",
+      { latency_ms: Number.NaN },
+      "",
+    );
     expect(res.passed).toBe(false);
   });
 
   test("a non-numeric string for tokens does NOT bypass a max_tokens gate", () => {
     // Number("N/A") is NaN; `NaN > anything` is false, so the old code's bare `>`
     // comparison silently treated this as "under budget".
-    const res = checkGates(TOKEN_GATE, "jstack:recon", { tokens: "N/A" as unknown as number }, "");
+    const res = checkGates(
+      TOKEN_GATE,
+      "jstack:recon",
+      { tokens: "N/A" as unknown as number },
+      "",
+    );
     expect(res.passed).toBe(false);
   });
 
@@ -74,7 +96,12 @@ describe("checkGates — fails closed on missing/invalid metrics", () => {
   });
 
   test("full gate: valid metrics + required fields + no forbidden pattern passes", () => {
-    const res = checkGates(FULL_GATE, "jstack:recon", { tokens: 10, latency_ms: 10 }, "action_items: []");
+    const res = checkGates(
+      FULL_GATE,
+      "jstack:recon",
+      { tokens: 10, latency_ms: 10 },
+      "action_items: []",
+    );
     expect(res.passed).toBe(true);
   });
 });
@@ -94,8 +121,18 @@ describe("normalizeGateSkillId — bare --skill must resolve to the same rule as
     // always stores the "jstack:" form), `!rule` short-circuits to `passed: true`,
     // and every gate for that skill is bypassed.
     const rules: GateRule[] = [{ skill: "jstack:recon", max_tokens: 10 }];
-    const bare = checkGates(rules, normalizeGateSkillId("recon"), { tokens: 999 }, "");
-    const prefixed = checkGates(rules, normalizeGateSkillId("jstack:recon"), { tokens: 999 }, "");
+    const bare = checkGates(
+      rules,
+      normalizeGateSkillId("recon"),
+      { tokens: 999 },
+      "",
+    );
+    const prefixed = checkGates(
+      rules,
+      normalizeGateSkillId("jstack:recon"),
+      { tokens: 999 },
+      "",
+    );
     expect(bare.passed).toBe(false);
     expect(prefixed.passed).toBe(false);
     expect(bare).toEqual(prefixed);
@@ -104,7 +141,9 @@ describe("normalizeGateSkillId — bare --skill must resolve to the same rule as
 
 describe("evaluateSemanticSummaryGate — empty/malformed results must not read as a pass", () => {
   test("an empty results array is a failure, not a trivial pass", () => {
-    const res = evaluateSemanticSummaryGate(FULL_GATE, "jstack:recon", { results: [] });
+    const res = evaluateSemanticSummaryGate(FULL_GATE, "jstack:recon", {
+      results: [],
+    });
     expect(res.passed).toBe(false);
     expect(res.casesChecked).toBe(0);
     expect(res.failures.join(" ")).toMatch(/zero results/);
@@ -124,7 +163,14 @@ describe("evaluateSemanticSummaryGate — empty/malformed results must not read 
 
   test("a real case with valid metrics and matching output passes", () => {
     const res = evaluateSemanticSummaryGate(FULL_GATE, "jstack:recon", {
-      results: [{ name: "case-1", tokens: 10, elapsed: 1, response: "action_items: []" }],
+      results: [
+        {
+          name: "case-1",
+          tokens: 10,
+          elapsed: 1,
+          response: "action_items: []",
+        },
+      ],
     });
     expect(res.passed).toBe(true);
     expect(res.casesChecked).toBe(1);

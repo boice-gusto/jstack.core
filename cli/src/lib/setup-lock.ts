@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -45,7 +51,10 @@ export type AcquireResult =
  * lock is older than STALE_AFTER_MS, we overwrite it and return ok:true
  * with stoleStale set so the caller can warn the user.
  */
-export function acquireSetupLock(projectRoot: string, command: string): AcquireResult {
+export function acquireSetupLock(
+  projectRoot: string,
+  command: string,
+): AcquireResult {
   const dir = join(projectRoot, ".jstack");
   mkdirSync(dir, { recursive: true });
   const path = lockPath(projectRoot);
@@ -66,7 +75,11 @@ export function acquireSetupLock(projectRoot: string, command: string): AcquireR
 
     if (stale) {
       writeLock(path, command);
-      return { ok: true, release: () => releaseLock(path), stoleStale: existing };
+      return {
+        ok: true,
+        release: () => releaseLock(path),
+        stoleStale: existing,
+      };
     }
     return { ok: false, existing };
   }

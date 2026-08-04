@@ -46,7 +46,10 @@ const urlOrEmpty = z.union([z.literal(""), z.string().url()]);
 /** `HH:MM` 24-hour clock. `"9am"` in `business_hours.start` produces silently wrong scheduling. */
 const clockTime = z
   .string()
-  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be 24-hour HH:MM, e.g. 09:30 or 17:00");
+  .regex(
+    /^([01]\d|2[0-3]):[0-5]\d$/,
+    "must be 24-hour HH:MM, e.g. 09:30 or 17:00",
+  );
 
 /**
  * A 5-field cron expression, or `""` for "not scheduled".
@@ -95,18 +98,23 @@ const timezone = z.string().refine(
 const skillSlug = z
   .string()
   .regex(/^[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*$/, {
-    message: "must be a bare skill slug like 'recon' or 'research/competitive' (no 'jstack:' prefix)",
+    message:
+      "must be a bare skill slug like 'recon' or 'research/competitive' (no 'jstack:' prefix)",
   });
 
 /** A CSS hex colour. Report branding renders these straight into HTML. */
 const hexColor = z
   .string()
-  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/, "must be a hex colour like #1a73e8");
+  .regex(
+    /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/,
+    "must be a hex colour like #1a73e8",
+  );
 
 const weekday = z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 
 /** Section helper: every section allows unknown keys so newer configs never break older CLIs. */
-const section = <T extends z.ZodRawShape>(shape: T) => z.object(shape).passthrough();
+const section = <T extends z.ZodRawShape>(shape: T) =>
+  z.object(shape).passthrough();
 
 // ── Notion (pre-existing; defaults preserved) ─────────────────────────────────
 
@@ -168,7 +176,9 @@ const BusinessHoursSchema = section({
 const CanonicalGroupSchema = section({
   // Values mirror the select options in `cli/src/lib/schema-questions.ts`
   // ("team-canonical-group-mode"); "" is the unset state. Keep the two in sync.
-  mode: z.enum(["none", "manual_list", "slack_user_group", "google_group", ""]).optional(),
+  mode: z
+    .enum(["none", "manual_list", "slack_user_group", "google_group", ""])
+    .optional(),
   slack_user_group_id: z.string().optional(),
   slack_handle: z.string().optional(),
   google_group_email: z.union([z.literal(""), z.string().email()]).optional(),
@@ -250,7 +260,10 @@ const KnowledgeBaseSchema = section({
     prefer_readme: z.boolean().optional(),
   }).optional(),
   retrieval: section({ system_prompt: z.string().optional() }).optional(),
-  gbrain: section({ include: z.boolean().optional(), note: z.string().optional() }).optional(),
+  gbrain: section({
+    include: z.boolean().optional(),
+    note: z.string().optional(),
+  }).optional(),
 });
 
 const KnowledgeRemoteSchema = section({
@@ -461,7 +474,9 @@ const DistributionSchema = section({
   update_check: z.boolean().optional(),
   version_url: urlOrEmpty.optional(),
   github: z.record(z.string(), GithubRepoRefSchema).optional(),
-  plugin_pr: section({ path_deny_globs: z.array(z.string()).optional() }).optional(),
+  plugin_pr: section({
+    path_deny_globs: z.array(z.string()).optional(),
+  }).optional(),
 });
 
 const CrossPluginEntrySchema = section({
@@ -543,7 +558,6 @@ const OnboardingSchema = section({
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
-
 // ── Crew: background Slack agents ─────────────────────────────────────────────
 //
 // This is the DOCUMENTED contract, mirrored into config/schema.json. The ENFORCED schema
@@ -618,7 +632,9 @@ export const JstackConfigSchema = z
     notion_defaults: NotionDefaultsSchema.optional(),
     policies: PoliciesSchema.optional(),
     approval_chains: ApprovalChainsSchema.optional(),
-    channels: section({ routing: z.record(z.string(), z.unknown()).optional() }).optional(),
+    channels: section({
+      routing: z.record(z.string(), z.unknown()).optional(),
+    }).optional(),
     debug: DebugSchema.optional(),
     skills: SkillsSchema.optional(),
     skill_defaults: z.record(z.string(), undescribed).optional(),

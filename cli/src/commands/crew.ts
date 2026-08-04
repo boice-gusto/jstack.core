@@ -1,11 +1,23 @@
 import chalk from "chalk";
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { Command } from "commander";
 import { CrewConfigSchema, type CrewConfig } from "../lib/crew/types.js";
 import { CrewStore, expandHome, snapshotPath } from "../lib/crew/store.js";
 import { tick } from "../lib/crew/tick.js";
-import { ACTIONS, BLOCKED_FROM_UI, guardRequest, mintToken, validateParams } from "../lib/crew/ui-server.js";
+import {
+  ACTIONS,
+  BLOCKED_FROM_UI,
+  guardRequest,
+  mintToken,
+  validateParams,
+} from "../lib/crew/ui-server.js";
 import { renderUiHtml } from "../lib/crew/ui-html.js";
 import { runCrewEval as runCrewEval_ } from "../lib/crew/eval.js";
 import { CREW_EVAL_CASES } from "../lib/crew/eval-cases.js";
@@ -52,14 +64,20 @@ function loadCrewConfig(): CrewConfig {
   if (!existsSync(path)) throw new Error(`no jstack.config.json at ${root}`);
   const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
   if (!raw[CONFIG_KEY]) {
-    throw new Error(`no "${CONFIG_KEY}" key in jstack.config.json. Run: jstackc crew init`);
+    throw new Error(
+      `no "${CONFIG_KEY}" key in jstack.config.json. Run: jstackc crew init`,
+    );
   }
   const cfg = CrewConfigSchema.parse(raw[CONFIG_KEY]);
   writeConfigSnapshot(cfg);
   return cfg;
 }
 
-export function runCrewInit(selfUserId: string, dmChannel: string, workspace: string): void {
+export function runCrewInit(
+  selfUserId: string,
+  dmChannel: string,
+  workspace: string,
+): void {
   const root = findProjectRoot();
   const path = join(root, "jstack.config.json");
   const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
@@ -75,7 +93,8 @@ export function runCrewInit(selfUserId: string, dmChannel: string, workspace: st
         enabled: true,
         name: "Ralph",
         emoji: ":robot_face:",
-        description: "Generalist desk agent. Answers questions about the workspace.",
+        description:
+          "Generalist desk agent. Answers questions about the workspace.",
         sigils: ["!ralph", "@agent-ralph"],
         model: "claude-sonnet-5",
         workspace,
@@ -86,8 +105,18 @@ export function runCrewInit(selfUserId: string, dmChannel: string, workspace: st
       },
     },
     policy: {
-      ingress: { channels: [dmChannel], authors: [selfUserId], require_sigil: true, ignore_older_than_ms: 900000 },
-      egress: { channels: [dmChannel], require_identity_prefix: true, max_message_chars: 3500, max_messages_per_task: 6 },
+      ingress: {
+        channels: [dmChannel],
+        authors: [selfUserId],
+        require_sigil: true,
+        ignore_older_than_ms: 900000,
+      },
+      egress: {
+        channels: [dmChannel],
+        require_identity_prefix: true,
+        max_message_chars: 3500,
+        max_messages_per_task: 6,
+      },
     },
   };
 
@@ -96,7 +125,11 @@ export function runCrewInit(selfUserId: string, dmChannel: string, workspace: st
   console.log(chalk.green("Wrote crew config (disabled, dry_run)."));
   console.log(`  DM channel : ${dmChannel}`);
   console.log(`  workspace  : ${workspace}`);
-  console.log(chalk.dim("\nNext: jstackc crew lint, then jstackc crew simulate '!ralph hello'"));
+  console.log(
+    chalk.dim(
+      "\nNext: jstackc crew lint, then jstackc crew simulate '!ralph hello'",
+    ),
+  );
 }
 
 export function runCrewLint(json: boolean): void {
@@ -108,7 +141,10 @@ export function runCrewLint(json: boolean): void {
       reads_from: cfg.policy.ingress.channels,
       answers_only: cfg.policy.ingress.authors,
       posts_to: cfg.policy.egress.channels,
-      agents: Object.entries(cfg.agents).map(([id, a]) => `${id}${a.enabled ? "" : " (disabled)"} [${a.sigils.join(" ")}]`),
+      agents: Object.entries(cfg.agents).map(
+        ([id, a]) =>
+          `${id}${a.enabled ? "" : " (disabled)"} [${a.sigils.join(" ")}]`,
+      ),
       daily_cap_usd: cfg.budget.daily_usd,
     };
     if (json) {
@@ -117,11 +153,25 @@ export function runCrewLint(json: boolean): void {
     }
     console.log(chalk.bold("Effective crew policy\n"));
     for (const [k, v] of Object.entries(eff)) {
-      console.log(`  ${k.padEnd(16)} ${chalk.cyan(Array.isArray(v) ? v.join(", ") : String(v))}`);
+      console.log(
+        `  ${k.padEnd(16)} ${chalk.cyan(Array.isArray(v) ? v.join(", ") : String(v))}`,
+      );
     }
-    const outside = cfg.policy.egress.channels.filter((c) => !cfg.policy.ingress.channels.includes(c));
-    if (outside.length) console.log(chalk.yellow(`\n  ! posts to channels it does not read: ${outside.join(", ")}`));
-    if (cfg.mode === "live") console.log(chalk.yellow("\n  ! mode is LIVE. Posts are irreversible and appear as you."));
+    const outside = cfg.policy.egress.channels.filter(
+      (c) => !cfg.policy.ingress.channels.includes(c),
+    );
+    if (outside.length)
+      console.log(
+        chalk.yellow(
+          `\n  ! posts to channels it does not read: ${outside.join(", ")}`,
+        ),
+      );
+    if (cfg.mode === "live")
+      console.log(
+        chalk.yellow(
+          "\n  ! mode is LIVE. Posts are irreversible and appear as you.",
+        ),
+      );
     console.log(chalk.green("\nOK"));
   } catch (e) {
     console.error(chalk.red(`lint failed: ${(e as Error).message}`));
@@ -133,7 +183,12 @@ export async function runCrewTick(simulate?: string): Promise<void> {
   try {
     const cfg = loadCrewConfig();
     const s = await tick({ config: cfg, simulate, log: (l) => console.log(l) });
-    const bits = [`read ${s.read}`, `handled ${s.handled}`, `dropped ${s.dropped.length}`, `$${s.costUsd.toFixed(4)}`];
+    const bits = [
+      `read ${s.read}`,
+      `handled ${s.handled}`,
+      `dropped ${s.dropped.length}`,
+      `$${s.costUsd.toFixed(4)}`,
+    ];
     if (s.backlogSkipped) bits.push(chalk.yellow("backlog skipped"));
     console.log(chalk.dim(`\n${bits.join(" · ")}`));
     if (s.halted) {
@@ -153,9 +208,15 @@ export async function runCrewTick(simulate?: string): Promise<void> {
  */
 export async function runCrewWatch(intervalS: number): Promise<void> {
   const cfg = loadCrewConfig();
-  console.log(chalk.bold(`Watching ${cfg.policy.ingress.channels[0]} every ${intervalS}s`));
+  console.log(
+    chalk.bold(
+      `Watching ${cfg.policy.ingress.channels[0]} every ${intervalS}s`,
+    ),
+  );
   const enabled = Object.entries(cfg.agents).filter(([, a]) => a.enabled);
-  console.log(`  mode ${cfg.mode === "live" ? chalk.yellow("LIVE") : chalk.green("dry_run")} · agents ${enabled.map(([id]) => id).join(", ") || chalk.yellow("none enabled")}`);
+  console.log(
+    `  mode ${cfg.mode === "live" ? chalk.yellow("LIVE") : chalk.green("dry_run")} · agents ${enabled.map(([id]) => id).join(", ") || chalk.yellow("none enabled")}`,
+  );
   console.log(chalk.dim("  Ctrl-C to stop\n"));
 
   let stop = false;
@@ -168,14 +229,25 @@ export async function runCrewWatch(intervalS: number): Promise<void> {
   while (!stop) {
     const t0 = Date.now();
     try {
-      const s = await tick({ config: loadCrewConfig(), log: (l) => console.log(l) });
+      const s = await tick({
+        config: loadCrewConfig(),
+        log: (l) => console.log(l),
+      });
       spent += s.costUsd;
       const stamp = new Date().toLocaleTimeString();
       if (s.read || s.handled) {
-        const extra = s.backlogSkipped ? chalk.yellow(" · backlog skipped") : "";
-        console.log(chalk.dim(`  ${stamp}  read ${s.read} · handled ${s.handled} · $${spent.toFixed(3)} total`) + extra);
+        const extra = s.backlogSkipped
+          ? chalk.yellow(" · backlog skipped")
+          : "";
+        console.log(
+          chalk.dim(
+            `  ${stamp}  read ${s.read} · handled ${s.handled} · $${spent.toFixed(3)} total`,
+          ) + extra,
+        );
       } else {
-        process.stdout.write(chalk.dim(`  ${stamp}  idle ($${spent.toFixed(3)})\r`));
+        process.stdout.write(
+          chalk.dim(`  ${stamp}  idle ($${spent.toFixed(3)})\r`),
+        );
       }
       if (s.halted) {
         console.error(chalk.red(`\nHALTED: ${s.halted}. Stopping.`));
@@ -213,21 +285,32 @@ export function runCrewStatus(json: boolean): void {
       recent_tasks: recentTasks,
       recent_events: recentEvents,
       last_tick_at: lastTick,
-      scheduler: { label: LABEL, loaded: isLoaded(), interval_s: schedInterval(p.plist) },
+      scheduler: {
+        label: LABEL,
+        loaded: isLoaded(),
+        interval_s: schedInterval(p.plist),
+      },
     };
     if (json) {
       console.log(JSON.stringify(out, null, 2));
       return;
     }
     console.log(chalk.bold("crew status\n"));
-    console.log(`  enabled     ${cfg.enabled ? chalk.green("yes") : chalk.yellow("no")}`);
-    console.log(`  mode        ${cfg.mode === "live" ? chalk.yellow("live") : chalk.green("dry_run")}`);
+    console.log(
+      `  enabled     ${cfg.enabled ? chalk.green("yes") : chalk.yellow("no")}`,
+    );
+    console.log(
+      `  mode        ${cfg.mode === "live" ? chalk.yellow("live") : chalk.green("dry_run")}`,
+    );
     console.log(`  halted      ${halted ? chalk.red("YES") : "no"}`);
     console.log(`  watermark   ${wm ?? chalk.dim("(none, cold start)")}`);
     console.log(`  tasks       ${st.tasks}`);
     console.log(`  outbox      ${st.outbox}`);
-    console.log(`  spent today $${st.spentToday.toFixed(4)} / ${cfg.budget.daily_usd}`);
-    if (halted) console.error(chalk.red("\nHALTED. Clear with: jstackc crew resume"));
+    console.log(
+      `  spent today $${st.spentToday.toFixed(4)} / ${cfg.budget.daily_usd}`,
+    );
+    if (halted)
+      console.error(chalk.red("\nHALTED. Clear with: jstackc crew resume"));
   } catch (e) {
     console.error(chalk.red(`status failed: ${(e as Error).message}`));
     process.exitCode = 1;
@@ -237,7 +320,9 @@ export function runCrewStatus(json: boolean): void {
 /** StartInterval out of the installed plist, so the UI shows the real cadence. */
 function schedInterval(plistPath: string): number | null {
   try {
-    const m = readFileSync(plistPath, "utf8").match(/<key>StartInterval<\/key>\s*<integer>(\d+)<\/integer>/);
+    const m = readFileSync(plistPath, "utf8").match(
+      /<key>StartInterval<\/key>\s*<integer>(\d+)<\/integer>/,
+    );
     return m ? Number(m[1]) : null;
   } catch {
     return null;
@@ -246,7 +331,10 @@ function schedInterval(plistPath: string): number | null {
 
 /* ---------------------------------------------------------------- launchd ---- */
 
-export async function runCrewInstall(intervalS: number, skipBuild: boolean): Promise<void> {
+export async function runCrewInstall(
+  intervalS: number,
+  skipBuild: boolean,
+): Promise<void> {
   const cfg = loadCrewConfig();
   const root = findProjectRoot();
   const p = installPaths(cfg.state_dir);
@@ -268,17 +356,35 @@ export async function runCrewInstall(intervalS: number, skipBuild: boolean): Pro
 
   if (!skipBuild) {
     console.log(chalk.dim("Compiling crewd…"));
-    const b = Bun.spawnSync(["bun", "build", "--compile", join(root, "cli/src/crewd.ts"), "--outfile", p.binary], {
-      cwd: root,
-    });
+    const b = Bun.spawnSync(
+      [
+        "bun",
+        "build",
+        "--compile",
+        join(root, "cli/src/crewd.ts"),
+        "--outfile",
+        p.binary,
+      ],
+      {
+        cwd: root,
+      },
+    );
     if (b.exitCode !== 0) {
-      console.error(chalk.red(`build failed:\n${new TextDecoder().decode(b.stderr).slice(0, 600)}`));
+      console.error(
+        chalk.red(
+          `build failed:\n${new TextDecoder().decode(b.stderr).slice(0, 600)}`,
+        ),
+      );
       process.exitCode = 1;
       return;
     }
   }
   if (!binaryLooksCompiled(p.binary)) {
-    console.error(chalk.red(`${p.binary} is not a compiled executable. Run without --skip-build.`));
+    console.error(
+      chalk.red(
+        `${p.binary} is not a compiled executable. Run without --skip-build.`,
+      ),
+    );
     process.exitCode = 1;
     return;
   }
@@ -308,13 +414,29 @@ export async function runCrewInstall(intervalS: number, skipBuild: boolean): Pro
    * than assumed: crewd records what it could actually read on each launchd run, and doctor
    * reports that. Do not send anyone to System Settings on a guess.
    */
-  const inProtected = Object.values(cfg.agents).filter((a) => isTccProtected(a.workspace));
+  const inProtected = Object.values(cfg.agents).filter((a) =>
+    isTccProtected(a.workspace),
+  );
   if (inProtected.length) {
-    console.log(chalk.dim("\n  Workspaces are under a TCC-protected folder (~/Documents)."));
-    console.log(chalk.dim("  No Full Disk Access grant is needed: the daemon reads its config from"));
+    console.log(
+      chalk.dim(
+        "\n  Workspaces are under a TCC-protected folder (~/Documents).",
+      ),
+    );
+    console.log(
+      chalk.dim(
+        "  No Full Disk Access grant is needed: the daemon reads its config from",
+      ),
+    );
     console.log(chalk.dim(`  ${snapshotPath()} and delegates all`));
-    console.log(chalk.dim("  repository reading to its worker child, which has its own access."));
-    console.log(`  Verify after the first tick:  ${chalk.cyan("jstackc crew doctor")}`);
+    console.log(
+      chalk.dim(
+        "  repository reading to its worker child, which has its own access.",
+      ),
+    );
+    console.log(
+      `  Verify after the first tick:  ${chalk.cyan("jstackc crew doctor")}`,
+    );
     /**
      * If a grant was ever added by hand, it is now dead weight and should be removed.
      *
@@ -325,9 +447,15 @@ export async function runCrewInstall(intervalS: number, skipBuild: boolean): Pro
      * and delegates repository reads to its worker child.
      */
     console.log(
-      chalk.dim("\n  If you previously added crewd to Full Disk Access, you can remove it;"),
+      chalk.dim(
+        "\n  If you previously added crewd to Full Disk Access, you can remove it;",
+      ),
     );
-    console.log(chalk.dim("  it is no longer used, and a rebuild invalidates it regardless."));
+    console.log(
+      chalk.dim(
+        "  it is no longer used, and a rebuild invalidates it regardless.",
+      ),
+    );
   }
 }
 
@@ -336,9 +464,17 @@ export function runCrewUninstall(): void {
   const p = installPaths(cfg.state_dir);
   const r = bootout();
   removePlist(p);
-  console.log(chalk.green(`Uninstalled ${LABEL}.${r.ok ? "" : ` (bootout: ${r.detail})`}`));
+  console.log(
+    chalk.green(
+      `Uninstalled ${LABEL}.${r.ok ? "" : ` (bootout: ${r.detail})`}`,
+    ),
+  );
   console.log(chalk.dim(`  The binary and ledger are kept: ${p.binary}`));
-  console.log(chalk.dim("  Remember to remove it from Full Disk Access if you granted it."));
+  console.log(
+    chalk.dim(
+      "  Remember to remove it from Full Disk Access if you granted it.",
+    ),
+  );
 }
 
 /* ----------------------------------------------------------------- session ---- */
@@ -360,8 +496,14 @@ export function runCrewSession(taskIdArg: string, json: boolean): void {
   store.close();
 
   if (!t) {
-    if (json) console.log(JSON.stringify({ ok: false, error: "no such task" }, null, 2));
-    else console.error(chalk.red(`no task ${taskIdArg}. See: jstackc crew status`));
+    if (json)
+      console.log(
+        JSON.stringify({ ok: false, error: "no such task" }, null, 2),
+      );
+    else
+      console.error(
+        chalk.red(`no task ${taskIdArg}. See: jstackc crew status`),
+      );
     process.exitCode = 1;
     return;
   }
@@ -376,14 +518,20 @@ export function runCrewSession(taskIdArg: string, json: boolean): void {
 
   console.log(chalk.bold(`\nSession behind ${t.id}\n`));
   console.log(`  agent      ${t.agentId || chalk.dim("(unknown)")}`);
-  console.log(`  session    ${t.sessionId || chalk.yellow("(none recorded — not resumable)")}`);
+  console.log(
+    `  session    ${t.sessionId || chalk.yellow("(none recorded — not resumable)")}`,
+  );
   console.log(`  thread     ${t.threadTs || chalk.dim("(none)")}`);
   if (workspace) console.log(`  workspace  ${workspace}`);
   if (t.sessionId) {
     console.log(chalk.dim("\n  Continue it in your terminal:"));
-    console.log(`    cd ${workspace ?? "<workspace>"} && claude --resume ${t.sessionId}`);
+    console.log(
+      `    cd ${workspace ?? "<workspace>"} && claude --resume ${t.sessionId}`,
+    );
     console.log(chalk.dim("\n  Or from Slack, to have the agent continue it:"));
-    console.log(`    ${agent?.sigils[0] ?? "!agent"} #${t.id} <your next question>`);
+    console.log(
+      `    ${agent?.sigils[0] ?? "!agent"} #${t.id} <your next question>`,
+    );
   }
 }
 
@@ -403,19 +551,27 @@ export async function runCrewEval(o: {
   judgeModel?: string;
 }): Promise<void> {
   const cfg = loadCrewConfig();
-  const only = o.only?.split(",").map((s) => s.trim()).filter(Boolean);
-  const cases = only?.length ? CREW_EVAL_CASES.filter((c) => only.includes(c.id)) : CREW_EVAL_CASES;
+  const only = o.only
+    ?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const cases = only?.length
+    ? CREW_EVAL_CASES.filter((c) => only.includes(c.id))
+    : CREW_EVAL_CASES;
 
   if (!cases.length) {
-    console.error(chalk.red(`no cases matched. Available: ${CREW_EVAL_CASES.map((c) => c.id).join(", ")}`));
+    console.error(
+      chalk.red(
+        `no cases matched. Available: ${CREW_EVAL_CASES.map((c) => c.id).join(", ")}`,
+      ),
+    );
     process.exitCode = 1;
     return;
   }
 
   let report;
   try {
-    report = await runCrewEval_(
-    {
+    report = await runCrewEval_({
       config: cfg,
       cases,
       deterministicOnly: o.deterministic,
@@ -423,8 +579,7 @@ export async function runCrewEval(o: {
       log: (l) => {
         if (!o.json) console.log(chalk.dim(l));
       },
-    },
-    );
+    });
   } catch (e) {
     // A blocker (contended lock, HALTED, auth) is not a grade. Fail loudly instead of
     // publishing a report that blames the agent for it.
@@ -436,7 +591,10 @@ export async function runCrewEval(o: {
   const outDir = join(findProjectRoot(), ".tmp", "crew-evals");
   mkdirSync(outDir, { recursive: true });
   const stampName = new Date().toISOString().replace(/[:.]/g, "-");
-  writeFileSync(join(outDir, `report-${stampName}.json`), `${JSON.stringify(report, null, 2)}\n`);
+  writeFileSync(
+    join(outDir, `report-${stampName}.json`),
+    `${JSON.stringify(report, null, 2)}\n`,
+  );
 
   if (o.json) {
     console.log(JSON.stringify(report, null, 2));
@@ -447,28 +605,45 @@ export async function runCrewEval(o: {
   console.log(chalk.bold("\nCrew eval\n"));
   for (const c of report.cases) {
     const head = c.passed ? chalk.green("PASS") : chalk.red("FAIL");
-    console.log(`${head}  ${chalk.bold(c.id)}  ${chalk.dim(`$${c.costUsd.toFixed(3)} · ${Math.round(c.ms / 1000)}s`)}`);
-    console.log(chalk.dim(`      ${c.rationale.replace(/\s+/g, " ").slice(0, 150)}`));
+    console.log(
+      `${head}  ${chalk.bold(c.id)}  ${chalk.dim(`$${c.costUsd.toFixed(3)} · ${Math.round(c.ms / 1000)}s`)}`,
+    );
+    console.log(
+      chalk.dim(`      ${c.rationale.replace(/\s+/g, " ").slice(0, 150)}`),
+    );
     for (const ck of c.checks) {
       // Passing deterministic checks are the boring majority; show them anyway, because
       // "citations all resolved" is the single most load-bearing line in this report.
       const mark = ck.passed ? chalk.green("✓") : chalk.red("✗");
-      const tag = ck.kind === "deterministic" ? chalk.cyan("[det]") : chalk.magenta("[jdg]");
+      const tag =
+        ck.kind === "deterministic"
+          ? chalk.cyan("[det]")
+          : chalk.magenta("[jdg]");
       const label = ck.name.length > 78 ? `${ck.name.slice(0, 78)}…` : ck.name;
       console.log(`      ${mark} ${tag} ${label}`);
-      if (!ck.passed) console.log(chalk.red(`            ${ck.detail.replace(/\s+/g, " ").slice(0, 180)}`));
+      if (!ck.passed)
+        console.log(
+          chalk.red(
+            `            ${ck.detail.replace(/\s+/g, " ").slice(0, 180)}`,
+          ),
+        );
     }
     console.log();
   }
 
-  const detTotal = report.cases.flatMap((c) => c.checks).filter((c) => c.kind === "deterministic");
+  const detTotal = report.cases
+    .flatMap((c) => c.checks)
+    .filter((c) => c.kind === "deterministic");
   const detPass = detTotal.filter((c) => c.passed).length;
-  const jdgTotal = report.cases.flatMap((c) => c.checks).filter((c) => c.kind === "rubric");
+  const jdgTotal = report.cases
+    .flatMap((c) => c.checks)
+    .filter((c) => c.kind === "rubric");
   const jdgPass = jdgTotal.filter((c) => c.passed).length;
 
   console.log(chalk.bold(`${report.passed}/${report.total} cases passed`));
   console.log(`  deterministic checks  ${detPass}/${detTotal.length}`);
-  if (jdgTotal.length) console.log(`  judged criteria       ${jdgPass}/${jdgTotal.length}`);
+  if (jdgTotal.length)
+    console.log(`  judged criteria       ${jdgPass}/${jdgTotal.length}`);
 
   /**
    * Report harness faults separately. A judge that returned no verdict is not evidence about
@@ -476,10 +651,14 @@ export async function runCrewEval(o: {
    * on the first run here, where a good answer showed FAIL for reasons that were entirely the
    * judge's.
    */
-  const harnessFaults = jdgTotal.filter((c) => !c.passed && c.detail.includes("judge_incomplete"));
+  const harnessFaults = jdgTotal.filter(
+    (c) => !c.passed && c.detail.includes("judge_incomplete"),
+  );
   if (harnessFaults.length) {
     console.log(
-      chalk.yellow(`  ! ${harnessFaults.length} criteria could not be judged (harness fault, not agent failure)`),
+      chalk.yellow(
+        `  ! ${harnessFaults.length} criteria could not be judged (harness fault, not agent failure)`,
+      ),
     );
   }
   console.log(
@@ -487,8 +666,14 @@ export async function runCrewEval(o: {
       `  agent $${report.costUsd.toFixed(3)} · judge $${report.judgeCostUsd.toFixed(3)} · ${Math.round(report.ms / 1000)}s`,
     ),
   );
-  console.log(chalk.dim(`  artefacts  ${join(outDir, `report-${stampName}.json`)}`));
-  console.log(chalk.dim("  no Slack calls were made: every case ran through simulate (dry_run, no persistence)"));
+  console.log(
+    chalk.dim(`  artefacts  ${join(outDir, `report-${stampName}.json`)}`),
+  );
+  console.log(
+    chalk.dim(
+      "  no Slack calls were made: every case ran through simulate (dry_run, no persistence)",
+    ),
+  );
   if (!report.ok) process.exitCode = 1;
 }
 
@@ -497,7 +682,8 @@ export async function runCrewEval(o: {
 export async function runCrewDoctor(json: boolean): Promise<void> {
   type Check = { name: string; ok: boolean; detail: string; fix?: string };
   const checks: Check[] = [];
-  const add = (name: string, ok: boolean, detail: string, fix?: string) => checks.push({ name, ok, detail, fix });
+  const add = (name: string, ok: boolean, detail: string, fix?: string) =>
+    checks.push({ name, ok, detail, fix });
 
   /**
    * Sample the snapshot BEFORE anything loads the config, because loading REFRESHES it.
@@ -510,7 +696,9 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
    */
   const snapBefore: string | null = (() => {
     try {
-      return existsSync(snapshotPath()) ? readFileSync(snapshotPath(), "utf8") : null;
+      return existsSync(snapshotPath())
+        ? readFileSync(snapshotPath(), "utf8")
+        : null;
     } catch {
       return null;
     }
@@ -521,18 +709,30 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
     cfg = loadCrewConfig();
     add("config loads", true, "crew section parses against the strict schema");
   } catch (e) {
-    add("config loads", false, (e as Error).message, "jstackc crew init --user <U…> --dm <D…> --workspace <path>");
+    add(
+      "config loads",
+      false,
+      (e as Error).message,
+      "jstackc crew init --user <U…> --dm <D…> --workspace <path>",
+    );
     report();
     return;
   }
 
-  add("enabled", cfg.enabled, cfg.enabled ? "crew.enabled is true" : "crew.enabled is false", 'set crew.enabled to true');
+  add(
+    "enabled",
+    cfg.enabled,
+    cfg.enabled ? "crew.enabled is true" : "crew.enabled is false",
+    "set crew.enabled to true",
+  );
 
   const on = Object.entries(cfg.agents).filter(([, a]) => a.enabled);
   add(
     "an agent is enabled",
     on.length > 0,
-    on.length ? `${on.map(([id]) => id).join(", ")}` : "every agent is disabled, so nothing can be routed",
+    on.length
+      ? `${on.map(([id]) => id).join(", ")}`
+      : "every agent is disabled, so nothing can be routed",
     "jstackc crew agents enable <id>",
   );
 
@@ -546,7 +746,11 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
       else seen.set(k, id);
     }
   }
-  add("sigils are unique", dupes.length === 0, dupes.length ? dupes.join("; ") : "no collisions");
+  add(
+    "sigils are unique",
+    dupes.length === 0,
+    dupes.length ? dupes.join("; ") : "no collisions",
+  );
 
   /**
    * This setting is a loop-guard dependency, not cosmetics, so it is checked rather than
@@ -594,43 +798,83 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
     } catch (e) {
       why = `the snapshot was unreadable (${(e as Error).message}); it has just been rewritten`;
     }
-    add("config snapshot matches source", matched, why, "any crew command refreshes it; re-run doctor to confirm");
+    add(
+      "config snapshot matches source",
+      matched,
+      why,
+      "any crew command refreshes it; re-run doctor to confirm",
+    );
   }
 
-  const egressOutside = cfg.policy.egress.channels.filter((c) => !cfg.policy.ingress.channels.includes(c));
+  const egressOutside = cfg.policy.egress.channels.filter(
+    (c) => !cfg.policy.ingress.channels.includes(c),
+  );
   add(
     "egress ⊆ ingress",
     egressOutside.length === 0,
-    egressOutside.length ? `posts to channels it does not read: ${egressOutside.join(", ")}` : "posts only where it reads",
+    egressOutside.length
+      ? `posts to channels it does not read: ${egressOutside.join(", ")}`
+      : "posts only where it reads",
   );
 
   const dir = expandHome(cfg.state_dir);
   add("state dir writable", existsSync(dir), dir, "jstackc crew tick");
-  add("not halted", !existsSync(join(dir, "HALTED")), existsSync(join(dir, "HALTED")) ? readFileSync(join(dir, "HALTED"), "utf8").trim() : "no HALTED sentinel", "jstackc crew resume");
+  add(
+    "not halted",
+    !existsSync(join(dir, "HALTED")),
+    existsSync(join(dir, "HALTED"))
+      ? readFileSync(join(dir, "HALTED"), "utf8").trim()
+      : "no HALTED sentinel",
+    "jstackc crew resume",
+  );
 
   // Workspace reachability, from THIS process. The launchd answer can differ (TCC).
   for (const [id, a] of Object.entries(cfg.agents)) {
     const w = expandHome(a.workspace);
-    add(`workspace: ${id}`, existsSync(w), w, "jstackc crew agents edit " + id + " --workspace <path>");
+    add(
+      `workspace: ${id}`,
+      existsSync(w),
+      w,
+      "jstackc crew agents edit " + id + " --workspace <path>",
+    );
   }
 
   // auth: free, no model call.
   const auth = Bun.spawnSync(["claude", "auth", "status"]);
   const authOk = auth.exitCode === 0;
-  add("claude auth", authOk, authOk ? "authenticated" : new TextDecoder().decode(auth.stderr).slice(0, 120) || "not logged in", "claude /login");
+  add(
+    "claude auth",
+    authOk,
+    authOk
+      ? "authenticated"
+      : new TextDecoder().decode(auth.stderr).slice(0, 120) || "not logged in",
+    "claude /login",
+  );
 
   // launchd + the TCC question, which is the one that silently kills everything.
   const p = installPaths(cfg.state_dir);
   const loaded = isLoaded();
-  add("LaunchAgent loaded", loaded, loaded ? LABEL : "not loaded (foreground `crew watch` only)", "jstackc crew install");
-  add("crewd compiled", binaryLooksCompiled(p.binary), p.binary, "jstackc crew install");
+  add(
+    "LaunchAgent loaded",
+    loaded,
+    loaded ? LABEL : "not loaded (foreground `crew watch` only)",
+    "jstackc crew install",
+  );
+  add(
+    "crewd compiled",
+    binaryLooksCompiled(p.binary),
+    p.binary,
+    "jstackc crew install",
+  );
 
   /**
    * The Full Disk Access answer can only come from the daemon's own run, because TCC grants
    * follow the responsible process: probing from this terminal inherits Terminal's grants
    * and would report success while the LaunchAgent is denied. So read what crewd recorded.
    */
-  const tccBlocked = Object.entries(cfg.agents).filter(([, a]) => isTccProtected(a.workspace));
+  const tccBlocked = Object.entries(cfg.agents).filter(([, a]) =>
+    isTccProtected(a.workspace),
+  );
   if (tccBlocked.length) {
     const healthPath = join(dir, "health.json");
     if (!existsSync(healthPath)) {
@@ -638,7 +882,9 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
         "Full Disk Access (from launchd)",
         false,
         "crewd has not reported yet; no health.json",
-        loaded ? "wait one interval, then re-run doctor" : "jstackc crew install",
+        loaded
+          ? "wait one interval, then re-run doctor"
+          : "jstackc crew install",
       );
     } else {
       const h = JSON.parse(readFileSync(healthPath, "utf8")) as {
@@ -648,7 +894,9 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
       };
       const entries = Object.entries(h.workspaces_readable ?? {});
       const denied = entries.filter(([, v]) => v === false).map(([k]) => k);
-      const delegated = entries.filter(([, v]) => v === "delegated").map(([k]) => k);
+      const delegated = entries
+        .filter(([, v]) => v === "delegated")
+        .map(([k]) => k);
       const ageMin = Math.round((Date.now() - Date.parse(h.at)) / 60000);
       if (!h.launchd) {
         add(
@@ -669,8 +917,12 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
          */
         const detail = [
           denied.length ? `crewd could not read: ${denied.join(", ")}` : null,
-          delegated.length ? `${delegated.join(", ")} delegated to the worker child (parent never touches it)` : null,
-          entries.length && !denied.length && !delegated.length ? "crewd read every workspace" : null,
+          delegated.length
+            ? `${delegated.join(", ")} delegated to the worker child (parent never touches it)`
+            : null,
+          entries.length && !denied.length && !delegated.length
+            ? "crewd read every workspace"
+            : null,
         ]
           .filter(Boolean)
           .join("; ");
@@ -693,14 +945,17 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
        */
       // The schedule lives in the plist, not the config, so read the real interval rather
       // than assuming one -- a generous default would make this check never fire.
-      const intervalM = Math.max(1, Math.round((schedInterval(p.plist) ?? 120) / 60));
+      const intervalM = Math.max(
+        1,
+        Math.round((schedInterval(p.plist) ?? 120) / 60),
+      );
       const stale = loaded && ageMin > intervalM * 3 + 2;
       add(
         "crewd is still ticking",
         !stale,
         stale
           ? `health.json has not moved in ${ageMin}m while the job is loaded -- crewd is wedged, ` +
-            "which is what a rebuilt binary with no Full Disk Access grant looks like"
+              "which is what a rebuilt binary with no Full Disk Access grant looks like"
           : `last report ${ageMin}m ago`,
         `re-grant Full Disk Access to ${p.binary}, then: launchctl kickstart -k gui/$(id -u)/${LABEL}`,
       );
@@ -711,17 +966,25 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
 
   function report(): void {
     if (json) {
-      console.log(JSON.stringify({ ok: checks.every((c) => c.ok), checks }, null, 2));
+      console.log(
+        JSON.stringify({ ok: checks.every((c) => c.ok), checks }, null, 2),
+      );
       return;
     }
     console.log(chalk.bold("crew doctor\n"));
     for (const c of checks) {
       const mark = c.ok ? chalk.green("✓") : chalk.red("✗");
-      console.log(`  ${mark} ${c.name.padEnd(26)} ${c.ok ? chalk.dim(c.detail) : c.detail}`);
+      console.log(
+        `  ${mark} ${c.name.padEnd(26)} ${c.ok ? chalk.dim(c.detail) : c.detail}`,
+      );
       if (!c.ok && c.fix) console.log(`    ${chalk.cyan(c.fix)}`);
     }
     const bad = checks.filter((c) => !c.ok).length;
-    console.log(bad ? chalk.red(`\n${bad} check(s) failed`) : chalk.green("\nAll checks passed"));
+    console.log(
+      bad
+        ? chalk.red(`\n${bad} check(s) failed`)
+        : chalk.green("\nAll checks passed"),
+    );
     if (bad) process.exitCode = 1;
   }
 }
@@ -738,11 +1001,28 @@ export async function runCrewUi(port: number, open: boolean): Promise<void> {
    * so nothing in a request can become a command; and the allowlist in ui-server.ts is the
    * only way in.
    */
-  const exec = async (name: string, params: Record<string, string>): Promise<{ code: number; stdout: string; stderr: string }> => {
+  const exec = async (
+    name: string,
+    params: Record<string, string>,
+  ): Promise<{ code: number; stdout: string; stderr: string }> => {
     const action = ACTIONS[name]!;
-    const argv = ["bun", "run", join(root, "cli/src/index.ts"), "crew", ...action.argv(params)];
-    const proc = Bun.spawn(argv, { cwd: root, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
-    const [o, e] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+    const argv = [
+      "bun",
+      "run",
+      join(root, "cli/src/index.ts"),
+      "crew",
+      ...action.argv(params),
+    ];
+    const proc = Bun.spawn(argv, {
+      cwd: root,
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [o, e] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
     await proc.exited;
     return { code: proc.exitCode ?? 1, stdout: o, stderr: e };
   };
@@ -756,7 +1036,10 @@ export async function runCrewUi(port: number, open: boolean): Promise<void> {
 
       if (url.pathname === "/" || url.pathname === "/index.html") {
         const g = guardRequest(req, { token, port, mutating: false });
-        if (!g.ok) return new Response(g.reason ?? "forbidden", { status: g.status ?? 403 });
+        if (!g.ok)
+          return new Response(g.reason ?? "forbidden", {
+            status: g.status ?? 403,
+          });
         return new Response(renderUiHtml(token, port), {
           headers: {
             "content-type": "text/html; charset=utf-8",
@@ -773,12 +1056,15 @@ export async function runCrewUi(port: number, open: boolean): Promise<void> {
       if (!m) return new Response("not found", { status: 404 });
       const name = m[1]!;
       const action = ACTIONS[name];
-      if (!action) return new Response(`unknown action: ${name}`, { status: 404 });
+      if (!action)
+        return new Response(`unknown action: ${name}`, { status: 404 });
 
       const g = guardRequest(req, { token, port, mutating: action.mutating });
       if (!g.ok) {
         console.error(`  refused ${name}: ${g.reason}`);
-        return new Response(g.reason ?? "forbidden", { status: g.status ?? 403 });
+        return new Response(g.reason ?? "forbidden", {
+          status: g.status ?? 403,
+        });
       }
 
       let raw: Record<string, unknown> = {};
@@ -796,17 +1082,34 @@ export async function runCrewUi(port: number, open: boolean): Promise<void> {
       if (!v.ok) return new Response(v.reason, { status: 400 });
 
       const r = await exec(name, v.params);
-      console.log(`  ${action.mutating ? "POST" : "GET "} ${name} → exit ${r.code}`);
-      return Response.json({ ok: r.code === 0, stdout: r.stdout, stderr: r.stderr }, { status: 200 });
+      console.log(
+        `  ${action.mutating ? "POST" : "GET "} ${name} → exit ${r.code}`,
+      );
+      return Response.json(
+        { ok: r.code === 0, stdout: r.stdout, stderr: r.stderr },
+        { status: 200 },
+      );
     },
   });
 
   const uiUrl = `http://127.0.0.1:${server.port}/?t=${token}`;
   console.log(chalk.bold("\ncrew orchestration UI\n"));
   console.log(`  ${chalk.cyan(uiUrl)}\n`);
-  console.log(chalk.dim("  Bound to 127.0.0.1 only. Token is per-run and never written to disk."));
-  console.log(chalk.dim("  Blocked from the UI: " + BLOCKED_FROM_UI.join(", ") + " (terminal-only, by design)."));
-  console.log(chalk.dim("  Ctrl-C to stop the server and invalidate the token.\n"));
+  console.log(
+    chalk.dim(
+      "  Bound to 127.0.0.1 only. Token is per-run and never written to disk.",
+    ),
+  );
+  console.log(
+    chalk.dim(
+      "  Blocked from the UI: " +
+        BLOCKED_FROM_UI.join(", ") +
+        " (terminal-only, by design).",
+    ),
+  );
+  console.log(
+    chalk.dim("  Ctrl-C to stop the server and invalidate the token.\n"),
+  );
 
   if (open) Bun.spawn(["open", uiUrl], { stdout: "ignore", stderr: "ignore" });
 
@@ -821,7 +1124,9 @@ export async function runCrewUi(port: number, open: boolean): Promise<void> {
 
 /* ------------------------------------------------------------------ agents ---- */
 
-function mutateAgents(fn: (agents: Record<string, Record<string, unknown>>) => void): void {
+function mutateAgents(
+  fn: (agents: Record<string, Record<string, unknown>>) => void,
+): void {
   const root = findProjectRoot();
   const path = join(root, "jstack.config.json");
   const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
@@ -853,19 +1158,28 @@ export function runAgentsList(json: boolean): void {
   console.log(chalk.bold(`Agents (${rows.length})\n`));
   for (const r of rows) {
     const dot = r.enabled ? chalk.green("●") : chalk.dim("○");
-    console.log(`  ${dot} ${chalk.bold(r.id.padEnd(12))} ${r.sigils.join(" ")}`);
-    console.log(`     ${chalk.dim(`${r.model} · ${r.tools.join(", ")} · ${r.workspace}`)}`);
+    console.log(
+      `  ${dot} ${chalk.bold(r.id.padEnd(12))} ${r.sigils.join(" ")}`,
+    );
+    console.log(
+      `     ${chalk.dim(`${r.model} · ${r.tools.join(", ")} · ${r.workspace}`)}`,
+    );
     if (r.description) console.log(`     ${chalk.dim(r.description)}`);
   }
   const off = rows.filter((r) => !r.enabled).length;
-  if (off) console.log(chalk.dim(`\n  ${off} disabled (defined but out of routing)`));
+  if (off)
+    console.log(chalk.dim(`\n  ${off} disabled (defined but out of routing)`));
 }
 
 export function runAgentsShow(id: string, json: boolean): void {
   const cfg = loadCrewConfig();
   const a = cfg.agents[id];
   if (!a) {
-    console.error(chalk.red(`no such agent: ${id}. Known: ${Object.keys(cfg.agents).join(", ")}`));
+    console.error(
+      chalk.red(
+        `no such agent: ${id}. Known: ${Object.keys(cfg.agents).join(", ")}`,
+      ),
+    );
     process.exitCode = 1;
     return;
   }
@@ -875,7 +1189,9 @@ export function runAgentsShow(id: string, json: boolean): void {
   }
   console.log(chalk.bold(`${id}\n`));
   for (const [k, v] of Object.entries(a)) {
-    console.log(`  ${k.padEnd(16)} ${chalk.cyan(Array.isArray(v) ? v.join(", ") : String(v) || chalk.dim("(empty)"))}`);
+    console.log(
+      `  ${k.padEnd(16)} ${chalk.cyan(Array.isArray(v) ? v.join(", ") : String(v) || chalk.dim("(empty)"))}`,
+    );
   }
 }
 
@@ -891,7 +1207,9 @@ export function runAgentsAdd(o: {
 }): void {
   const id = o.id.trim();
   if (!/^[a-z][a-z0-9-]{1,23}$/.test(id)) {
-    console.error(chalk.red("id must be kebab-case, 2-24 chars, starting with a letter"));
+    console.error(
+      chalk.red("id must be kebab-case, 2-24 chars, starting with a letter"),
+    );
     process.exitCode = 1;
     return;
   }
@@ -900,16 +1218,21 @@ export function runAgentsAdd(o: {
 
   try {
     mutateAgents((agents) => {
-      if (agents[id]) throw new Error(`agent "${id}" already exists. Use: jstackc crew agents edit ${id}`);
+      if (agents[id])
+        throw new Error(
+          `agent "${id}" already exists. Use: jstackc crew agents edit ${id}`,
+        );
       // A shared sigil would make routing depend on object key order, which is not a
       // contract anyone should rely on. Refuse rather than pick a winner.
       const taken = new Map<string, string>();
       for (const [other, a] of Object.entries(agents)) {
-        for (const sg of (a.sigils as string[] | undefined) ?? []) taken.set(sg.toLowerCase(), other);
+        for (const sg of (a.sigils as string[] | undefined) ?? [])
+          taken.set(sg.toLowerCase(), other);
       }
       for (const sg of sigils) {
         const owner = taken.get(sg.toLowerCase());
-        if (owner) throw new Error(`sigil "${sg}" already belongs to "${owner}"`);
+        if (owner)
+          throw new Error(`sigil "${sg}" already belongs to "${owner}"`);
       }
       agents[id] = {
         // New agents start DISABLED: adding one should never silently change what
@@ -937,10 +1260,17 @@ export function runAgentsAdd(o: {
   console.log(chalk.dim(`\n  Enable with: jstackc crew agents enable ${id}`));
 }
 
-export function runAgentsEdit(id: string, patch: Record<string, unknown>): void {
+export function runAgentsEdit(
+  id: string,
+  patch: Record<string, unknown>,
+): void {
   const keys = Object.keys(patch).filter((k) => patch[k] !== undefined);
   if (!keys.length) {
-    console.error(chalk.red("nothing to change. Pass at least one of --name --model --workspace --sigil --tool --description --persona"));
+    console.error(
+      chalk.red(
+        "nothing to change. Pass at least one of --name --model --workspace --sigil --tool --description --persona",
+      ),
+    );
     process.exitCode = 1;
     return;
   }
@@ -967,7 +1297,11 @@ export function runAgentsToggle(id: string, enabled: boolean): void {
       if (enabled) {
         const cfgNow = loadCrewConfigRaw();
         if (cfgNow?.mode === "live") {
-          console.log(chalk.yellow(`  note: mode is live, so "${id}" starts answering on the next tick.`));
+          console.log(
+            chalk.yellow(
+              `  note: mode is live, so "${id}" starts answering on the next tick.`,
+            ),
+          );
         }
       }
     });
@@ -976,7 +1310,11 @@ export function runAgentsToggle(id: string, enabled: boolean): void {
     process.exitCode = 1;
     return;
   }
-  console.log(enabled ? chalk.green(`Enabled "${id}".`) : chalk.yellow(`Disabled "${id}" (definition kept).`));
+  console.log(
+    enabled
+      ? chalk.green(`Enabled "${id}".`)
+      : chalk.yellow(`Disabled "${id}" (definition kept).`),
+  );
 }
 
 export function runAgentsRemove(id: string, confirmed: boolean): void {
@@ -987,26 +1325,40 @@ export function runAgentsRemove(id: string, confirmed: boolean): void {
     return;
   }
   if (Object.keys(cfg.agents).length === 1) {
-    console.error(chalk.red(`"${id}" is the only agent; removing it would leave crew unloadable. Disable it instead.`));
+    console.error(
+      chalk.red(
+        `"${id}" is the only agent; removing it would leave crew unloadable. Disable it instead.`,
+      ),
+    );
     process.exitCode = 1;
     return;
   }
   if (!confirmed) {
-    console.log(chalk.yellow(`This deletes the definition of "${id}". Prefer disabling it:`));
+    console.log(
+      chalk.yellow(
+        `This deletes the definition of "${id}". Prefer disabling it:`,
+      ),
+    );
     console.log(`  jstackc crew agents disable ${id}`);
-    console.log(chalk.dim(`\n  To delete anyway: jstackc crew agents remove ${id} --yes`));
+    console.log(
+      chalk.dim(`\n  To delete anyway: jstackc crew agents remove ${id} --yes`),
+    );
     process.exitCode = 1;
     return;
   }
   mutateAgents((agents) => {
     delete agents[id];
   });
-  console.log(chalk.green(`Removed "${id}". Its task history is kept in the ledger.`));
+  console.log(
+    chalk.green(`Removed "${id}". Its task history is kept in the ledger.`),
+  );
 }
 
 function loadCrewConfigRaw(): { mode?: string } | null {
   try {
-    const raw = JSON.parse(readFileSync(join(findProjectRoot(), "jstack.config.json"), "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(
+      readFileSync(join(findProjectRoot(), "jstack.config.json"), "utf8"),
+    ) as Record<string, unknown>;
     return (raw[CONFIG_KEY] as { mode?: string }) ?? null;
   } catch {
     return null;
@@ -1021,14 +1373,20 @@ export function runCrewGoLive(confirmChannel: string): void {
   const cfg = CrewConfigSchema.parse(raw[CONFIG_KEY]);
 
   if (confirmChannel !== cfg.policy.egress.channels[0]) {
-    console.error(chalk.red(`Confirmation mismatch. Expected the egress channel id; got "${confirmChannel}".`));
+    console.error(
+      chalk.red(
+        `Confirmation mismatch. Expected the egress channel id; got "${confirmChannel}".`,
+      ),
+    );
     process.exitCode = 1;
     return;
   }
   (raw[CONFIG_KEY] as Record<string, unknown>).mode = "live";
   writeFileSync(path, `${JSON.stringify(raw, null, 2)}\n`);
   console.log(chalk.yellow("mode = live."));
-  console.log(`  Ralph will post to ${cfg.policy.egress.channels.join(", ")} as you. Posts cannot be edited or deleted.`);
+  console.log(
+    `  Ralph will post to ${cfg.policy.egress.channels.join(", ")} as you. Posts cannot be edited or deleted.`,
+  );
   console.log(chalk.dim("  Back out with: jstackc crew panic"));
 }
 
@@ -1038,13 +1396,17 @@ export function runCrewExplain(ts: string): void {
   const rows = store.explain(cfg.policy.ingress.channels[0]!, ts);
   store.close();
   if (!rows.length) {
-    console.log(chalk.yellow(`No trace for ${ts}. Ralph may never have read it.`));
+    console.log(
+      chalk.yellow(`No trace for ${ts}. Ralph may never have read it.`),
+    );
     return;
   }
   console.log(chalk.bold(`Decision trace for ${ts}\n`));
   for (const r of rows) {
     const when = new Date(Number(r.ts)).toISOString();
-    console.log(`  ${when}  ${chalk.cyan(String(r.kind))}${r.rule_id ? ` ${chalk.yellow(String(r.rule_id))}` : ""}`);
+    console.log(
+      `  ${when}  ${chalk.cyan(String(r.kind))}${r.rule_id ? ` ${chalk.yellow(String(r.rule_id))}` : ""}`,
+    );
     if (r.detail) console.log(`      ${chalk.dim(String(r.detail))}`);
   }
 }
@@ -1053,8 +1415,13 @@ export function runCrewPanic(reason: string): void {
   const cfg = loadCrewConfig();
   const dir = expandHome(cfg.state_dir);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
-  writeFileSync(join(dir, "HALTED"), `${new Date().toISOString()}\n${reason}\n`);
-  console.log(chalk.red("HALTED written. Ralph will not run or post until you clear it."));
+  writeFileSync(
+    join(dir, "HALTED"),
+    `${new Date().toISOString()}\n${reason}\n`,
+  );
+  console.log(
+    chalk.red("HALTED written. Ralph will not run or post until you clear it."),
+  );
   console.log(chalk.dim("  jstackc crew resume"));
 }
 
@@ -1071,7 +1438,9 @@ export function runCrewResume(): void {
 }
 
 export function registerCrewCommand(program: Command): void {
-  const crew = program.command("crew").description("Ralph: watch your own Slack DM and answer in it");
+  const crew = program
+    .command("crew")
+    .description("Ralph: watch your own Slack DM and answer in it");
 
   crew
     .command("init")
@@ -1079,7 +1448,9 @@ export function registerCrewCommand(program: Command): void {
     .requiredOption("--user <U…>", "your Slack user id")
     .requiredOption("--dm <D…>", "your self-DM channel id")
     .requiredOption("--workspace <path>", "repo Ralph may read")
-    .action((o: { user: string; dm: string; workspace: string }) => runCrewInit(o.user, o.dm, o.workspace));
+    .action((o: { user: string; dm: string; workspace: string }) =>
+      runCrewInit(o.user, o.dm, o.workspace),
+    );
 
   crew
     .command("lint")
@@ -1094,21 +1465,36 @@ export function registerCrewCommand(program: Command): void {
 
   crew
     .command("simulate <text>")
-    .description("Push a synthetic message through the real pipeline, stopping at Slack")
+    .description(
+      "Push a synthetic message through the real pipeline, stopping at Slack",
+    )
     .action(async (text: string) => runCrewTick(text));
 
   crew
     .command("eval")
-    .description("Grade real agent answers on hard tasks. Dry-run only; never posts")
+    .description(
+      "Grade real agent answers on hard tasks. Dry-run only; never posts",
+    )
     .option("--json", "machine-readable", false)
     .option("--only <ids>", "comma-separated case ids")
-    .option("--deterministic", "skip the LLM judge (free, offline checks only)", false)
+    .option(
+      "--deterministic",
+      "skip the LLM judge (free, offline checks only)",
+      false,
+    )
     .option("--judge-model <m>", "model for the rubric judge")
-    .action(async (o: { json: boolean; only?: string; deterministic: boolean; judgeModel?: string }) =>
-      runCrewEval(o),
+    .action(
+      async (o: {
+        json: boolean;
+        only?: string;
+        deterministic: boolean;
+        judgeModel?: string;
+      }) => runCrewEval(o),
     );
 
-  const ag = crew.command("agents").description("View, create, modify, disable or remove background agents");
+  const ag = crew
+    .command("agents")
+    .description("View, create, modify, disable or remove background agents");
 
   ag.command("list", { isDefault: true })
     .description("List agents, their sigils and whether they are in routing")
@@ -1121,10 +1507,15 @@ export function registerCrewCommand(program: Command): void {
     .action((id: string, o: { json: boolean }) => runAgentsShow(id, o.json));
 
   ag.command("add <id>")
-    .description("Create an agent. Starts DISABLED so nothing changes until you enable it.")
+    .description(
+      "Create an agent. Starts DISABLED so nothing changes until you enable it.",
+    )
     .requiredOption("--workspace <path>", "repo this agent may read")
     .option("--name <name>", "display name (defaults from the id)")
-    .option("--sigil <s...>", "what wakes it (defaults to !<id> and @agent-<id>)")
+    .option(
+      "--sigil <s...>",
+      "what wakes it (defaults to !<id> and @agent-<id>)",
+    )
     .option("--model <m>", "model", "claude-sonnet-5")
     .option("--tool <t...>", "tools (defaults Read Grep Glob)")
     .option("--description <d>", "what it is for")
@@ -1165,7 +1556,9 @@ export function registerCrewCommand(program: Command): void {
       }),
     );
 
-  ag.command("enable <id>").description("Put an agent into routing").action((id: string) => runAgentsToggle(id, true));
+  ag.command("enable <id>")
+    .description("Put an agent into routing")
+    .action((id: string) => runAgentsToggle(id, true));
   ag.command("disable <id>")
     .description("Take an agent out of routing, keeping its definition")
     .action((id: string) => runAgentsToggle(id, false));
@@ -1176,14 +1569,20 @@ export function registerCrewCommand(program: Command): void {
 
   crew
     .command("ui")
-    .description("Orchestration page: agents, tasks, logs, scheduler. Ephemeral local server.")
+    .description(
+      "Orchestration page: agents, tasks, logs, scheduler. Ephemeral local server.",
+    )
     .option("--port <p>", "port on 127.0.0.1", "7391")
     .option("--no-open", "do not open a browser")
-    .action(async (o: { port: string; open: boolean }) => runCrewUi(Number(o.port), o.open));
+    .action(async (o: { port: string; open: boolean }) =>
+      runCrewUi(Number(o.port), o.open),
+    );
 
   crew
     .command("install")
-    .description("Compile crewd and install the LaunchAgent so it runs without a terminal")
+    .description(
+      "Compile crewd and install the LaunchAgent so it runs without a terminal",
+    )
     /**
      * 300s, not 60s, and the arithmetic is the reason.
      *
@@ -1192,31 +1591,50 @@ export function registerCrewCommand(program: Command): void {
      * writes, so the default schedule could not afford the default budget and the crew would
      * spend its whole allowance polling an empty DM. 300s is ~$6.60/day, leaving room for work.
      */
-    .option("--interval <s>", "seconds between ticks (~$0.023 each; 300s ≈ $6.60/day)", "300")
+    .option(
+      "--interval <s>",
+      "seconds between ticks (~$0.023 each; 300s ≈ $6.60/day)",
+      "300",
+    )
     .option("--skip-build", "reuse the existing compiled binary", false)
-    .action(async (o: { interval: string; skipBuild: boolean }) => runCrewInstall(Number(o.interval), o.skipBuild));
+    .action(async (o: { interval: string; skipBuild: boolean }) =>
+      runCrewInstall(Number(o.interval), o.skipBuild),
+    );
 
   crew
     .command("uninstall")
-    .description("Stop and remove the LaunchAgent (keeps the binary and ledger)")
+    .description(
+      "Stop and remove the LaunchAgent (keeps the binary and ledger)",
+    )
     .action(() => runCrewUninstall());
 
   crew
     .command("doctor")
-    .description("Preflight: config, agents, auth, launchd, and Full Disk Access")
+    .description(
+      "Preflight: config, agents, auth, launchd, and Full Disk Access",
+    )
     .option("--json", "machine-readable", false)
     .action(async (o: { json: boolean }) => runCrewDoctor(o.json));
 
   crew
     .command("watch")
-    .description("Poll in the foreground until Ctrl-C (the simple alternative to a daemon)")
+    .description(
+      "Poll in the foreground until Ctrl-C (the simple alternative to a daemon)",
+    )
     .option("--interval <s>", "seconds between ticks", "60")
-    .action(async (o: { interval: string }) => runCrewWatch(Number(o.interval)));
+    .action(async (o: { interval: string }) =>
+      runCrewWatch(Number(o.interval)),
+    );
 
   crew
     .command("go-live")
-    .description("Switch mode to live. Posts are irreversible and appear as you.")
-    .requiredOption("--confirm-channel <D…>", "type the DM channel id back to confirm")
+    .description(
+      "Switch mode to live. Posts are irreversible and appear as you.",
+    )
+    .requiredOption(
+      "--confirm-channel <D…>",
+      "type the DM channel id back to confirm",
+    )
     .action((o: { confirmChannel: string }) => runCrewGoLive(o.confirmChannel));
 
   crew
@@ -1236,11 +1654,18 @@ export function registerCrewCommand(program: Command): void {
     .option("--reason <r>", "recorded reason", "manual")
     .action((o: { reason: string }) => runCrewPanic(o.reason));
 
-  crew.command("resume").description("Clear HALTED").action(() => runCrewResume());
+  crew
+    .command("resume")
+    .description("Clear HALTED")
+    .action(() => runCrewResume());
 
   crew
     .command("session <taskId>")
-    .description("Show the Claude session behind a reply handle, so you can continue it locally")
+    .description(
+      "Show the Claude session behind a reply handle, so you can continue it locally",
+    )
     .option("--json", "machine-readable", false)
-    .action((taskIdArg: string, o: { json: boolean }) => runCrewSession(taskIdArg, o.json));
+    .action((taskIdArg: string, o: { json: boolean }) =>
+      runCrewSession(taskIdArg, o.json),
+    );
 }

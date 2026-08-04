@@ -22,7 +22,9 @@ import { Glob } from "bun";
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
 // mutating the real repo, which is how earlier verification work destroyed uncommitted files.
-const root = process.env.JSTACK_CHECK_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), "..");
+const root =
+  process.env.JSTACK_CHECK_ROOT ??
+  join(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(root, "skills");
 
 /** Levenshtein distance, capped early — we only care about <= 2. */
@@ -34,18 +36,30 @@ function distance(a: string, b: string): number {
     prev[0] = i;
     for (let j = 1; j <= b.length; j++) {
       const tmp = prev[j];
-      prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, last + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev[j] = Math.min(
+        prev[j] + 1,
+        prev[j - 1] + 1,
+        last + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
       last = tmp;
     }
   }
   return prev[b.length];
 }
 
-interface S { rel: string; name: string; desc: string }
+interface S {
+  rel: string;
+  name: string;
+  desc: string;
+}
 const skills: S[] = [];
 for (const rel of new Glob("**/SKILL.md").scanSync(skillsRoot)) {
   const raw = readFileSync(join(skillsRoot, rel), "utf8");
-  const name = raw.match(/^name:\s*(.+)$/m)?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
+  const name =
+    raw
+      .match(/^name:\s*(.+)$/m)?.[1]
+      ?.trim()
+      .replace(/^["']|["']$/g, "") ?? "";
   const desc = raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
   if (name) skills.push({ rel: dirname(rel), name, desc });
 }
@@ -60,7 +74,9 @@ for (let i = 0; i < skills.length; i++) {
     const aNamesB = a.desc.includes(b.name);
     const bNamesA = b.desc.includes(a.name);
     if (!aNamesB || !bNamesA) {
-      const missing = [!aNamesB ? a.rel : null, !bNamesA ? b.rel : null].filter(Boolean).join(" and ");
+      const missing = [!aNamesB ? a.rel : null, !bNamesA ? b.rel : null]
+        .filter(Boolean)
+        .join(" and ");
       errors.push(
         `"${a.name}" (${a.rel}) and "${b.name}" (${b.rel}) differ by one character but serve different ` +
           `purposes. ${missing} must name the other in its description so a reader picking from the ` +
@@ -71,8 +87,12 @@ for (let i = 0; i < skills.length; i++) {
 }
 
 if (errors.length > 0) {
-  console.error(`check-name-collisions FAILED — ${errors.length} undisambiguated near-collision(s):\n`);
+  console.error(
+    `check-name-collisions FAILED — ${errors.length} undisambiguated near-collision(s):\n`,
+  );
   for (const e of errors) console.error(`  ${e}`);
   process.exit(1);
 }
-console.log(`check-name-collisions OK (${skills.length} skills; near-collisions all disambiguated)`);
+console.log(
+  `check-name-collisions OK (${skills.length} skills; near-collisions all disambiguated)`,
+);

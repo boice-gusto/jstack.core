@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { collectDoctorConfigWarnings, collectMockMcpDoctorWarnings } from "./doctor-warnings.js";
+import {
+  collectDoctorConfigWarnings,
+  collectMockMcpDoctorWarnings,
+} from "./doctor-warnings.js";
 
 /** jstack.core package root (cli/src/lib → ../../../). */
 const PLUGIN_ROOT = join(import.meta.dir, "..", "..", "..");
@@ -44,10 +47,15 @@ describe("collectDoctorConfigWarnings", () => {
   test("warns when a knowledge_base root is missing on disk", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-doc-"));
     const cfg = baseCfg({
-      knowledge_base: { roots: ["this-folder-does-not-exist-xyz"], gbrain: { include: false } },
+      knowledge_base: {
+        roots: ["this-folder-does-not-exist-xyz"],
+        gbrain: { include: false },
+      },
     });
     const w = collectDoctorConfigWarnings(root, cfg);
-    expect(w.some((m) => m.includes("this-folder-does-not-exist-xyz"))).toBe(true);
+    expect(w.some((m) => m.includes("this-folder-does-not-exist-xyz"))).toBe(
+      true,
+    );
   });
 
   test("warns when knowledge_base.gbrain.include is true but no GBrain URLs", () => {
@@ -70,12 +78,17 @@ describe("collectDoctorConfigWarnings", () => {
     const cfg = baseCfg({
       knowledge_storage: {
         disk_fallback_root: "/tmp/knowledgebase",
-        team: { git_remote: "https://github.com/org/team-kb.git", local_checkout: "" },
+        team: {
+          git_remote: "https://github.com/org/team-kb.git",
+          local_checkout: "",
+        },
         personal: { git_remote: "", local_checkout: "" },
       },
     });
     const w = collectDoctorConfigWarnings(root, cfg);
-    expect(w.some((m) => m.includes("knowledge_storage.team.git_remote"))).toBe(true);
+    expect(w.some((m) => m.includes("knowledge_storage.team.git_remote"))).toBe(
+      true,
+    );
   });
 
   test("warns when knowledge_storage team local_checkout path missing", () => {
@@ -89,7 +102,9 @@ describe("collectDoctorConfigWarnings", () => {
       },
     });
     const w = collectDoctorConfigWarnings(root, cfg);
-    expect(w.some((m) => m.includes("knowledge_storage.team.local_checkout"))).toBe(true);
+    expect(
+      w.some((m) => m.includes("knowledge_storage.team.local_checkout")),
+    ).toBe(true);
   });
 
   test("absolute root path is resolved without duplicating project root", () => {
@@ -107,10 +122,14 @@ describe("collectDoctorConfigWarnings", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-doc-"));
     mkdirSync(join(root, "docs"), { recursive: true });
     const cfg = baseCfg({
-      skills: { machine_readable: { enabled: false, require_schema_ref: false } },
+      skills: {
+        machine_readable: { enabled: false, require_schema_ref: false },
+      },
     });
     const w = collectDoctorConfigWarnings(root, cfg);
-    expect(w.some((m) => m.includes("skills.machine_readable.enabled is false"))).toBe(true);
+    expect(
+      w.some((m) => m.includes("skills.machine_readable.enabled is false")),
+    ).toBe(true);
     expect(w.some((m) => m.includes("require_schema_ref"))).toBe(false);
   });
 
@@ -128,16 +147,22 @@ describe("collectDoctorConfigWarnings", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-doc-"));
     mkdirSync(join(root, "docs"), { recursive: true });
     const w = collectDoctorConfigWarnings(root, baseCfg(), {
-      skills: { machine_readable: { enabled: false, require_schema_ref: false } },
+      skills: {
+        machine_readable: { enabled: false, require_schema_ref: false },
+      },
     });
-    expect(w.some((m) => m.includes("skills.machine_readable.enabled is false"))).toBe(true);
+    expect(
+      w.some((m) => m.includes("skills.machine_readable.enabled is false")),
+    ).toBe(true);
   });
 });
 
 describe("collectMockMcpDoctorWarnings", () => {
   test("returns nothing when debug.mock_mcp is not true", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-mock-doc-"));
-    const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, { debug: { mock_mcp: false } });
+    const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, {
+      debug: { mock_mcp: false },
+    });
     expect(w).toEqual([]);
   });
 
@@ -184,7 +209,10 @@ describe("collectMockMcpDoctorWarnings", () => {
       "utf8",
     );
     const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, {
-      debug: { mock_mcp: true, mock_mcp_scenario: "definitely-missing-scenario-xyz" },
+      debug: {
+        mock_mcp: true,
+        mock_mcp_scenario: "definitely-missing-scenario-xyz",
+      },
     });
     expect(w.some((m) => m.includes("scenario file is missing"))).toBe(true);
   });

@@ -45,7 +45,12 @@ const DEAD_BOILERPLATE = [
   "Correct surface, no stray side effects, tone matches",
 ];
 
-const FICTION = [/\bAcme\b/, /\bContoso\b/, /\bCompetitor X\b/, /SOC2 audit in \w+/i];
+const FICTION = [
+  /\bAcme\b/,
+  /\bContoso\b/,
+  /\bCompetitor X\b/,
+  /SOC2 audit in \w+/i,
+];
 
 interface Rule {
   id: string;
@@ -55,7 +60,8 @@ interface Rule {
 }
 
 const TIER_ORDER: Record<Tier, number> = { A: 3, B: 2, C: 1 };
-const appliesTo = (rule: Rule, tier: Tier) => TIER_ORDER[tier] >= TIER_ORDER[rule.minTier];
+const appliesTo = (rule: Rule, tier: Tier) =>
+  TIER_ORDER[tier] >= TIER_ORDER[rule.minTier];
 
 const RULES: Rule[] = [
   {
@@ -64,7 +70,10 @@ const RULES: Rule[] = [
     // Was keyword-literal on "Domain rules", which failed skills that state the same content
     // under an equivalent heading ("Hard rules", "Absolute rules"). Accepting synonyms adds
     // only one skill and still leaves the rule discriminating, so it is not a loophole.
-    test: (b) => /^##+ .*(Domain rules|Hard rules|Absolute rules|Prime Directives)/m.test(b),
+    test: (b) =>
+      /^##+ .*(Domain rules|Hard rules|Absolute rules|Prime Directives)/m.test(
+        b,
+      ),
     hint: "no domain-rules section — add a skill_deep/CATEGORY_DEEP entry stating rules specific to this domain (a 'Hard rules' or 'Absolute rules' heading also counts)",
   },
   {
@@ -104,7 +113,9 @@ const RULES: Rule[] = [
       // The label may be a heading (`## Named anti-patterns`) or an emphasized list item
       // (`3. **Anti-patterns**`) — both are used in this repo. What matters is that an
       // enumerated table follows, not which markup introduces it.
-      const m = b.match(/^(?:##+ .*anti-?pattern|\s*\d*\.?\s*\*\*anti-?pattern)/im);
+      const m = b.match(
+        /^(?:##+ .*anti-?pattern|\s*\d*\.?\s*\*\*anti-?pattern)/im,
+      );
       if (!m || m.index === undefined) return false;
       const after = b.slice(m.index, m.index + 1200);
       const rows = after.match(/^\|.*\|.*\|/gm) ?? [];
@@ -117,7 +128,9 @@ const RULES: Rule[] = [
     minTier: "A",
     test: (b) =>
       /^##+ .*(Worked example|Example)/im.test(b) &&
-      /(weak|bad|vague|before)\b[\s\S]{0,2000}?(sharp|good|better|after)\b/i.test(b),
+      /(weak|bad|vague|before)\b[\s\S]{0,2000}?(sharp|good|better|after)\b/i.test(
+        b,
+      ),
     hint: "no worked example contrasting a weak output with a sharp one",
   },
   {
@@ -178,7 +191,12 @@ for (const dir of skillDirs) {
   const raw = readFileSync(join(dir, "SKILL.md"), "utf8");
   const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!fmMatch) {
-    findings.push({ skill: rel, kind: "correctness", id: "frontmatter", message: "missing YAML frontmatter" });
+    findings.push({
+      skill: rel,
+      kind: "correctness",
+      id: "frontmatter",
+      message: "missing YAML frontmatter",
+    });
     continue;
   }
   const body = raw.slice(fmMatch[0].length);
@@ -212,7 +230,12 @@ for (const dir of skillDirs) {
   // --- correctness ---
   for (const key of ["name", "description", "effort"]) {
     if (typeof meta[key] !== "string" || String(meta[key]).trim() === "") {
-      findings.push({ skill: rel, kind: "correctness", id: `missing-${key}`, message: `frontmatter must set a non-empty '${key}'` });
+      findings.push({
+        skill: rel,
+        kind: "correctness",
+        id: `missing-${key}`,
+        message: `frontmatter must set a non-empty '${key}'`,
+      });
     }
   }
   // A frontmatter value that is nothing but a YAML block-scalar indicator means the author wrote
@@ -223,7 +246,10 @@ for (const dir of skillDirs) {
   // skill-listing budget while saying nothing. `computer-use` shipped in exactly this state.
   const BLOCK_SCALAR_ONLY = new Set([">", ">-", ">+", "|", "|-", "|+"]);
   for (const [key, value] of Object.entries(meta)) {
-    if (typeof value === "string" && BLOCK_SCALAR_ONLY.has(value.trim().replace(/^["']|["']$/g, ""))) {
+    if (
+      typeof value === "string" &&
+      BLOCK_SCALAR_ONLY.has(value.trim().replace(/^["']|["']$/g, ""))
+    ) {
       findings.push({
         skill: rel,
         kind: "correctness",
@@ -251,7 +277,8 @@ for (const dir of skillDirs) {
   // market. The same token inside a quoted illustration — «"Competitor X is the market leader"
   // is a claim; "…3x the category median as of <date>" is evidence» — is correct teaching
   // content. Skip lines that are visibly illustrative; flag bare assertions.
-  const ILLUSTRATIVE = /["“”']|\be\.?g\.?\b|\bfor example\b|\bexample\b|\bplaceholder\b|\bweak\b|\bsharp\b|\bis a claim\b|<[a-z-]+>/i;
+  const ILLUSTRATIVE =
+    /["“”']|\be\.?g\.?\b|\bfor example\b|\bexample\b|\bplaceholder\b|\bweak\b|\bsharp\b|\bis a claim\b|<[a-z-]+>/i;
   for (const line of body.split("\n")) {
     if (ILLUSTRATIVE.test(line)) continue;
     for (const pattern of FICTION) {
@@ -284,7 +311,12 @@ for (const dir of skillDirs) {
       exempted.push({ skill: rel, id: rule.id, reason });
       continue;
     }
-    findings.push({ skill: rel, kind: "depth", id: rule.id, message: rule.hint });
+    findings.push({
+      skill: rel,
+      kind: "depth",
+      id: rule.id,
+      message: rule.hint,
+    });
   }
   scores.set(rel, { passed, total: applicable.length });
 }
@@ -306,8 +338,16 @@ if (asJson) {
         correctness_errors: correctness.length,
         depth_warnings: depth.length,
         exempted,
-        tiers: { A: byTier("A").length, B: byTier("B").length, C: byTier("C").length },
-        fully_meeting_tier: { A: fullyMet("A"), B: fullyMet("B"), C: fullyMet("C") },
+        tiers: {
+          A: byTier("A").length,
+          B: byTier("B").length,
+          C: byTier("C").length,
+        },
+        fully_meeting_tier: {
+          A: fullyMet("A"),
+          B: fullyMet("B"),
+          C: fullyMet("C"),
+        },
         findings,
       },
       null,
@@ -317,30 +357,49 @@ if (asJson) {
 } else {
   if (correctness.length) {
     console.log(`\nCORRECTNESS (${correctness.length}) — always fatal`);
-    for (const f of correctness) console.log(`  ${f.skill}\n    [${f.id}] ${f.message}`);
+    for (const f of correctness)
+      console.log(`  ${f.skill}\n    [${f.id}] ${f.message}`);
   }
   if (depth.length) {
-    console.log(`\nDEPTH (${depth.length}) — ${strict ? "fatal" : "advisory"}; tier from 'effort'`);
+    console.log(
+      `\nDEPTH (${depth.length}) — ${strict ? "fatal" : "advisory"}; tier from 'effort'`,
+    );
     const worst = [...scores.entries()]
       .filter(([, s]) => s.passed < s.total)
       .sort((a, b) => a[1].passed - b[1].passed)
       .slice(0, 12);
     for (const [skill, s] of worst) {
-      const ids = depth.filter((f) => f.skill === skill).map((f) => f.id).join(", ");
-      console.log(`  tier ${tiers.get(skill)}  ${s.passed}/${s.total}  ${skill}  [${ids}]`);
+      const ids = depth
+        .filter((f) => f.skill === skill)
+        .map((f) => f.id)
+        .join(", ");
+      console.log(
+        `  tier ${tiers.get(skill)}  ${s.passed}/${s.total}  ${skill}  [${ids}]`,
+      );
     }
     if (depth.length > 0) {
-      const remaining = [...scores.values()].filter((s) => s.passed < s.total).length;
-      if (remaining > worst.length) console.log(`  … and ${remaining - worst.length} more skills below tier`);
+      const remaining = [...scores.values()].filter(
+        (s) => s.passed < s.total,
+      ).length;
+      if (remaining > worst.length)
+        console.log(
+          `  … and ${remaining - worst.length} more skills below tier`,
+        );
     }
   }
   if (exempted.length) {
-    console.log(`\nEXEMPTED (${exempted.length}) — rule waived with a stated reason, counted as met`);
-    for (const e of exempted) console.log(`  ${e.skill} [${e.id}]\n    ${e.reason}`);
+    console.log(
+      `\nEXEMPTED (${exempted.length}) — rule waived with a stated reason, counted as met`,
+    );
+    for (const e of exempted)
+      console.log(`  ${e.skill} [${e.id}]\n    ${e.reason}`);
   }
   for (const t of ["A", "B", "C"] as Tier[]) {
     const n = byTier(t).length;
-    if (n) console.log(`\nTier ${t}: ${fullyMet(t)}/${n} skills fully meet their tier`);
+    if (n)
+      console.log(
+        `\nTier ${t}: ${fullyMet(t)}/${n} skills fully meet their tier`,
+      );
   }
 }
 

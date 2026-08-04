@@ -49,7 +49,13 @@ function mkFixture() {
 }
 
 function issue(repairs: DependencyIssue["repairs"]): DependencyIssue {
-  return { id: "t", configPath: ["x"], severity: "error", message: "t", repairs };
+  return {
+    id: "t",
+    configPath: ["x"],
+    severity: "error",
+    message: "t",
+    repairs,
+  };
 }
 
 describe("applyRepairsInteractive — path containment", () => {
@@ -59,7 +65,12 @@ describe("applyRepairsInteractive — path containment", () => {
       const evilTarget = join(projectRoot, "..", "..", "pwned-" + Date.now());
       const issues = [issue([{ kind: "mkdir", path: evilTarget }])];
 
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(0);
       expect(existsSync(evilTarget)).toBe(false);
@@ -76,7 +87,12 @@ describe("applyRepairsInteractive — path containment", () => {
       const evilTarget = join(outside, "escaped-dir");
       const issues = [issue([{ kind: "mkdir", path: evilTarget }])];
 
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(0);
       expect(existsSync(evilTarget)).toBe(false);
@@ -90,12 +106,29 @@ describe("applyRepairsInteractive — path containment", () => {
   test("write_file: a traversal path is rejected and no file is written outside the root", async () => {
     const { projectRoot, pluginRoot, outside } = mkFixture();
     try {
-      const evilTarget = join(projectRoot, "..", "..", "etc-passwd-" + Date.now());
+      const evilTarget = join(
+        projectRoot,
+        "..",
+        "..",
+        "etc-passwd-" + Date.now(),
+      );
       const issues = [
-        issue([{ kind: "write_file", path: evilTarget, content: "pwned", ifMissing: true }]),
+        issue([
+          {
+            kind: "write_file",
+            path: evilTarget,
+            content: "pwned",
+            ifMissing: true,
+          },
+        ]),
       ];
 
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(0);
       expect(existsSync(evilTarget)).toBe(false);
@@ -118,7 +151,12 @@ describe("applyRepairsInteractive — path containment", () => {
         ]),
       ];
 
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(1);
       expect(existsSync(goodDir)).toBe(true);
@@ -134,10 +172,25 @@ describe("applyRepairsInteractive — path containment", () => {
     const { projectRoot, pluginRoot, outside } = mkFixture();
     try {
       // Mirrors checkNotionTemplateSet's repair, which targets pluginRoot, not projectRoot.
-      const target = join(pluginRoot, "templates", "notion", "catalog", "custom.json");
-      const issues = [issue([{ kind: "write_file", path: target, content: "{}", ifMissing: true }])];
+      const target = join(
+        pluginRoot,
+        "templates",
+        "notion",
+        "catalog",
+        "custom.json",
+      );
+      const issues = [
+        issue([
+          { kind: "write_file", path: target, content: "{}", ifMissing: true },
+        ]),
+      ];
 
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(1);
       expect(existsSync(target)).toBe(true);
@@ -154,7 +207,12 @@ describe("applyRepairsInteractive — path containment", () => {
       const target = join(projectRoot, "docs", "notes");
       const issues = [issue([{ kind: "mkdir", path: target }])];
 
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(1);
       expect(existsSync(target)).toBe(true);
@@ -170,15 +228,25 @@ describe("applyRepairsInteractive — set_config prototype pollution", () => {
   test("a __proto__ path does not pollute Object.prototype", async () => {
     const { projectRoot, pluginRoot, outside } = mkFixture();
     try {
-      expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+      expect(
+        (Object.prototype as Record<string, unknown>).polluted,
+      ).toBeUndefined();
 
       const issues = [
-        issue([{ kind: "set_config", path: ["__proto__", "polluted"], value: "PWNED" }]),
+        issue([
+          {
+            kind: "set_config",
+            path: ["__proto__", "polluted"],
+            value: "PWNED",
+          },
+        ]),
       ];
       await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
 
       expect(({} as Record<string, unknown>).polluted).toBeUndefined();
-      expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+      expect(
+        (Object.prototype as Record<string, unknown>).polluted,
+      ).toBeUndefined();
     } finally {
       delete (Object.prototype as Record<string, unknown>).polluted;
       rmSync(projectRoot, { recursive: true, force: true });
@@ -192,13 +260,19 @@ describe("applyRepairsInteractive — set_config prototype pollution", () => {
     try {
       const issues = [
         issue([
-          { kind: "set_config", path: ["constructor", "prototype", "polluted2"], value: "PWNED" },
+          {
+            kind: "set_config",
+            path: ["constructor", "prototype", "polluted2"],
+            value: "PWNED",
+          },
         ]),
       ];
       await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
 
       expect(({} as Record<string, unknown>).polluted2).toBeUndefined();
-      expect((Object.prototype as Record<string, unknown>).polluted2).toBeUndefined();
+      expect(
+        (Object.prototype as Record<string, unknown>).polluted2,
+      ).toBeUndefined();
     } finally {
       delete (Object.prototype as Record<string, unknown>).polluted2;
       rmSync(projectRoot, { recursive: true, force: true });
@@ -211,12 +285,21 @@ describe("applyRepairsInteractive — set_config prototype pollution", () => {
     const { projectRoot, pluginRoot, outside } = mkFixture();
     try {
       const issues = [
-        issue([{ kind: "set_config", path: ["team", "name"], value: "Platform" }]),
+        issue([
+          { kind: "set_config", path: ["team", "name"], value: "Platform" },
+        ]),
       ];
-      const applied = await applyRepairsInteractive(issues, projectRoot, {}, pluginRoot);
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
 
       expect(applied).toBe(1);
-      const written = JSON.parse(readFileSync(join(projectRoot, "jstack.config.json"), "utf8"));
+      const written = JSON.parse(
+        readFileSync(join(projectRoot, "jstack.config.json"), "utf8"),
+      );
       expect(written.team.name).toBe("Platform");
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });

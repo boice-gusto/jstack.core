@@ -41,7 +41,11 @@ describe("workflow-engine — path containment", () => {
   test("loadWorkflow: a traversal id cannot read a file outside the workflows dir", () => {
     const { projectRoot, outside } = mkFixture();
     try {
-      writeFileSync(join(outside, "secret.json"), JSON.stringify(def("secret")), "utf8");
+      writeFileSync(
+        join(outside, "secret.json"),
+        JSON.stringify(def("secret")),
+        "utf8",
+      );
       const rel = "../".repeat(10) + outside.slice(1) + "/secret";
       expect(loadWorkflow(projectRoot, rel)).toBeNull();
     } finally {

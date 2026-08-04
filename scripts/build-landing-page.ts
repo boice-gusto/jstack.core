@@ -85,7 +85,10 @@ async function main(): Promise<void> {
   await unlink(TEMP_BUNDLE);
 
   const css = await readFile(CSS_FILE, "utf8");
-  let indexHtml = await patchDocsIndexPngBranding(await readFile(INDEX_FILE, "utf8"), REPO_ROOT);
+  let indexHtml = await patchDocsIndexPngBranding(
+    await readFile(INDEX_FILE, "utf8"),
+    REPO_ROOT,
+  );
 
   indexHtml = indexHtml.replace(
     /<link rel="stylesheet" href="\.\/docs\.css" \/>/,
@@ -98,7 +101,7 @@ async function main(): Promise<void> {
 
   const bootstrapScript = [
     "(function () {",
-    '  function parseJsonScript(id) {',
+    "  function parseJsonScript(id) {",
     "    var el = document.getElementById(id);",
     "    if (!el) return null;",
     "    try {",
@@ -126,7 +129,10 @@ async function main(): Promise<void> {
   const afterMarkers = indexHtml.slice(i1End);
   const moduleScriptsRemoved = afterMarkers
     .replace(/\s*<script type="module" src="\.\/docs\.js"><\/script>\s*/, "\n")
-    .replace(/\s*<script type="module" src="\.\/md-preview\.js"><\/script>\s*/, "\n");
+    .replace(
+      /\s*<script type="module" src="\.\/md-preview\.js"><\/script>\s*/,
+      "\n",
+    );
 
   const newBlock = [
     INDEX_SKILLS_BEGIN,

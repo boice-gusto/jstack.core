@@ -7,7 +7,13 @@
  *   SKIP_SEMANTIC_PROOF=1 bun run prove   # skip LLM step even if key is set
  *   JSTACK_MOCK_MCP=1 bun run prove       # after setup: set debug.mock_mcp + run `jstack mcp add jstack-mock` before doctor (CI MCP wiring smoke)
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -18,7 +24,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, "..");
 const cliEntry = join(pluginRoot, "cli/src/index.ts");
 
-function runBun(args: string[], cwd: string, env: Record<string, string | undefined>): {
+function runBun(
+  args: string[],
+  cwd: string,
+  env: Record<string, string | undefined>,
+): {
   status: number;
   out: string;
 } {
@@ -48,18 +58,33 @@ async function main(): Promise<void> {
   if (e1.status !== 0) process.exit(1);
 
   if (process.env.JSTACK_MOCK_MCP === "1") {
-    console.log("1b) JSTACK_MOCK_MCP=1: debug.mock_mcp + jstack mcp add jstack-mock\n");
+    console.log(
+      "1b) JSTACK_MOCK_MCP=1: debug.mock_mcp + jstack mcp add jstack-mock\n",
+    );
     const cfgPath = join(tmpProject, JSTACK_CONFIG_FILE);
-    const parsed = JSON.parse(readFileSync(cfgPath, ENCODING_UTF8)) as Record<string, unknown>;
+    const parsed = JSON.parse(readFileSync(cfgPath, ENCODING_UTF8)) as Record<
+      string,
+      unknown
+    >;
     const prevDbg =
-      typeof parsed.debug === "object" && parsed.debug !== null && !Array.isArray(parsed.debug)
+      typeof parsed.debug === "object" &&
+      parsed.debug !== null &&
+      !Array.isArray(parsed.debug)
         ? (parsed.debug as Record<string, unknown>)
         : {};
     parsed.debug = { ...prevDbg, mock_mcp: true };
-    writeFileSync(cfgPath, JSON.stringify(parsed, null, 2) + "\n", ENCODING_UTF8);
-    const em = runBun(["run", cliEntry, "mcp", "add", "jstack-mock"], tmpProject, {
-      CLAUDE_PLUGIN_ROOT: pluginRoot,
-    });
+    writeFileSync(
+      cfgPath,
+      JSON.stringify(parsed, null, 2) + "\n",
+      ENCODING_UTF8,
+    );
+    const em = runBun(
+      ["run", cliEntry, "mcp", "add", "jstack-mock"],
+      tmpProject,
+      {
+        CLAUDE_PLUGIN_ROOT: pluginRoot,
+      },
+    );
     console.log(em.out);
     if (em.status !== 0) process.exit(1);
     console.log("   OK mock MCP preset registered\n");
@@ -76,18 +101,28 @@ async function main(): Promise<void> {
   const ksObj = isRecordJson(ks) ? ks : {};
   const diskRoot = ksObj["disk_fallback_root"];
   if (diskRoot !== diskKb) {
-    console.error("Expected knowledge_storage.disk_fallback_root", diskKb, ksObj);
+    console.error(
+      "Expected knowledge_storage.disk_fallback_root",
+      diskKb,
+      ksObj,
+    );
     process.exit(1);
   }
-  console.log("   OK jstack.config.json knowledge_storage.disk_fallback_root matches\n");
+  console.log(
+    "   OK jstack.config.json knowledge_storage.disk_fallback_root matches\n",
+  );
 
   console.log("2) jstack doctor\n");
-  const e2 = runBun(["run", cliEntry, "doctor"], tmpProject, { CLAUDE_PLUGIN_ROOT: pluginRoot });
+  const e2 = runBun(["run", cliEntry, "doctor"], tmpProject, {
+    CLAUDE_PLUGIN_ROOT: pluginRoot,
+  });
   console.log(e2.out);
   if (e2.status !== 0) process.exit(1);
   console.log("   OK doctor exit 0\n");
 
-  console.log("3) Disk fallback write (path convention: {root}/team/{category}/{file}.md)\n");
+  console.log(
+    "3) Disk fallback write (path convention: {root}/team/{category}/{file}.md)\n",
+  );
   const proofDir = join(diskKb, "team", "prove");
   mkdirSync(proofDir, { recursive: true });
   const proofFile = join(proofDir, "e2e-proof.md");
@@ -109,7 +144,9 @@ async function main(): Promise<void> {
   if (skipSemantic) {
     console.log("   SKIP (SKIP_SEMANTIC_PROOF=1)\n");
   } else if (!hasKey) {
-    console.log("   SKIP (set ANTHROPIC_API_KEY and ensure `claude` is on PATH to run LLM proof)\n");
+    console.log(
+      "   SKIP (set ANTHROPIC_API_KEY and ensure `claude` is on PATH to run LLM proof)\n",
+    );
   } else {
     const e3 = runBun(
       [

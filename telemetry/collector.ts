@@ -8,7 +8,9 @@ export function setMaxBuffer(n: number): void {
   maxSize = n;
 }
 
-export function recordEvent(ev: Omit<TelemetryEvent, "event_id"> & { event_id?: string }): void {
+export function recordEvent(
+  ev: Omit<TelemetryEvent, "event_id"> & { event_id?: string },
+): void {
   const full: TelemetryEvent = {
     ...ev,
     event_id: ev.event_id ?? randomUUID(),

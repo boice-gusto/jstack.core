@@ -23,7 +23,11 @@ console.log(`Onboarding wizard: ${wizard}`);
 console.log("Nothing is uploaded — it runs entirely in the browser.\n");
 
 const opener =
-  process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+  process.platform === "darwin"
+    ? "open"
+    : process.platform === "win32"
+      ? "start"
+      : "xdg-open";
 
 // `--no-open` keeps this usable in CI / headless shells, where launching a browser
 // would either fail or hang.

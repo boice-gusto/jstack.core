@@ -41,7 +41,8 @@ export interface ScenarioDefinition {
 
 function safeLoad(path: string): ScenarioPackFile {
   const raw = yaml.load(readFileSync(path, "utf8"));
-  if (typeof raw !== "object" || raw === null) throw new Error(`${path}: pack must be a mapping`);
+  if (typeof raw !== "object" || raw === null)
+    throw new Error(`${path}: pack must be a mapping`);
   const o = raw as Record<string, unknown>;
   const id = String(o.id ?? "");
   if (!id) throw new Error(`${path}: pack must have id`);
@@ -55,13 +56,15 @@ function safeLoad(path: string): ScenarioPackFile {
   }
   const parsed: ScenarioDefinition[] = [];
   for (const s of scenarios) {
-    if (typeof s !== "object" || s === null) throw new Error(`${path}: invalid scenario`);
+    if (typeof s !== "object" || s === null)
+      throw new Error(`${path}: invalid scenario`);
     const sc = s as Record<string, unknown>;
     const sid = String(sc.id ?? "");
     const name = String(sc.name ?? sid);
     const prompt = String(sc.prompt ?? "");
     const criteria = sc.criteria;
-    if (!sid || !prompt.trim()) throw new Error(`${path}: scenario ${name} needs id and prompt`);
+    if (!sid || !prompt.trim())
+      throw new Error(`${path}: scenario ${name} needs id and prompt`);
     if (!Array.isArray(criteria) || criteria.length === 0) {
       throw new Error(`${path}: scenario ${sid} needs criteria`);
     }
@@ -71,13 +74,18 @@ function safeLoad(path: string): ScenarioPackFile {
       for (const f of filesRaw) {
         if (f && typeof f === "object" && "path" in f) {
           const fr = f as Record<string, unknown>;
-          files.push({ path: String(fr.path), content: fr.content != null ? String(fr.content) : "" });
+          files.push({
+            path: String(fr.path),
+            content: fr.content != null ? String(fr.content) : "",
+          });
         }
       }
     }
     const targetsRaw = sc.targets;
     const targets: string[] | undefined =
-      Array.isArray(targetsRaw) && targetsRaw.length > 0 ? targetsRaw.map(String) : undefined;
+      Array.isArray(targetsRaw) && targetsRaw.length > 0
+        ? targetsRaw.map(String)
+        : undefined;
 
     parsed.push({
       id: sid,
@@ -88,7 +96,12 @@ function safeLoad(path: string): ScenarioPackFile {
       assert: sc.assert,
       expect_skill: sc.expect_skill !== false,
       timeout: typeof sc.timeout === "number" ? sc.timeout : undefined,
-      strict_grader: sc.strict_grader === true ? true : sc.strict_grader === false ? false : undefined,
+      strict_grader:
+        sc.strict_grader === true
+          ? true
+          : sc.strict_grader === false
+            ? false
+            : undefined,
       targets,
     });
   }
@@ -96,8 +109,10 @@ function safeLoad(path: string): ScenarioPackFile {
     id,
     name: o.name != null ? String(o.name) : undefined,
     description: o.description != null ? String(o.description) : undefined,
-    default_threshold: typeof o.default_threshold === "number" ? o.default_threshold : undefined,
-    default_timeout: typeof o.default_timeout === "number" ? o.default_timeout : undefined,
+    default_threshold:
+      typeof o.default_threshold === "number" ? o.default_threshold : undefined,
+    default_timeout:
+      typeof o.default_timeout === "number" ? o.default_timeout : undefined,
     strict_grader_default: o.strict_grader_default === true,
     default_targets: default_targets.map(String),
     scenarios: parsed,
@@ -112,11 +127,16 @@ export function listScenarioPacks(packsDir: string): string[] {
     .sort();
 }
 
-export function loadScenarioPack(packsDir: string, packId: string): ScenarioPackFile {
+export function loadScenarioPack(
+  packsDir: string,
+  packId: string,
+): ScenarioPackFile {
   const base = join(packsDir, packId);
   const path = existsSync(`${base}.yaml`) ? `${base}.yaml` : `${base}.yml`;
   if (!existsSync(path)) {
-    throw new Error(`Scenario pack not found: ${packId} (looked under ${packsDir})`);
+    throw new Error(
+      `Scenario pack not found: ${packId} (looked under ${packsDir})`,
+    );
   }
   return safeLoad(path);
 }
@@ -130,7 +150,11 @@ export function expandPackForSkill(
   const defaultTimeout = pack.default_timeout ?? 120;
   const inheritStrict = pack.strict_grader_default === true;
   return pack.scenarios.flatMap((s) => {
-    if (s.targets != null && s.targets.length > 0 && !s.targets.includes(skillRel)) {
+    if (
+      s.targets != null &&
+      s.targets.length > 0 &&
+      !s.targets.includes(skillRel)
+    ) {
       return [];
     }
     const files: EvalFileSpec[] = (s.files ?? []).map((f) => ({
@@ -138,7 +162,11 @@ export function expandPackForSkill(
       content: f.content ?? "",
     }));
     const strict =
-      s.strict_grader === true ? true : s.strict_grader === false ? false : inheritStrict;
+      s.strict_grader === true
+        ? true
+        : s.strict_grader === false
+          ? false
+          : inheritStrict;
     return [
       {
         name: `[${pack.id}] ${s.name}`,

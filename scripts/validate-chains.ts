@@ -30,7 +30,10 @@ interface ChainEvalsFile {
   chains?: { name: string; steps: string[] }[];
 }
 
-function validateChainEvalsJson(errors: string[], suffixToRel: Map<string, string>): void {
+function validateChainEvalsJson(
+  errors: string[],
+  suffixToRel: Map<string, string>,
+): void {
   if (!existsSync(chainEvalsPath)) {
     errors.push(`missing ${chainEvalsPath}`);
     return;
@@ -39,7 +42,9 @@ function validateChainEvalsJson(errors: string[], suffixToRel: Map<string, strin
   try {
     data = JSON.parse(readFileSync(chainEvalsPath, "utf8")) as ChainEvalsFile;
   } catch (e) {
-    errors.push(`chain-evals.json: ${e instanceof Error ? e.message : String(e)}`);
+    errors.push(
+      `chain-evals.json: ${e instanceof Error ? e.message : String(e)}`,
+    );
     return;
   }
   const chains = data.chains;
@@ -86,22 +91,32 @@ function validateRoutineChains(
 
   let routines: Record<string, { chain?: unknown }> = {};
   try {
-    const defaults = JSON.parse(readFileSync(defaultsPath, "utf8")) as Record<string, unknown>;
+    const defaults = JSON.parse(readFileSync(defaultsPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
     routines = (defaults.routines as Record<string, { chain?: unknown }>) ?? {};
   } catch (e) {
-    errors.push(`config/defaults.json is unparseable: ${e instanceof Error ? e.message : String(e)}`);
+    errors.push(
+      `config/defaults.json is unparseable: ${e instanceof Error ? e.message : String(e)}`,
+    );
     return;
   }
 
-  const normalize = (step: string) => (step.startsWith("jstack:") ? step : `jstack:${step}`);
+  const normalize = (step: string) =>
+    step.startsWith("jstack:") ? step : `jstack:${step}`;
   const schedulesDir = join(root, "config", "schedules");
 
   for (const [id, routine] of Object.entries(routines)) {
-    const configChain = Array.isArray(routine?.chain) ? (routine.chain as unknown[]).map(String) : [];
+    const configChain = Array.isArray(routine?.chain)
+      ? (routine.chain as unknown[]).map(String)
+      : [];
 
     for (const step of configChain) {
       if (!chainStepSkillExists(skillsRoot, normalize(step), suffixToRel)) {
-        errors.push(`config/defaults.json routines.${id}.chain references missing skill "${step}"`);
+        errors.push(
+          `config/defaults.json routines.${id}.chain references missing skill "${step}"`,
+        );
       }
     }
 
@@ -118,15 +133,25 @@ function validateRoutineChains(
       );
     }
 
-    const schedulePath = existsSync(exactPath) ? exactPath : existsSync(hyphenPath) ? hyphenPath : null;
+    const schedulePath = existsSync(exactPath)
+      ? exactPath
+      : existsSync(hyphenPath)
+        ? hyphenPath
+        : null;
     if (!schedulePath) continue;
 
     let scheduleChain: string[] = [];
     try {
-      const schedule = JSON.parse(readFileSync(schedulePath, "utf8")) as { chain?: unknown };
-      scheduleChain = Array.isArray(schedule.chain) ? (schedule.chain as unknown[]).map(String) : [];
+      const schedule = JSON.parse(readFileSync(schedulePath, "utf8")) as {
+        chain?: unknown;
+      };
+      scheduleChain = Array.isArray(schedule.chain)
+        ? (schedule.chain as unknown[]).map(String)
+        : [];
     } catch (e) {
-      errors.push(`${schedulePath} is unparseable: ${e instanceof Error ? e.message : String(e)}`);
+      errors.push(
+        `${schedulePath} is unparseable: ${e instanceof Error ? e.message : String(e)}`,
+      );
       continue;
     }
 
@@ -166,7 +191,11 @@ function main(): void {
   }
 
   for (const rel of relPaths) {
-    const skillMd = join(skillsRoot, ...rel.split("/").filter(Boolean), "SKILL.md");
+    const skillMd = join(
+      skillsRoot,
+      ...rel.split("/").filter(Boolean),
+      "SKILL.md",
+    );
     const text = readFileSync(skillMd, "utf8");
 
     let m: RegExpExecArray | null;
@@ -189,7 +218,10 @@ function main(): void {
         continue;
       }
 
-      const stripped = body.replace(/\bjstack:[a-z0-9-/]+\b/g, "").replace(/[\s,]+/g, "").trim();
+      const stripped = body
+        .replace(/\bjstack:[a-z0-9-/]+\b/g, "")
+        .replace(/[\s,]+/g, "")
+        .trim();
       if (stripped.length > 0) {
         warnings.push(
           `${rel}/SKILL.md: chains-to may contain prose outside jstack tokens: ${JSON.stringify(body.slice(0, 160))}`,
@@ -198,7 +230,9 @@ function main(): void {
 
       for (const t of tokens) {
         if (!chainStepSkillExists(skillsRoot, t, suffixToRel)) {
-          errors.push(`${rel}/SKILL.md: chains-to references missing skill ${t}`);
+          errors.push(
+            `${rel}/SKILL.md: chains-to references missing skill ${t}`,
+          );
         }
       }
     }

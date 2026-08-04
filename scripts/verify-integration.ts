@@ -18,7 +18,11 @@ const pluginRoot = join(__dirname, "..");
 const cliEntry = join(pluginRoot, "cli/src/index.ts");
 const hooksPath = join(pluginRoot, "hooks/hooks.json");
 
-function runBun(args: string[], cwd: string, env: Record<string, string | undefined>): {
+function runBun(
+  args: string[],
+  cwd: string,
+  env: Record<string, string | undefined>,
+): {
   status: number;
   out: string;
 } {
@@ -40,7 +44,8 @@ function extractSessionStartCommands(raw: unknown): string[] {
   const hooks = raw["hooks"];
   if (!isRecord(hooks)) throw new Error('hooks.json: missing "hooks" object');
   const sessionStart = hooks["SessionStart"];
-  if (!Array.isArray(sessionStart)) throw new Error('hooks.json: "SessionStart" must be an array');
+  if (!Array.isArray(sessionStart))
+    throw new Error('hooks.json: "SessionStart" must be an array');
   const out: string[] = [];
   for (const bundle of sessionStart) {
     if (!isRecord(bundle)) continue;
@@ -56,7 +61,8 @@ function extractSessionStartCommands(raw: unknown): string[] {
       out.push(cmd);
     }
   }
-  if (out.length === 0) throw new Error("hooks.json: no SessionStart command hooks found");
+  if (out.length === 0)
+    throw new Error("hooks.json: no SessionStart command hooks found");
   return out;
 }
 
@@ -79,11 +85,15 @@ function smokeHookCommandsFromEmptyProject(commands: string[]): void {
     });
     const status = r.status ?? 1;
     if (status !== 0) {
-      console.error(`Hook command ${i} failed (exit ${status}):\n${cmd}\n${r.stdout ?? ""}${r.stderr ?? ""}`);
+      console.error(
+        `Hook command ${i} failed (exit ${status}):\n${cmd}\n${r.stdout ?? ""}${r.stderr ?? ""}`,
+      );
       process.exit(1);
     }
   }
-  console.log(`   OK ${commands.length} SessionStart hook command(s) smoke (empty project)\n`);
+  console.log(
+    `   OK ${commands.length} SessionStart hook command(s) smoke (empty project)\n`,
+  );
 }
 
 function verifyHelpJson(): void {
@@ -120,16 +130,31 @@ function cliMatrixAfterSetup(): MatrixStep[] {
     { label: "doctor", args: [cliEntry, "doctor"] },
     { label: "config", args: [cliEntry, "config"] },
     { label: "status", args: [cliEntry, "status"] },
-    { label: "skills index --json", args: [cliEntry, "skills", "index", "--json"] },
-    { label: "skills show intake", args: [cliEntry, "skills", "show", "intake"] },
+    {
+      label: "skills index --json",
+      args: [cliEntry, "skills", "index", "--json"],
+    },
+    {
+      label: "skills show intake",
+      args: [cliEntry, "skills", "show", "intake"],
+    },
     { label: "workflow list", args: [cliEntry, "workflow", "list"] },
     { label: "transcripts status", args: [cliEntry, "transcripts", "status"] },
     { label: "schedule list", args: [cliEntry, "schedule", "list"] },
-    { label: "schedule enable standup", args: [cliEntry, "schedule", "enable", "standup"] },
-    { label: "schedule disable standup", args: [cliEntry, "schedule", "disable", "standup"] },
+    {
+      label: "schedule enable standup",
+      args: [cliEntry, "schedule", "enable", "standup"],
+    },
+    {
+      label: "schedule disable standup",
+      args: [cliEntry, "schedule", "disable", "standup"],
+    },
     { label: "mcp list", args: [cliEntry, "mcp", "list"] },
     { label: "telemetry status", args: [cliEntry, "telemetry", "status"] },
-    { label: "time --format json", args: [cliEntry, "time", "--format", "json"] },
+    {
+      label: "time --format json",
+      args: [cliEntry, "time", "--format", "json"],
+    },
   ];
 }
 
@@ -166,7 +191,9 @@ function main(): void {
   for (const step of cliMatrixAfterSetup()) {
     const er = runBun(["run", ...step.args], tmpProject, envFixture);
     if (er.status !== 0) {
-      console.error(`FAIL: jstack ${step.label} (exit ${er.status})\n${er.out}`);
+      console.error(
+        `FAIL: jstack ${step.label} (exit ${er.status})\n${er.out}`,
+      );
       process.exit(1);
     }
     console.log(`   OK ${step.label}`);
@@ -177,7 +204,9 @@ function main(): void {
   if (skipCheck) {
     console.log("5) SKIP full gate (SKIP_VERIFY_CHECK=1)\n");
   } else {
-    console.log("5) bun run check (validate-config, agents-check, eval gates, tests, typecheck)\n");
+    console.log(
+      "5) bun run check (validate-config, agents-check, eval gates, tests, typecheck)\n",
+    );
     const chk = spawnSync("bun", ["run", "check"], {
       cwd: pluginRoot,
       env: process.env,

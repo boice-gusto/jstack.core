@@ -6,14 +6,28 @@ import {
   buildJstackReportBrandHeader,
 } from "@jstack/constants/jstackMarkSvg";
 import { inlinePluginReportAssets } from "@jstack/constants/reportPluginAssets";
-import { findPluginRoot, findProjectRoot, loadDefaults, readConfigOptional } from "../lib/config.js";
-import { extractReportsBranding, mergeReportBranding } from "../lib/report-branding.js";
+import {
+  findPluginRoot,
+  findProjectRoot,
+  loadDefaults,
+  readConfigOptional,
+} from "../lib/config.js";
+import {
+  extractReportsBranding,
+  mergeReportBranding,
+} from "../lib/report-branding.js";
 
 /** Inline JSON payload into templates/reports/shells/default.html */
-export function runReportRender(opts: { data: string; out: string; shell?: string }): void {
+export function runReportRender(opts: {
+  data: string;
+  out: string;
+  shell?: string;
+}): void {
   const projectRoot = findProjectRoot();
   const pluginRoot = findPluginRoot();
-  const dataPath = opts.data.startsWith("/") ? opts.data : join(projectRoot, opts.data);
+  const dataPath = opts.data.startsWith("/")
+    ? opts.data
+    : join(projectRoot, opts.data);
   if (!existsSync(dataPath)) {
     console.error(`Missing data file: ${dataPath}`);
     process.exitCode = 1;
@@ -29,8 +43,12 @@ export function runReportRender(opts: { data: string; out: string; shell?: strin
     cfg ? (extractReportsBranding(cfg) ?? {}) : {},
   );
 
-  const shellRel = opts.shell?.trim() || join("templates", "reports", "shells", "default.html");
-  const shellPath = shellRel.startsWith("/") ? shellRel : join(pluginRoot, shellRel);
+  const shellRel =
+    opts.shell?.trim() ||
+    join("templates", "reports", "shells", "default.html");
+  const shellPath = shellRel.startsWith("/")
+    ? shellRel
+    : join(pluginRoot, shellRel);
   if (!existsSync(shellPath)) {
     console.error(`Missing shell: ${shellPath}`);
     process.exitCode = 1;
@@ -63,7 +81,8 @@ export function runReportRender(opts: { data: string; out: string; shell?: strin
     '<script type="application/json" id="jstack-report-data"></script>';
   if (!html.includes(emptyDataTag)) {
     console.error(
-      "Shell is missing the exact empty JSON script tag. Expected:\n" + emptyDataTag,
+      "Shell is missing the exact empty JSON script tag. Expected:\n" +
+        emptyDataTag,
     );
     process.exitCode = 1;
     return;
@@ -72,7 +91,9 @@ export function runReportRender(opts: { data: string; out: string; shell?: strin
     emptyDataTag,
     `<script type="application/json" id="jstack-report-data">${payload}</script>`,
   );
-  const outPath = opts.out.startsWith("/") ? opts.out : join(projectRoot, opts.out);
+  const outPath = opts.out.startsWith("/")
+    ? opts.out
+    : join(projectRoot, opts.out);
   writeFileSync(outPath, html, ENCODING_UTF8);
   console.log(`Wrote ${outPath}`);
   console.log("");

@@ -27,7 +27,8 @@ const strict = process.argv.includes("--strict");
 
 /** Hosts with no hashable stable artifact. Each needs a reason, not just an entry. */
 const UNPINNABLE: Record<string, string> = {
-  "cdn.tailwindcss.com": "versionless JIT compiler; no stable artifact to hash (dev/preview only)",
+  "cdn.tailwindcss.com":
+    "versionless JIT compiler; no stable artifact to hash (dev/preview only)",
 };
 
 /** Minimum versions for security-relevant libraries, keyed by npm package name. */
@@ -35,7 +36,14 @@ const MIN_VERSIONS: Record<string, { min: string; why: string }> = {
   dompurify: { min: "3.2.4", why: "mXSS fixed in 3.2.4 (CVE-2025-26791)" },
 };
 
-const SKIP_DIRS = new Set(["node_modules", ".git", ".reports", "dist", "build", ".next"]);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  ".reports",
+  "dist",
+  "build",
+  ".next",
+]);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -89,7 +97,9 @@ for (const file of walk(root)) {
     }
     // SRI is not enforced on a cross-origin request without CORS.
     if (!/\bcrossorigin\s*=/i.test(attrs)) {
-      errors.push(`${rel}:${line} has integrity= but no crossorigin= (SRI is not enforced) on ${src}`);
+      errors.push(
+        `${rel}:${line} has integrity= but no crossorigin= (SRI is not enforced) on ${src}`,
+      );
       continue;
     }
     pinned++;
@@ -116,7 +126,9 @@ if (errors.length) {
   process.exit(1);
 }
 if (strict && advisories.length) {
-  console.error(`\ncheck-sri --strict: ${advisories.length} unpinnable script(s) present.`);
+  console.error(
+    `\ncheck-sri --strict: ${advisories.length} unpinnable script(s) present.`,
+  );
   process.exit(1);
 }
 console.log(

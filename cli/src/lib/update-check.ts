@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DISTRIBUTION_VERSION_DEFAULT_URL, ENCODING_UTF8 } from "@jstack/constants/paths";
+import {
+  DISTRIBUTION_VERSION_DEFAULT_URL,
+  ENCODING_UTF8,
+} from "@jstack/constants/paths";
 
 const SEMVER_LINE = /^[0-9]+\.[0-9.]+$/;
 
@@ -25,7 +28,9 @@ export async function checkDistributionUpdate(
 ): Promise<UpdateCheckResult> {
   const local = readVersionFile(pluginRoot);
   const url =
-    remoteUrl && remoteUrl.length > 0 ? remoteUrl : DISTRIBUTION_VERSION_DEFAULT_URL;
+    remoteUrl && remoteUrl.length > 0
+      ? remoteUrl
+      : DISTRIBUTION_VERSION_DEFAULT_URL;
 
   let remote: string | null = null;
   try {
@@ -42,7 +47,9 @@ export async function checkDistributionUpdate(
   }
 
   const upgrade_available = !!(local && remote && local !== remote);
-  const raw_line = upgrade_available ? `UPGRADE_AVAILABLE ${local} ${remote}` : null;
+  const raw_line = upgrade_available
+    ? `UPGRADE_AVAILABLE ${local} ${remote}`
+    : null;
 
   return {
     local_version: local,

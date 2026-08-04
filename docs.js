@@ -109,7 +109,9 @@ function fragmentWithHighlights(text, query) {
 function teaserText(text, max) {
   const t = (text ?? "").trim().replace(/\s+/g, " ");
   if (t.length <= max) {
-    return t.length > 0 ? t : "Click to expand for summary, examples, and references.";
+    return t.length > 0
+      ? t
+      : "Click to expand for summary, examples, and references.";
   }
   return t.slice(0, max - 1).trimEnd() + "…";
 }
@@ -189,7 +191,16 @@ function skillMatches(s, q) {
   if (needle.length === 0) {
     return true;
   }
-  const blob = [s.name, s.description, s.whenToUse, s.category, s.relPath, s.path].join("\n").toLowerCase();
+  const blob = [
+    s.name,
+    s.description,
+    s.whenToUse,
+    s.category,
+    s.relPath,
+    s.path,
+  ]
+    .join("\n")
+    .toLowerCase();
   return blob.includes(needle);
 }
 
@@ -275,25 +286,28 @@ function init() {
   }
 
   const skillsOk = Boolean(raw && Array.isArray(raw.skills));
-  if (!skillsOk || !grid || !countEl || !(searchInput instanceof HTMLInputElement)) {
+  if (
+    !skillsOk ||
+    !grid ||
+    !countEl ||
+    !(searchInput instanceof HTMLInputElement)
+  ) {
     if (navCats) {
       navCats.replaceChildren();
       const note = document.createElement("p");
       note.className = "nav-cats-fallback";
-      note.textContent =
-        skillsOk
-          ? "Catalog UI is missing required elements."
-          : "Categories need window.__JSTACK_SKILLS__.skills and this script to run (serve over http(s), not file://).";
+      note.textContent = skillsOk
+        ? "Catalog UI is missing required elements."
+        : "Categories need window.__JSTACK_SKILLS__.skills and this script to run (serve over http(s), not file://).";
       navCats.appendChild(note);
     }
     if (navSkills) {
       navSkills.replaceChildren();
       const note = document.createElement("p");
       note.className = "nav-skills-fallback";
-      note.textContent =
-        skillsOk
-          ? "Skill list needs a working catalog."
-          : "Skill index needs catalog data and docs.js (serve over http(s), not file://).";
+      note.textContent = skillsOk
+        ? "Skill list needs a working catalog."
+        : "Skill index needs catalog data and docs.js (serve over http(s), not file://).";
       navSkills.appendChild(note);
     }
     if (grid) {
@@ -309,7 +323,10 @@ function init() {
   const allSkills = dedupeByPath(raw.skills);
   const total = allSkills.length;
   const cats = buildCategoryLabels(allSkills);
-  const catList = [{ key: "all", label: "All skills" }, ...Array.from(cats.entries()).map(([key, label]) => ({ key, label }))];
+  const catList = [
+    { key: "all", label: "All skills" },
+    ...Array.from(cats.entries()).map(([key, label]) => ({ key, label })),
+  ];
 
   const state = { category: /** @type {string | null} */ (null), query: "" };
 
@@ -328,7 +345,10 @@ function init() {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
         requestAnimationFrame(() => {
           const tgl = el.querySelector(".skill-card-toggle");
-          if (tgl instanceof HTMLButtonElement && tgl.getAttribute("aria-expanded") !== "true") {
+          if (
+            tgl instanceof HTMLButtonElement &&
+            tgl.getAttribute("aria-expanded") !== "true"
+          ) {
             tgl.click();
           }
         });
@@ -371,7 +391,9 @@ function init() {
         render();
         sidebar?.classList.remove("is-open");
         navToggle?.setAttribute("aria-expanded", "false");
-        document.getElementById("all-skills")?.scrollIntoView({ behavior: "smooth" });
+        document
+          .getElementById("all-skills")
+          ?.scrollIntoView({ behavior: "smooth" });
       });
       if (c.key === "all") {
         a.setAttribute("aria-current", "true");
@@ -382,9 +404,13 @@ function init() {
 
   if (navSkills) {
     navSkills.replaceChildren();
-    const catEntries = Array.from(cats.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+    const catEntries = Array.from(cats.entries()).sort((a, b) =>
+      a[1].localeCompare(b[1]),
+    );
     for (const [catKey, catLabel] of catEntries) {
-      const inCat = allSkills.filter((s) => s.categoryKey === catKey).sort((a, b) => a.name.localeCompare(b.name));
+      const inCat = allSkills
+        .filter((s) => s.categoryKey === catKey)
+        .sort((a, b) => a.name.localeCompare(b.name));
       if (inCat.length === 0) {
         continue;
       }
@@ -432,7 +458,9 @@ function init() {
     if (state.query.trim().length > 0) {
       const span = document.createElement("span");
       span.className = "pill";
-      span.appendChild(document.createTextNode('Search: "' + state.query.trim() + '"'));
+      span.appendChild(
+        document.createTextNode('Search: "' + state.query.trim() + '"'),
+      );
       activeFilters.appendChild(span);
     }
   }
@@ -449,12 +477,14 @@ function init() {
     errLink.hidden = true;
     statusEl.hidden = false;
     statusEl.textContent = "Loading documentation…";
-    statusEl.className = "skill-card-panel-status skill-card-panel-status--loading";
+    statusEl.className =
+      "skill-card-panel-status skill-card-panel-status--loading";
     bodyEl.replaceChildren();
 
     try {
       const embeddedHtml =
-        window.__JSTACK_SKILL_HTML__ && typeof window.__JSTACK_SKILL_HTML__ === "object"
+        window.__JSTACK_SKILL_HTML__ &&
+        typeof window.__JSTACK_SKILL_HTML__ === "object"
           ? window.__JSTACK_SKILL_HTML__[s.relPath]
           : undefined;
       if (typeof embeddedHtml === "string" && embeddedHtml.length > 0) {
@@ -486,7 +516,8 @@ function init() {
       const msg = err instanceof Error ? err.message : "Unknown error";
       statusEl.hidden = false;
       errLink.hidden = false;
-      statusEl.className = "skill-card-panel-status skill-card-panel-status--error";
+      statusEl.className =
+        "skill-card-panel-status skill-card-panel-status--error";
       statusEl.textContent = msg;
     }
   }
@@ -515,7 +546,9 @@ function init() {
       toggle.setAttribute("aria-controls", detailId);
       toggle.setAttribute(
         "aria-label",
-        "Expand " + s.name + ": summary, when to use, examples, and references from SKILL.md",
+        "Expand " +
+          s.name +
+          ": summary, when to use, examples, and references from SKILL.md",
       );
 
       const headerInner = document.createElement("div");
@@ -571,7 +604,9 @@ function init() {
       appendDetailSection(
         overview,
         "Summary",
-        summaryText.length > 0 ? summaryText : "No description in YAML frontmatter for this skill.",
+        summaryText.length > 0
+          ? summaryText
+          : "No description in YAML frontmatter for this skill.",
         q,
       );
       if ((s.whenToUse ?? "").trim().length > 0) {

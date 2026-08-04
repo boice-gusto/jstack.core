@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  mergeMcpRegistry,
-  type McpMergeCollision,
-} from "./mcp-discovery.js";
+import { mergeMcpRegistry, type McpMergeCollision } from "./mcp-discovery.js";
 import type { McpRegistry, McpServer } from "../types/mcp-registry.js";
 
 function makeServer(over: Partial<McpServer> = {}): McpServer {
@@ -42,9 +39,7 @@ describe("mergeMcpRegistry", () => {
         description: "Hand-written description",
         auto_discovered: false,
         server_id: "old-id",
-        tools: [
-          { name: "do_thing", description: "does a thing" },
-        ],
+        tools: [{ name: "do_thing", description: "does a thing" }],
         used_by_skills: ["skill-x"],
       }),
     };

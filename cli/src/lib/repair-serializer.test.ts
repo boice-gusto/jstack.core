@@ -17,7 +17,12 @@ function sampleIssues(): DependencyIssue[] {
       severity: "warn",
       message: "custom catalog missing",
       repairs: [
-        { kind: "write_file", path: "/tmp/catalog.json", content: '{"templates":[]}', ifMissing: true },
+        {
+          kind: "write_file",
+          path: "/tmp/catalog.json",
+          content: '{"templates":[]}',
+          ifMissing: true,
+        },
       ],
     },
     {
@@ -25,14 +30,22 @@ function sampleIssues(): DependencyIssue[] {
       configPath: ["gbrain", "team", "url"],
       severity: "warn",
       message: "gbrain url empty",
-      repairs: [{ kind: "set_config", path: ["gbrain", "team", "url"], value: "" }],
+      repairs: [
+        { kind: "set_config", path: ["gbrain", "team", "url"], value: "" },
+      ],
     },
     {
       id: "mcp-mock-missing",
       configPath: ["debug", "mock_mcp"],
       severity: "warn",
       message: "mock mcp missing",
-      repairs: [{ kind: "shell_hint", cmd: "jstack mcp add jstack-mock", reason: "register mock server" }],
+      repairs: [
+        {
+          kind: "shell_hint",
+          cmd: "jstack mcp add jstack-mock",
+          reason: "register mock server",
+        },
+      ],
     },
   ];
 }
@@ -56,7 +69,9 @@ describe("repair-serializer", () => {
 
   it("throws TypeError with 'JSON parse failed' on invalid JSON", () => {
     expect(() => deserializeRepairs("not json {{{")).toThrow(TypeError);
-    expect(() => deserializeRepairs("not json {{{")).toThrow(/JSON parse failed/);
+    expect(() => deserializeRepairs("not json {{{")).toThrow(
+      /JSON parse failed/,
+    );
   });
 
   it("throws TypeError with 'schema validation failed' on wrong shape", () => {
@@ -86,7 +101,14 @@ describe("repair-serializer", () => {
         configPath: ["a"],
         severity: "warn",
         message: "t",
-        repairs: [{ kind: "write_file", path: "/tmp/x.json", content: '{"x":1}', ifMissing: true }],
+        repairs: [
+          {
+            kind: "write_file",
+            path: "/tmp/x.json",
+            content: '{"x":1}',
+            ifMissing: true,
+          },
+        ],
       },
     ];
     const back = deserializeRepairs(serializeRepairs(issues));
@@ -109,7 +131,11 @@ describe("repair-serializer", () => {
       },
     ];
     const back = deserializeRepairs(serializeRepairs(issues));
-    expect(back[0]!.repairs[0]).toEqual({ kind: "set_config", path: ["a", "b"], value: false });
+    expect(back[0]!.repairs[0]).toEqual({
+      kind: "set_config",
+      path: ["a", "b"],
+      value: false,
+    });
   });
 
   it("shell_hint repair round-trips correctly", () => {
@@ -119,10 +145,16 @@ describe("repair-serializer", () => {
         configPath: ["a"],
         severity: "warn",
         message: "t",
-        repairs: [{ kind: "shell_hint", cmd: "jstack setup", reason: "re-run setup" }],
+        repairs: [
+          { kind: "shell_hint", cmd: "jstack setup", reason: "re-run setup" },
+        ],
       },
     ];
     const back = deserializeRepairs(serializeRepairs(issues));
-    expect(back[0]!.repairs[0]).toEqual({ kind: "shell_hint", cmd: "jstack setup", reason: "re-run setup" });
+    expect(back[0]!.repairs[0]).toEqual({
+      kind: "shell_hint",
+      cmd: "jstack setup",
+      reason: "re-run setup",
+    });
   });
 });

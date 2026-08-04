@@ -64,7 +64,11 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
   const root = findProjectRoot(import.meta.dir);
   const cfg = loadTelemetryCfg(root);
   const hash = telemetryInstanceHash16();
-  const selftestPath = join(homedir(), ".jstack", "jstack.telemetry.selftest.jsonl");
+  const selftestPath = join(
+    homedir(),
+    ".jstack",
+    "jstack.telemetry.selftest.jsonl",
+  );
   mkdirSync(dirname(selftestPath), { recursive: true });
   const line = {
     kind: "jstack_telemetry_selftest",
@@ -81,7 +85,11 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
         message:
           "Wrote one anonymous self-test line (no PII). Eval JSONL default is ~/.jstack/telemetry.jsonl when JSTACK_TELEMETRY=1.",
         paths: {
-          machine_instance_id_file: join(homedir(), ".jstack", "telemetry-instance-id"),
+          machine_instance_id_file: join(
+            homedir(),
+            ".jstack",
+            "telemetry-instance-id",
+          ),
           selftest_append_only_log: selftestPath,
           eval_jsonl_default: join(homedir(), ".jstack", "telemetry.jsonl"),
         },

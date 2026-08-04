@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { looksLikeNoToolOutput, parseReadResponse, parseSendResponse, toolMissing, unwrapToolText } from "./slack.js";
+import {
+  looksLikeNoToolOutput,
+  parseReadResponse,
+  parseSendResponse,
+  toolMissing,
+  unwrapToolText,
+} from "./slack.js";
 
 /**
  * Fixtures here are VERBATIM recorded round trips (C13), never hand-written.
@@ -59,7 +65,12 @@ first`;
   });
 
   test("an empty response yields no messages rather than throwing", () => {
-    expect(parseReadResponse("Channel: DM (D0TESTDM001)\n\nno messages", "D0TESTDM001")).toHaveLength(0);
+    expect(
+      parseReadResponse(
+        "Channel: DM (D0TESTDM001)\n\nno messages",
+        "D0TESTDM001",
+      ),
+    ).toHaveLength(0);
   });
 
   test("a block missing a ts is skipped, not emitted with a bad ts", () => {
@@ -85,7 +96,8 @@ describe("parseSendResponse against the real recorded send", () => {
 
 describe("unwrapToolText handles the real envelope shapes", () => {
   test("unwraps a fenced JSON envelope with escaped newlines", () => {
-    const wrapped = '```json\n{"messages":"Channel: DM (D0TESTDM001)\\n\\n=== Message from A (U0AAAAAAAAA) at x ===\\nMessage TS: 1.1\\nhi"}\n```';
+    const wrapped =
+      '```json\n{"messages":"Channel: DM (D0TESTDM001)\\n\\n=== Message from A (U0AAAAAAAAA) at x ===\\nMessage TS: 1.1\\nhi"}\n```';
     const msgs = parseReadResponse(wrapped, "D0TESTDM001");
     expect(msgs).toHaveLength(1);
     expect(msgs[0]!.ts).toBe("1.1");
@@ -96,7 +108,9 @@ describe("unwrapToolText handles the real envelope shapes", () => {
   });
 
   test("passes plain text through unchanged", () => {
-    expect(unwrapToolText("=== Message from A ===")).toBe("=== Message from A ===");
+    expect(unwrapToolText("=== Message from A ===")).toBe(
+      "=== Message from A ===",
+    );
   });
 });
 
@@ -109,7 +123,8 @@ Message TS: 1.1
 hi`;
 
   test("a genuine empty channel still carries an envelope, so it is NOT flagged", () => {
-    const emptyButReal = 'Channel: DM (D0TESTDM001)\n\nThere are no more messages available.';
+    const emptyButReal =
+      "Channel: DM (D0TESTDM001)\n\nThere are no more messages available.";
     expect(parseReadResponse(emptyButReal, "D0TESTDM001")).toHaveLength(0);
     // The envelope is present, so readChannel treats this as a valid empty read.
     expect(/Channel:|no more messages/i.test(emptyButReal)).toBe(true);
@@ -126,7 +141,8 @@ hi`;
   });
 
   test("a hallucinated pseudo-XML invocation parses to nothing", () => {
-    const fake = "<mcp__claude_ai_Slack__slack_read_channel>\n  <channel_id>D0TESTDM001</channel_id>\n</mcp__claude_ai_Slack__slack_read_channel>";
+    const fake =
+      "<mcp__claude_ai_Slack__slack_read_channel>\n  <channel_id>D0TESTDM001</channel_id>\n</mcp__claude_ai_Slack__slack_read_channel>";
     expect(parseReadResponse(fake, "D0TESTDM001")).toHaveLength(0);
     expect(/^<mcp__/m.test(fake)).toBe(true);
   });
@@ -155,9 +171,13 @@ describe("a read that did not happen must be retryable, whatever its length", ()
   });
 
   test("a genuine empty read is NOT treated as a failure, so we do not retry forever", () => {
-    expect(looksLikeNoToolOutput('Channel: D0TESTDM001\nno more messages')).toBe(false);
+    expect(
+      looksLikeNoToolOutput("Channel: D0TESTDM001\nno more messages"),
+    ).toBe(false);
     expect(looksLikeNoToolOutput('{"messages": []}')).toBe(false);
-    expect(looksLikeNoToolOutput("Message TS: 1785141296.398489\nhello")).toBe(false);
+    expect(looksLikeNoToolOutput("Message TS: 1785141296.398489\nhello")).toBe(
+      false,
+    );
   });
 
   test("the shim's TOOL_NOT_FOUND sentinel is recognised as a missing tool", () => {
@@ -186,7 +206,10 @@ describe("envelope metadata must not leak into the message body", () => {
   });
 
   test("a body line that merely mentions reactions is preserved", () => {
-    const kept = raw.replace("Reactions: eyes (1)", "which Reactions: do you support?");
+    const kept = raw.replace(
+      "Reactions: eyes (1)",
+      "which Reactions: do you support?",
+    );
     const [m] = parseReadResponse(kept, "D0TESTDM001");
     expect(m!.text).toContain("which Reactions: do you support?");
   });

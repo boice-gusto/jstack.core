@@ -42,13 +42,24 @@ export interface JudgeVerdict {
 export function parseJudgeVerdict(raw: string): JudgeVerdict {
   const text = (raw ?? "").trim();
   if (text === "") {
-    return { passed: false, message: "", protocolError: "judge returned empty output", raw };
+    return {
+      passed: false,
+      message: "",
+      protocolError: "judge returned empty output",
+      raw,
+    };
   }
 
   // Match only at a line start so a criterion that *mentions* the sentinel (e.g. a test
   // about this very protocol) cannot be mistaken for the verdict itself.
-  const passRe = new RegExp(`^\\s*(?:\\*\\*)?${VERDICT_PASS}(?:\\*\\*)?\\s*$`, "m");
-  const failRe = new RegExp(`^\\s*(?:\\*\\*)?${VERDICT_FAIL}(?:\\*\\*)?\\s*$`, "m");
+  const passRe = new RegExp(
+    `^\\s*(?:\\*\\*)?${VERDICT_PASS}(?:\\*\\*)?\\s*$`,
+    "m",
+  );
+  const failRe = new RegExp(
+    `^\\s*(?:\\*\\*)?${VERDICT_FAIL}(?:\\*\\*)?\\s*$`,
+    "m",
+  );
   const sawPass = passRe.test(text);
   const sawFail = failRe.test(text);
 

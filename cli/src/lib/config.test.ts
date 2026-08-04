@@ -2,7 +2,13 @@ import { afterEach, describe, expect, it, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SKIP_SENTINEL, findProjectRoot, isSkipSentinel, mergeDeep, pruneSkipped } from "./config.js";
+import {
+  SKIP_SENTINEL,
+  findProjectRoot,
+  isSkipSentinel,
+  mergeDeep,
+  pruneSkipped,
+} from "./config.js";
 
 describe("config", () => {
   describe("SKIP_SENTINEL", () => {
@@ -49,10 +55,9 @@ describe("config", () => {
     });
 
     it("ignores undefined overrides (existing behavior)", () => {
-      const result = mergeDeep<Record<string, unknown>>(
-        { a: 1, b: 2 },
-        { a: undefined } as unknown as Record<string, unknown>,
-      );
+      const result = mergeDeep<Record<string, unknown>>({ a: 1, b: 2 }, {
+        a: undefined,
+      } as unknown as Record<string, unknown>);
       expect(result).toEqual({ a: 1, b: 2 });
     });
   });

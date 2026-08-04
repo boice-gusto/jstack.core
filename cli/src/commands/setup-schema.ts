@@ -37,22 +37,34 @@ export type SetupSchemaOpts = {
 
 function writeRecoveryFile(
   projectRoot: string,
-  payload: { decisions: Record<string, unknown>; patch: Record<string, unknown>; error: string },
+  payload: {
+    decisions: Record<string, unknown>;
+    patch: Record<string, unknown>;
+    error: string;
+  },
 ): string {
   const dir = join(projectRoot, ".jstack");
   mkdirSync(dir, { recursive: true });
   const f = join(dir, "setup-recovery.json");
   writeFileSync(
     f,
-    JSON.stringify({ written_at: new Date().toISOString(), ...payload }, null, 2) + "\n",
+    JSON.stringify(
+      { written_at: new Date().toISOString(), ...payload },
+      null,
+      2,
+    ) + "\n",
     ENCODING_UTF8,
   );
   return f;
 }
 
-function safeStringifyPatch(patch: Record<string, unknown>): Record<string, unknown> {
+function safeStringifyPatch(
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
   // Strip SKIP_SENTINEL symbols so the recovery file is plain JSON.
-  return JSON.parse(JSON.stringify(patch, (_k, v) => (typeof v === "symbol" ? "__SKIP__" : v))) as Record<string, unknown>;
+  return JSON.parse(
+    JSON.stringify(patch, (_k, v) => (typeof v === "symbol" ? "__SKIP__" : v)),
+  ) as Record<string, unknown>;
 }
 
 /**
@@ -98,12 +110,15 @@ export async function runSetupSchema(opts: SetupSchemaOpts): Promise<void> {
 }
 
 async function runSetupSchemaInner(opts: SetupSchemaOpts): Promise<void> {
-
   const projectRoot = findProjectRoot();
   const pluginRoot = findPluginRoot();
   const cfgPath = configPath(projectRoot);
 
-  const existing = (readConfigOptional(projectRoot) as unknown as Record<string, unknown> | null) ?? {};
+  const existing =
+    (readConfigOptional(projectRoot) as unknown as Record<
+      string,
+      unknown
+    > | null) ?? {};
   if (existsSync(cfgPath) && !opts.reconfigure && !opts.nonInteractive) {
     const go = await p.confirm({
       message: `Config exists at ${cfgPath}. Re-run the wizard? (existing values become defaults; nothing is lost unless you pick Skip or Custom)`,
@@ -134,14 +149,19 @@ async function runSetupSchemaInner(opts: SetupSchemaOpts): Promise<void> {
 
   // Layered draft: defaults -> existing -> wizard patch.
   // mergeDeep handles SKIP_SENTINEL by deleting the key.
-  let draft: Record<string, unknown> = mergeDeep(defaults as Record<string, unknown>, existing);
+  let draft: Record<string, unknown> = mergeDeep(
+    defaults as Record<string, unknown>,
+    existing,
+  );
   draft = mergeDeep(draft, outcome.patch);
 
   // MCP discovery + merge (B1 fix: collisions reported, user-curated entries preserved).
   const discovered = discoverFromMcpJson(projectRoot);
   const slices = extractSetupSlices(defaults);
   const collisions: McpMergeCollision[] = [];
-  const merged = mergeMcpRegistry(slices.mcpExisting, discovered, { collisions });
+  const merged = mergeMcpRegistry(slices.mcpExisting, discovered, {
+    collisions,
+  });
   draft.mcp_servers = merged;
   for (const c of collisions) {
     p.log.warn(`MCP merge ${c.serverId}: ${c.resolution} — ${c.reason}`);
@@ -199,9 +219,17 @@ async function runSetupSchemaInner(opts: SetupSchemaOpts): Promise<void> {
 
   // Run the dependency resolver and surface issues so the user knows what's
   // still missing on disk / in their environment.
-  const issues = resolveDependencies({ cfg: parsed as Record<string, unknown>, projectRoot, pluginRoot });
+  const issues = resolveDependencies({
+    cfg: parsed as Record<string, unknown>,
+    projectRoot,
+    pluginRoot,
+  });
   if (issues.length === 0) {
-    p.outro(chalk.green(`Wrote ${cfgPath} — no dependency issues. Next: 'jstack doctor' anytime to re-check.`));
+    p.outro(
+      chalk.green(
+        `Wrote ${cfgPath} — no dependency issues. Next: 'jstack doctor' anytime to re-check.`,
+      ),
+    );
     return;
   }
   p.log.step(
@@ -213,7 +241,9 @@ async function runSetupSchemaInner(opts: SetupSchemaOpts): Promise<void> {
     p.log.warn(`${i.severity === "error" ? "✗" : "⚠"} ${i.id}: ${i.message}`);
   }
   if (issues.length > 5) {
-    p.log.info(chalk.dim(`(${issues.length - 5} more — see jstack doctor --fix)`));
+    p.log.info(
+      chalk.dim(`(${issues.length - 5} more — see jstack doctor --fix)`),
+    );
   }
   p.outro(chalk.green(`Wrote ${cfgPath}`));
 }

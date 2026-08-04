@@ -38,7 +38,9 @@ export function runTime(opts: { format: string; sprint: boolean }): void {
     default:
       // Previously any unknown value silently rendered the human format and exited 0, so a typo
       // (`--format is0`) was indistinguishable from success.
-      console.error(`Unknown --format "${opts.format}". Expected one of: human, iso, unix, json.`);
+      console.error(
+        `Unknown --format "${opts.format}". Expected one of: human, iso, unix, json.`,
+      );
       process.exitCode = 1;
       return;
   }

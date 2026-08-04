@@ -24,7 +24,12 @@ function main(): void {
   console.log("Deep-dive reference status (skills/references/deep-dive.md)\n");
   let missing = 0;
   for (const key of DEEP_DIVE_KEYS) {
-    const deepPath = join(skillsRoot, ...key.split("/"), "references", "deep-dive.md");
+    const deepPath = join(
+      skillsRoot,
+      ...key.split("/"),
+      "references",
+      "deep-dive.md",
+    );
     const skillMd = join(skillsRoot, ...key.split("/"), "SKILL.md");
     const hasSkill = existsSync(skillMd);
     const hasDeep = existsSync(deepPath);
@@ -37,7 +42,9 @@ function main(): void {
   }
   console.log("");
   if (missing > 0) {
-    console.log(`${missing} skill(s) lack references/deep-dive.md. Add files before expanding DEEP_DIVE_SKILLS.`);
+    console.log(
+      `${missing} skill(s) lack references/deep-dive.md. Add files before expanding DEEP_DIVE_SKILLS.`,
+    );
     process.exitCode = 1;
   } else {
     console.log("All listed skills have deep-dive references.");

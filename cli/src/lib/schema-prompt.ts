@@ -41,7 +41,6 @@ export type WizardOptions = {
   nonInteractive?: boolean;
 };
 
-
 function formatDefault(value: unknown): string {
   if (value === undefined) return "(none)";
   if (value === null) return "null";
@@ -74,7 +73,9 @@ async function customPrompt(
     return v;
   }
   if (t === "list") {
-    const init = Array.isArray(initialValue) ? (initialValue as unknown[]).join(", ") : "";
+    const init = Array.isArray(initialValue)
+      ? (initialValue as unknown[]).join(", ")
+      : "";
     const v = await p.text({
       message: `${q.question} (comma-separated)`,
       initialValue: init,
@@ -111,11 +112,17 @@ async function askOneQuestion(
   defaults: Record<string, unknown>,
   existing: Record<string, unknown>,
   position: { index: number; total: number },
-): Promise<{ kind: "answer"; decision: "default" | "custom" | "skip"; value: unknown } | PromptCancelled> {
+): Promise<
+  | { kind: "answer"; decision: "default" | "custom" | "skip"; value: unknown }
+  | PromptCancelled
+> {
   const defaultValue = q.default
     ? q.default(defaults, existing)
     : (getExistingAt(existing, q.path) ?? getDefaultsAt(defaults, q.path));
-  const pct = position.total > 0 ? Math.floor(((position.index + 1) / position.total) * 100) : 0;
+  const pct =
+    position.total > 0
+      ? Math.floor(((position.index + 1) / position.total) * 100)
+      : 0;
   const filled = Math.max(0, Math.min(10, Math.floor(pct / 10)));
   const bar = "█".repeat(filled) + "░".repeat(10 - filled);
   const header = chalk.dim(
@@ -123,7 +130,9 @@ async function askOneQuestion(
   );
 
   for (;;) {
-    p.log.message(`${header}\n${chalk.bold(q.question)}\n${chalk.dim(q.describe)}`);
+    p.log.message(
+      `${header}\n${chalk.bold(q.question)}\n${chalk.dim(q.describe)}`,
+    );
     const action = await p.select<string>({
       message: `${q.id} — choose:`,
       options: [
@@ -149,7 +158,11 @@ async function askOneQuestion(
       return { kind: "answer", decision: "skip", value: SKIP_SENTINEL };
     }
     if (action === "example") {
-      p.log.info(q.example ? chalk.dim(`Example: ${q.example}`) : chalk.dim("(no example available)"));
+      p.log.info(
+        q.example
+          ? chalk.dim(`Example: ${q.example}`)
+          : chalk.dim("(no example available)"),
+      );
       continue;
     }
     if (action === "discuss") {
@@ -183,7 +196,8 @@ export async function runSchemaWizard(
     for (const q of filtered) {
       const v = q.default
         ? q.default(opts.defaults, opts.existing)
-        : (getExistingAt(opts.existing, q.path) ?? getDefaultsAt(opts.defaults, q.path));
+        : (getExistingAt(opts.existing, q.path) ??
+          getDefaultsAt(opts.defaults, q.path));
       if (v !== undefined) setAt(patch, q.path, v);
       decisions[q.id] = "default";
     }
@@ -200,12 +214,18 @@ export async function runSchemaWizard(
 
   let position = 0;
   for (const [section, questions] of bySection) {
-    p.log.step(chalk.cyan.bold(`Section: ${section}`) + chalk.dim(` (${questions.length} questions)`));
+    p.log.step(
+      chalk.cyan.bold(`Section: ${section}`) +
+        chalk.dim(` (${questions.length} questions)`),
+    );
     const sectionAction = await p.select<string>({
       message: `${section}: walk through, skip whole section, or take all defaults?`,
       options: [
         { value: "walk", label: "Walk through one-by-one" },
-        { value: "defaults", label: "Take Default on every question in this section" },
+        {
+          value: "defaults",
+          label: "Take Default on every question in this section",
+        },
         { value: "skip", label: "Skip whole section (omit all keys)" },
       ],
       initialValue: "walk",
@@ -222,7 +242,8 @@ export async function runSchemaWizard(
       if (sectionAction === "defaults") {
         const v = q.default
           ? q.default(opts.defaults, opts.existing)
-          : (getExistingAt(opts.existing, q.path) ?? getDefaultsAt(opts.defaults, q.path));
+          : (getExistingAt(opts.existing, q.path) ??
+            getDefaultsAt(opts.defaults, q.path));
         if (v !== undefined) setAt(patch, q.path, v);
         decisions[q.id] = "default";
         position++;

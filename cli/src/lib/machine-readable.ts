@@ -19,7 +19,8 @@ function readMachineReadableSlice(root: Record<string, unknown> | undefined): {
   const require_schema_ref = mr.require_schema_ref;
   return {
     enabled: typeof enabled === "boolean" ? enabled : undefined,
-    require_schema_ref: typeof require_schema_ref === "boolean" ? require_schema_ref : undefined,
+    require_schema_ref:
+      typeof require_schema_ref === "boolean" ? require_schema_ref : undefined,
   };
 }
 

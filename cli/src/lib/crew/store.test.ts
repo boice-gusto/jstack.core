@@ -12,15 +12,30 @@ describe("outbox is G1's authority", () => {
   test("records and recalls a post", () => {
     const s = freshStore();
     expect(s.outboxHas("D1ABCDEFG", "1.1")).toBe(false);
-    s.recordOutbox({ channelId: "D1ABCDEFG", ts: "1.1", taskId: "t1", step: "ack" });
+    s.recordOutbox({
+      channelId: "D1ABCDEFG",
+      ts: "1.1",
+      taskId: "t1",
+      step: "ack",
+    });
     expect(s.outboxHas("D1ABCDEFG", "1.1")).toBe(true);
     s.close();
   });
 
   test("double-record is idempotent, so a crash-retry cannot corrupt it", () => {
     const s = freshStore();
-    s.recordOutbox({ channelId: "D1ABCDEFG", ts: "1.1", taskId: "t1", step: "ack" });
-    s.recordOutbox({ channelId: "D1ABCDEFG", ts: "1.1", taskId: "t1", step: "ack" });
+    s.recordOutbox({
+      channelId: "D1ABCDEFG",
+      ts: "1.1",
+      taskId: "t1",
+      step: "ack",
+    });
+    s.recordOutbox({
+      channelId: "D1ABCDEFG",
+      ts: "1.1",
+      taskId: "t1",
+      step: "ack",
+    });
     expect(s.stats().outbox).toBe(1);
     s.close();
   });
@@ -92,8 +107,19 @@ describe("tasks are idempotent per source message", () => {
 describe("explain answers 'why did Ralph not respond'", () => {
   test("returns the decision trace for one message", () => {
     const s = freshStore();
-    s.logEvent({ tickId: "k1", kind: "read", channelId: "D1ABCDEFG", msgTs: "1.1" });
-    s.logEvent({ tickId: "k1", kind: "drop", channelId: "D1ABCDEFG", msgTs: "1.1", ruleId: "G3_no_sigil" });
+    s.logEvent({
+      tickId: "k1",
+      kind: "read",
+      channelId: "D1ABCDEFG",
+      msgTs: "1.1",
+    });
+    s.logEvent({
+      tickId: "k1",
+      kind: "drop",
+      channelId: "D1ABCDEFG",
+      msgTs: "1.1",
+      ruleId: "G3_no_sigil",
+    });
     const rows = s.explain("D1ABCDEFG", "1.1");
     expect(rows).toHaveLength(2);
     expect(rows[1]!.rule_id).toBe("G3_no_sigil");
@@ -105,7 +131,12 @@ describe("durability", () => {
   test("state survives reopening the database", () => {
     const dir = mkdtempSync(join(tmpdir(), "crew-persist-"));
     const a = new CrewStore(dir);
-    a.recordOutbox({ channelId: "D1ABCDEFG", ts: "9.9", taskId: "t", step: "result" });
+    a.recordOutbox({
+      channelId: "D1ABCDEFG",
+      ts: "9.9",
+      taskId: "t",
+      step: "result",
+    });
     a.setWatermark("D1ABCDEFG", "9.9");
     a.close();
 
@@ -195,7 +226,14 @@ describe("polling spend is recorded, not just displayed", () => {
 describe("findTaskById makes the printed handle resolvable", () => {
   test("a recorded task is found, with its agent and session", () => {
     const s = freshStore();
-    s.createTask("ral-aaaa", "D0TESTDM001", "1785141296.398489", "1785141296.398489", "sess-uuid-1", "ralph");
+    s.createTask(
+      "ral-aaaa",
+      "D0TESTDM001",
+      "1785141296.398489",
+      "1785141296.398489",
+      "sess-uuid-1",
+      "ralph",
+    );
     const t = s.findTaskById("ral-aaaa");
     expect(t).not.toBeNull();
     expect(t!.agentId).toBe("ralph");
@@ -211,7 +249,14 @@ describe("findTaskById makes the printed handle resolvable", () => {
 
   test("it reports the owning agent, which is what blocks cross-agent recall", () => {
     const s = freshStore();
-    s.createTask("sco-bbbb", "D0TESTDM001", "1785141297.000000", "1785141297.000000", "sess-uuid-2", "scout");
+    s.createTask(
+      "sco-bbbb",
+      "D0TESTDM001",
+      "1785141297.000000",
+      "1785141297.000000",
+      "sess-uuid-2",
+      "scout",
+    );
     expect(s.findTaskById("sco-bbbb")!.agentId).toBe("scout");
     s.close();
   });

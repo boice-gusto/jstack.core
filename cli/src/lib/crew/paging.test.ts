@@ -21,7 +21,12 @@ function makeChannel(count: number): InboundMessage[] {
 }
 
 /** Newest-first, capped, honouring oldest (exclusive) and latest (exclusive). */
-function fakeRead(all: InboundMessage[], oldest: string | null, latest: string | undefined, limit: number) {
+function fakeRead(
+  all: InboundMessage[],
+  oldest: string | null,
+  latest: string | undefined,
+  limit: number,
+) {
   const filtered = all
     .filter((m) => (oldest ? Number(m.ts) > Number(oldest) : true))
     .filter((m) => (latest ? Number(m.ts) < Number(latest) : true))
@@ -29,7 +34,12 @@ function fakeRead(all: InboundMessage[], oldest: string | null, latest: string |
   return filtered.slice(0, limit);
 }
 
-function paginate(all: InboundMessage[], oldest: string | null, limit: number, maxPages: number) {
+function paginate(
+  all: InboundMessage[],
+  oldest: string | null,
+  limit: number,
+  maxPages: number,
+) {
   const seen = new Map<string, InboundMessage>();
   let latest: string | undefined;
   let calls = 0;
@@ -40,14 +50,17 @@ function paginate(all: InboundMessage[], oldest: string | null, limit: number, m
     if (page.length < limit) {
       return { messages: sorted(seen), truncated: false, calls };
     }
-    const oldestTs = page.reduce((a, b) => (Number(a.ts) < Number(b.ts) ? a : b)).ts;
+    const oldestTs = page.reduce((a, b) =>
+      Number(a.ts) < Number(b.ts) ? a : b,
+    ).ts;
     if (latest === oldestTs) break;
     latest = oldestTs;
   }
   return { messages: sorted(seen), truncated: true, calls };
 }
 
-const sorted = (m: Map<string, InboundMessage>) => [...m.values()].sort((a, b) => Number(a.ts) - Number(b.ts));
+const sorted = (m: Map<string, InboundMessage>) =>
+  [...m.values()].sort((a, b) => Number(a.ts) - Number(b.ts));
 
 describe("a burst larger than read_limit does not lose the oldest messages", () => {
   test("12 messages, limit 5, 3 pages: all 12 returned, oldest first", () => {

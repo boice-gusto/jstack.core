@@ -24,7 +24,9 @@ import { Glob } from "bun";
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
 // mutating the real repo, which is how earlier verification work destroyed uncommitted files.
-const root = process.env.JSTACK_CHECK_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), "..");
+const root =
+  process.env.JSTACK_CHECK_ROOT ??
+  join(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(root, "skills");
 const asJson = process.argv.includes("--json");
 
@@ -145,7 +147,9 @@ const byRel = new Map(rows.map((r) => [r.rel, r]));
 for (const w of WRITES) {
   const r = byRel.get(w);
   if (!r) {
-    errors.push(`WRITES lists "${w}" but skills/${w}/SKILL.md does not exist — stale manifest entry.`);
+    errors.push(
+      `WRITES lists "${w}" but skills/${w}/SKILL.md does not exist — stale manifest entry.`,
+    );
     continue;
   }
   if (!r.gated) {
@@ -178,13 +182,20 @@ for (const r of rows) {
 
 // 3. Undecided entries must still exist, so the question cannot be lost to a rename.
 for (const [u, why] of UNDECIDED) {
-  if (!byRel.has(u)) errors.push(`UNDECIDED lists "${u}" which no longer exists (${why}).`);
+  if (!byRel.has(u))
+    errors.push(`UNDECIDED lists "${u}" which no longer exists (${why}).`);
 }
 
 if (asJson) {
   console.log(
     JSON.stringify(
-      { ok: errors.length === 0, skills: rows.length, declared_writes: WRITES.size, undecided: UNDECIDED.size, errors },
+      {
+        ok: errors.length === 0,
+        skills: rows.length,
+        declared_writes: WRITES.size,
+        undecided: UNDECIDED.size,
+        errors,
+      },
       null,
       2,
     ),

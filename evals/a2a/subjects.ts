@@ -68,23 +68,37 @@ const TIMEOUT_MS = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
  */
 export function runCli(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
   if (spec.command === undefined) {
-    return { text: "", exitCode: null, stdout: "", stderr: "", error: "cli subject has no command" };
+    return {
+      text: "",
+      exitCode: null,
+      stdout: "",
+      stderr: "",
+      error: "cli subject has no command",
+    };
   }
   const argv = spec.command;
   // The entrypoint must be ABSOLUTE. It was relative, which silently broke the documented
   // `cwd:` option: spawning from a fixture directory left bun looking for cli/src/index.ts
   // there, so the CLI never ran and the case failed with no output rather than a real verdict.
-  const r = spawnSync("bun", ["run", join(pluginRoot, "cli/src/index.ts"), ...argv], {
-    cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-    timeout: TIMEOUT_MS,
-    // JSTACK_INTROSPECT is a test-only flag that makes the CLI register commands WITHOUT parsing
-    // argv. It must never reach a child here: the harness spawns real CLIs and would otherwise
-    // capture empty output and a 0 exit, which reads as a pass. Stripped explicitly rather than
-    // trusting the parent's environment to be clean.
-    env: { ...process.env, JSTACK_INTROSPECT: undefined, ...(spec.env ?? {}) } as NodeJS.ProcessEnv,
-  });
+  const r = spawnSync(
+    "bun",
+    ["run", join(pluginRoot, "cli/src/index.ts"), ...argv],
+    {
+      cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+      timeout: TIMEOUT_MS,
+      // JSTACK_INTROSPECT is a test-only flag that makes the CLI register commands WITHOUT parsing
+      // argv. It must never reach a child here: the harness spawns real CLIs and would otherwise
+      // capture empty output and a 0 exit, which reads as a pass. Stripped explicitly rather than
+      // trusting the parent's environment to be clean.
+      env: {
+        ...process.env,
+        JSTACK_INTROSPECT: undefined,
+        ...(spec.env ?? {}),
+      } as NodeJS.ProcessEnv,
+    },
+  );
   const stdout = r.stdout ?? "";
   const stderr = r.stderr ?? "";
   return {
@@ -102,11 +116,23 @@ export function runCli(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
  */
 export function runHook(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
   if (!spec.script) {
-    return { text: "", exitCode: null, stdout: "", stderr: "", error: "hook subject has no script" };
+    return {
+      text: "",
+      exitCode: null,
+      stdout: "",
+      stderr: "",
+      error: "hook subject has no script",
+    };
   }
   const abs = join(pluginRoot, spec.script);
   if (!existsSync(abs)) {
-    return { text: "", exitCode: null, stdout: "", stderr: "", error: `hook script not found: ${spec.script}` };
+    return {
+      text: "",
+      exitCode: null,
+      stdout: "",
+      stderr: "",
+      error: `hook script not found: ${spec.script}`,
+    };
   }
   const r = spawnSync("bash", [abs], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
@@ -128,16 +154,31 @@ export function runHook(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
 }
 
 /** Read artifacts so assertions and judges can inspect them. */
-export function readFiles(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
+export function readFiles(
+  pluginRoot: string,
+  spec: SubjectSpec,
+): SubjectOutput {
   const paths = spec.paths ?? [];
   if (paths.length === 0) {
-    return { text: "", exitCode: null, stdout: "", stderr: "", error: "file subject has no paths" };
+    return {
+      text: "",
+      exitCode: null,
+      stdout: "",
+      stderr: "",
+      error: "file subject has no paths",
+    };
   }
   const parts: string[] = [];
   for (const rel of paths) {
     const abs = join(pluginRoot, rel);
     if (!existsSync(abs)) {
-      return { text: "", exitCode: null, stdout: "", stderr: "", error: `file not found: ${rel}` };
+      return {
+        text: "",
+        exitCode: null,
+        stdout: "",
+        stderr: "",
+        error: `file not found: ${rel}`,
+      };
     }
     parts.push(`===== ${rel} =====\n${readFileSync(abs, "utf8")}`);
   }
@@ -160,7 +201,13 @@ export function runCandidate(
   const artifacts = readFiles(pluginRoot, spec);
   if (artifacts.error) return artifacts;
   if (!spec.task) {
-    return { text: "", exitCode: null, stdout: "", stderr: "", error: "agentic subject has no task" };
+    return {
+      text: "",
+      exitCode: null,
+      stdout: "",
+      stderr: "",
+      error: "agentic subject has no task",
+    };
   }
 
   const prompt = [
@@ -179,7 +226,10 @@ export function runCandidate(
     encoding: "utf8",
     maxBuffer: 8 * 1024 * 1024,
     timeout: TIMEOUT_MS,
-    env: { ...process.env, ANTHROPIC_API_KEY: apiKey ?? process.env.ANTHROPIC_API_KEY ?? "" },
+    env: {
+      ...process.env,
+      ANTHROPIC_API_KEY: apiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
+    },
   });
   const stdout = (r.stdout ?? "").trim();
   const stderr = (r.stderr ?? "").trim();
@@ -188,10 +238,13 @@ export function runCandidate(
     stderr,
     exitCode: r.status,
     text: stdout,
-    error: r.error ? String(r.error.message ?? r.error) : stdout === "" ? "candidate produced no output" : undefined,
+    error: r.error
+      ? String(r.error.message ?? r.error)
+      : stdout === ""
+        ? "candidate produced no output"
+        : undefined,
   };
 }
-
 
 /**
  * Run a package.json script and capture its verdict.
@@ -200,10 +253,19 @@ export function runCandidate(
  * its success line tests the real gate, whereas re-checking chain references inside the case
  * would only test a copy of the logic.
  */
-export function runScript(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
+export function runScript(
+  pluginRoot: string,
+  spec: SubjectSpec,
+): SubjectOutput {
   const name = spec.script;
   if (!name) {
-    return { text: "", exitCode: null, stdout: "", stderr: "", error: "script subject has no script name" };
+    return {
+      text: "",
+      exitCode: null,
+      stdout: "",
+      stderr: "",
+      error: "script subject has no script name",
+    };
   }
   const r = spawnSync("bun", ["run", name, ...(spec.command ?? [])], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
@@ -241,6 +303,12 @@ export function exerciseSubject(
     case "agentic":
       return runCandidate(pluginRoot, spec, claudeBin, apiKey);
     default:
-      return { text: "", exitCode: null, stdout: "", stderr: "", error: `unknown subject kind: ${spec.kind}` };
+      return {
+        text: "",
+        exitCode: null,
+        stdout: "",
+        stderr: "",
+        error: `unknown subject kind: ${spec.kind}`,
+      };
   }
 }
