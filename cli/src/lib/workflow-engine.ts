@@ -1,9 +1,19 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { resolveWithinRoots } from "./path-utils.js";
 import { WorkflowDefinitionSchema, type WorkflowDefinition } from "../types/workflow.js";
 
 export function workflowsDir(projectRoot: string): string {
   return join(projectRoot, "config", "workflows");
+}
+
+/**
+ * A workflow id can come from a shared/imported file, so it's untrusted. Resolve it against
+ * workflowsDir and reject anything (e.g. `../../etc/whatever`) that would land outside it.
+ */
+function resolveWorkflowPath(projectRoot: string, id: string): string | null {
+  const d = workflowsDir(projectRoot);
+  return resolveWithinRoots(join(d, `${id}.json`), [d]);
 }
 
 export function listWorkflows(projectRoot: string): string[] {
@@ -13,20 +23,22 @@ export function listWorkflows(projectRoot: string): string[] {
 }
 
 export function loadWorkflow(projectRoot: string, id: string): WorkflowDefinition | null {
-  const p = join(workflowsDir(projectRoot), `${id}.json`);
-  if (!existsSync(p)) return null;
+  const p = resolveWorkflowPath(projectRoot, id);
+  if (!p || !existsSync(p)) return null;
   return WorkflowDefinitionSchema.parse(JSON.parse(readFileSync(p, "utf8")));
 }
 
 export function saveWorkflow(projectRoot: string, def: WorkflowDefinition): void {
   const d = workflowsDir(projectRoot);
   mkdirSync(d, { recursive: true });
-  writeFileSync(join(d, `${def.id}.json`), JSON.stringify(def, null, 2) + "\n", "utf8");
+  const p = resolveWorkflowPath(projectRoot, def.id);
+  if (!p) throw new Error(`Invalid workflow id: ${def.id}`);
+  writeFileSync(p, JSON.stringify(def, null, 2) + "\n", "utf8");
 }
 
 export function deleteWorkflow(projectRoot: string, id: string): boolean {
-  const p = join(workflowsDir(projectRoot), `${id}.json`);
-  if (!existsSync(p)) return false;
+  const p = resolveWorkflowPath(projectRoot, id);
+  if (!p || !existsSync(p)) return false;
   unlinkSync(p);
   return true;
 }
@@ -42,7 +54,11 @@ export function importWorkflowFromFile(projectRoot: string, filePath: string): W
   if (!existsSync(filePath)) return null;
   const raw = JSON.parse(readFileSync(filePath, "utf8"));
   const def = WorkflowDefinitionSchema.parse(raw);
-  saveWorkflow(projectRoot, def);
+  try {
+    saveWorkflow(projectRoot, def);
+  } catch {
+    return null;
+  }
   return def;
 }
 
