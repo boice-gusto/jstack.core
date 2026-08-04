@@ -646,15 +646,6 @@
           "additionalProperties": {
             "type": "string"
           }
-        },
-        "default_tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "auto_backlink": {
-          "type": "boolean"
         }
       },
       "additionalProperties": true

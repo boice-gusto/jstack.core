@@ -217,8 +217,6 @@
       "performance_reviews": "",
       "performance_reviews_data_source": ""
     },
-    "default_tags": [],
-    "auto_backlink": true,
     "private_vault": {
       "root_parent_page_key": "private_root",
       "setup_complete": false

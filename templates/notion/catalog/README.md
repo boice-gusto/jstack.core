@@ -101,9 +101,9 @@ Surface routing is enforced by the setup skill — it refuses to create team-sid
 
 ## Adding to a set
 
-1. Add an entry to the set's JSON file (matching `NotionTemplateSchema` in `cli/src/lib/notion-templates/types.ts`).
+1. Add an entry to the set's JSON file, matching the shape of an existing entry in `official.json` (`id`, `kind`, `surface`, and either `content_path`/`content_kind` or `schema`).
 2. For page-kind entries, create the corresponding `<id>.md` (or `<id>.prompt.md`) under the set's directory.
-3. Run the loader smoke test (or `jstack doctor`) to validate.
+3. Re-run `/jstack:notion setup` to preview what it creates from the updated set — there is no separate loader/validator to run first.
 
 ## Adding a new set
 
@@ -111,12 +111,6 @@ Surface routing is enforced by the setup skill — it refuses to create team-sid
 2. Create `templates/notion/catalog/<my_set>/` and author the content files.
 3. Set `notion_defaults.template_set = "<my_set>"` to make it active.
 4. The `private_vault` set continues loading alongside.
-
-## Validation
-
-- TypeScript types: `cli/src/lib/notion-templates/types.ts` (Zod schemas).
-- Loader: `cli/src/lib/notion-templates/index.ts`.
-- The loader rejects unknown fields under set metadata, but `passthrough()` is permitted on individual templates so org-specific extras don't fail validation.
 
 ## See also
 

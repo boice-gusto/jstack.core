@@ -1,5 +1,7 @@
 import chalk from "chalk";
 import * as p from "@clack/prompts";
+import { mkdirSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import { findProjectRoot } from "../lib/config.js";
 import { exitCancelled, handleCancel, isInteractive, nonInteractiveHint } from "../lib/cliUi.js";
 import {
@@ -13,8 +15,6 @@ import {
   workflowsDir,
 } from "../lib/workflow-engine.js";
 import type { WorkflowDefinition } from "../types/workflow.js";
-import { mkdirSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
 
 export async function runWorkflowList(opts: { json?: boolean }): Promise<void> {
   const root = findProjectRoot();

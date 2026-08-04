@@ -153,8 +153,6 @@ export const NotionDefaultsSchema = section({
         "that the API can't easily reproduce. Empty fallback = use catalog content_path / schema.",
     ),
   post_targets: z.record(z.string(), z.string()).optional(),
-  default_tags: z.array(z.string()).optional(),
-  auto_backlink: z.boolean().optional(),
 });
 
 export type NotionDefaults = z.infer<typeof NotionDefaultsSchema>;

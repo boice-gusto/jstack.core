@@ -1,4 +1,7 @@
 import { Command } from "commander";
+import { readFileSync, statSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import {
   collect,
   detect,
@@ -8,9 +11,6 @@ import {
   type ScoredIssue,
 } from "../lib/claude-md-improver.js";
 import { findProjectRoot } from "../lib/config.js";
-import { homedir } from "node:os";
-import { readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
 
 export type ClaudeMdScanOpts = {
   projectRoot?: string;

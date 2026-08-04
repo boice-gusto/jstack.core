@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Nothing yet.
+- **Crew:** background Slack agents that answer in your own DM (`jstack-crew` skill + evals), and session recall by the handle already printed in every reply.
+- **Security/quality hardening pass:** closed a path-traversal in `jstack workflow import`; rate-limited the dashboard login (was bypassed entirely for `/api/auth/login`) and hardened its cookie/credential-compare/response-header handling; fixed a shell-injection path in `judge-eval.yml`'s `workflow_dispatch` inputs and pinned CI actions to release SHAs; added untrusted-content framing to skills that synthesize external Slack/Jira/transcript content (`recon`, `jira/get`, `jira/notify`, `meetings/transcripts-ingest`); removed dead code (`cli/src/lib/notion-templates/`, `cli/src/lib/logger.ts`, two unused config fields, two unused dashboard helpers, two stale one-off scripts).
+- Quality: reduced `CLAUDE.md` from two concatenated documents to one; synced `cli/`/`dashboard/` package versions with root.
 
 ## 0.2.0 — 2026-07-27
 
