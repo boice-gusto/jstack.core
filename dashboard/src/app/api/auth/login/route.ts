@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createSessionCookieValue, SESSION_COOKIE, SESSION_TTL_MS } from "@/lib/session";
+import {
+  createSessionCookieValue,
+  SESSION_COOKIE,
+  SESSION_TTL_MS,
+  timingSafeEqualUtf8,
+} from "@/lib/session";
 import { getDashboardEnv } from "@/server/env";
 
 const LoginBodySchema = z.object({
@@ -46,7 +51,10 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid body", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  if (parsed.data.username !== user || parsed.data.password !== pass) {
+  if (
+    !timingSafeEqualUtf8(parsed.data.username, user) ||
+    !timingSafeEqualUtf8(parsed.data.password, pass)
+  ) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
@@ -57,7 +65,10 @@ export async function POST(request: Request): Promise<Response> {
     sameSite: "lax",
     path: "/",
     maxAge: Math.floor(SESSION_TTL_MS / 1000),
-    secure: process.env.NODE_ENV === "production",
+    // Secure by default. Only a deployment that explicitly opts in over plain HTTP (local dev
+    // without HTTPS) should turn this off — don't infer it from NODE_ENV, which some hosts never
+    // set to "production" even when serving real traffic.
+    secure: !env.DASHBOARD_ALLOW_INSECURE_COOKIES,
   });
   return res;
 }
