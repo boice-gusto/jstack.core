@@ -21,9 +21,8 @@ Shape raw text into Jira-ready fields: summary, description with AC, issuetype, 
 
 ## Domain rules — Jira
 - All Jira work respects `jira_rules` in config and `templates/jira/*.json`. Project key, issue type, and transitions come from **config or user** — never from memory.
-- `get` is read-only. `create`, `update`, `append`, `transition`, `notify` are writes — confirm when the org requires approval, batch when possible, return Jira **key + URL** in every summary.
-- Dup-check before create: suggest search on `jstack-jira-get` if the summary matches a likely existing issue.
-- MCP / API errors: one-line user-facing message + whether it is retryable. Keep raw JSON out of chat.
+- This skill only classifies and assembles the payload — it does not file the issue. Hand off to `jstack:jira-create`, which owns the dup-check and the actual write.
+- MCP / API errors (when looking up context to assemble the payload): one-line user-facing message + whether it is retryable. Keep raw JSON out of chat.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.

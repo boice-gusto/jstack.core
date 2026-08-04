@@ -21,9 +21,8 @@ Draft a Slack or email message about a Jira event. **Draft only** — do not pos
 
 ## Domain rules — Jira
 - All Jira work respects `jira_rules` in config and `templates/jira/*.json`. Project key, issue type, and transitions come from **config or user** — never from memory.
-- `get` is read-only. `create`, `update`, `append`, `transition`, `notify` are writes — confirm when the org requires approval, batch when possible, return Jira **key + URL** in every summary.
-- Dup-check before create: suggest search on `jstack-jira-get` if the summary matches a likely existing issue.
-- MCP / API errors: one-line user-facing message + whether it is retryable. Keep raw JSON out of chat.
+- This skill only drafts — it never posts. Hand off to `jstack:meetings-post-slack` (or the user's own send) after explicit approval; that's the actual write.
+- MCP / API errors (when fetching the Jira event to draft from): one-line user-facing message + whether it is retryable. Keep raw JSON out of chat.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.

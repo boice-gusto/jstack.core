@@ -19,9 +19,7 @@ Route the user's Jira request to the most specific sub-skill. Do not execute Jir
 
 ## Domain rules — Jira
 - All Jira work respects `jira_rules` in config and `templates/jira/*.json`. Project key, issue type, and transitions come from **config or user** — never from memory.
-- `get` is read-only. `create`, `update`, `append`, `transition`, `notify` are writes — confirm when the org requires approval, batch when possible, return Jira **key + URL** in every summary.
-- Dup-check before create: suggest search on `jstack-jira-get` if the summary matches a likely existing issue.
-- MCP / API errors: one-line user-facing message + whether it is retryable. Keep raw JSON out of chat.
+- This is a router — it doesn't read or write Jira itself. `get` is read-only; `create`, `update`, `append`, `transition`, `notify` are writes. See the chosen sub-skill's own Domain rules for its specific read/write and confirmation behavior.
 
 ## Sub-skills (pick the most specific)
 **Under `skills/jira/`:** get, create, update, intake, transition, notify, append

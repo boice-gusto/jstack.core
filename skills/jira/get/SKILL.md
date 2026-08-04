@@ -20,8 +20,7 @@ Fetch one or more Jira issues by key or JQL and present a clean table. Read-only
 
 ## Domain rules — Jira
 - All Jira work respects `jira_rules` in config and `templates/jira/*.json`. Project key, issue type, and transitions come from **config or user** — never from memory.
-- `get` is read-only. `create`, `update`, `append`, `transition`, `notify` are writes — confirm when the org requires approval, batch when possible, return Jira **key + URL** in every summary.
-- Dup-check before create: suggest search on `jstack-jira-get` if the summary matches a likely existing issue.
+- This skill is read-only — no mutations, no confirmation gate needed. For any write (create, update, append, transition, notify), hand off to the matching sibling skill.
 - MCP / API errors: one-line user-facing message + whether it is retryable. Keep raw JSON out of chat.
 
 ## Config and references
