@@ -47,7 +47,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Separate bundled asks into distinct candidates before shaping any of them. Name the user and the moment the need occurs. Do not invent acceptance criteria the requester did not imply — ask.
 
 ### Step 3 — Execute
-Apply the `jstack-task-intake` workflow using values from `jstack.config.json`. There is no `templates/intake/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Shape each separated candidate into structured fields (summary, acceptance criteria, type, priority), sizing and placing it against existing work using `jstack.config.json` defaults. If a candidate is too thin for a full ticket, downgrade it to the short form instead of guessing at missing fields. Package the result as a payload for `jstack:jira-intake` or clipboard — never call a ticket-creation tool directly.
 
 ### Step 4 — Validate
 Confirm bundled asks were separated, that acceptance criteria are testable, and that nothing was invented on the requester's behalf.

@@ -48,7 +48,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-scaffold` workflow using values from `jstack.config.json`. There is no `templates/skill-creator/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Create the directory skeleton only — `SKILL.md` with inline-scalar frontmatter, `references/`, and `evals/` — without writing domain content the author hasn't decided on. Decide whether the new skill's body will be hand-maintained or generator-produced, add its path to `SKIP` in `scripts/apply_detailed_skills.py` if hand-maintained, and state which choice you made. Run `bun run gen:skill-evals` to scaffold eval cases and `bun run docs:generate` so `skill-catalog.json` includes the new skill.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.

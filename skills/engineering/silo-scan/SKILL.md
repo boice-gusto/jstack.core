@@ -76,7 +76,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Name the mechanism, not the symptom, and cite the file or component that shows it. Prefer measuring to asserting. If you cannot name the alternative to what you are criticizing, say so plainly.
 
 ### Step 3 — Execute
-Apply the `jstack-engineering-silo-scan` workflow using values from `jstack.config.json`. There is no `templates/engineering/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+For each critical module or directory, compute bus factor and silo ratio from commit authorship over the trailing 6–12 month window, and separately compute review-participation spread from approver history over the same window. Weight remediation priority by combining silo ratio with change frequency and fan-in (downstream dependents), not concentration alone, and frame every finding as organizational/process risk (pairing, rotation, documentation) rather than naming an individual.
 
 ### Step 4 — Validate
 Confirm each finding names a mechanism and a location, and that any measurement you cite is reproducible.

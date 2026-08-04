@@ -45,7 +45,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Confirm attribution before recording a decision as someone's — misattributing a commitment is the costly error here. Keep personal notes out of team stores. Distinguish what was decided from what was merely discussed.
 
 ### Step 3 — Execute
-Apply the `jstack-granola-daily-summary-6pm` workflow using values from `jstack.config.json`. There is no `templates/meetings/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Parse the day's captured notes or Granola export into Decisions (with who decided), Open Questions, and Action Items (each with owner + due; use `unassigned` plus a suggested ping when the owner isn't stated). Because this runs unattended with no one to ask, resolve ambiguity with the most conservative reading and flag it rather than guessing silently or stalling. Mark any sensitive or HR-adjacent segment so a redacted version can be produced, and stop at producing the digest — do not post it anywhere.
 
 ### Step 4 — Validate
 Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. Confirm personal content did not land in a shared store.

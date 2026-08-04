@@ -71,7 +71,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read the board's actual state before planning against it. When something spilled, diagnose which of scope growth, underestimation, or blockage caused it rather than re-committing the same item. Change the plan or the scope, not the record of what happened.
 
 ### Step 3 — Execute
-Apply the `jstack-sprint-refinement` workflow using values from `jstack.config.json`. There is no `templates/sprint/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Walk each ticket through the five questions in fixed order — what, why, acceptance criteria, dependencies, estimate — recording the estimate only after the first four are answered. Split any item that hits the size threshold before assigning it a single estimate, and mark a ticket sprint-ready only once it meets Definition of Ready with no unresolved dependency. Show the capacity snapshot next to the sprint-ready checklist, and package any multi-ticket Jira changes as a proposed diff awaiting explicit confirmation rather than writing them directly.
 
 ### Step 4 — Validate
 Confirm the numbers match the board rather than the narrative, and that carryover is explained rather than silently re-committed.

@@ -44,7 +44,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-figma-handoff` workflow using values from `jstack.config.json`. There is no `templates/design/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Walk the Figma frame component by component: name each component and its variants, map its fill/typography/spacing values to token names (flag anything off-token as an override rather than silently absorbing it), and enumerate the interaction states it must support (default, hover, focus, disabled, error, etc.). For each state, cite the specific accessibility criterion it must meet — the WCAG rule plus the measured value where a screenshot exists (e.g. `#999 on #fff is 2.85:1`) — and write `[no screenshot available]` rather than asserting pixel parity from the description alone.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.

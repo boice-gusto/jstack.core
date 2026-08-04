@@ -97,7 +97,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
-Apply the `jstack-self-impact-prep` workflow using values from `jstack.config.json`. There is no `templates/self/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+For a Growth Check-in, walk each configured rubric dimension and attach at least one named artifact (PR, doc, ticket, message) per dimension, or flag it as a gap; ask one targeted gap question at a time, naming the missing artifact. For a Quarterly sweep, aggregate existing Growth Check-ins as the primary source and layer in new artifacts rather than re-deriving the quarter from memory. Where a self-rating diverges from the evidence-supported rating, flag it explicitly instead of averaging the two.
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

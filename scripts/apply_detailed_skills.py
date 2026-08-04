@@ -32,6 +32,28 @@ SKIP = {
     SKILLS / "notion" / "one-on-one" / "SKILL.md",
     SKILLS / "meetings" / "one-on-one-transcript" / "SKILL.md",
     SKILLS / "meetings" / "transcripts-ingest" / "SKILL.md",
+    # Hand-authored Step 3 (2026-08) after these 19 were found sharing a content-free
+    # generator-fallback paragraph with no per-skill substance. Regenerating would silently
+    # overwrite that fix, so they're pinned here until the generator has real data for them.
+    SKILLS / "design" / "visual-single-page-html" / "SKILL.md",
+    SKILLS / "design" / "figma-handoff" / "SKILL.md",
+    SKILLS / "granola-daily-summary-6pm" / "SKILL.md",
+    SKILLS / "granola-daily-summary" / "SKILL.md",
+    SKILLS / "plugin" / "create-plugin-pr" / "SKILL.md",
+    SKILLS / "task-intake" / "SKILL.md",
+    SKILLS / "routines" / "morning-kickoff" / "SKILL.md",
+    SKILLS / "knowledge" / "skill-finder" / "SKILL.md",
+    SKILLS / "knowledge" / "ingest-all" / "SKILL.md",
+    SKILLS / "self" / "impact-prep" / "SKILL.md",
+    SKILLS / "self" / "brag" / "SKILL.md",
+    SKILLS / "review" / "code-review" / "SKILL.md",
+    SKILLS / "incident" / "oncall-summary" / "SKILL.md",
+    SKILLS / "incident" / "find-sme" / "SKILL.md",
+    SKILLS / "scaffold" / "SKILL.md",
+    SKILLS / "sprint" / "prep" / "SKILL.md",
+    SKILLS / "sprint" / "refinement" / "SKILL.md",
+    SKILLS / "engineering" / "health" / "SKILL.md",
+    SKILLS / "engineering" / "silo-scan" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))

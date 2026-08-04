@@ -70,7 +70,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read the board's actual state before planning against it. When something spilled, diagnose which of scope growth, underestimation, or blockage caused it rather than re-committing the same item. Change the plan or the scope, not the record of what happened.
 
 ### Step 3 — Execute
-Apply the `jstack-sprint-prep` workflow using values from `jstack.config.json`. There is no `templates/sprint/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Pull the current backlog and check each item's last-touched date against the configured staleness window, its owner, and its stated why-now. Sort what's ready into a priority queue that covers more than one sprint's depth, flag stale or vague items by their specific missing piece instead of a generic label, and package any coverage gap as a proposed ticket payload for `jstack:jira-intake` rather than creating it directly.
 
 ### Step 4 — Validate
 Confirm the numbers match the board rather than the narrative, and that carryover is explained rather than silently re-committed.

@@ -103,7 +103,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read the whole change before commenting on any part of it. Separate blocking findings from suggestions, and cite `file:line` for each. Do not approve based on a summary you did not verify. Rank by severity, not by reading order.
 
 ### Step 3 — Execute
-Apply the `jstack-review-code-review` workflow using values from `jstack.config.json`. There is no `templates/review/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Draft one comment per finding, each prefixed `Blocking:`, `Nit:`, `Optional:`/`Consider:`, or `FYI:` and citing the exact `file:line`, with a specific required edit for every blocker. Report the diff's size and how long the pass took, and name any vendored, generated, or otherwise unread code explicitly. Decide approval on whether the change leaves the codebase healthier than before, not on personal style, and record any changed path with no corresponding test as a labeled finding rather than a silent pass.
 
 ### Step 4 — Validate
 Confirm every finding cites a real location and that severities are ordered. Confirm you did not present a preference as a defect. State explicitly what you did not review.

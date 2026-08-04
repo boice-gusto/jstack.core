@@ -80,7 +80,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Stabilize before diagnosing. Record the timeline as you go, not afterwards from memory. Do not state a cause until it is established — in anything customer-facing, "under investigation" is correct and a guess is a liability.
 
 ### Step 3 — Execute
-Apply the `jstack-incident-oncall-summary` workflow using values from `jstack.config.json`. There is no `templates/incident/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Compile the window's alerts and incidents from the Slack channel, incident tool, and on-call schedule, grouping related alerts by cause rather than listing each firing separately. Write the handoff to cover, at minimum, active incidents with status and severity, silenced alerts with reason and expiration, in-flight mitigations, and current escalation state (who's paged, who's next), with every timestamp in UTC or an explicit offset. State each item as mitigated or resolved precisely — never interchangeably — and flag alerts that fired but weren't actionable as tuning candidates. Investigate a specific alert further only if the user asks for it.
 
 ### Step 4 — Validate
 Confirm the timeline is ordered and sourced, that cause is labelled as established or under investigation, and that no customer-facing text asserts more than is known.

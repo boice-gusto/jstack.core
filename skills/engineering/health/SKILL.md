@@ -86,7 +86,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Name the mechanism, not the symptom, and cite the file or component that shows it. Prefer measuring to asserting. If you cannot name the alternative to what you are criticizing, say so plainly.
 
 ### Step 3 — Execute
-Apply the `jstack-engineering-health` workflow using values from `jstack.config.json`. There is no `templates/engineering/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Pull each configured repo's data and compute the four DORA keys as independent bands, stating the metric, measurement window, and threshold behind each — never collapse them into one score. Pair each lagging indicator (incident count, MTTR, change-failure rate) with its leading counterpart (PR review latency, CI flake trend, deploy-frequency trend), and check flake rate and stale-PR signals directly against the CI/PR data. Before calling anything healthy, name what a clean number could be concealing — for example, zero rollbacks from low-risk changes rather than low risk.
 
 ### Step 4 — Validate
 Confirm each finding names a mechanism and a location, and that any measurement you cite is reproducible.
