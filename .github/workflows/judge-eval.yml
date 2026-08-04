@@ -40,12 +40,14 @@ jobs:
   judge:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: latest
-      - run: bun install
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
 
       # Fail before spending anything if the credential is missing. A judge run without a key would
       # otherwise skip every case and exit 0, reporting success for work never done.
@@ -69,9 +71,14 @@ jobs:
       - name: Judge-backed A2A cases (--require-judge makes a skip fatal)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Never interpolate ${{ github.event.inputs.* }} directly into `run:` — that pastes
+          # attacker-controlled text into the shell script before bash ever sees it, breaking out
+          # of quotes is trivial. Route it through env instead, so bash only ever sees it as the
+          # *value* of a variable.
+          SURFACE: ${{ github.event.inputs.surface }}
         run: |
-          if [ -n "${{ github.event.inputs.surface }}" ]; then
-            bun evals/a2a/run.ts --require-judge --surface "${{ github.event.inputs.surface }}"
+          if [ -n "${SURFACE}" ]; then
+            bun evals/a2a/run.ts --require-judge --surface "${SURFACE}"
           else
             bun evals/a2a/run.ts --require-judge
           fi
@@ -80,13 +87,14 @@ jobs:
         if: ${{ github.event.inputs.semantic_skill != '' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: bun run eval semantic --skill "${{ github.event.inputs.semantic_skill }}"
+          SEMANTIC_SKILL: ${{ github.event.inputs.semantic_skill }}
+        run: bun run eval semantic --skill "${SEMANTIC_SKILL}"
 
       # Verdicts and judge messages are the actual output; keep them even when the job fails, since
       # a failure is when you most want to read what the judge said.
       - name: Upload judge reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         with:
           name: judge-eval-reports
           path: |
