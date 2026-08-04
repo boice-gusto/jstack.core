@@ -13,6 +13,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#configuration">Configuration</a> ·
   <a href="#cli">CLI</a> ·
+  <a href="#extending-jstack">Extending</a> ·
   <a href="#development">Development</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
@@ -21,15 +22,25 @@
 
 ## What this is
 
-jstack turns recurring team operations into skills an agent can invoke deliberately, with the
-rules and guardrails your team actually follows. Instead of re-explaining your sprint process or
-your Jira conventions in every session, they live in configuration and skill definitions.
+Every team has unwritten rules for how it does sprint planning, incident response, and Jira
+hygiene — rules that normally live in a wiki nobody reads, or get re-explained to an AI assistant
+every session. jstack encodes them once, as config-driven **skills** an agent invokes
+deliberately, instead of hardcoded prompts or memorized conventions.
+
+Three things make that durable rather than another prompt library that rots:
+
+- **Config-first.** Every skill reads sprint length, approvers, channels, and integration ids from
+  one Zod-validated `jstack.config.json` — never from memory, never hardcoded in skill prose.
+- **Evals, not vibes.** Every skill ships with its own eval cases; a change to a skill can be shown
+  to still work, not just assumed to.
+- **CI-enforced boundaries**, not convention. Write-gating, org-value hygiene, and skill/agent
+  scoping are checked by `bun run check`, not left to reviewer memory.
 
 It runs on **Claude Code**, **Cursor**, and **Codex**.
 
 | | |
 |---|---|
-| **136 skills** | Sprint ceremonies, incident response, Jira/Notion CRUD with enforcement rules, reports, research, meetings, session lifecycle, personal productivity |
+| **140+ skills** | Sprint ceremonies, incident response, Jira/Notion CRUD with enforcement rules, reports, research, meetings, session lifecycle, personal productivity |
 | **22 agents** | Role-scoped subagents (staff engineer, PM, design lead, sprint lead, review counsel…) for multi-perspective work |
 | **CLI** | `setup`, `doctor`, `eval`, `schedule`, `workflow`, `mcp`, `telemetry` — scriptable, with JSON output |
 | **Eval harness** | Structural, chain, and LLM-graded evals so a skill can be shown to still work |
@@ -158,20 +169,41 @@ writes require explicit confirmation.
 | `claude-md`, `upgrade` | Audit CLAUDE.md against real sessions; version checks |
 | `telemetry` | Inspect the opt-in telemetry buffer |
 
+## Extending jstack
+
+Adding a skill:
+
+1. Add an entry to [`scripts/generate-skills.ts`](scripts/generate-skills.ts) and run
+   `bun scripts/generate-skills.ts` to scaffold `skills/<path>/SKILL.md`.
+2. Most skill bodies are **generated**, not hand-written — `scripts/apply_detailed_skills.py`
+   rewrites every `SKILL.md` not listed in its `SKIP` set. Add your content to
+   `apply_detailed_skills_data.py` so the generator produces it, or add the skill to `SKIP` if it's
+   genuinely hand-maintained. Skipping this step means your edits get silently overwritten on the
+   next regeneration.
+3. Give it frontmatter (`name`, `description`, `category`; see
+   [`skills/_core/references/skill-conventions.md`](skills/_core/references/skill-conventions.md))
+   and at least one eval case (see [`evals/AUTHORING.md`](evals/AUTHORING.md) — a skill with no
+   evals fails the gate).
+4. `bun run docs:generate` to regenerate the catalog, then `bun run check`.
+
+Full walkthrough, including agent authoring and config-schema changes: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+An **org overlay** (see [jstack.gusto](https://github.com/boice-gusto/jstack.gusto) for a real
+example) is a separate repo/plugin that adds everything company-specific — internal hostnames,
+org policy, skills with no generic equivalent — without forking this one.
+
 ## Development
 
 ```bash
 bun run check      # the full gate CI runs
+bun run format     # apply formatting (cli/, scripts/, evals/ — see biome.json)
 bun test cli/src   # unit tests only
 ```
 
 `bun run check` runs config validation, agent/skill frontmatter checks, chain-reference
-validation, eval YAML linting, structural and coverage evals, unit tests, and both typechecks.
-
-**Most skill bodies are generated.** `scripts/apply_detailed_skills.py` rewrites the body of
-every `skills/**/SKILL.md` not listed in its `SKIP` set. Hand-editing a generated body loses the
-work on the next regeneration — change the generator data instead, or add the skill to `SKIP`.
-[CONTRIBUTING.md](CONTRIBUTING.md) covers the end-to-end flow for adding a skill.
+validation, eval YAML linting, structural and coverage evals, unit tests, both typechecks, and a
+format check (`biome.json` — `cli/`, `scripts/`, `evals/`; not `dashboard/`, which has its own
+ESLint).
 
 Eval coverage is enforced: a new skill without eval cases fails the gate. That is deliberate — a
 skill with no evals cannot be shown to still work. See [`evals/AUTHORING.md`](evals/AUTHORING.md).
