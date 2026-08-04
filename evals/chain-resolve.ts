@@ -13,7 +13,11 @@ export function buildSuffixToRelPath(
 ): Map<string, string> {
   const map = new Map<string, string>();
   for (const rel of relPaths) {
-    const skillMd = join(skillsRoot, ...rel.split("/").filter(Boolean), "SKILL.md");
+    const skillMd = join(
+      skillsRoot,
+      ...rel.split("/").filter(Boolean),
+      "SKILL.md",
+    );
     const raw = readFileSync(skillMd, "utf8");
     const m = raw.match(NAME_LINE);
     const suffix = m?.[1];

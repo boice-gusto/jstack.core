@@ -17,7 +17,12 @@ function isPublicPath(pathname: string): boolean {
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
-  if (isPublicPath(pathname)) {
+
+  // Static assets and the login page itself need neither auth nor rate limiting. API paths in
+  // PUBLIC_PATHS (login/logout) still go through the block below — they skip only the auth
+  // check, not the rate limit, so login attempts can't bypass throttling by using the one
+  // endpoint that doesn't require a session yet.
+  if (isPublicPath(pathname) && !pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
@@ -40,6 +45,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         { error: "Rate limit exceeded" },
         { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
       );
+    }
+    if (isPublicPath(pathname)) {
+      return NextResponse.next();
     }
     if (!(await isAuthorizedRequest(request))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

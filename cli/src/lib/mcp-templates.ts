@@ -89,7 +89,9 @@ export function resolvePreset(
     for (const [k, v] of Object.entries(env)) {
       if (!v.startsWith("<")) cleaned[k] = v;
     }
-    return Object.keys(cleaned).length ? { ...rest, env: cleaned } : { ...rest };
+    return Object.keys(cleaned).length
+      ? { ...rest, env: cleaned }
+      : { ...rest };
   }
   return { ...rest };
 }

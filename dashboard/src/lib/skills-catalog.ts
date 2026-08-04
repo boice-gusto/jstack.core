@@ -66,11 +66,6 @@ export function loadSkillMarkdownById(skillId: string): { content: string; absPa
   return { content, absPath: abs };
 }
 
-export function getSkillEntry(skillId: string): SkillCatalogEntry | null {
-  const catalog = loadSkillCatalog();
-  return catalog.find((s) => s.id === skillId) ?? null;
-}
-
 const MAX_SKILL_DOC_BYTES = 200_000;
 const MAX_SKILL_DOCS_TOTAL_BYTES = 900_000;
 const MAX_SKILL_DOC_FILES = 40;

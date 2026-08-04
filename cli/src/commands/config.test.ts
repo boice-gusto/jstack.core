@@ -59,7 +59,10 @@ describe("malformed config", () => {
 describe("valid config", () => {
   test("prints the path then the file contents, and exits 0", () => {
     mkdirSync(join(dir, "sub"), { recursive: true });
-    writeFileSync(join(dir, "jstack.config.json"), '{\n  "version": "9.9.9"\n}\n');
+    writeFileSync(
+      join(dir, "jstack.config.json"),
+      '{\n  "version": "9.9.9"\n}\n',
+    );
     const { code, out } = runConfig(dir);
     expect(code).toBe(0);
     expect(out).toContain("jstack.config.json");

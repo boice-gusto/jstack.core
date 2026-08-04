@@ -1,6 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { agentPrefixMatch, allSigils, decide, findSigil, hasServerSuffix, identityPrefix, routeToAgent, stripSigils, SERVER_SUFFIX_RE } from "./guards.js";
-import { CrewConfigSchema, type CrewConfig, type InboundMessage } from "./types.js";
+import {
+  agentPrefixMatch,
+  allSigils,
+  decide,
+  findSigil,
+  hasServerSuffix,
+  identityPrefix,
+  routeToAgent,
+  stripSigils,
+  SERVER_SUFFIX_RE,
+} from "./guards.js";
+import {
+  CrewConfigSchema,
+  type CrewConfig,
+  type InboundMessage,
+} from "./types.js";
 
 const NOW = 1_785_141_300_000;
 const TS = "1785141296.398489"; // ~4s before NOW
@@ -9,7 +23,13 @@ const config: CrewConfig = CrewConfigSchema.parse({
   enabled: true,
   mode: "dry_run",
   slack: { self_user_id: "U0TESTUSER1" },
-  agents: { ralph: { name: "Ralph", sigils: ["!ralph", "@agent-ralph"], workspace: "/tmp/ws" } },
+  agents: {
+    ralph: {
+      name: "Ralph",
+      sigils: ["!ralph", "@agent-ralph"],
+      workspace: "/tmp/ws",
+    },
+  },
   policy: {
     ingress: { channels: ["D0TESTDM001"], authors: ["U0TESTUSER1"] },
     egress: { channels: ["D0TESTDM001"] },
@@ -34,15 +54,20 @@ const ctx = (outboxHas = noOutbox) => ({ config, outboxHas, nowMs: NOW });
 
 describe("server suffix detection (fixture is a real recorded read-back, C13)", () => {
   // Verbatim tail of the real post at ts 1785141296.398489.
-  const REAL = "_Authorised by the operator._\n*Sent using* <@U0APPID0001|Slack MCP>";
+  const REAL =
+    "_Authorised by the operator._\n*Sent using* <@U0APPID0001|Slack MCP>";
 
   test("fires on the real read-back", () => {
     expect(hasServerSuffix(REAL)).toBe(true);
   });
 
   test("is app-agnostic", () => {
-    expect(hasServerSuffix("hi\n*Sent using* <@U0AQC6VGVAP|Claude>")).toBe(true);
-    expect(hasServerSuffix("hi\n*Sent using* <@U0XXXXXXXXX|Some Future App>")).toBe(true);
+    expect(hasServerSuffix("hi\n*Sent using* <@U0AQC6VGVAP|Claude>")).toBe(
+      true,
+    );
+    expect(
+      hasServerSuffix("hi\n*Sent using* <@U0XXXXXXXXX|Some Future App>"),
+    ).toBe(true);
   });
 
   test("does not fire on ordinary text", () => {
@@ -51,7 +76,9 @@ describe("server suffix detection (fixture is a real recorded read-back, C13)", 
   });
 
   test("regex is anchored at end, which is correct because the suffix genuinely is last", () => {
-    expect(SERVER_SUFFIX_RE.test("*Sent using* <@U1|X>\ntrailing words")).toBe(false);
+    expect(SERVER_SUFFIX_RE.test("*Sent using* <@U1|X>\ntrailing words")).toBe(
+      false,
+    );
   });
 });
 
@@ -69,19 +96,27 @@ describe("sigil detection ignores quoted context", () => {
   });
 
   test("@agent-ralph also matches", () => {
-    expect(findSigil("hey @agent-ralph look at this", SIGILS)).toBe("@agent-ralph");
+    expect(findSigil("hey @agent-ralph look at this", SIGILS)).toBe(
+      "@agent-ralph",
+    );
   });
 });
 
 describe("G1 is primary and never overridden", () => {
   test("drops our own post", () => {
-    const d = decide(msg(), ctx(() => true));
+    const d = decide(
+      msg(),
+      ctx(() => true),
+    );
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G1_outbox");
   });
 
   test("drops our own post EVEN WITH a sigil present", () => {
-    const d = decide(msg({ text: "!ralph do it" }), ctx(() => true));
+    const d = decide(
+      msg({ text: "!ralph do it" }),
+      ctx(() => true),
+    );
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G1_outbox");
   });
@@ -94,7 +129,12 @@ describe("the self-reply loop is impossible", () => {
       text: ":robot_face: *Ralph* · working\n> what changed in core this week?\n*Sent using* <@U0APPID0001|Slack MCP>",
       hasServerSuffix: true,
     });
-    expect(decide(ownOutput, ctx(() => true)).allow).toBe(false); // G1
+    expect(
+      decide(
+        ownOutput,
+        ctx(() => true),
+      ).allow,
+    ).toBe(false); // G1
     expect(decide(ownOutput, ctx(noOutbox)).allow).toBe(false); // G2b, with the ledger lost
   });
 
@@ -111,7 +151,14 @@ describe("the self-reply loop is impossible", () => {
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G2a_agent_prefix");
 
-    const noPrefix = decide({ ...ack, text: "· working\n> !ralph what changed?", hasServerSuffix: false }, blind);
+    const noPrefix = decide(
+      {
+        ...ack,
+        text: "· working\n> !ralph what changed?",
+        hasServerSuffix: false,
+      },
+      blind,
+    );
     expect(noPrefix.allow).toBe(false);
     if (!noPrefix.allow) expect(noPrefix.ruleId).toBe("G3_no_sigil");
   });
@@ -127,7 +174,10 @@ describe("a sigil overrides G2b but not G1", () => {
   });
 
   test("pasting the suffix string is not a permanent self-DoS", () => {
-    const pasted = msg({ text: "!ralph what does *Sent using* <@U1|X> mean?", hasServerSuffix: true });
+    const pasted = msg({
+      text: "!ralph what does *Sent using* <@U1|X> mean?",
+      hasServerSuffix: true,
+    });
     expect(decide(pasted, ctx(noOutbox)).allow).toBe(true);
   });
 });
@@ -171,7 +221,10 @@ describe("config validation refuses unsafe shapes", () => {
       CrewConfigSchema.parse({
         slack: { self_user_id: "U0TESTUSER1" },
         agents: { ralph: { name: "R", sigils: ["!ralph"], workspace: "/tmp" } },
-        policy: { ingress: { channels: ["general"], authors: ["U0TESTUSER1"] }, egress: { channels: ["D0TESTDM001"] } },
+        policy: {
+          ingress: { channels: ["general"], authors: ["U0TESTUSER1"] },
+          egress: { channels: ["D0TESTDM001"] },
+        },
       }),
     ).toThrow();
   });
@@ -180,7 +233,10 @@ describe("config validation refuses unsafe shapes", () => {
     const c = CrewConfigSchema.parse({
       slack: { self_user_id: "U0TESTUSER1" },
       agents: { ralph: { name: "R", sigils: ["!ralph"], workspace: "/tmp" } },
-      policy: { ingress: { channels: ["D0TESTDM001"], authors: ["U0TESTUSER1"] }, egress: { channels: ["D0TESTDM001"] } },
+      policy: {
+        ingress: { channels: ["D0TESTDM001"], authors: ["U0TESTUSER1"] },
+        egress: { channels: ["D0TESTDM001"] },
+      },
     });
     expect(c.enabled).toBe(false);
     expect(c.mode).toBe("dry_run");
@@ -201,7 +257,10 @@ describe("thread follow-ups: membership is the authorisation", () => {
   });
 
   test("the same message outside a thread is still dropped", () => {
-    const d = decide(msg({ text: "Tell me about France and its history." }), ctx());
+    const d = decide(
+      msg({ text: "Tell me about France and its history." }),
+      ctx(),
+    );
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G3_no_sigil");
   });
@@ -216,12 +275,18 @@ describe("thread follow-ups: membership is the authorisation", () => {
   test("G2b does NOT apply inside a thread: G1 owns that job there", () => {
     // The operator answering from Claude-in-Slack carries the same suffix Ralph does.
     // Dropping on it inside a thread silently eats real follow-ups, which happened live.
-    const viaMcp = msg({ text: "What number did you pick?", hasServerSuffix: true });
+    const viaMcp = msg({
+      text: "What number did you pick?",
+      hasServerSuffix: true,
+    });
     expect(decide(viaMcp, { ...ctx(), inActiveThread: true }).allow).toBe(true);
   });
 
   test("but G2b still applies to a ROOT message, so agent chatter does not wake Ralph", () => {
-    const chatter = msg({ text: "some other agent output", hasServerSuffix: true });
+    const chatter = msg({
+      text: "some other agent output",
+      hasServerSuffix: true,
+    });
     const d = decide(chatter, ctx());
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G2b_server_suffix");
@@ -229,7 +294,11 @@ describe("thread follow-ups: membership is the authorisation", () => {
 });
 
 describe("the age filter is a cold-start guard, not a conversation rule", () => {
-  const old = () => msg({ ts: String((NOW - 2 * 3_600_000) / 1000), text: "Tell me about France." });
+  const old = () =>
+    msg({
+      ts: String((NOW - 2 * 3_600_000) / 1000),
+      text: "Tell me about France.",
+    });
 
   test("a two-hour-old ROOT message is still dropped", () => {
     const d = decide(old(), ctx());
@@ -268,11 +337,18 @@ describe("routing picks the agent a message addresses", () => {
   });
 
   test("allSigils covers only enabled agents", () => {
-    expect(allSigils(agents)).toEqual(["!ralph", "@agent-ralph", "!scout", "@agent-scout"]);
+    expect(allSigils(agents)).toEqual([
+      "!ralph",
+      "@agent-ralph",
+      "!scout",
+      "@agent-scout",
+    ]);
   });
 
   test("an @agent-<name> mention routes, which is why G4 hops is reachable", () => {
-    expect(routeToAgent("hey @agent-scout take a look", agents)?.id).toBe("scout");
+    expect(routeToAgent("hey @agent-scout take a look", agents)?.id).toBe(
+      "scout",
+    );
   });
 });
 
@@ -283,8 +359,10 @@ describe("G2a agent identity prefix (fixtures are real recorded read-backs, C13)
    * returned `:robot_face: *Ralph*`. A guard tested only against the sent form would pass
    * its tests and never fire in production.
    */
-  const REAL_ACK = ":robot_face: *Ralph* · working\n> what changed in core\n`t-abc123`";
-  const REAL_RESULT = ":robot_face: *Ralph*\nHere is what I found.\n\n_`t-abc123` · $0.019_";
+  const REAL_ACK =
+    ":robot_face: *Ralph* · working\n> what changed in core\n`t-abc123`";
+  const REAL_RESULT =
+    ":robot_face: *Ralph*\nHere is what I found.\n\n_`t-abc123` · $0.019_";
 
   test("fires on the real read-back of an ack and of a result", () => {
     expect(agentPrefixMatch(REAL_ACK, config.agents)).toBe("ralph");
@@ -293,7 +371,9 @@ describe("G2a agent identity prefix (fixtures are real recorded read-backs, C13)
 
   test("fires on the SENT form too, so a same-tick read cannot slip through", () => {
     expect(agentPrefixMatch("🤖 **Ralph**\nbody", config.agents)).toBe("ralph");
-    expect(agentPrefixMatch(":robot_face: **Ralph** · working", config.agents)).toBe("ralph");
+    expect(
+      agentPrefixMatch(":robot_face: **Ralph** · working", config.agents),
+    ).toBe("ralph");
   });
 
   test("what the renderer emits is by construction what the guard catches", () => {
@@ -301,7 +381,9 @@ describe("G2a agent identity prefix (fixtures are real recorded read-backs, C13)
     // observed transform is `**` -> `*`. Both ends must be recognised.
     const sent = `${identityPrefix(config.agents.ralph!)}\nbody`;
     expect(agentPrefixMatch(sent, config.agents)).toBe("ralph");
-    expect(agentPrefixMatch(sent.replace(/\*\*/g, "*"), config.agents)).toBe("ralph");
+    expect(agentPrefixMatch(sent.replace(/\*\*/g, "*"), config.agents)).toBe(
+      "ralph",
+    );
   });
 
   test("does NOT fire on the operator's own messages", () => {
@@ -328,31 +410,40 @@ describe("G2a agent identity prefix (fixtures are real recorded read-backs, C13)
       slack: { self_user_id: "U0TESTUSER1" },
       agents: {
         ralph: { name: "Ralph", sigils: ["!ralph"], workspace: "/tmp/ws" },
-        scout: { enabled: false, name: "Scout", sigils: ["!scout"], workspace: "/tmp/ws" },
+        scout: {
+          enabled: false,
+          name: "Scout",
+          sigils: ["!scout"],
+          workspace: "/tmp/ws",
+        },
       },
       policy: {
         ingress: { channels: ["D0TESTDM001"], authors: ["U0TESTUSER1"] },
         egress: { channels: ["D0TESTDM001"] },
       },
     });
-    expect(agentPrefixMatch(":robot_face: *Scout*\nfindings", withScout.agents)).toBe("scout");
+    expect(
+      agentPrefixMatch(":robot_face: *Scout*\nfindings", withScout.agents),
+    ).toBe("scout");
   });
 
   test("THE GAP THIS CLOSES: an agent-authored message inside a thread we own", () => {
     // Before G2a this returned allow:true, because G2b is deliberately off inside a thread
     // and the age filter is relaxed there. That made a live thread the one place another
     // agent's output was treated as a follow-up.
-    const d = decide(
-      msg({ text: REAL_RESULT, hasServerSuffix: true }),
-      { ...ctx(), inActiveThread: true },
-    );
+    const d = decide(msg({ text: REAL_RESULT, hasServerSuffix: true }), {
+      ...ctx(),
+      inActiveThread: true,
+    });
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G2a_agent_prefix");
   });
 
   test("a sigil does NOT override it, because our own output legitimately contains sigils", () => {
     const d = decide(
-      msg({ text: ":robot_face: *Ralph*\nYour sigils are !ralph and @agent-ralph." }),
+      msg({
+        text: ":robot_face: *Ralph*\nYour sigils are !ralph and @agent-ralph.",
+      }),
       { ...ctx(), inActiveThread: true },
     );
     expect(d.allow).toBe(false);
@@ -360,7 +451,10 @@ describe("G2a agent identity prefix (fixtures are real recorded read-backs, C13)
   });
 
   test("G1 still takes precedence, so the primary guard keeps its rule id", () => {
-    const d = decide(msg({ text: REAL_RESULT }), { ...ctx(() => true), inActiveThread: true });
+    const d = decide(msg({ text: REAL_RESULT }), {
+      ...ctx(() => true),
+      inActiveThread: true,
+    });
     expect(d.allow).toBe(false);
     if (!d.allow) expect(d.ruleId).toBe("G1_outbox");
   });

@@ -27,7 +27,13 @@ export interface AssertionResult {
 
 export function runDeterministicAsserts(
   expect: DeterministicExpect | undefined,
-  out: { text: string; stdout: string; stderr: string; exitCode: number | null; error?: string },
+  out: {
+    text: string;
+    stdout: string;
+    stderr: string;
+    exitCode: number | null;
+    error?: string;
+  },
 ): AssertionResult[] {
   const results: AssertionResult[] = [];
   const requireRan = expect?.require_subject_ran !== false;
@@ -36,7 +42,9 @@ export function runDeterministicAsserts(
     results.push({
       label: "subject ran",
       passed: !out.error,
-      detail: out.error ? `subject could not be exercised: ${out.error}` : "subject produced output",
+      detail: out.error
+        ? `subject could not be exercised: ${out.error}`
+        : "subject produced output",
     });
     // Everything downstream would be misleading if the subject never ran.
     if (out.error) return results;

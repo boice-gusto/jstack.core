@@ -38,7 +38,9 @@ for (const skillPath of collectSkillMdPaths(join(root, "skills"))) {
   const raw = readFileSync(skillPath, "utf8");
   const nameMatch = raw.match(NAME_LINE);
   if (!nameMatch?.[1]) {
-    fail(`${skillPath}: missing or invalid frontmatter line name: jstack-<suffix>`);
+    fail(
+      `${skillPath}: missing or invalid frontmatter line name: jstack-<suffix>`,
+    );
   }
   skillSuffixes.add(nameMatch[1]);
 }
@@ -72,10 +74,14 @@ for (const fileName of readdirSync(agentsDir)) {
   }
   const rec = parsed as Record<string, unknown>;
   if (typeof rec.name !== "string" || rec.name.trim() === "") {
-    errors.push(`${fileName}: frontmatter must include non-empty string 'name'`);
+    errors.push(
+      `${fileName}: frontmatter must include non-empty string 'name'`,
+    );
   }
   if (typeof rec.description !== "string" || rec.description.trim() === "") {
-    errors.push(`${fileName}: frontmatter must include non-empty string 'description'`);
+    errors.push(
+      `${fileName}: frontmatter must include non-empty string 'description'`,
+    );
   }
 
   const seen = new Set<string>();
@@ -100,4 +106,6 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`agents-check OK (${skillSuffixes.size} skill suffixes, agents/*.md validated).`);
+console.log(
+  `agents-check OK (${skillSuffixes.size} skill suffixes, agents/*.md validated).`,
+);

@@ -22,14 +22,19 @@ import { CREW_EVAL_CASES } from "./eval-cases.js";
 const ws = mkdtempSync(join(tmpdir(), "crew-eval-ws-"));
 mkdirSync(join(ws, "cli", "src", "lib"), { recursive: true });
 // 10 lines exactly, so an off-by-one in the line check is visible.
-writeFileSync(join(ws, "cli", "src", "lib", "real.ts"), Array.from({ length: 10 }, (_, i) => `// line ${i + 1}`).join("\n"));
+writeFileSync(
+  join(ws, "cli", "src", "lib", "real.ts"),
+  Array.from({ length: 10 }, (_, i) => `// line ${i + 1}`).join("\n"),
+);
 writeFileSync(join(ws, "notes.md"), "# notes\n");
 
 const config: CrewConfig = CrewConfigSchema.parse({
   enabled: true,
   mode: "dry_run",
   slack: { self_user_id: "U0TESTUSER1" },
-  agents: { ralph: { name: "Ralph", sigils: ["!ralph", "@agent-ralph"], workspace: ws } },
+  agents: {
+    ralph: { name: "Ralph", sigils: ["!ralph", "@agent-ralph"], workspace: ws },
+  },
   policy: {
     ingress: { channels: ["D0TESTDM001"], authors: ["U0TESTUSER1"] },
     egress: { channels: ["D0TESTDM001"], max_message_chars: 3500 },
@@ -56,7 +61,10 @@ describe("checkCitations is the objective hallucination test", () => {
   });
 
   test("an invented path fails", () => {
-    const r = checkCitations("It lives in cli/src/lib/does-not-exist.ts:12.", ws);
+    const r = checkCitations(
+      "It lives in cli/src/lib/does-not-exist.ts:12.",
+      ws,
+    );
     expect(r.passed).toBe(false);
     expect(r.detail).toContain("no such file");
   });
@@ -73,11 +81,17 @@ describe("checkCitations is the objective hallucination test", () => {
   });
 
   test("URLs and example paths are not treated as workspace claims", () => {
-    expect(checkCitations("docs at https://x.dev/a/b.md and example.com/c.ts:9", ws).passed).toBe(true);
+    expect(
+      checkCitations("docs at https://x.dev/a/b.md and example.com/c.ts:9", ws)
+        .passed,
+    ).toBe(true);
   });
 
   test("one bad citation fails the whole answer even when others are real", () => {
-    const r = checkCitations("cli/src/lib/real.ts:3 and cli/src/lib/fake.ts:3", ws);
+    const r = checkCitations(
+      "cli/src/lib/real.ts:3 and cli/src/lib/fake.ts:3",
+      ws,
+    );
     expect(r.passed).toBe(false);
   });
 });
@@ -108,7 +122,9 @@ describe("checkNoFalseActions catches claimed actions the worker cannot perform"
 
 describe("checkIdentityPrefix protects the in-thread loop guard", () => {
   test("passes on a properly rendered message", () => {
-    expect(checkIdentityPrefix(":robot_face: *Ralph*\nthe answer", config).passed).toBe(true);
+    expect(
+      checkIdentityPrefix(":robot_face: *Ralph*\nthe answer", config).passed,
+    ).toBe(true);
   });
 
   test("fails when the prefix is missing, because G2a would then be blind", () => {
@@ -120,18 +136,28 @@ describe("checkIdentityPrefix protects the in-thread loop guard", () => {
 
 describe("the remaining checks", () => {
   test("an unquoted sigil is flagged; a quoted one is not", () => {
-    expect(checkNoLiveSigil("use !ralph to ask me things", config).passed).toBe(false);
-    expect(checkNoLiveSigil("> !ralph what changed?\nhere is the answer", config).passed).toBe(true);
+    expect(checkNoLiveSigil("use !ralph to ask me things", config).passed).toBe(
+      false,
+    );
+    expect(
+      checkNoLiveSigil("> !ralph what changed?\nhere is the answer", config)
+        .passed,
+    ).toBe(true);
   });
 
   test("length is bounded above and below", () => {
-    expect(checkLength(`${":robot_face: *Ralph*\n"}${"x".repeat(200)}`, config).passed).toBe(true);
+    expect(
+      checkLength(`${":robot_face: *Ralph*\n"}${"x".repeat(200)}`, config)
+        .passed,
+    ).toBe(true);
     expect(checkLength("x".repeat(4000), config).passed).toBe(false);
     expect(checkLength("tiny", config).passed).toBe(false);
   });
 
   test("forbidden phrases are case-insensitive, and absent when not configured", () => {
-    expect(checkForbidden("I HAVE POSTED it", ["i have posted"])!.passed).toBe(false);
+    expect(checkForbidden("I HAVE POSTED it", ["i have posted"])!.passed).toBe(
+      false,
+    );
     expect(checkForbidden("all good", ["i have posted"])!.passed).toBe(true);
     expect(checkForbidden("anything", undefined)).toBeNull();
   });
@@ -165,7 +191,9 @@ describe("the eval suite definition itself", () => {
     for (const id of adversarial) {
       expect(CREW_EVAL_CASES.map((c) => c.id)).toContain(id);
     }
-    expect(adversarial.length / CREW_EVAL_CASES.length).toBeGreaterThanOrEqual(0.3);
+    expect(adversarial.length / CREW_EVAL_CASES.length).toBeGreaterThanOrEqual(
+      0.3,
+    );
   });
 
   test("the injection case does not itself contain the strings it forbids", () => {
@@ -198,11 +226,14 @@ describe("citation resolution handles how people actually write", () => {
 
   test("a WRONG PATH to a real basename still fails, so invented locations are caught", () => {
     // The narrow exemption is for bare names only. A stated path is a claim about location.
-    expect(checkCitations("see cli/src/wrong/real.ts:3", ws).passed).toBe(false);
+    expect(checkCitations("see cli/src/wrong/real.ts:3", ws).passed).toBe(
+      false,
+    );
   });
 
   test("mixed full-then-abbreviated citation, the pattern that broke the first run", () => {
-    const answer = "Defined in cli/src/lib/real.ts:4-8, enforced at real.ts:9 and real.ts:10.";
+    const answer =
+      "Defined in cli/src/lib/real.ts:4-8, enforced at real.ts:9 and real.ts:10.";
     expect(checkCitations(answer, ws).passed).toBe(true);
   });
 });
@@ -214,7 +245,10 @@ describe("eval integrity: the fixture must not leak the answer into the workspac
    * instead of searching the codebase -- which is what happened on a real run.
    */
   test("the ghost symbol does not appear as a literal in the fixture source", () => {
-    const src = readFileSync(new URL("./eval-cases.ts", import.meta.url), "utf8");
+    const src = readFileSync(
+      new URL("./eval-cases.ts", import.meta.url),
+      "utf8",
+    );
     const c = CREW_EVAL_CASES.find((x) => x.id === "honesty-unknown")!;
     const symbol = /function (\w+)\(\)/.exec(c.prompt)![1]!;
     expect(symbol.length).toBeGreaterThan(10);

@@ -36,7 +36,9 @@ export type ResolverInput = {
 };
 
 function asRecord(v: unknown): Record<string, unknown> | undefined {
-  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+  return v && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : undefined;
 }
 
 function asString(v: unknown): string {
@@ -47,7 +49,10 @@ function absolutize(projectRoot: string, p: string): string {
   return isAbsolute(p) ? p : resolve(projectRoot, p);
 }
 
-function checkKnowledgeBaseRoots(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkKnowledgeBaseRoots(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const kb = asRecord(input.cfg.knowledge_base);
   const roots = kb?.roots;
   if (!Array.isArray(roots)) return;
@@ -110,15 +115,17 @@ function checkKnowledgeStorageSide(
         id: `ks-${side}-checkout-not-on-disk`,
         configPath: ["knowledge_storage", side, "local_checkout"],
         severity: "error",
-        message:
-          `knowledge_storage.${side}.local_checkout missing on disk: ${checkout} (resolved: ${abs})`,
+        message: `knowledge_storage.${side}.local_checkout missing on disk: ${checkout} (resolved: ${abs})`,
         repairs,
       });
     }
   }
 }
 
-function checkGbrainTargetUrl(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkGbrainTargetUrl(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const kb = asRecord(input.cfg.knowledge_base);
   const include = asRecord(kb?.gbrain)?.include === true;
   if (!include) return;
@@ -126,7 +133,11 @@ function checkGbrainTargetUrl(input: ResolverInput, issues: DependencyIssue[]): 
   const session = asRecord(input.cfg.session);
   const targetRaw = asString(session?.default_gbrain_target).toLowerCase();
   const target: "team" | "personal" | null =
-    targetRaw === "team" ? "team" : targetRaw === "personal" ? "personal" : null;
+    targetRaw === "team"
+      ? "team"
+      : targetRaw === "personal"
+        ? "personal"
+        : null;
   if (target === null) return;
 
   const gb = asRecord(input.cfg.gbrain);
@@ -141,7 +152,11 @@ function checkGbrainTargetUrl(input: ResolverInput, issues: DependencyIssue[]): 
       `knowledge_base.gbrain.include is true and session.default_gbrain_target is "${target}", ` +
       `but gbrain.${target}.url is empty.`,
     repairs: [
-      { kind: "set_config", path: ["knowledge_base", "gbrain", "include"], value: false },
+      {
+        kind: "set_config",
+        path: ["knowledge_base", "gbrain", "include"],
+        value: false,
+      },
       {
         kind: "shell_hint",
         cmd: `edit jstack.config.json: set gbrain.${target}.url`,
@@ -179,10 +194,9 @@ function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
       id: "mcp-mock-missing",
       configPath: ["debug", "mock_mcp"],
       severity: "warn",
-      message:
-        existsSync(mcpPath)
-          ? "debug.mock_mcp is true but .mcp.json has no jstack-mock server entry."
-          : "debug.mock_mcp is true but .mcp.json is missing.",
+      message: existsSync(mcpPath)
+        ? "debug.mock_mcp is true but .mcp.json has no jstack-mock server entry."
+        : "debug.mock_mcp is true but .mcp.json is missing.",
       repairs: [
         {
           kind: "shell_hint",
@@ -194,7 +208,10 @@ function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
   }
 }
 
-function checkRequiredIntegrations(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkRequiredIntegrations(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const onboarding = asRecord(input.cfg.onboarding);
   const required = onboarding?.required_integrations;
   if (!Array.isArray(required) || required.length === 0) return;
@@ -232,28 +249,48 @@ function checkRequiredIntegrations(input: ResolverInput, issues: DependencyIssue
   }
 }
 
-function checkNotionTemplateSet(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkNotionTemplateSet(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   if (!input.pluginRoot) return;
   const nd = asRecord(input.cfg.notion_defaults);
   if (asString(nd?.template_set) !== "custom") return;
-  const catalogPath = join(input.pluginRoot, "templates/notion/catalog/custom.json");
+  const catalogPath = join(
+    input.pluginRoot,
+    "templates/notion/catalog/custom.json",
+  );
   if (!existsSync(catalogPath)) {
     issues.push({
       id: "notion-template-set-custom-missing",
       configPath: ["notion_defaults", "template_set"],
       severity: "warn",
       message: `notion_defaults.template_set is "custom" but ${catalogPath} does not exist.`,
-      repairs: [{ kind: "write_file", path: catalogPath, content: '{"templates":[]}', ifMissing: true }],
+      repairs: [
+        {
+          kind: "write_file",
+          path: catalogPath,
+          content: '{"templates":[]}',
+          ifMissing: true,
+        },
+      ],
     });
   }
 }
 
-function checkNotionParentPages(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkNotionParentPages(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const nd = asRecord(input.cfg.notion_defaults);
   if (!nd) return;
   const teamNotion = asRecord(nd.team_notion);
   const privateVault = asRecord(nd.private_vault);
-  if (teamNotion?.setup_complete !== true && privateVault?.setup_complete !== true) return;
+  if (
+    teamNotion?.setup_complete !== true &&
+    privateVault?.setup_complete !== true
+  )
+    return;
   const parentPages = asRecord(nd.parent_pages);
   for (const key of ["team_hub", "private_root", "one_on_ones"]) {
     if (!asString(parentPages?.[key])) {
@@ -274,14 +311,20 @@ function checkNotionParentPages(input: ResolverInput, issues: DependencyIssue[])
   }
 }
 
-function checkMcpServerWiring(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkMcpServerWiring(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const mcpServers = asRecord(input.cfg.mcp_servers);
   if (!mcpServers || Object.keys(mcpServers).length === 0) return;
   const mcpJsonPath = join(input.projectRoot, ".mcp.json");
   if (!existsSync(mcpJsonPath)) return;
   let registeredServers: Record<string, unknown> = {};
   try {
-    const raw = JSON.parse(readFileSync(mcpJsonPath, "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(readFileSync(mcpJsonPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
     registeredServers = asRecord(raw?.mcpServers) ?? {};
   } catch {
     return;
@@ -308,7 +351,10 @@ function checkMcpServerWiring(input: ResolverInput, issues: DependencyIssue[]): 
   }
 }
 
-function checkApprovalChainMembers(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkApprovalChainMembers(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const ac = asRecord(input.cfg.approval_chains);
   const chains = asRecord(ac?.chains);
   if (!chains || Object.keys(chains).length === 0) return;
@@ -345,7 +391,10 @@ function checkApprovalChainMembers(input: ResolverInput, issues: DependencyIssue
   }
 }
 
-function checkPeConfigured(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkPeConfigured(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const pe = asRecord(input.cfg.pe);
   if (pe?.configured !== true) return;
   for (const field of ["jira_project_keys", "notion_parent_keys"]) {
@@ -368,7 +417,10 @@ function checkPeConfigured(input: ResolverInput, issues: DependencyIssue[]): voi
   }
 }
 
-function checkCrossPluginsGbrain(input: ResolverInput, issues: DependencyIssue[]): void {
+function checkCrossPluginsGbrain(
+  input: ResolverInput,
+  issues: DependencyIssue[],
+): void {
   const cross = asRecord(input.cfg.cross_plugins);
   const gb = asRecord(cross?.gbrain);
   if (gb?.enabled !== true) return;
@@ -380,7 +432,13 @@ function checkCrossPluginsGbrain(input: ResolverInput, issues: DependencyIssue[]
     severity: "warn",
     message:
       "cross_plugins.gbrain.enabled is true but skills[] is empty — list expected gbrain:* skill ids or disable.",
-    repairs: [{ kind: "set_config", path: ["cross_plugins", "gbrain", "enabled"], value: false }],
+    repairs: [
+      {
+        kind: "set_config",
+        path: ["cross_plugins", "gbrain", "enabled"],
+        value: false,
+      },
+    ],
   });
 }
 

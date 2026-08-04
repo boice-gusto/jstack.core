@@ -41,9 +41,18 @@ const generated = zodToJsonSchema(JstackConfigSchema, {
 // Unwrap to keep the file a plain schema for the config object, matching what it has always been.
 const body =
   (generated as Record<string, unknown>).definitions &&
-  ((generated as Record<string, unknown>).definitions as Record<string, unknown>).JstackConfig
-    ? (((generated as Record<string, unknown>).definitions as Record<string, unknown>)
-        .JstackConfig as Record<string, unknown>)
+  (
+    (generated as Record<string, unknown>).definitions as Record<
+      string,
+      unknown
+    >
+  ).JstackConfig
+    ? ((
+        (generated as Record<string, unknown>).definitions as Record<
+          string,
+          unknown
+        >
+      ).JstackConfig as Record<string, unknown>)
     : (generated as Record<string, unknown>);
 
 const schema = {
@@ -62,8 +71,12 @@ const serialized = JSON.stringify(schema, null, 2) + "\n";
 
 if (!checkOnly) {
   writeFileSync(target, serialized, "utf8");
-  const props = Object.keys((schema as { properties?: object }).properties ?? {}).length;
-  console.log(`Wrote config/schema.json (${props} sections, ${serialized.length} bytes)`);
+  const props = Object.keys(
+    (schema as { properties?: object }).properties ?? {},
+  ).length;
+  console.log(
+    `Wrote config/schema.json (${props} sections, ${serialized.length} bytes)`,
+  );
   process.exit(0);
 }
 
@@ -75,14 +88,20 @@ if (!existsSync(target)) {
 
 const committed = readFileSync(target, "utf8");
 if (committed === serialized) {
-  const props = Object.keys((schema as { properties?: object }).properties ?? {}).length;
-  console.log(`OK config/schema.json matches the Zod contract (${props} sections)`);
+  const props = Object.keys(
+    (schema as { properties?: object }).properties ?? {},
+  ).length;
+  console.log(
+    `OK config/schema.json matches the Zod contract (${props} sections)`,
+  );
   process.exit(0);
 }
 
 // Report WHICH sections differ. "files differ" sends the reader to a 1,000-line diff; naming the
 // section usually identifies the edit immediately.
-console.error("config/schema.json is out of date with cli/src/types/config.ts.\n");
+console.error(
+  "config/schema.json is out of date with cli/src/types/config.ts.\n",
+);
 try {
   const a = JSON.parse(committed) as { properties?: Record<string, unknown> };
   const b = schema as unknown as { properties?: Record<string, unknown> };
@@ -94,8 +113,10 @@ try {
     (k) => k in ap && JSON.stringify(ap[k]) !== JSON.stringify(bp[k]),
   );
   if (added.length) console.error(`  sections to add:     ${added.join(", ")}`);
-  if (removed.length) console.error(`  sections to remove:  ${removed.join(", ")}`);
-  if (changed.length) console.error(`  sections changed:    ${changed.join(", ")}`);
+  if (removed.length)
+    console.error(`  sections to remove:  ${removed.join(", ")}`);
+  if (changed.length)
+    console.error(`  sections changed:    ${changed.join(", ")}`);
   if (!added.length && !removed.length && !changed.length) {
     console.error("  (only formatting or top-level metadata differs)");
   }

@@ -57,7 +57,9 @@ export function stripYamlFrontmatter(raw) {
 export async function markdownToSafeFragment(markdown) {
   await ensureMarkdownLibs();
   if (!markedApi || !purifyToFragment) {
-    throw new Error("Markdown libraries failed to load (offline or blocked CDN).");
+    throw new Error(
+      "Markdown libraries failed to load (offline or blocked CDN).",
+    );
   }
   const rawHtml = markedApi.parse(markdown);
   const frag = purifyToFragment(rawHtml, { RETURN_DOM_FRAGMENT: true });

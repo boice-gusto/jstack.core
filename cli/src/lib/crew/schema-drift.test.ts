@@ -23,8 +23,14 @@ function shapeKeys(schema: unknown): string[] {
   let s: any = schema;
   for (let i = 0; i < 10 && s; i++) {
     if (s._def?.shape) return Object.keys(s._def.shape()).sort();
-    if (s._def?.innerType) { s = s._def.innerType; continue; }
-    if (s._def?.schema) { s = s._def.schema; continue; }
+    if (s._def?.innerType) {
+      s = s._def.innerType;
+      continue;
+    }
+    if (s._def?.schema) {
+      s = s._def.schema;
+      continue;
+    }
     break;
   }
   return [];
@@ -35,8 +41,14 @@ function unwrap(schema: unknown): any {
   let s: any = schema;
   for (let i = 0; i < 10 && s; i++) {
     if (s._def?.shape || s._def?.valueType) return s;
-    if (s._def?.innerType) { s = s._def.innerType; continue; }
-    if (s._def?.schema) { s = s._def.schema; continue; }
+    if (s._def?.innerType) {
+      s = s._def.innerType;
+      continue;
+    }
+    if (s._def?.schema) {
+      s = s._def.schema;
+      continue;
+    }
     break;
   }
   return s;
@@ -47,8 +59,14 @@ function nested(schema: unknown, path: string[]): unknown {
   for (const key of path) {
     for (let i = 0; i < 10 && s; i++) {
       if (s._def?.shape) break;
-      if (s._def?.innerType) { s = s._def.innerType; continue; }
-      if (s._def?.schema) { s = s._def.schema; continue; }
+      if (s._def?.innerType) {
+        s = s._def.innerType;
+        continue;
+      }
+      if (s._def?.schema) {
+        s = s._def.schema;
+        continue;
+      }
       break;
     }
     s = s?._def?.shape?.()[key];
@@ -82,7 +100,9 @@ describe("nested sections agree", () => {
 
   for (const [label, path] of cases) {
     test(label, () => {
-      expect(shapeKeys(nested(documented, path))).toEqual(shapeKeys(nested(CrewConfigSchema, path)));
+      expect(shapeKeys(nested(documented, path))).toEqual(
+        shapeKeys(nested(CrewConfigSchema, path)),
+      );
     });
   }
 });
@@ -90,7 +110,8 @@ describe("nested sections agree", () => {
 describe("the agent shape agrees", () => {
   test("documented agent fields match AgentSchema", () => {
     // agents is a record, so compare the value schema declared in each file.
-    const documentedAgent = unwrap(nested(documented, ["agents"]))?._def?.valueType;
+    const documentedAgent = unwrap(nested(documented, ["agents"]))?._def
+      ?.valueType;
     expect(shapeKeys(documentedAgent)).toEqual(shapeKeys(AgentSchema));
   });
 });
@@ -112,7 +133,9 @@ describe("the enforced schema stays strict and safe by default", () => {
   });
 
   test("an unknown key is rejected, so a typo cannot silently disable a control", () => {
-    expect(() => CrewConfigSchema.parse({ ...minimal, requre_sigil: true })).toThrow();
+    expect(() =>
+      CrewConfigSchema.parse({ ...minimal, requre_sigil: true }),
+    ).toThrow();
   });
 
   test("at least one agent is required", () => {
@@ -120,6 +143,8 @@ describe("the enforced schema stays strict and safe by default", () => {
   });
 
   test("the documented schema accepts an unknown key, so an older CLI tolerates a newer config", () => {
-    expect(() => (documented as any).parse({ some_future_key: true })).not.toThrow();
+    expect(() =>
+      (documented as any).parse({ some_future_key: true }),
+    ).not.toThrow();
   });
 });

@@ -1,7 +1,11 @@
 import { existsSync, readdirSync, readFileSync, type Dirent } from "node:fs";
 import { join } from "node:path";
 import yaml from "js-yaml";
-import type { EvalAssert, EvalCase, SkillEvalConfigFile } from "./eval-config.js";
+import type {
+  EvalAssert,
+  EvalCase,
+  SkillEvalConfigFile,
+} from "./eval-config.js";
 
 function safeYamlLoad(text: string): unknown {
   try {
@@ -63,15 +67,26 @@ export function parseAssert(raw: unknown): EvalAssert | undefined {
     (response_match_regex && response_match_regex.length > 0);
   if (!has) return undefined;
   return {
-    response_contains: response_contains?.length ? response_contains : undefined,
-    response_contains_any: response_contains_any?.length ? response_contains_any : undefined,
-    response_not_contains: response_not_contains?.length ? response_not_contains : undefined,
+    response_contains: response_contains?.length
+      ? response_contains
+      : undefined,
+    response_contains_any: response_contains_any?.length
+      ? response_contains_any
+      : undefined,
+    response_not_contains: response_not_contains?.length
+      ? response_not_contains
+      : undefined,
     response_min_length,
-    response_match_regex: response_match_regex?.length ? response_match_regex : undefined,
+    response_match_regex: response_match_regex?.length
+      ? response_match_regex
+      : undefined,
   };
 }
 
-function normalizeRubricToCriteria(raw: Record<string, unknown>, caseObj: Record<string, unknown>): void {
+function normalizeRubricToCriteria(
+  raw: Record<string, unknown>,
+  caseObj: Record<string, unknown>,
+): void {
   if (caseObj.criteria != null || raw.grading == null) return;
   const grading = raw.grading as Record<string, unknown>;
   const rubric = (grading.rubric as unknown[]) ?? [];
@@ -94,10 +109,15 @@ function normalizeRubricToCriteria(raw: Record<string, unknown>, caseObj: Record
   if (typeof pt === "number") caseObj.case_pass_threshold = pt;
 }
 
-export function discoverEvalCases(skillPath: string, defaultTimeout: number): EvalCase[] {
+export function discoverEvalCases(
+  skillPath: string,
+  defaultTimeout: number,
+): EvalCase[] {
   const evalsDir = join(skillPath, "evals");
   if (!existsSync(evalsDir)) return [];
-  const names = readdirSync(evalsDir).filter((n) => n.endsWith(".yaml") || n.endsWith(".yml"));
+  const names = readdirSync(evalsDir).filter(
+    (n) => n.endsWith(".yaml") || n.endsWith(".yml"),
+  );
   names.sort();
   const cases: EvalCase[] = [];
   for (const n of names) {
@@ -116,7 +136,10 @@ export function discoverEvalCases(skillPath: string, defaultTimeout: number): Ev
     const o = raw as Record<string, unknown>;
     const caseObj: Record<string, unknown> = { ...o };
     normalizeRubricToCriteria(o, caseObj);
-    const name = typeof caseObj.name === "string" ? caseObj.name : n.replace(/\.ya?ml$/i, "");
+    const name =
+      typeof caseObj.name === "string"
+        ? caseObj.name
+        : n.replace(/\.ya?ml$/i, "");
     const prompt = caseObj.prompt;
     const criteria = caseObj.criteria;
     const filesRaw = caseObj.files;
@@ -133,9 +156,12 @@ export function discoverEvalCases(skillPath: string, defaultTimeout: number): Ev
       }
     }
     const expect_skill = caseObj.expect_skill !== false;
-    const timeout = typeof caseObj.timeout === "number" ? caseObj.timeout : defaultTimeout;
+    const timeout =
+      typeof caseObj.timeout === "number" ? caseObj.timeout : defaultTimeout;
     const case_pass_threshold =
-      typeof caseObj.case_pass_threshold === "number" ? caseObj.case_pass_threshold : undefined;
+      typeof caseObj.case_pass_threshold === "number"
+        ? caseObj.case_pass_threshold
+        : undefined;
     const assert = parseAssert(caseObj.assert);
     const strict_grader = caseObj.strict_grader === true;
 
@@ -164,14 +190,17 @@ export function validateCases(cases: EvalCase[]): string[] {
       errors.push(`${prefix}: 'criteria' must be a non-empty list`);
     } else {
       c.criteria.forEach((crit, i) => {
-        if (typeof crit !== "string") errors.push(`${prefix}: criteria[${i}] must be a string`);
+        if (typeof crit !== "string")
+          errors.push(`${prefix}: criteria[${i}] must be a string`);
       });
     }
   }
   return errors;
 }
 
-export function loadSkillEvalConfig(skillPath: string): SkillEvalConfigFile | undefined {
+export function loadSkillEvalConfig(
+  skillPath: string,
+): SkillEvalConfigFile | undefined {
   for (const n of ["eval-config.yaml", "eval-config.yml"]) {
     const p = join(skillPath, "evals", n);
     if (!existsSync(p)) continue;
@@ -201,7 +230,9 @@ export function discoverAllSkillRelativePaths(skillsRoot: string): string[] {
     }
   }
   if (!existsSync(skillsRoot)) return [];
-  for (const ent of readdirSync(skillsRoot, { withFileTypes: true }) as Dirent[]) {
+  for (const ent of readdirSync(skillsRoot, {
+    withFileTypes: true,
+  }) as Dirent[]) {
     const top = String(ent.name);
     if (!ent.isDirectory() || top.startsWith(".") || top === "_core") continue;
     walkDir(join(skillsRoot, top), top);

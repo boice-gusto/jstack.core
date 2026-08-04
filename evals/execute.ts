@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, isAbsolute, join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -23,7 +29,10 @@ function sleepSync(ms: number) {
   while (Date.now() < end) {}
 }
 
-function parseStreamJson(stdout: string, skillNameHint: string): {
+function parseStreamJson(
+  stdout: string,
+  skillNameHint: string,
+): {
   response_text: string;
   total_tokens: number;
   cost_usd: number;
@@ -86,7 +95,12 @@ function runClaude(
   workDir: string,
   timeoutSec: number,
 ): { stdout: string; stderr: string; status: number | null; error?: Error } {
-  let last: { stdout: string; stderr: string; status: number | null; error?: Error } = {
+  let last: {
+    stdout: string;
+    stderr: string;
+    status: number | null;
+    error?: Error;
+  } = {
     stdout: "",
     stderr: "",
     status: 1,
@@ -94,7 +108,8 @@ function runClaude(
   for (let attempt = 1; attempt <= env.maxRetries; attempt++) {
     const childEnv: NodeJS.ProcessEnv = {
       ...process.env,
-      ANTHROPIC_API_KEY: env.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
+      ANTHROPIC_API_KEY:
+        env.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
     };
     const scenario = env.mcpScenario?.trim();
     if (scenario !== undefined && scenario.length > 0) {
@@ -108,7 +123,12 @@ function runClaude(
       timeout: timeoutSec * 1000,
     });
     if (r.error) {
-      last = { stdout: r.stdout ?? "", stderr: r.stderr ?? "", status: null, error: r.error };
+      last = {
+        stdout: r.stdout ?? "",
+        stderr: r.stderr ?? "",
+        status: null,
+        error: r.error,
+      };
       if (attempt < env.maxRetries) {
         sleepSync(env.retryDelaySec * 1000 * attempt);
         continue;
@@ -136,7 +156,9 @@ export function executeCase(
   workspaceCaseDir: string,
 ): ExecuteResult {
   const start = Date.now();
-  const workDir = mkdtempSync(join(tmpdir(), `jstack-eval-${caseDef.name.replace(/\s+/g, "-")}-`));
+  const workDir = mkdtempSync(
+    join(tmpdir(), `jstack-eval-${caseDef.name.replace(/\s+/g, "-")}-`),
+  );
   try {
     for (const f of caseDef.files) {
       // `f.path` comes from eval-case YAML (`files:` entries) — trusted-author input
@@ -146,7 +168,9 @@ export function executeCase(
       const fp = join(workDir, f.path);
       const relFromWorkDir = relative(workDir, fp);
       if (relFromWorkDir.startsWith("..") || isAbsolute(relFromWorkDir)) {
-        throw new Error(`eval case "${caseDef.name}": files[].path escapes the case workspace: ${f.path}`);
+        throw new Error(
+          `eval case "${caseDef.name}": files[].path escapes the case workspace: ${f.path}`,
+        );
       }
       mkdirSync(dirname(fp), { recursive: true });
       writeFileSync(fp, f.content ?? "", "utf8");
@@ -199,11 +223,18 @@ export function executeCase(
     }
 
     const parsed = parseStreamJson(r.stdout, skillRelPath);
-    writeFileSync(join(workspaceCaseDir, "response.md"), parsed.response_text, "utf8");
+    writeFileSync(
+      join(workspaceCaseDir, "response.md"),
+      parsed.response_text,
+      "utf8",
+    );
     writeFileSync(
       join(workspaceCaseDir, "timing.json"),
       JSON.stringify(
-        { total_tokens: parsed.total_tokens, duration_seconds: Math.round(elapsed * 10) / 10 },
+        {
+          total_tokens: parsed.total_tokens,
+          duration_seconds: Math.round(elapsed * 10) / 10,
+        },
         null,
         2,
       ),

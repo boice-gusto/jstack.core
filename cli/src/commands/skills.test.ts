@@ -38,7 +38,11 @@ afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe("discovery", () => {
   test("finds a nested SKILL.md and reports its relative path", () => {
-    skill(root, "jira/create", "---\nname: jstack-jira-create\ndescription: Make a ticket.\n---\nbody\n");
+    skill(
+      root,
+      "jira/create",
+      "---\nname: jstack-jira-create\ndescription: Make a ticket.\n---\nbody\n",
+    );
     const found = collectSkills(root);
     expect(found).toHaveLength(1);
     expect(found[0].name).toBe("jstack-jira-create");
@@ -65,7 +69,11 @@ describe("discovery", () => {
 
 describe("frontmatter parsing", () => {
   test("strips surrounding quotes from name and description", () => {
-    skill(root, "s", `---\nname: "quoted-name"\ndescription: 'single quoted'\n---\n`);
+    skill(
+      root,
+      "s",
+      `---\nname: "quoted-name"\ndescription: 'single quoted'\n---\n`,
+    );
     const [e] = collectSkills(root);
     expect(e.name).toBe("quoted-name");
     expect(e.description).toBe("single quoted");
@@ -82,7 +90,11 @@ describe("frontmatter parsing", () => {
   });
 
   test("joins a `|` literal description into one line", () => {
-    skill(root, "s", "---\nname: literal\ndescription: |\n  line one\n  line two\n---\n");
+    skill(
+      root,
+      "s",
+      "---\nname: literal\ndescription: |\n  line one\n  line two\n---\n",
+    );
     const [e] = collectSkills(root);
     expect(e.description).toBe("line one line two");
   });
@@ -140,7 +152,11 @@ describe("overlay merging", () => {
     skill(root, "dup", "---\nname: same-name\ndescription: from core\n---\n");
     const overlay = mkdtempSync(join(tmpdir(), "jstack-overlay-"));
     try {
-      skill(overlay, "dup", "---\nname: same-name\ndescription: from overlay\n---\n");
+      skill(
+        overlay,
+        "dup",
+        "---\nname: same-name\ndescription: from overlay\n---\n",
+      );
       const found = collectSkills(root, overlay);
       // Documented behavior: collectSkills does NOT dedupe. Callers see both, distinguished by rel.
       expect(found).toHaveLength(2);

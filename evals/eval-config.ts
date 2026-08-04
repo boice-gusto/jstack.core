@@ -88,7 +88,10 @@ export interface GlobalEvalEnv {
  * also falls back, since a `NaN` threshold makes every `>=`/`>` comparison against it
  * evaluate to `false` — a silent, surprising way to disable a gate.
  */
-export function numberFromEnv(raw: string | undefined, fallback: number): number {
+export function numberFromEnv(
+  raw: string | undefined,
+  fallback: number,
+): number {
   if (raw === undefined) return fallback;
   const trimmed = raw.trim();
   if (trimmed === "") return fallback;
@@ -103,8 +106,12 @@ export function numberFromEnv(raw: string | undefined, fallback: number): number
  * still looking "covered" for the eval-coverage gate. Falls back to `fallback` for
  * any non-finite or non-positive value; otherwise passes `raw` through unchanged.
  */
-export function sanitizePassThreshold(raw: number | undefined, fallback: number): number {
-  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0) return fallback;
+export function sanitizePassThreshold(
+  raw: number | undefined,
+  fallback: number,
+): number {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw <= 0)
+    return fallback;
   return raw;
 }
 
@@ -146,7 +153,8 @@ export function loadGlobalEvalEnv(pluginRoot: string): GlobalEvalEnv {
   );
   const claudeBin = process.env.JSTACK_EVAL_CLAUDE_BIN ?? "claude";
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  const workspaceDir = process.env.JSTACK_EVAL_WORKSPACE ?? `${pluginRoot}/evals/.workspace`;
+  const workspaceDir =
+    process.env.JSTACK_EVAL_WORKSPACE ?? `${pluginRoot}/evals/.workspace`;
 
   const fromEnv = process.env.JSTACK_MCP_SCENARIO?.trim();
   const fromCfg = readOptionalDebugMockScenario(pluginRoot);
@@ -178,7 +186,8 @@ export function mergeGateRule(
     skill: skillId,
     max_tokens: o.max_tokens ?? b.max_tokens,
     max_latency_ms: o.max_latency_ms ?? b.max_latency_ms,
-    required_output_fields: o.required_output_fields ?? b.required_output_fields,
+    required_output_fields:
+      o.required_output_fields ?? b.required_output_fields,
     forbidden_patterns: o.forbidden_patterns ?? b.forbidden_patterns,
   };
 }

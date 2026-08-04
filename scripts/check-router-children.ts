@@ -28,21 +28,28 @@ import { fileURLToPath } from "node:url";
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
 // mutating the real repo, which is how earlier verification work destroyed uncommitted files.
-const root = process.env.JSTACK_CHECK_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), "..");
+const root =
+  process.env.JSTACK_CHECK_ROOT ??
+  join(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(root, "skills");
-const genSrc = readFileSync(join(root, "scripts", "apply_detailed_skills.py"), "utf8");
+const genSrc = readFileSync(
+  join(root, "scripts", "apply_detailed_skills.py"),
+  "utf8",
+);
 
 /** Parse the ORCHESTRATORS set literal out of the generator. */
 function parseOrchestrators(): Set<string> {
   const m = genSrc.match(/ORCHESTRATORS\s*=\s*\{([\s\S]*?)\}/);
-  if (!m) throw new Error("could not find ORCHESTRATORS in apply_detailed_skills.py");
+  if (!m)
+    throw new Error("could not find ORCHESTRATORS in apply_detailed_skills.py");
   return new Set([...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]));
 }
 
 /** Parse ORCH_CHILDREN into router -> raw comma string. */
 function parseOrchChildren(): Map<string, string> {
   const m = genSrc.match(/ORCH_CHILDREN\s*=\s*\{([\s\S]*?)\n\}/);
-  if (!m) throw new Error("could not find ORCH_CHILDREN in apply_detailed_skills.py");
+  if (!m)
+    throw new Error("could not find ORCH_CHILDREN in apply_detailed_skills.py");
   const out = new Map<string, string>();
   for (const line of m[1].split("\n")) {
     const kv = line.match(/^\s*"([^"]+)":\s*"([^"]*)"/);
@@ -71,7 +78,9 @@ for (const [router, listed] of children) {
   checked++;
   const disk = diskChildren(router);
   if (disk.length === 0) {
-    errors.push(`ORCH_CHILDREN lists "${router}" but skills/${router}/ has no child skills on disk.`);
+    errors.push(
+      `ORCH_CHILDREN lists "${router}" but skills/${router}/ has no child skills on disk.`,
+    );
     continue;
   }
   // Substring match, because entries carry annotations like "store-note (team / personal)".
@@ -93,7 +102,9 @@ for (const [router, listed] of children) {
     );
   }
   if (!orchestrators.has(router)) {
-    errors.push(`"${router}" is in ORCH_CHILDREN but not in ORCHESTRATORS, so its index is never emitted.`);
+    errors.push(
+      `"${router}" is in ORCH_CHILDREN but not in ORCHESTRATORS, so its index is never emitted.`,
+    );
   }
 }
 
@@ -104,7 +115,8 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   if (!existsSync(md)) continue;
   const raw = readFileSync(md, "utf8");
   const desc = raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
-  const claimsRouting = /^route\b|\brequests? to the (right|most specific)\b/i.test(desc);
+  const claimsRouting =
+    /^route\b|\brequests? to the (right|most specific)\b/i.test(desc);
   if (!claimsRouting) continue;
   if (diskChildren(entry.name).length === 0) {
     errors.push(
@@ -123,4 +135,6 @@ if (errors.length > 0) {
   for (const e of errors) console.error(`  ${e}`);
   process.exit(1);
 }
-console.log(`check-router-children OK (${checked} router(s); child lists match disk)`);
+console.log(
+  `check-router-children OK (${checked} router(s); child lists match disk)`,
+);

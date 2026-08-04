@@ -39,7 +39,11 @@ describe("finding a recall reference", () => {
 
   test("a QUOTED handle is not a recall -- this is the footer-quoting case", () => {
     // Slack's quote button reproduces the whole reply, footer handle included.
-    expect(findRecallRef("> :robot_face: *Ralph*\n> answer\n> `ral-qatq` · $0.084\n\nwhy?")).toBeNull();
+    expect(
+      findRecallRef(
+        "> :robot_face: *Ralph*\n> answer\n> `ral-qatq` · $0.084\n\nwhy?",
+      ),
+    ).toBeNull();
   });
 
   test("a fenced handle is not a recall", () => {
@@ -59,7 +63,9 @@ describe("finding a recall reference", () => {
 
 describe("stripping the marker before the worker sees it", () => {
   test("the request keeps its meaning and loses the plumbing", () => {
-    expect(stripRecallRef("#ral-qatq now do the gusto repo")).toBe("now do the gusto repo");
+    expect(stripRecallRef("#ral-qatq now do the gusto repo")).toBe(
+      "now do the gusto repo",
+    );
     expect(stripRecallRef("do it #ral-qatq please")).toBe("do it please");
   });
 

@@ -68,14 +68,16 @@ const skills: SkillDef[] = [
     path: "setup",
     name: "jstack-setup",
     category: "setup",
-    description: "First-time jstack onboarding; run jstack setup CLI and configure team.",
+    description:
+      "First-time jstack onboarding; run jstack setup CLI and configure team.",
     when: "Run when user needs install, config, or integration wiring.",
   },
   {
     path: "update-config",
     name: "jstack-update-config",
     category: "setup",
-    description: "Live-edit jstack.config.json with validation and diff preview.",
+    description:
+      "Live-edit jstack.config.json with validation and diff preview.",
     when: "User says update-config, change setting, or tweak jstack config via Claude.",
     extra: `Read \`${ROOT_REF}/../update-config/references/config-sections.md\` for section keys.`,
   },
@@ -105,7 +107,8 @@ const skills: SkillDef[] = [
     path: "sprint/planning",
     name: "jstack-sprint-planning",
     category: "sprint",
-    description: "Sprint planning; bridge to superpowers writing-plans when available.",
+    description:
+      "Sprint planning; bridge to superpowers writing-plans when available.",
     when: "Planning sprint, capacity, goals.",
     chains: "jstack:prioritize",
     extra: `Consider \`Skill(skill: \"superpowers:writing-plans\")\` for plan drafting.`,
@@ -137,7 +140,8 @@ const skills: SkillDef[] = [
     path: "engineering/health",
     name: "jstack-engineering-health",
     category: "engineering",
-    description: "CI, PR queue, flaky tests, revert risk from configured repos.",
+    description:
+      "CI, PR queue, flaky tests, revert risk from configured repos.",
     when: "Repo health, engineering dashboard prep.",
   },
   {
@@ -209,7 +213,8 @@ const skills: SkillDef[] = [
     path: "review/counsel-review",
     name: "jstack-counsel-review",
     category: "review",
-    description: "CEO/PM/Engineer/QA/Designer perspectives using persona prompts.",
+    description:
+      "CEO/PM/Engineer/QA/Designer perspectives using persona prompts.",
     when: "Counsel-style multi-lens feedback.",
     extra: `Load personas from \`${PREAMBLE.replace("preamble.md", "../personas/")}\` (ceo, pm, engineer, qa, designer).`,
   },
@@ -248,7 +253,8 @@ const skills: SkillDef[] = [
     path: "knowledge",
     name: "jstack-knowledge",
     category: "knowledge",
-    description: "Knowledge orchestrator: intake, process, shortcuts, team/self.",
+    description:
+      "Knowledge orchestrator: intake, process, shortcuts, team/self.",
     when: "KB operations, gbrain routing.",
   },
   {
@@ -335,7 +341,8 @@ const skills: SkillDef[] = [
     path: "session/init",
     name: "jstack-init-session",
     category: "session",
-    description: "Start session; set gbrain target personal vs team; load context.",
+    description:
+      "Start session; set gbrain target personal vs team; load context.",
     when: "Begin focused session with jstack.",
     extra: `Read \`${ROOT_REF}/../questions/meeting-questions.md\` if storing meetings later.`,
   },
@@ -407,7 +414,8 @@ const skills: SkillDef[] = [
     path: "self/brag",
     name: "jstack-self-brag",
     category: "self",
-    description: "Daily/weekly brag from Slack, GitHub, Jira with dimension mapping.",
+    description:
+      "Daily/weekly brag from Slack, GitHub, Jira with dimension mapping.",
     when: "Activity brag, perf evidence gathering.",
   },
   {
@@ -494,7 +502,15 @@ const skills: SkillDef[] = [
     description: "JIRA operations orchestrator.",
     when: "JIRA CRUD umbrella.",
   },
-  ...["get", "create", "intake", "update", "transition", "notify", "append"].map((op) => ({
+  ...[
+    "get",
+    "create",
+    "intake",
+    "update",
+    "transition",
+    "notify",
+    "append",
+  ].map((op) => ({
     path: `jira/${op}`,
     name: `jstack-jira-${op.replace(/-/g, "")}`,
     category: "jira",
@@ -536,13 +552,15 @@ const skills: SkillDef[] = [
     description: "Research orchestrator.",
     when: "Research task routing.",
   },
-  ...["technical", "competitive", "user", "spike", "explain-codebase"].map((op) => ({
-    path: `research/${op}`,
-    name: `jstack-research-${op.replace(/-/g, "")}`,
-    category: "research",
-    description: `Research subtype: ${op}.`,
-    when: `${op} research or codebase tour.`,
-  })),
+  ...["technical", "competitive", "user", "spike", "explain-codebase"].map(
+    (op) => ({
+      path: `research/${op}`,
+      name: `jstack-research-${op.replace(/-/g, "")}`,
+      category: "research",
+      description: `Research subtype: ${op}.`,
+      when: `${op} research or codebase tour.`,
+    }),
+  ),
   {
     path: "meetings",
     name: "jstack-meetings",
@@ -662,7 +680,14 @@ const skills: SkillDef[] = [
     description: "Scheduled routines manager.",
     when: "Cron skill chains.",
   },
-  ...["morning-kickoff", "standup", "weekly-digest", "sprint-close", "health-check", "custom"].map((op) => ({
+  ...[
+    "morning-kickoff",
+    "standup",
+    "weekly-digest",
+    "sprint-close",
+    "health-check",
+    "custom",
+  ].map((op) => ({
     path: `routines/${op}`,
     name: `jstack-${op.replace(/-/g, "")}`,
     category: "routines",

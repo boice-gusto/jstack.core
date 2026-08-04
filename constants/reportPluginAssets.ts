@@ -8,7 +8,8 @@ function mimeForAsset(fileName: string): string {
   if (fileName.endsWith(".svg")) return "image/svg+xml";
   if (fileName.endsWith(".png")) return "image/png";
   if (fileName.endsWith(".webp")) return "image/webp";
-  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
+  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg"))
+    return "image/jpeg";
   return "application/octet-stream";
 }
 
@@ -16,7 +17,10 @@ function mimeForAsset(fileName: string): string {
  * Replace `__JSTACK_PLUGIN_ASSET__{filename}__` with a data URL from `{pluginRoot}/assets/{filename}`.
  * Safe when the fragment has no tokens (returns input unchanged).
  */
-export function inlinePluginReportAssets(html: string, pluginRoot: string): string {
+export function inlinePluginReportAssets(
+  html: string,
+  pluginRoot: string,
+): string {
   return html.replace(PLUGIN_ASSET_TOKEN, (_m, fileName: string) => {
     const abs = join(pluginRoot, "assets", fileName);
     if (!existsSync(abs)) {

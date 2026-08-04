@@ -14,7 +14,10 @@ function containsAny(haystack: string, needles: string[]): boolean {
 /**
  * Returns one ExpectationResult per assert rule (pass or fail with reason).
  */
-export function runResponseAsserts(response: string, assert: EvalAssert | undefined): ExpectationResult[] {
+export function runResponseAsserts(
+  response: string,
+  assert: EvalAssert | undefined,
+): ExpectationResult[] {
   if (!assert || Object.keys(assert).length === 0) return [];
   const out: ExpectationResult[] = [];
   const r = response ?? "";
@@ -25,7 +28,9 @@ export function runResponseAsserts(response: string, assert: EvalAssert | undefi
     out.push({
       text: `Assert: response contains all of: ${all.map((x) => JSON.stringify(x)).join(", ")}`,
       passed: ok,
-      evidence: ok ? "All substrings found" : `Missing at least one required substring`,
+      evidence: ok
+        ? "All substrings found"
+        : `Missing at least one required substring`,
     });
   }
 
@@ -35,7 +40,9 @@ export function runResponseAsserts(response: string, assert: EvalAssert | undefi
     out.push({
       text: `Assert: response contains at least one of: ${any.map((x) => JSON.stringify(x)).join(", ")}`,
       passed: ok,
-      evidence: ok ? "At least one substring matched" : "None of the expected substrings found",
+      evidence: ok
+        ? "At least one substring matched"
+        : "None of the expected substrings found",
     });
   }
 
@@ -46,7 +53,9 @@ export function runResponseAsserts(response: string, assert: EvalAssert | undefi
     out.push({
       text: `Assert: response must not contain: ${not.map((x) => JSON.stringify(x)).join(", ")}`,
       passed: ok,
-      evidence: ok ? "No forbidden substrings" : `Found forbidden: ${bad.map((x) => JSON.stringify(x)).join(", ")}`,
+      evidence: ok
+        ? "No forbidden substrings"
+        : `Found forbidden: ${bad.map((x) => JSON.stringify(x)).join(", ")}`,
     });
   }
 

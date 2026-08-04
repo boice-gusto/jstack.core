@@ -25,11 +25,20 @@
  *   bun run scripts/generate-skill-evals.ts [--dry-run]
  *   bun run scripts/generate-skill-evals.ts --rewrite [--dry-run]
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
-import { discoverAllSkillRelativePaths, discoverEvalCases } from "../evals/discover.js";
+import {
+  discoverAllSkillRelativePaths,
+  discoverEvalCases,
+} from "../evals/discover.js";
 import { extractSkillFacts } from "./lib/skill-eval-facts.js";
 import {
   GENERATED_MARKER,
@@ -65,7 +74,9 @@ const LEGACY_SIGNATURES: Record<string, string[]> = {
     "Identifies a purpose, audience, or primary use of the skill",
     "response states what the skill is for, when to use it, or which role it helps",
   ],
-  [SMOKE_NAME]: ["Outline what you would produce for a **hypothetical** internal request"],
+  [SMOKE_NAME]: [
+    "Outline what you would produce for a **hypothetical** internal request",
+  ],
   // All 16 orchestrator routing cases were byte-identical: the old template had no per-skill part.
   [PARAPHRASE_NAME]: [
     "Names a concrete child route, child skill folder, or one focused clarifying question",
@@ -89,10 +100,13 @@ function dumpDoc(doc: EvalDoc | Record<string, unknown>): string {
 function loadCanonicalRouters(): Set<string> {
   const path = join(root, "evals", "router-skills.json");
   if (!existsSync(path)) {
-    throw new Error(`Missing ${path} (canonical router list for paraphrase eval generation)`);
+    throw new Error(
+      `Missing ${path} (canonical router list for paraphrase eval generation)`,
+    );
   }
   const raw = JSON.parse(readFileSync(path, "utf8")) as { routers?: unknown };
-  if (!Array.isArray(raw.routers)) throw new Error(`${path}: expected { routers: string[] }`);
+  if (!Array.isArray(raw.routers))
+    throw new Error(`${path}: expected { routers: string[] }`);
   return new Set(raw.routers.map((r) => String(r)));
 }
 
@@ -191,7 +205,10 @@ function main(): void {
     const evalsDir = join(skillPath, "evals");
     const paraphrasePath = join(evalsDir, PARAPHRASE_NAME);
     if (!existsSync(evalsDir)) continue;
-    if (existsSync(paraphrasePath) && !isGenerated(paraphrasePath, PARAPHRASE_NAME)) {
+    if (
+      existsSync(paraphrasePath) &&
+      !isGenerated(paraphrasePath, PARAPHRASE_NAME)
+    ) {
       t.keptHandAuthored++;
       continue;
     }
@@ -200,12 +217,16 @@ function main(): void {
     const md = readFileSync(join(skillPath, "SKILL.md"), "utf8");
     const fm = parseFrontmatter(md);
     const skillId = str(fm.name) || `jstack-${rel.replace(/\//g, "-")}`;
-    const whenToUse = typeof fm.when_to_use === "string" ? str(fm.when_to_use, 400) : "";
+    const whenToUse =
+      typeof fm.when_to_use === "string" ? str(fm.when_to_use, 400) : "";
     const facts = extractSkillFacts(join(skillPath, "SKILL.md"), rel);
 
     // Real child routes, so the criterion can name what this orchestrator actually owns.
     const children = readdirSync(skillPath, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && existsSync(join(skillPath, d.name, "SKILL.md")))
+      .filter(
+        (d) =>
+          d.isDirectory() && existsSync(join(skillPath, d.name, "SKILL.md")),
+      )
       .map((d) => d.name);
 
     const criteria = [
@@ -213,10 +234,14 @@ function main(): void {
       "Does not present fictional ticket keys, channel IDs, or verified API results",
     ];
     if (children.length > 0) {
-      criteria.push(`Any named route is one this orchestrator actually owns: ${children.join(", ")}`);
+      criteria.push(
+        `Any named route is one this orchestrator actually owns: ${children.join(", ")}`,
+      );
     }
     if (facts.outOfScope) {
-      criteria.push("Does not absorb work the skill declares out of scope; routes or declines it");
+      criteria.push(
+        "Does not absorb work the skill declares out of scope; routes or declines it",
+      );
     }
 
     const paraphraseDoc: Record<string, unknown> = {
@@ -238,26 +263,40 @@ function main(): void {
     };
 
     const body = dumpDoc(paraphraseDoc);
-    if (existsSync(paraphrasePath) && readFileSync(paraphrasePath, "utf8") === body) continue;
+    if (
+      existsSync(paraphrasePath) &&
+      readFileSync(paraphrasePath, "utf8") === body
+    )
+      continue;
     if (!dry) writeFileSync(paraphrasePath, body);
     paraphrase++;
   }
 
   // ── Report ──────────────────────────────────────────────────────────────────
   const p = dry ? "[dry-run] would " : "";
-  console.log(`${p}create ${t.created}, ${p}upgrade ${t.upgraded} scaffold file(s).`);
-  console.log(`kept hand-authored: ${t.keptHandAuthored}   already current: ${t.unchanged}`);
+  console.log(
+    `${p}create ${t.created}, ${p}upgrade ${t.upgraded} scaffold file(s).`,
+  );
+  console.log(
+    `kept hand-authored: ${t.keptHandAuthored}   already current: ${t.unchanged}`,
+  );
   console.log(`paraphrase routing: ${p}write ${paraphrase}`);
 
   // Never let a weaker generic form pass silently. A skill with no out-of-scope clause falls back to
   // the old trivia case, and that is a real coverage gap worth naming rather than burying in a count.
   if (t.fallbacks.size > 0) {
-    console.log("\nGeneric fallbacks used (per-skill fact missing from SKILL.md):");
+    console.log(
+      "\nGeneric fallbacks used (per-skill fact missing from SKILL.md):",
+    );
     for (const [filename, skills] of [...t.fallbacks].sort()) {
       console.log(`  ${filename}: ${skills.length} skill(s)`);
       if (filename === NEG_NAME) {
-        console.log("    No `- **Out of scope:**` clause, so no per-skill boundary test could be");
-        console.log("    derived. Adding one upgrades these to real refusal tests.");
+        console.log(
+          "    No `- **Out of scope:**` clause, so no per-skill boundary test could be",
+        );
+        console.log(
+          "    derived. Adding one upgrades these to real refusal tests.",
+        );
       }
     }
   }

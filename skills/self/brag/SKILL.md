@@ -99,7 +99,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
-Apply the `jstack-self-brag` workflow using values from `jstack.config.json`. There is no `templates/self/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Pull the user's own activity from Slack, GitHub, and Jira for the requested cycle, and map each item to the impact dimensions defined in config. For each entry, state the output and its measured or observed consequence, tag significance using the configured PR label tier rather than length or enthusiasm, and mark any self-reported, unsourced claim `[self-reported, unverified]`. Drop or flag anything that isn't the user's own verifiable contribution before writing the entry to the personal gbrain.
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

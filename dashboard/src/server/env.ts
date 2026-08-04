@@ -1,8 +1,6 @@
 import { realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import type { DashboardEnv } from "@/lib/dashboard-env";
-
 export type { DashboardEnv } from "@/lib/dashboard-env";
 export { getDashboardEnv } from "@/lib/dashboard-env";
 
@@ -15,14 +13,6 @@ export function getJstackCoreRoot(): string {
   } catch {
     return resolve(join(process.cwd(), ".."));
   }
-}
-
-export function getAgentWorkingDirectory(env: DashboardEnv): string {
-  const configured = env.DASHBOARD_AGENT_CWD?.trim();
-  if (configured !== undefined && configured.length > 0) {
-    return resolve(configured);
-  }
-  return getJstackCoreRoot();
 }
 
 export function getSkillCatalogPath(): string {

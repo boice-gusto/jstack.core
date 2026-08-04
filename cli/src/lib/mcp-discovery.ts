@@ -3,7 +3,10 @@ import { join } from "node:path";
 import type { McpRegistry, McpServer } from "../types/mcp-registry.js";
 
 interface McpFile {
-  mcpServers?: Record<string, { command?: string; args?: string[]; url?: string }>;
+  mcpServers?: Record<
+    string,
+    { command?: string; args?: string[]; url?: string }
+  >;
 }
 
 /** Best-effort parse of .mcp.json without starting servers */
@@ -38,9 +41,7 @@ export function discoverFromMcpJson(projectRoot: string): McpRegistry {
 }
 
 function humanize(id: string): string {
-  return id
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return id.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export type McpMergeCollision = {

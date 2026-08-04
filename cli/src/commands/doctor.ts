@@ -8,7 +8,10 @@ import {
   JSTACK_CONFIG_FILE,
   SKILLS_DIR,
 } from "@jstack/constants/paths";
-import { buildSkillRecords, buildSkillsPayload } from "../../../scripts/docs-data-shared.ts";
+import {
+  buildSkillRecords,
+  buildSkillsPayload,
+} from "../../../scripts/docs-data-shared.ts";
 import { validateSkillAliasDrift } from "../../../scripts/validate-skill-alias-drift.ts";
 import {
   configPath,
@@ -34,7 +37,10 @@ import { REPAIR_CONSENT_DEFAULT } from "../lib/repair-consent.js";
 import { resolveWithinRoots, setAt } from "../lib/path-utils.js";
 import { JstackConfigSchema } from "../types/config.js";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { serializeRepairs, deserializeRepairs } from "../lib/repair-serializer.js";
+import {
+  serializeRepairs,
+  deserializeRepairs,
+} from "../lib/repair-serializer.js";
 
 export async function runDoctor(opts: {
   fix?: boolean;
@@ -58,9 +64,18 @@ export async function runDoctor(opts: {
    * `mcp_present`). The two output modes disagreed about health. Optional checks now
    * render as a dim advisory in both.
    */
-  const check = (name: string, pass: boolean, hint?: string, optional = false) => {
+  const check = (
+    name: string,
+    pass: boolean,
+    hint?: string,
+    optional = false,
+  ) => {
     if (opts.json) return;
-    const mark = pass ? chalk.green(`✔ ${name}`) : optional ? chalk.dim(`• ${name}`) : chalk.red(`✖ ${name}`);
+    const mark = pass
+      ? chalk.green(`✔ ${name}`)
+      : optional
+        ? chalk.dim(`• ${name}`)
+        : chalk.red(`✖ ${name}`);
     console.log(mark);
     if (!pass) {
       if (!optional) ok = false;
@@ -99,7 +114,8 @@ export async function runDoctor(opts: {
           ...collectMockMcpDoctorWarnings(root, pluginRoot, cfgObj),
         ]
       : [];
-    const cross = (cfg?.cross_plugins as Record<string, unknown> | undefined) ?? {};
+    const cross =
+      (cfg?.cross_plugins as Record<string, unknown> | undefined) ?? {};
     const gbrainPlugin = cross.gbrain as Record<string, unknown> | undefined;
     const configOk = existsSync(join(root, JSTACK_CONFIG_FILE));
     const pluginOk = existsSync(join(pluginRoot, CONFIG_DIR, DEFAULTS_FILE));
@@ -148,13 +164,18 @@ export async function runDoctor(opts: {
         2,
       ),
     );
-    if (hardFail || warnFail || aliasErrFail || aliasWarnFail) process.exitCode = 1;
+    if (hardFail || warnFail || aliasErrFail || aliasWarnFail)
+      process.exitCode = 1;
     return;
   }
 
   if (opts.applyRepairs) {
     if (!opts.apply) {
-      console.log(chalk.red("--apply-repairs requires --apply to prevent accidental replay. Re-run with --apply."));
+      console.log(
+        chalk.red(
+          "--apply-repairs requires --apply to prevent accidental replay. Re-run with --apply.",
+        ),
+      );
       process.exitCode = 1;
       return;
     }
@@ -162,13 +183,21 @@ export async function runDoctor(opts: {
     try {
       savedIssues = deserializeRepairs(readFileSync(opts.applyRepairs, "utf8"));
     } catch (err) {
-      console.log(chalk.red(`Failed to load repairs from ${opts.applyRepairs}: ${err instanceof Error ? err.message : String(err)}`));
+      console.log(
+        chalk.red(
+          `Failed to load repairs from ${opts.applyRepairs}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
       process.exitCode = 1;
       return;
     }
     const cfg = readConfigOptional(root);
     if (!cfg) {
-      console.log(chalk.red("Cannot apply repairs: jstack.config.json missing or unparseable. Run `jstack setup --schema` first."));
+      console.log(
+        chalk.red(
+          "Cannot apply repairs: jstack.config.json missing or unparseable. Run `jstack setup --schema` first.",
+        ),
+      );
       process.exitCode = 1;
       return;
     }
@@ -192,8 +221,15 @@ export async function runDoctor(opts: {
       return;
     }
 
-    console.log(chalk.bold(`\nReplaying ${savedIssues.length} saved repair proposal(s):`));
-    const applied = await applyRepairsInteractive(savedIssues, root, cfg as unknown as Record<string, unknown>, pluginRoot);
+    console.log(
+      chalk.bold(`\nReplaying ${savedIssues.length} saved repair proposal(s):`),
+    );
+    const applied = await applyRepairsInteractive(
+      savedIssues,
+      root,
+      cfg as unknown as Record<string, unknown>,
+      pluginRoot,
+    );
     if (applied > 0) {
       console.log(chalk.green(`\nApplied ${applied} repair(s).`));
     } else {
@@ -203,8 +239,15 @@ export async function runDoctor(opts: {
     return;
   }
 
-  check("jstack.config.json", existsSync(join(root, JSTACK_CONFIG_FILE)), "jstack setup");
-  check("plugin defaults", existsSync(join(pluginRoot, CONFIG_DIR, DEFAULTS_FILE)));
+  check(
+    "jstack.config.json",
+    existsSync(join(root, JSTACK_CONFIG_FILE)),
+    "jstack setup",
+  );
+  check(
+    "plugin defaults",
+    existsSync(join(pluginRoot, CONFIG_DIR, DEFAULTS_FILE)),
+  );
   check("skills/", existsSync(join(pluginRoot, SKILLS_DIR)));
   check("config parseable", !!cfg);
   check(
@@ -215,7 +258,9 @@ export async function runDoctor(opts: {
   );
 
   if (update?.upgrade_available && update.raw_line) {
-    warn(`Plugin update: ${update.raw_line} — see jstack upgrade or release notes.`);
+    warn(
+      `Plugin update: ${update.raw_line} — see jstack upgrade or release notes.`,
+    );
   }
 
   if (cfg) {
@@ -229,7 +274,11 @@ export async function runDoctor(opts: {
   }
 
   for (const msg of aliasDrift.errors) {
-    check(`skill alias map: ${msg}`, false, "see docs/SKILL_ALIAS_MAP.md and config/skill-alias-map.json");
+    check(
+      `skill alias map: ${msg}`,
+      false,
+      "see docs/SKILL_ALIAS_MAP.md and config/skill-alias-map.json",
+    );
   }
   for (const msg of aliasDrift.warnings) {
     warn(`skill alias drift: ${msg}`);
@@ -237,7 +286,11 @@ export async function runDoctor(opts: {
 
   if (opts.fix) {
     if (!cfg) {
-      console.log(chalk.red("Cannot run --fix: jstack.config.json missing or unparseable. Run `jstack setup --schema` first."));
+      console.log(
+        chalk.red(
+          "Cannot run --fix: jstack.config.json missing or unparseable. Run `jstack setup --schema` first.",
+        ),
+      );
       process.exitCode = 1;
       return;
     }
@@ -274,7 +327,11 @@ export async function runDoctor(opts: {
           console.log(chalk.dim("\nNo repairs applied."));
         }
       } else {
-        console.log(chalk.dim("\nThis was a dry run. Re-run with --fix --apply to apply (with consent per group)."));
+        console.log(
+          chalk.dim(
+            "\nThis was a dry run. Re-run with --fix --apply to apply (with consent per group).",
+          ),
+        );
       }
     }
   }
@@ -316,7 +373,6 @@ function formatRepair(r: RepairAction): string {
   }
 }
 
-
 export async function applyRepairsInteractive(
   issues: DependencyIssue[],
   projectRoot: string,
@@ -349,7 +405,8 @@ export async function applyRepairsInteractive(
       } else if (r.kind === "write_file") {
         const abs = contain(r.path);
         if (abs) writes.push({ path: abs, content: r.content });
-      } else if (r.kind === "set_config") setConfig.push({ path: r.path, value: r.value });
+      } else if (r.kind === "set_config")
+        setConfig.push({ path: r.path, value: r.value });
       // shell_hint is informational; never executed automatically.
     }
   }
@@ -365,7 +422,11 @@ export async function applyRepairsInteractive(
   }
 
   if (!isInteractive()) {
-    console.log(chalk.yellow("Non-interactive shell — refusing to apply automatic repairs. Re-run in a terminal."));
+    console.log(
+      chalk.yellow(
+        "Non-interactive shell — refusing to apply automatic repairs. Re-run in a terminal.",
+      ),
+    );
     return 0;
   }
 
@@ -416,7 +477,9 @@ export async function applyRepairsInteractive(
         applied += setConfig.length;
       } catch (err) {
         console.log(
-          chalk.red(`Config patch failed validation; skipping: ${err instanceof Error ? err.message : String(err)}`),
+          chalk.red(
+            `Config patch failed validation; skipping: ${err instanceof Error ? err.message : String(err)}`,
+          ),
         );
       }
     }
@@ -449,7 +512,13 @@ export async function runDoctorSkills(opts: { json?: boolean }): Promise<void> {
   if (!existsSync(skillsRoot)) {
     const msg = `skills/ not found under plugin root: ${pluginRoot}`;
     if (opts.json) {
-      console.log(JSON.stringify({ ok: false, error: msg, count: 0, skills: [] }, null, 2));
+      console.log(
+        JSON.stringify(
+          { ok: false, error: msg, count: 0, skills: [] },
+          null,
+          2,
+        ),
+      );
     } else {
       console.error(chalk.red(msg));
     }
@@ -473,12 +542,18 @@ export async function runDoctorSkills(opts: { json?: boolean }): Promise<void> {
     );
     return;
   }
-  console.log(chalk.bold(`${payload.count} skills`) + chalk.dim(` under ${skillsRoot}`));
+  console.log(
+    chalk.bold(`${payload.count} skills`) + chalk.dim(` under ${skillsRoot}`),
+  );
   const sample = records.slice(0, 5);
   for (const s of sample) {
     console.log(chalk.dim(`  ${s.gateId}`) + `  ${s.name}`);
   }
   if (records.length > sample.length) {
-    console.log(chalk.dim(`  … and ${records.length - sample.length} more (use --json for full list)`));
+    console.log(
+      chalk.dim(
+        `  … and ${records.length - sample.length} more (use --json for full list)`,
+      ),
+    );
   }
 }

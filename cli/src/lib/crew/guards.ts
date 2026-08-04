@@ -71,7 +71,10 @@ export function agentPrefixMatch(
     // back depends on whether the config holds `:robot_face:` or `🤖` and on what Slack
     // chooses to normalise, so accept all three rather than betting on one.
     const emoji = `(?:${escapeRe(a.emoji)}|:[a-z0-9_+-]+:|\\p{Extended_Pictographic}\\uFE0F?)`;
-    const re = new RegExp(`^${emoji}\\s*\\*{1,2}${escapeRe(a.name)}\\*{1,2}`, "iu");
+    const re = new RegExp(
+      `^${emoji}\\s*\\*{1,2}${escapeRe(a.name)}\\*{1,2}`,
+      "iu",
+    );
     if (re.test(head)) return id;
   }
   return null;
@@ -122,19 +125,35 @@ export function decide(msg: InboundMessage, ctx: GuardContext): Decision {
 
   // G1 -- primary, never overridden.
   if (ctx.outboxHas(msg.channelId, msg.ts)) {
-    return { allow: false, ruleId: "G1_outbox", reason: "we posted this message" };
+    return {
+      allow: false,
+      ruleId: "G1_outbox",
+      reason: "we posted this message",
+    };
   }
 
   if (!ingress.channels.includes(msg.channelId)) {
-    return { allow: false, ruleId: "ingress_channel", reason: `channel ${msg.channelId} not allowlisted` };
+    return {
+      allow: false,
+      ruleId: "ingress_channel",
+      reason: `channel ${msg.channelId} not allowlisted`,
+    };
   }
   if (!ingress.authors.includes(msg.author)) {
-    return { allow: false, ruleId: "ingress_author", reason: `author ${msg.author} not allowlisted` };
+    return {
+      allow: false,
+      ruleId: "ingress_author",
+      reason: `author ${msg.author} not allowlisted`,
+    };
   }
 
   const ageMs = ctx.nowMs - Math.floor(Number(msg.ts) * 1000);
   if (!Number.isFinite(ageMs)) {
-    return { allow: false, ruleId: "bad_ts", reason: `unparseable ts ${msg.ts}` };
+    return {
+      allow: false,
+      ruleId: "bad_ts",
+      reason: `unparseable ts ${msg.ts}`,
+    };
   }
   /**
    * The age filter is a COLD-START guard: it stops Ralph answering days of backlog the
@@ -144,7 +163,11 @@ export function decide(msg: InboundMessage, ctx: GuardContext): Decision {
    * an answer to still deserves one. The thread-activity window bounds this instead.
    */
   if (!ctx.inActiveThread && ageMs > ingress.ignore_older_than_ms) {
-    return { allow: false, ruleId: "too_old", reason: `message is ${Math.round(ageMs / 1000)}s old` };
+    return {
+      allow: false,
+      ruleId: "too_old",
+      reason: `message is ${Math.round(ageMs / 1000)}s old`,
+    };
   }
 
   const sigil = findSigil(msg.text, allSigils(config.agents));
@@ -166,7 +189,11 @@ export function decide(msg: InboundMessage, ctx: GuardContext): Decision {
    */
   const mine = agentPrefixMatch(msg.text, config.agents);
   if (mine) {
-    return { allow: false, ruleId: "G2a_agent_prefix", reason: `opens with ${mine}'s identity prefix` };
+    return {
+      allow: false,
+      ruleId: "G2a_agent_prefix",
+      reason: `opens with ${mine}'s identity prefix`,
+    };
   }
 
   /**
@@ -182,11 +209,19 @@ export function decide(msg: InboundMessage, ctx: GuardContext): Decision {
    * A sigil overrides it either way. G1 is never overridden.
    */
   if (msg.hasServerSuffix && !sigil && !ctx.inActiveThread) {
-    return { allow: false, ruleId: "G2b_server_suffix", reason: "agent-authored message with no sigil" };
+    return {
+      allow: false,
+      ruleId: "G2b_server_suffix",
+      reason: "agent-authored message with no sigil",
+    };
   }
 
   if (ingress.require_sigil && !sigil && !ctx.inActiveThread) {
-    return { allow: false, ruleId: "G3_no_sigil", reason: "no sigil outside quoted context" };
+    return {
+      allow: false,
+      ruleId: "G3_no_sigil",
+      reason: "no sigil outside quoted context",
+    };
   }
 
   return { allow: true, sigil: sigil ?? "" };
@@ -211,7 +246,9 @@ export function routeToAgent(
 }
 
 /** Every sigil across enabled agents, for guard checks that predate routing. */
-export function allSigils(agents: Record<string, { enabled: boolean; sigils: string[] }>): string[] {
+export function allSigils(
+  agents: Record<string, { enabled: boolean; sigils: string[] }>,
+): string[] {
   return Object.values(agents).flatMap((a) => (a.enabled ? a.sigils : []));
 }
 
@@ -219,7 +256,10 @@ export function allSigils(agents: Record<string, { enabled: boolean; sigils: str
 export function stripSigils(text: string, sigils: string[]): string {
   let out = text;
   for (const s of sigils) {
-    out = out.replaceAll(new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "");
+    out = out.replaceAll(
+      new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      "",
+    );
   }
   return out.replace(/\s{2,}/g, " ").trim();
 }

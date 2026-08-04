@@ -7,11 +7,17 @@ import { isAbsolute, relative, resolve } from "node:path";
 const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
 /** Set a value at a nested path inside `obj`, creating intermediate plain objects. */
-export function setAt(obj: Record<string, unknown>, path: string[], value: unknown): void {
+export function setAt(
+  obj: Record<string, unknown>,
+  path: string[],
+  value: unknown,
+): void {
   if (path.length === 0) return;
   for (const seg of path) {
     if (DANGEROUS_KEYS.has(seg)) {
-      throw new Error(`setAt: refusing to traverse dangerous key "${seg}" in path ${JSON.stringify(path)}`);
+      throw new Error(
+        `setAt: refusing to traverse dangerous key "${seg}" in path ${JSON.stringify(path)}`,
+      );
     }
   }
   let cur: Record<string, unknown> = obj;
@@ -41,7 +47,10 @@ export function setAt(obj: Record<string, unknown>, path: string[], value: unkno
  * not protect against a root or an intermediate directory that is itself a symlink
  * pointing outside the intended tree.
  */
-export function resolveWithinRoots(target: string, roots: string[]): string | null {
+export function resolveWithinRoots(
+  target: string,
+  roots: string[],
+): string | null {
   const abs = resolve(target);
   for (const root of roots) {
     const rootAbs = resolve(root);

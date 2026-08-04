@@ -23,7 +23,10 @@ const INTENTIONAL_NEW_KEYS: string[] = [
 ];
 
 describe("schema-questions catalog ↔ defaults.json drift", () => {
-  const defaults = JSON.parse(readFileSync(DEFAULTS_PATH, "utf8")) as Record<string, unknown>;
+  const defaults = JSON.parse(readFileSync(DEFAULTS_PATH, "utf8")) as Record<
+    string,
+    unknown
+  >;
 
   test("every catalog id is unique", () => {
     const ids = QUESTION_CATALOG.map((q) => q.id);

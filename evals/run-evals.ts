@@ -5,10 +5,21 @@
  * Quick iteration (no API): bun run eval
  * Semantic (needs ANTHROPIC_API_KEY + claude on PATH): bun run eval semantic --skill recon
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkGates, evaluateSemanticSummaryGate, loadGateRules, normalizeGateSkillId } from "./gate-runner.js";
+import {
+  checkGates,
+  evaluateSemanticSummaryGate,
+  loadGateRules,
+  normalizeGateSkillId,
+} from "./gate-runner.js";
 import {
   discoverAllSkillRelativePaths,
   discoverEvalCases,
@@ -17,7 +28,13 @@ import {
   loadSkillEvalConfig,
   validateCases,
 } from "./discover.js";
-import { loadGlobalEvalEnv, mergeGateRule, numberFromEnv, sanitizePassThreshold, skillGateId } from "./eval-config.js";
+import {
+  loadGlobalEvalEnv,
+  mergeGateRule,
+  numberFromEnv,
+  sanitizePassThreshold,
+  skillGateId,
+} from "./eval-config.js";
 import { executeCase, readSkillMd } from "./execute.js";
 import { gradeCase } from "./grade.js";
 import {
@@ -54,7 +71,9 @@ function loadUnit(): { evals: UnitEval[] } {
 
 function loadChain(): { chains: { name: string; steps: string[] }[] } {
   const p = join(pluginRoot, "evals", "chain-evals.json");
-  return JSON.parse(readFileSync(p, "utf8")) as { chains: { name: string; steps: string[] }[] };
+  return JSON.parse(readFileSync(p, "utf8")) as {
+    chains: { name: string; steps: string[] }[];
+  };
 }
 
 function parseArgs(argv: string[]) {
@@ -94,14 +113,26 @@ function runStructural(skillFilter?: string): { ok: number; total: number } {
   let ok = 0;
   let total = 0;
   for (const rel of rels) {
-    if (skillFilter && rel !== skillFilter && !rel.startsWith(`${skillFilter}/`)) continue;
+    if (
+      skillFilter &&
+      rel !== skillFilter &&
+      !rel.startsWith(`${skillFilter}/`)
+    )
+      continue;
     total++;
-    const skillFile = join(pluginRoot, "skills", ...rel.split("/").filter(Boolean), "SKILL.md");
+    const skillFile = join(
+      pluginRoot,
+      "skills",
+      ...rel.split("/").filter(Boolean),
+      "SKILL.md",
+    );
     const pass = existsSync(skillFile);
     console.log(pass ? `✔ ${rel}` : `✖ ${rel} (missing SKILL.md)`);
     if (pass) ok++;
   }
-  console.log(`structural: ${ok}/${total} skills have SKILL.md (all discovered under skills/)`);
+  console.log(
+    `structural: ${ok}/${total} skills have SKILL.md (all discovered under skills/)`,
+  );
   return { ok, total };
 }
 
@@ -111,9 +142,15 @@ function runChain(): { ok: number; total: number } {
   const suffixToRel = buildSuffixToRelPath(skillsRoot, relPaths);
   let ok = 0;
   for (const c of chains) {
-    const missing = c.steps.filter((s) => !chainStepSkillExists(skillsRoot, s, suffixToRel));
+    const missing = c.steps.filter(
+      (s) => !chainStepSkillExists(skillsRoot, s, suffixToRel),
+    );
     const pass = missing.length === 0;
-    console.log(pass ? `✔ chain ${c.name}` : `✖ chain ${c.name} missing: ${missing.join(", ")}`);
+    console.log(
+      pass
+        ? `✔ chain ${c.name}`
+        : `✖ chain ${c.name} missing: ${missing.join(", ")}`,
+    );
     if (pass) ok++;
   }
   console.log(`chains: ${ok}/${chains.length} passed`);
@@ -133,10 +170,14 @@ function runChain(): { ok: number; total: number } {
 function runGate(skillFilter?: string): boolean {
   const rules = loadGateRules(pluginRoot);
   if (!rules.length) {
-    console.error("No gate rules defined in evals/gate-evals.json — nothing to enforce.");
+    console.error(
+      "No gate rules defined in evals/gate-evals.json — nothing to enforce.",
+    );
     return false;
   }
-  const skill = skillFilter ? normalizeGateSkillId(skillFilter) : rules[0]?.skill ?? "jstack:setup";
+  const skill = skillFilter
+    ? normalizeGateSkillId(skillFilter)
+    : (rules[0]?.skill ?? "jstack:setup");
 
   const summary = loadLatestSemanticSummary(reportsDir, skill);
   if (!summary) {
@@ -148,7 +189,11 @@ function runGate(skillFilter?: string): boolean {
     return false;
   }
 
-  const { passed, failures, casesChecked } = evaluateSemanticSummaryGate(rules, skill, summary);
+  const { passed, failures, casesChecked } = evaluateSemanticSummaryGate(
+    rules,
+    skill,
+    summary,
+  );
 
   const result = {
     skill,
@@ -170,18 +215,27 @@ function stripSkillPrefix(skill: string): string {
 function loadLatestSemanticSummary(
   dir: string,
   skill: string,
-): (SemanticSummary & { __sourcePath: string; results: (CaseReport & { response?: string })[] }) | null {
+):
+  | (SemanticSummary & {
+      __sourcePath: string;
+      results: (CaseReport & { response?: string })[];
+    })
+  | null {
   if (!existsSync(dir)) return null;
   const slug = stripSkillPrefix(skill).replaceAll("/", "-");
   const candidates = readdirSync(dir)
     .filter((f) => f.endsWith(".json") && f.includes("-semantic-"))
     .sort()
     .reverse();
-  const ordered = [...candidates.filter((f) => f.startsWith(slug)), ...candidates.filter((f) => !f.startsWith(slug))];
+  const ordered = [
+    ...candidates.filter((f) => f.startsWith(slug)),
+    ...candidates.filter((f) => !f.startsWith(slug)),
+  ];
   for (const f of ordered) {
     try {
       const parsed = JSON.parse(readFileSync(join(dir, f), "utf8"));
-      if (Array.isArray(parsed?.results)) return { ...parsed, __sourcePath: join(dir, f) };
+      if (Array.isArray(parsed?.results))
+        return { ...parsed, __sourcePath: join(dir, f) };
     } catch {
       // Unreadable/partial report — try the next newest rather than silently passing.
     }
@@ -282,7 +336,9 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
   const baseRule = gateRules.find((g) => g.skill === skillGate);
   const mergedGate = mergeGateRule(baseRule, skillCfg?.gate, skillGate);
 
-  const workspaceSegments = (workspaceRel ?? skillRel).split("/").filter(Boolean);
+  const workspaceSegments = (workspaceRel ?? skillRel)
+    .split("/")
+    .filter(Boolean);
   const skillWorkspace = join(env.workspaceDir, ...workspaceSegments);
   mkdirSync(skillWorkspace, { recursive: true });
 
@@ -294,7 +350,9 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
     const slug = caseSlug(c.name);
     const caseDir = join(skillWorkspace, slug);
     mkdirSync(caseDir, { recursive: true });
-    console.log(`\n--- Execute [${i + 1}/${cases.length}] ${skillRel}: ${c.name} ---`);
+    console.log(
+      `\n--- Execute [${i + 1}/${cases.length}] ${skillRel}: ${c.name} ---`,
+    );
     const er = executeCase(env, skillRel, skillContent, c, caseDir);
     execResults.push(er);
     console.log(`status=${er.status} time=${er.elapsed}s tokens=${er.tokens}`);
@@ -311,10 +369,22 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
     let gr;
     if (er.status !== "completed") {
       gr = {
-        expectations: c.criteria.map((t) => ({ text: t, passed: false, evidence: `Execution ${er.status}` })),
-        summary: { passed: 0, failed: c.criteria.length, total: c.criteria.length, pass_rate: 0 },
+        expectations: c.criteria.map((t) => ({
+          text: t,
+          passed: false,
+          evidence: `Execution ${er.status}`,
+        })),
+        summary: {
+          passed: 0,
+          failed: c.criteria.length,
+          total: c.criteria.length,
+          pass_rate: 0,
+        },
       };
-      writeFileSync(join(caseDir, "grading.json"), JSON.stringify(gr, null, 2) + "\n");
+      writeFileSync(
+        join(caseDir, "grading.json"),
+        JSON.stringify(gr, null, 2) + "\n",
+      );
     } else {
       gr = gradeCase(env, c, er, caseDir);
     }
@@ -322,7 +392,12 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
 
     let gateFails: string[] = [];
     if (mergedGate && er.status === "completed") {
-      const g = checkGates([mergedGate], skillGate, { tokens: er.tokens, latency_ms: er.elapsed * 1000 }, er.response);
+      const g = checkGates(
+        [mergedGate],
+        skillGate,
+        { tokens: er.tokens, latency_ms: er.elapsed * 1000 },
+        er.response,
+      );
       gateFails = g.passed ? [] : g.failures;
     }
     gateFailuresPerCase.push(gateFails);
@@ -332,18 +407,32 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
   }
 
   const label = summarySkillName ?? skillRel;
-  const summary = buildSemanticSummary(label, cases, execResults, gradings, gateFailuresPerCase);
-  const thresh = passThresholdOverride ?? sanitizePassThreshold(skillCfg?.pass_threshold, defaultPassThreshold);
+  const summary = buildSemanticSummary(
+    label,
+    cases,
+    execResults,
+    gradings,
+    gateFailuresPerCase,
+  );
+  const thresh =
+    passThresholdOverride ??
+    sanitizePassThreshold(skillCfg?.pass_threshold, defaultPassThreshold);
   const allGatesOk = gateFailuresPerCase.every((g) => g.length === 0);
   const passed = summary.pass_rate >= thresh && allGatesOk;
 
   printSkillTable(summary, thresh);
   mkdirSync(reportsDir, { recursive: true });
   const slugOut = reportSlug ?? skillRel.replace(/\//g, "__");
-  const files = writeSemanticReportFiles(reportsDir, slugOut, summary, pluginRoot);
+  const files = writeSemanticReportFiles(
+    reportsDir,
+    slugOut,
+    summary,
+    pluginRoot,
+  );
   console.log(`\nWrote: ${files.summaryPath}`);
   console.log(`Wrote: ${files.nextStepsPath}`);
-  if (writeViewer && files.viewerPath) console.log(`Wrote: ${files.viewerPath}`);
+  if (writeViewer && files.viewerPath)
+    console.log(`Wrote: ${files.viewerPath}`);
 
   return { summary, passed };
 }
@@ -469,20 +558,28 @@ if (cmd === "semantic") {
   const env = loadGlobalEvalEnv(pluginRoot);
   mkdirSync(env.workspaceDir, { recursive: true });
   if (!env.anthropicApiKey && !process.env.ANTHROPIC_API_KEY) {
-    console.error("semantic eval requires ANTHROPIC_API_KEY in the environment.");
+    console.error(
+      "semantic eval requires ANTHROPIC_API_KEY in the environment.",
+    );
     process.exit(1);
   }
   const threshold = args.threshold ?? env.passThreshold;
   const gateRules = loadGateRules(pluginRoot);
   let targets = discoverSkillsWithSemanticEvals(skillsRoot);
   if (args.skill) {
-    targets = targets.filter((t) => t === args.skill || t.startsWith(args.skill + "/"));
+    targets = targets.filter(
+      (t) => t === args.skill || t.startsWith(args.skill + "/"),
+    );
     if (targets.length === 0) {
       console.error(`No semantic evals found for skill filter: ${args.skill}`);
       process.exit(1);
     }
   }
-  const parts: { skill: string; summary: ReturnType<typeof buildSemanticSummary>; passed_threshold: boolean }[] = [];
+  const parts: {
+    skill: string;
+    summary: ReturnType<typeof buildSemanticSummary>;
+    passed_threshold: boolean;
+  }[] = [];
   let allPass = true;
   for (const rel of targets) {
     try {
@@ -546,7 +643,9 @@ if (cmd === "scenarios") {
   if (args.allSkills) {
     targets = discoverAllSkillRelativePaths(skillsRoot);
   } else if (args.skill) {
-    targets = pack.default_targets.filter((t) => t === args.skill || t.startsWith(`${args.skill}/`));
+    targets = pack.default_targets.filter(
+      (t) => t === args.skill || t.startsWith(`${args.skill}/`),
+    );
     if (targets.length === 0) {
       targets = discoverAllSkillRelativePaths(skillsRoot).filter(
         (t) => t === args.skill || t.startsWith(`${args.skill}/`),
@@ -555,7 +654,11 @@ if (cmd === "scenarios") {
   } else {
     targets = [...pack.default_targets];
   }
-  if (args.maxSkills != null && Number.isFinite(args.maxSkills) && args.maxSkills > 0) {
+  if (
+    args.maxSkills != null &&
+    Number.isFinite(args.maxSkills) &&
+    args.maxSkills > 0
+  ) {
     targets = targets.slice(0, args.maxSkills);
   }
 
@@ -570,8 +673,12 @@ if (cmd === "scenarios") {
 
   if (args.dryRun) {
     const threshLabel =
-      scenarioPassThresh !== undefined ? String(scenarioPassThresh) : `(per-skill eval-config, else ${env.passThreshold})`;
-    console.log(`Dry run — pack: ${pack.id} | scenarios in pack: ${pack.scenarios.length}`);
+      scenarioPassThresh !== undefined
+        ? String(scenarioPassThresh)
+        : `(per-skill eval-config, else ${env.passThreshold})`;
+    console.log(
+      `Dry run — pack: ${pack.id} | scenarios in pack: ${pack.scenarios.length}`,
+    );
     console.log(`Pass threshold: ${threshLabel}`);
     console.log(`Skills to run: ${targets.length}\n`);
     let validationErrors = 0;
@@ -580,7 +687,11 @@ if (cmd === "scenarios") {
       existsSync(join(skillsRoot, ...r.split("/").filter(Boolean), "SKILL.md")),
     );
     for (const rel of targets) {
-      const skillFile = join(skillsRoot, ...rel.split("/").filter(Boolean), "SKILL.md");
+      const skillFile = join(
+        skillsRoot,
+        ...rel.split("/").filter(Boolean),
+        "SKILL.md",
+      );
       if (!existsSync(skillFile)) {
         console.log(`  [skip] ${rel} — no SKILL.md`);
         continue;
@@ -599,7 +710,11 @@ if (cmd === "scenarios") {
     }
     let expandedCaseCount = 0;
     for (const rel of withSkillMd) {
-      expandedCaseCount += expandPackForSkill(pack, rel, `pack:${pack.id}`).length;
+      expandedCaseCount += expandPackForSkill(
+        pack,
+        rel,
+        `pack:${pack.id}`,
+      ).length;
     }
     console.log(
       `\nLLM calls if executed: ~${expandedCaseCount * 2} (execute + grade per case).`,
@@ -613,17 +728,28 @@ if (cmd === "scenarios") {
 
   mkdirSync(env.workspaceDir, { recursive: true });
   if (!env.anthropicApiKey && !process.env.ANTHROPIC_API_KEY) {
-    console.error("scenarios eval requires ANTHROPIC_API_KEY in the environment.");
-    console.error("Tip: use --dry-run to list cases without API; or export ANTHROPIC_API_KEY and re-run.");
+    console.error(
+      "scenarios eval requires ANTHROPIC_API_KEY in the environment.",
+    );
+    console.error(
+      "Tip: use --dry-run to list cases without API; or export ANTHROPIC_API_KEY and re-run.",
+    );
     process.exit(1);
   }
 
   const gateRules = loadGateRules(pluginRoot);
-  const parts: { skill: string; summary: ReturnType<typeof buildSemanticSummary>; passed_threshold: boolean }[] =
-    [];
+  const parts: {
+    skill: string;
+    summary: ReturnType<typeof buildSemanticSummary>;
+    passed_threshold: boolean;
+  }[] = [];
   let allPass = true;
   for (const rel of targets) {
-    const skillFile = join(skillsRoot, ...rel.split("/").filter(Boolean), "SKILL.md");
+    const skillFile = join(
+      skillsRoot,
+      ...rel.split("/").filter(Boolean),
+      "SKILL.md",
+    );
     if (!existsSync(skillFile)) {
       console.warn(`Skipping ${rel}: no SKILL.md`);
       continue;
@@ -638,7 +764,11 @@ if (cmd === "scenarios") {
         writeViewer: args.viewer,
         defaultPassThreshold: defaultTh,
         passThresholdOverride: scenarioPassThresh,
-        workspaceRel: [...rel.split("/").filter(Boolean), "scenarios", pack.id].join("/"),
+        workspaceRel: [
+          ...rel.split("/").filter(Boolean),
+          "scenarios",
+          pack.id,
+        ].join("/"),
         reportSlug: `${rel.replace(/\//g, "__")}__scenarios__${pack.id}`,
         summarySkillName: `${rel} [scenario:${pack.id}]`,
       });
@@ -654,7 +784,11 @@ if (cmd === "scenarios") {
     process.exit(1);
   }
   if (parts.length > 1) {
-    const multiPath = writeMultiReport(reportsDir, parts, scenarioPassThresh ?? defaultTh);
+    const multiPath = writeMultiReport(
+      reportsDir,
+      parts,
+      scenarioPassThresh ?? defaultTh,
+    );
     console.log(`\nMulti-skill report: ${multiPath}`);
     console.log(`Also: ${join(reportsDir, "REPORT_LATEST.md")}`);
   }
@@ -716,7 +850,10 @@ if (cmd === "quick") {
     );
   }
 
-  const exitCode = u.ok === u.total && c.ok === c.total && v.errors.length === 0 && covOk ? 0 : 1;
+  const exitCode =
+    u.ok === u.total && c.ok === c.total && v.errors.length === 0 && covOk
+      ? 0
+      : 1;
   process.exit(exitCode);
 }
 

@@ -1,7 +1,11 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import type { EvalCase, ExpectationResult, GradingResult } from "./eval-config.js";
+import type {
+  EvalCase,
+  ExpectationResult,
+  GradingResult,
+} from "./eval-config.js";
 import type { GlobalEvalEnv } from "./eval-config.js";
 import type { ExecuteResult } from "./execute.js";
 import { runResponseAsserts } from "./assert.js";
@@ -23,15 +27,26 @@ function stripJsonFence(output: string): string {
   return o;
 }
 
-function runGrader(env: GlobalEvalEnv, graderPrompt: string): { ok: boolean; text: string } {
+function runGrader(
+  env: GlobalEvalEnv,
+  graderPrompt: string,
+): { ok: boolean; text: string } {
   for (let attempt = 1; attempt <= env.maxRetries; attempt++) {
-    const r = spawnSync(env.claudeBin, ["-p", graderPrompt, "--output-format", "text"], {
-      cwd: env.pluginRoot,
-      env: { ...process.env, ANTHROPIC_API_KEY: env.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "" },
-      encoding: "utf8",
-      maxBuffer: 8 * 1024 * 1024,
-      timeout: 120_000,
-    });
+    const r = spawnSync(
+      env.claudeBin,
+      ["-p", graderPrompt, "--output-format", "text"],
+      {
+        cwd: env.pluginRoot,
+        env: {
+          ...process.env,
+          ANTHROPIC_API_KEY:
+            env.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
+        },
+        encoding: "utf8",
+        maxBuffer: 8 * 1024 * 1024,
+        timeout: 120_000,
+      },
+    );
     const text = (r.stdout ?? "").trim();
     if (text && !r.error) return { ok: true, text };
     if (attempt < env.maxRetries) sleepSync(env.retryDelaySec * 1000 * attempt);
@@ -56,8 +71,8 @@ export function gradeCase(
     caseDef.strict_grader === true ||
     process.env.JSTACK_EVAL_STRICT_GRADER === "1" ||
     process.env.JSTACK_EVAL_STRICT_GRADER === "true";
-  const strictBlock = strict ?
-      `
+  const strictBlock = strict
+    ? `
 STRICT MODE: Fail the criterion unless the response clearly satisfies it with concrete evidence from the RESPONSE text.
 Vague compliance, hedging without substance, or "mostly right" = FAIL. Prefer false positives on FAIL over false passes.
 `
@@ -87,17 +102,28 @@ Output ONLY valid JSON in this exact format (no markdown, no explanation):
         passed: false,
         evidence: "Grading failed after retries",
       })),
-      summary: { passed: 0, failed: criteria.length, total: criteria.length, pass_rate: 0 },
+      summary: {
+        passed: 0,
+        failed: criteria.length,
+        total: criteria.length,
+        pass_rate: 0,
+      },
     };
     const merged = mergeAssertsIntoGrading(caseDef, execResult, fallback);
-    writeFileSync(join(caseDir, "grading.json"), JSON.stringify(merged, null, 2) + "\n");
+    writeFileSync(
+      join(caseDir, "grading.json"),
+      JSON.stringify(merged, null, 2) + "\n",
+    );
     return merged;
   }
 
   try {
     const parsed = JSON.parse(stripJsonFence(text)) as GradingResult;
     const merged = mergeAssertsIntoGrading(caseDef, execResult, parsed);
-    writeFileSync(join(caseDir, "grading.json"), JSON.stringify(merged, null, 2) + "\n");
+    writeFileSync(
+      join(caseDir, "grading.json"),
+      JSON.stringify(merged, null, 2) + "\n",
+    );
     return merged;
   } catch {
     const fallback: GradingResult = {
@@ -106,15 +132,25 @@ Output ONLY valid JSON in this exact format (no markdown, no explanation):
         passed: false,
         evidence: "Grading JSON parse failed",
       })),
-      summary: { passed: 0, failed: criteria.length, total: criteria.length, pass_rate: 0 },
+      summary: {
+        passed: 0,
+        failed: criteria.length,
+        total: criteria.length,
+        pass_rate: 0,
+      },
     };
     const merged = mergeAssertsIntoGrading(caseDef, execResult, fallback);
-    writeFileSync(join(caseDir, "grading.json"), JSON.stringify(merged, null, 2) + "\n");
+    writeFileSync(
+      join(caseDir, "grading.json"),
+      JSON.stringify(merged, null, 2) + "\n",
+    );
     return merged;
   }
 }
 
-function summarizeExpectations(rows: ExpectationResult[]): GradingResult["summary"] {
+function summarizeExpectations(
+  rows: ExpectationResult[],
+): GradingResult["summary"] {
   const total = rows.length;
   const passed = rows.filter((x) => x.passed).length;
   const failed = total - passed;
@@ -130,7 +166,10 @@ export function mergeAssertsIntoGrading(
   execResult: ExecuteResult,
   grader: GradingResult,
 ): GradingResult {
-  const assertRows = runResponseAsserts(execResult.response || "", caseDef.assert);
+  const assertRows = runResponseAsserts(
+    execResult.response || "",
+    caseDef.assert,
+  );
   if (assertRows.length === 0) return grader;
   const combined = [...grader.expectations, ...assertRows];
   return {

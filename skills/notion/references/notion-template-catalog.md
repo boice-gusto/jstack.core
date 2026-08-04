@@ -132,7 +132,7 @@ A template with `surface: "team_hub"` lands under the resolved team anchor. A te
 3. Set `notion_defaults.template_set = "<my_set>"` in `jstack.config.json`.
 4. Re-run `/jstack:notion setup` — it'll preview what it'll create from the new set.
 
-The CLI loader (`cli/src/lib/notion-templates/index.ts`) validates each set against `NotionTemplateSetSchema` (Zod) at load time. If validation fails, `jstack doctor` surfaces the error.
+There is no automated loader that validates a set's JSON shape. The setup skill reads the catalog directly; check a new set against the Set/Template shape documented above before relying on it.
 
 ## Placeholders in content
 
@@ -157,5 +157,3 @@ When a set is updated, **existing** pages in the user's Notion workspace are NOT
 - `skills/notion/setup/SKILL.md` — the setup workflow
 - `skills/notion/references/notion-vault-and-routing.md` — surface + parent_pages keys + the teamspace rule
 - `skills/notion/references/notion-page-format-rules.md` — formatting conventions
-- `cli/src/lib/notion-templates/types.ts` — Zod types
-- `cli/src/lib/notion-templates/index.ts` — CLI loader

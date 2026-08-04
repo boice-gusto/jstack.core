@@ -8,8 +8,15 @@ import { z } from "zod";
  * the goal here is a working DM loop rather than the full spec.
  */
 
-const CHANNEL_ID = z.string().regex(/^[CD][A-Z0-9]{6,}$/, "must be a canonical Slack channel id (C… or D…)");
-const USER_ID = z.string().regex(/^U[A-Z0-9]{6,}$/, "must be a canonical Slack user id (U…)");
+const CHANNEL_ID = z
+  .string()
+  .regex(
+    /^[CD][A-Z0-9]{6,}$/,
+    "must be a canonical Slack channel id (C… or D…)",
+  );
+const USER_ID = z
+  .string()
+  .regex(/^U[A-Z0-9]{6,}$/, "must be a canonical Slack user id (U…)");
 
 export const IngressPolicySchema = z
   .object({
@@ -30,7 +37,9 @@ export const EgressPolicySchema = z
   })
   .strict();
 
-export const PolicySchema = z.object({ ingress: IngressPolicySchema, egress: EgressPolicySchema }).strict();
+export const PolicySchema = z
+  .object({ ingress: IngressPolicySchema, egress: EgressPolicySchema })
+  .strict();
 
 export const AgentSchema = z
   .object({
@@ -85,7 +94,12 @@ export const CrewConfigSchema = z
             enabled: z.boolean().default(true),
           })
           .strict()
-          .default({ seen: "eyes", done: "white_check_mark", failed: "warning", enabled: true }),
+          .default({
+            seen: "eyes",
+            done: "white_check_mark",
+            failed: "warning",
+            enabled: true,
+          }),
         /**
          * Replies to a message go in ITS thread, so the answer sits inline under the
          * question. Only unprompted posts (digests, alerts) start a new root message.
@@ -107,9 +121,11 @@ export const CrewConfigSchema = z
      * so adding one is a config edit rather than a code change. `enabled: false` keeps an
      * agent's definition while taking it out of routing, which is what "disable" means.
      */
-    agents: z.record(z.string(), AgentSchema).refine((a) => Object.keys(a).length > 0, {
-      message: "at least one agent must be defined",
-    }),
+    agents: z
+      .record(z.string(), AgentSchema)
+      .refine((a) => Object.keys(a).length > 0, {
+        message: "at least one agent must be defined",
+      }),
     policy: PolicySchema,
   })
   .strict();

@@ -47,7 +47,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
-Apply the `jstack-skill-finder` workflow using values from `jstack.config.json`. There is no `templates/knowledge/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Check the CLI skills index and domain routers first for candidates matching the described need, then narrow against each candidate's `when_to_use`/description in the catalog. Name the 1–3 skills that fit and state why each near-miss was rejected; if nothing fits, say so instead of inventing a skill. Never perform the work of the recommended skill yourself.
 
 ### Step 4 — Validate
 Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.

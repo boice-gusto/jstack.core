@@ -13,7 +13,13 @@
  */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  copyFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -29,7 +35,11 @@ function gate(name: string) {
   return { code: r.status, out: `${r.stdout ?? ""}${r.stderr ?? ""}` };
 }
 
-function skill(rel: string, frontmatter: Record<string, string>, body = "body\n") {
+function skill(
+  rel: string,
+  frontmatter: Record<string, string>,
+  body = "body\n",
+) {
   const p = join(root, "skills", rel, "SKILL.md");
   mkdirSync(dirname(p), { recursive: true });
   const fm = Object.entries(frontmatter)
@@ -45,7 +55,10 @@ function generator(orchestrators: string[], children: Record<string, string>) {
   const kids = Object.entries(children)
     .map(([k, v]) => `    "${k}": "${v}",`)
     .join("\n");
-  writeFileSync(p, `ORCHESTRATORS = {\n${orch}\n}\nORCH_CHILDREN = {\n${kids}\n}\n`);
+  writeFileSync(
+    p,
+    `ORCHESTRATORS = {\n${orch}\n}\nORCH_CHILDREN = {\n${kids}\n}\n`,
+  );
 }
 
 function prompt(rel: string, text = "policy text\n") {
@@ -67,8 +80,14 @@ afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe("check-router-children", () => {
   test("passes when a router's list matches disk", () => {
-    skill("jira", { name: "jstack-jira", description: "Route Jira requests to the right sub-skill." });
-    skill("jira/create", { name: "jstack-jira-create", description: "Create an issue." });
+    skill("jira", {
+      name: "jstack-jira",
+      description: "Route Jira requests to the right sub-skill.",
+    });
+    skill("jira/create", {
+      name: "jstack-jira-create",
+      description: "Create an issue.",
+    });
     generator(["jira"], { jira: "create" });
     const { code, out } = gate("check-router-children");
     expect(code).toBe(0);
@@ -77,9 +96,18 @@ describe("check-router-children", () => {
 
   // The real defect: ten of fifteen routers under-listed their children.
   test("fails when a real child is not advertised", () => {
-    skill("jira", { name: "jstack-jira", description: "Route Jira requests to the right sub-skill." });
-    skill("jira/create", { name: "jstack-jira-create", description: "Create." });
-    skill("jira/transition", { name: "jstack-jira-transition", description: "Transition." });
+    skill("jira", {
+      name: "jstack-jira",
+      description: "Route Jira requests to the right sub-skill.",
+    });
+    skill("jira/create", {
+      name: "jstack-jira-create",
+      description: "Create.",
+    });
+    skill("jira/transition", {
+      name: "jstack-jira-transition",
+      description: "Transition.",
+    });
     generator(["jira"], { jira: "create" });
     const { code, out } = gate("check-router-children");
     expect(code).toBe(1);
@@ -88,8 +116,14 @@ describe("check-router-children", () => {
   });
 
   test("fails when a listed child does not exist on disk", () => {
-    skill("jira", { name: "jstack-jira", description: "Route Jira requests to the right sub-skill." });
-    skill("jira/create", { name: "jstack-jira-create", description: "Create." });
+    skill("jira", {
+      name: "jstack-jira",
+      description: "Route Jira requests to the right sub-skill.",
+    });
+    skill("jira/create", {
+      name: "jstack-jira-create",
+      description: "Create.",
+    });
     generator(["jira"], { jira: "create, ghost" });
     const { code, out } = gate("check-router-children");
     expect(code).toBe(1);
@@ -99,8 +133,14 @@ describe("check-router-children", () => {
 
   // `computer-use` shipped in exactly this state.
   test("fails when a skill claims to route but is not registered as an orchestrator", () => {
-    skill("computer-use", { name: "jstack-computer-use", description: "Route computer-use requests to the right surface." });
-    skill("computer-use/cua", { name: "jstack-cua", description: "Drive the desktop." });
+    skill("computer-use", {
+      name: "jstack-computer-use",
+      description: "Route computer-use requests to the right surface.",
+    });
+    skill("computer-use/cua", {
+      name: "jstack-cua",
+      description: "Drive the desktop.",
+    });
     generator([], {});
     const { code, out } = gate("check-router-children");
     expect(code).toBe(1);
@@ -108,7 +148,10 @@ describe("check-router-children", () => {
   });
 
   test("fails when a router claims to route but has no children", () => {
-    skill("lonely", { name: "jstack-lonely", description: "Route lonely requests to the right sub-skill." });
+    skill("lonely", {
+      name: "jstack-lonely",
+      description: "Route lonely requests to the right sub-skill.",
+    });
     generator([], {});
     const { code, out } = gate("check-router-children");
     expect(code).toBe(1);
@@ -124,7 +167,10 @@ describe("check-router-children", () => {
 describe("check-write-gates", () => {
   test("fails when a declared writer is missing its invocation gate", () => {
     // `self/diary` is in the real WRITES manifest.
-    skill("self/diary", { name: "jstack-diary", description: "Write a diary entry." });
+    skill("self/diary", {
+      name: "jstack-diary",
+      description: "Write a diary entry.",
+    });
     const { code, out } = gate("check-write-gates");
     expect(code).toBe(1);
     expect(out).toContain("mutates external state but is missing");
@@ -160,16 +206,28 @@ describe("check-write-gates", () => {
 
 describe("check-name-collisions", () => {
   test("passes when near-identical names disambiguate each other", () => {
-    skill("a", { name: "jstack-workflow-builder", description: '"Chains. Not jstack-workflows-builder."' });
-    skill("b", { name: "jstack-workflows-builder", description: '"Browser. Not jstack-workflow-builder."' });
+    skill("a", {
+      name: "jstack-workflow-builder",
+      description: '"Chains. Not jstack-workflows-builder."',
+    });
+    skill("b", {
+      name: "jstack-workflows-builder",
+      description: '"Browser. Not jstack-workflow-builder."',
+    });
     const { code, out } = gate("check-name-collisions");
     expect(code).toBe(0);
     expect(out).toContain("near-collisions all disambiguated");
   });
 
   test("fails when a one-character collision is undisambiguated", () => {
-    skill("a", { name: "jstack-workflow-builder", description: "Chains and routines." });
-    skill("b", { name: "jstack-workflows-builder", description: "Browser flows." });
+    skill("a", {
+      name: "jstack-workflow-builder",
+      description: "Chains and routines.",
+    });
+    skill("b", {
+      name: "jstack-workflows-builder",
+      description: "Browser flows.",
+    });
     const { code, out } = gate("check-name-collisions");
     expect(code).toBe(1);
     expect(out).toContain("differ by one character");
@@ -183,7 +241,10 @@ describe("check-name-collisions", () => {
 
   // One side naming the other is not enough — a reader can land on either.
   test("fails when only one side names the other", () => {
-    skill("a", { name: "jstack-alpha-thing", description: '"See jstack-alphas-thing."' });
+    skill("a", {
+      name: "jstack-alpha-thing",
+      description: '"See jstack-alphas-thing."',
+    });
     skill("b", { name: "jstack-alphas-thing", description: "Unrelated work." });
     const { code, out } = gate("check-name-collisions");
     expect(code).toBe(1);
@@ -196,8 +257,11 @@ describe("check-name-collisions", () => {
 describe("check-prompt-wiring", () => {
   test("passes when every prompt is !cat'd by some skill", () => {
     prompt("policies/review-policy.md");
-    skill("review", { name: "jstack-review", description: "Review." },
-      "!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md\n");
+    skill(
+      "review",
+      { name: "jstack-review", description: "Review." },
+      "!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md\n",
+    );
     const { code, out } = gate("check-prompt-wiring");
     expect(code).toBe(0);
     expect(out).toContain("all loaded by at least one skill or agent");
@@ -215,8 +279,11 @@ describe("check-prompt-wiring", () => {
   // `sdlc` said "read from prompts/policies/" for a long time while loading nothing.
   test("a generic directory mention does not count as loading", () => {
     prompt("policies/review-policy.md");
-    skill("review", { name: "jstack-review", description: "Review." },
-      "Read the policy from `prompts/policies/` when available.\n");
+    skill(
+      "review",
+      { name: "jstack-review", description: "Review." },
+      "Read the policy from `prompts/policies/` when available.\n",
+    );
     expect(gate("check-prompt-wiring").code).toBe(1);
   });
 
@@ -225,8 +292,11 @@ describe("check-prompt-wiring", () => {
   // verified by making that exact change and watching the suite stay green.
   test("a prose mention of the full .md path does not count as loading", () => {
     prompt("policies/review-policy.md");
-    skill("review", { name: "jstack-review", description: "Review." },
-      "See `prompts/policies/review-policy.md` for the org policy shape.\n");
+    skill(
+      "review",
+      { name: "jstack-review", description: "Review." },
+      "See `prompts/policies/review-policy.md` for the org policy shape.\n",
+    );
     const { code, out } = gate("check-prompt-wiring");
     expect(code).toBe(1);
     expect(out).toContain("is loaded by nothing");
@@ -234,9 +304,12 @@ describe("check-prompt-wiring", () => {
 
   test("fails when a skill !cats a prompt that does not exist", () => {
     prompt("policies/review-policy.md");
-    skill("review", { name: "jstack-review", description: "Review." },
+    skill(
+      "review",
+      { name: "jstack-review", description: "Review." },
       "!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/review-policy.md\n" +
-      "!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/ghost.md\n");
+        "!cat ${CLAUDE_PLUGIN_ROOT}/prompts/policies/ghost.md\n",
+    );
     const { code, out } = gate("check-prompt-wiring");
     expect(code).toBe(1);
     expect(out).toContain("does not exist");
@@ -244,8 +317,10 @@ describe("check-prompt-wiring", () => {
 
   test("an agent may satisfy the load requirement", () => {
     prompt("personas/ceo.md");
-    writeFileSync(join(root, "agents", "review-counsel.md"),
-      "---\nname: x\n---\n!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/ceo.md\n");
+    writeFileSync(
+      join(root, "agents", "review-counsel.md"),
+      "---\nname: x\n---\n!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/ceo.md\n",
+    );
     expect(gate("check-prompt-wiring").code).toBe(0);
   });
 });
@@ -254,10 +329,14 @@ describe("check-prompt-wiring", () => {
 
 describe("JSTACK_CHECK_ROOT", () => {
   test("gates read the real repo when the override is unset", () => {
-    const r = spawnSync("bun", ["run", join(SCRIPTS, "check-prompt-wiring.ts")], {
-      encoding: "utf8",
-      env: { ...process.env, JSTACK_CHECK_ROOT: "", NO_COLOR: "1" },
-    });
+    const r = spawnSync(
+      "bun",
+      ["run", join(SCRIPTS, "check-prompt-wiring.ts")],
+      {
+        encoding: "utf8",
+        env: { ...process.env, JSTACK_CHECK_ROOT: "", NO_COLOR: "1" },
+      },
+    );
     // The real repo has 20 prompt files; a fixture would report far fewer.
     expect(r.status).toBe(0);
     expect(`${r.stdout}`).toContain("20 prompt file(s)");

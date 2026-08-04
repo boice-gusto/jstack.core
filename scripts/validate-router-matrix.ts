@@ -11,7 +11,13 @@ import { loadScenarioPackFromPath } from "../evals/scenario-pack.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const routerJsonPath = join(root, "evals", "router-skills.json");
-const matrixPackPath = join(root, "evals", "scenarios", "packs", "router-matrix.yaml");
+const matrixPackPath = join(
+  root,
+  "evals",
+  "scenarios",
+  "packs",
+  "router-matrix.yaml",
+);
 
 interface RouterSkillsFile {
   routers: string[];
@@ -33,7 +39,9 @@ function main(): void {
     process.exit(1);
   }
 
-  const { routers } = JSON.parse(readFileSync(routerJsonPath, "utf8")) as RouterSkillsFile;
+  const { routers } = JSON.parse(
+    readFileSync(routerJsonPath, "utf8"),
+  ) as RouterSkillsFile;
   if (!Array.isArray(routers) || routers.length === 0) {
     console.error("router-skills.json: routers must be a non-empty array");
     process.exit(1);
@@ -53,7 +61,9 @@ function main(): void {
   }
 
   if (pack.id !== "router-matrix") {
-    errors.push(`router-matrix pack id must be "router-matrix", got "${pack.id}"`);
+    errors.push(
+      `router-matrix pack id must be "router-matrix", got "${pack.id}"`,
+    );
   }
 
   const targetSet = new Set(pack.default_targets);
@@ -64,7 +74,9 @@ function main(): void {
   }
   for (const t of pack.default_targets) {
     if (!routerSet.has(t)) {
-      errors.push(`router-matrix default_targets has "${t}" not listed in router-skills.json`);
+      errors.push(
+        `router-matrix default_targets has "${t}" not listed in router-skills.json`,
+      );
     }
   }
 
@@ -76,7 +88,9 @@ function main(): void {
     scenarioIds.add(s.id);
 
     if (!routerSet.has(s.id)) {
-      errors.push(`scenario id "${s.id}" is not a canonical router from router-skills.json`);
+      errors.push(
+        `scenario id "${s.id}" is not a canonical router from router-skills.json`,
+      );
     }
 
     const tg = s.targets;
@@ -99,8 +113,12 @@ function main(): void {
     );
   }
 
-  if (sortedCopy(pack.default_targets).join(",") !== sortedCopy(routers).join(",")) {
-    errors.push("default_targets must list the same routers as router-skills.json (order may differ)");
+  if (
+    sortedCopy(pack.default_targets).join(",") !== sortedCopy(routers).join(",")
+  ) {
+    errors.push(
+      "default_targets must list the same routers as router-skills.json (order may differ)",
+    );
   }
 
   if (errors.length) {

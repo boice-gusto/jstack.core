@@ -43,7 +43,13 @@ describe("executeCase — files[].path containment", () => {
     try {
       const evilTarget = join(outsideDir, "PWNED.txt");
       const rel = "../".repeat(20) + evilTarget.replace(/^\//, "");
-      const result = executeCase(env, "fake-skill", "skill content", baseCase([{ path: rel, content: "PWNED" }]), join(outsideDir, "workspace"));
+      const result = executeCase(
+        env,
+        "fake-skill",
+        "skill content",
+        baseCase([{ path: rel, content: "PWNED" }]),
+        join(outsideDir, "workspace"),
+      );
 
       expect(result.status).toBe("error");
       expect(result.error).toMatch(/escapes the case workspace/);
@@ -57,7 +63,13 @@ describe("executeCase — files[].path containment", () => {
     const outsideDir = mktempScratch();
     try {
       const evilTarget = join(outsideDir, "PWNED.txt");
-      const result = executeCase(env, "fake-skill", "skill content", baseCase([{ path: evilTarget, content: "PWNED" }]), join(outsideDir, "workspace"));
+      const result = executeCase(
+        env,
+        "fake-skill",
+        "skill content",
+        baseCase([{ path: evilTarget, content: "PWNED" }]),
+        join(outsideDir, "workspace"),
+      );
 
       expect(result.status).toBe("error");
       expect(existsSync(evilTarget)).toBe(false);

@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { expandHome } from "./store.js";
@@ -44,7 +50,11 @@ export function installPaths(stateDir: string): InstallPaths {
   };
 }
 
-export function renderPlist(p: InstallPaths, projectRoot: string, intervalSeconds: number): string {
+export function renderPlist(
+  p: InstallPaths,
+  projectRoot: string,
+  intervalSeconds: number,
+): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -75,10 +85,16 @@ export function renderPlist(p: InstallPaths, projectRoot: string, intervalSecond
 `;
 }
 
-export function writePlist(p: InstallPaths, projectRoot: string, intervalSeconds: number): void {
+export function writePlist(
+  p: InstallPaths,
+  projectRoot: string,
+  intervalSeconds: number,
+): void {
   mkdirSync(join(homedir(), "Library", "LaunchAgents"), { recursive: true });
   mkdirSync(join(expandHome("~/.jstack/crew"), "logs"), { recursive: true });
-  writeFileSync(p.plist, renderPlist(p, projectRoot, intervalSeconds), { mode: 0o600 });
+  writeFileSync(p.plist, renderPlist(p, projectRoot, intervalSeconds), {
+    mode: 0o600,
+  });
 }
 
 export function removePlist(p: InstallPaths): void {
@@ -86,7 +102,11 @@ export function removePlist(p: InstallPaths): void {
 }
 
 export function isLoaded(): boolean {
-  const r = Bun.spawnSync(["launchctl", "print", `gui/${process.getuid?.() ?? 0}/${LABEL}`]);
+  const r = Bun.spawnSync([
+    "launchctl",
+    "print",
+    `gui/${process.getuid?.() ?? 0}/${LABEL}`,
+  ]);
   return r.exitCode === 0;
 }
 
@@ -124,7 +144,9 @@ export function bootout(): { ok: boolean; detail: string } {
  */
 export function isTccProtected(workspace: string): boolean {
   const p = expandHome(workspace);
-  const protectedRoots = ["Documents", "Desktop", "Downloads"].map((d) => join(homedir(), d));
+  const protectedRoots = ["Documents", "Desktop", "Downloads"].map((d) =>
+    join(homedir(), d),
+  );
   return protectedRoots.some((root) => p === root || p.startsWith(`${root}/`));
 }
 
@@ -135,7 +157,12 @@ export function binaryLooksCompiled(binary: string): boolean {
     const fd = readFileSync(binary);
     // Mach-O magic: 0xfeedfacf (64-bit) or 0xcafebabe (universal).
     const m = fd.readUInt32BE(0);
-    return m === 0xcffaedfe || m === 0xfeedfacf || m === 0xcafebabe || m === 0xbebafeca;
+    return (
+      m === 0xcffaedfe ||
+      m === 0xfeedfacf ||
+      m === 0xcafebabe ||
+      m === 0xbebafeca
+    );
   } catch {
     return false;
   }

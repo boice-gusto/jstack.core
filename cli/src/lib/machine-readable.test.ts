@@ -12,8 +12,16 @@ describe("resolveMachineReadableSettings", () => {
   test("user overrides defaults", () => {
     expect(
       resolveMachineReadableSettings(
-        { skills: { machine_readable: { enabled: false, require_schema_ref: true } } },
-        { skills: { machine_readable: { enabled: true, require_schema_ref: false } } },
+        {
+          skills: {
+            machine_readable: { enabled: false, require_schema_ref: true },
+          },
+        },
+        {
+          skills: {
+            machine_readable: { enabled: true, require_schema_ref: false },
+          },
+        },
       ),
     ).toEqual({ enabled: false, require_schema_ref: true });
   });

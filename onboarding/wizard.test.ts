@@ -36,7 +36,9 @@ function harness(answers: Answers): Harness {
   const endMarker = "let current = 0;";
   const end = script.indexOf(endMarker);
   if (start === -1 || end === -1 || end < start) {
-    throw new Error("wizard.html: logic markers moved; update onboarding/wizard.test.ts");
+    throw new Error(
+      "wizard.html: logic markers moved; update onboarding/wizard.test.ts",
+    );
   }
   const logic = script.slice(start, end);
 
@@ -185,11 +187,16 @@ describe("onboarding wizard — validation", () => {
   });
 
   test("accepts a real IANA timezone", () => {
-    expect(v({ team: { name: "P", timezone: "America/Los_Angeles" } }).warns).toEqual([]);
+    expect(
+      v({ team: { name: "P", timezone: "America/Los_Angeles" } }).warns,
+    ).toEqual([]);
   });
 
   test("warns when the default target has no matching URL", () => {
-    const r = v({ team: { name: "P" }, session: { default_gbrain_target: "team" } });
+    const r = v({
+      team: { name: "P" },
+      session: { default_gbrain_target: "team" },
+    });
     expect(r.warns.join(" ")).toMatch(/no team knowledge base URL/);
   });
 
@@ -204,14 +211,19 @@ describe("onboarding wizard — validation", () => {
     ["slack bot token", "xoxb-123456789-abcdefghijklmnop"],
     ["api key", "sk-abcdefghijklmnopqrstuvwx"],
   ])("rejects a pasted %s as an error", (_label, secret) => {
-    const r = v({ team: { name: "P" }, integrations: { jira: { base_url: secret } } });
+    const r = v({
+      team: { name: "P" },
+      integrations: { jira: { base_url: secret } },
+    });
     expect(r.errs.join(" ")).toMatch(/looks like a token/);
   });
 
   test("does not false-positive on ordinary values", () => {
     const r = v({
       team: { name: "Platform Engineering" },
-      integrations: { jira: { project_key: "ABC", base_url: "https://example.invalid" } },
+      integrations: {
+        jira: { project_key: "ABC", base_url: "https://example.invalid" },
+      },
     });
     expect(r.errs).toEqual([]);
   });
@@ -219,26 +231,62 @@ describe("onboarding wizard — validation", () => {
   // Confirmed bypasses of the original regex `/(?:ghp_|xox[baprs]-|sk-[A-Za-z0-9]{16,})/`.
   // Each of these slipped past the old validator undetected before the fix.
   test.each([
-    ["github fine-grained PAT", "github_pat_11AAAAAAA0aaaaaaaaaaaa_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+    [
+      "github fine-grained PAT",
+      "github_pat_11AAAAAAA0aaaaaaaaaaaa_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    ],
     ["github oauth token (gho_)", "gho_16CharactersXXXXXXXXXXXXXXXXX"],
     ["github user-to-server token (ghu_)", "ghu_16CharactersXXXXXXXXXXXXXXXXX"],
-    ["github server-to-server token (ghs_)", "ghs_16CharactersXXXXXXXXXXXXXXXXX"],
+    [
+      "github server-to-server token (ghs_)",
+      "ghs_16CharactersXXXXXXXXXXXXXXXXX",
+    ],
     ["github refresh token (ghr_)", "ghr_16CharactersXXXXXXXXXXXXXXXXX"],
     ["atlassian api token", "ATATT3xFfGF0T1eXaMpLeToKeNvAlUe1234567890ABCDEF"],
-    ["slack app-level token", "xapp-1-A0123456789-1234567890123-abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567"],
+    [
+      "slack app-level token",
+      "xapp-1-A0123456789-1234567890123-abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234567",
+    ],
     ["aws access key id", "AKIAIOSFODNN7EXAMPLE"],
     ["aws temporary access key id", "ASIAIOSFODNN7EXAMPLE"],
     ["google api key", "AIzaSyD9tSrke72PouQMnMXa7eZSW0jkFMBWY12"],
-    ["openai project key (sk-proj-)", "sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEF"],
-    ["anthropic api key (sk-ant-)", "sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMN"],
-    ["jwt", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"],
-    ["pem private key block", "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC\n-----END PRIVATE KEY-----"],
-    ["pem rsa private key block", "-----BEGIN RSA PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC\n-----END RSA PRIVATE KEY-----"],
-    ["uppercased github token (casing trick)", "GHP_abcdefghijklmnopqrstuvwxyz0123456789"],
-    ["zero-width-space split token (obfuscation trick)", "gh\u200bp_abcdefghijklmnopqrstuvwxyz0123456789"],
-    ["generic high-entropy mixed-case secret", "K7gN3xTt7qJ7dFj4mE9pQ2wZ8yB1cV6nR0sU5aH3lP9oI2uXyZ0"],
+    [
+      "openai project key (sk-proj-)",
+      "sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEF",
+    ],
+    [
+      "anthropic api key (sk-ant-)",
+      "sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMN",
+    ],
+    [
+      "jwt",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U",
+    ],
+    [
+      "pem private key block",
+      "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC\n-----END PRIVATE KEY-----",
+    ],
+    [
+      "pem rsa private key block",
+      "-----BEGIN RSA PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC\n-----END RSA PRIVATE KEY-----",
+    ],
+    [
+      "uppercased github token (casing trick)",
+      "GHP_abcdefghijklmnopqrstuvwxyz0123456789",
+    ],
+    [
+      "zero-width-space split token (obfuscation trick)",
+      "gh\u200bp_abcdefghijklmnopqrstuvwxyz0123456789",
+    ],
+    [
+      "generic high-entropy mixed-case secret",
+      "K7gN3xTt7qJ7dFj4mE9pQ2wZ8yB1cV6nR0sU5aH3lP9oI2uXyZ0",
+    ],
   ])("rejects a smuggled %s as an error", (_label, secret) => {
-    const r = v({ team: { name: "P" }, integrations: { jira: { base_url: secret } } });
+    const r = v({
+      team: { name: "P" },
+      integrations: { jira: { base_url: secret } },
+    });
     expect(r.errs.join(" ")).toMatch(/looks like a token/);
   });
 
@@ -247,14 +295,19 @@ describe("onboarding wizard — validation", () => {
     // JSON.stringify turns that into a literal `\n` inside the serialized blob, which
     // must not be enough to break a length-gated pattern like `sk-...`.
     const secret = "sk-ant-api03-abcd\nefgh1234567890123456";
-    const r = v({ team: { name: "P" }, integrations: { jira: { base_url: secret } } });
+    const r = v({
+      team: { name: "P" },
+      integrations: { jira: { base_url: secret } },
+    });
     expect(r.errs.join(" ")).toMatch(/looks like a token/);
   });
 
   test("does not false-positive on a Notion-shaped 32-hex database id", () => {
     const r = v({
       team: { name: "Platform Engineering" },
-      integrations: { notion: { parent_page_id: "0123456789abcdef0123456789abcdef" } },
+      integrations: {
+        notion: { parent_page_id: "0123456789abcdef0123456789abcdef" },
+      },
     });
     expect(r.errs).toEqual([]);
   });

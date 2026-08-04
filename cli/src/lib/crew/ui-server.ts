@@ -54,9 +54,21 @@ const PATH_ABS = /^\/(?!.*(?:^|\/)\.\.(?:\/|$))[\w \-./]{1,200}$/;
  * point: the allowlist is the security boundary, not the front end.
  */
 export const ACTIONS: Record<string, UiAction> = {
-  status: { argv: () => ["status", "--json"], mutating: false, description: "Read status" },
-  doctor: { argv: () => ["doctor", "--json"], mutating: false, description: "Run preflight checks" },
-  agentsList: { argv: () => ["agents", "list", "--json"], mutating: false, description: "List agents" },
+  status: {
+    argv: () => ["status", "--json"],
+    mutating: false,
+    description: "Read status",
+  },
+  doctor: {
+    argv: () => ["doctor", "--json"],
+    mutating: false,
+    description: "Run preflight checks",
+  },
+  agentsList: {
+    argv: () => ["agents", "list", "--json"],
+    mutating: false,
+    description: "List agents",
+  },
   agentShow: {
     argv: (p) => ["agents", "show", p.id!, "--json"],
     params: { id: AGENT_ID },
@@ -70,7 +82,11 @@ export const ACTIONS: Record<string, UiAction> = {
     description: "Why a message got no reply",
   },
 
-  tick: { argv: () => ["tick"], mutating: true, description: "Run one poll cycle now" },
+  tick: {
+    argv: () => ["tick"],
+    mutating: true,
+    description: "Run one poll cycle now",
+  },
   agentEnable: {
     argv: (p) => ["agents", "enable", p.id!],
     params: { id: AGENT_ID },
@@ -99,7 +115,12 @@ export const ACTIONS: Record<string, UiAction> = {
       ...(p.description ? ["--description", p.description] : []),
       ...(p.model ? ["--model", p.model] : []),
     ],
-    params: { id: AGENT_ID, workspace: PATH_ABS, description: FREEFORM, model: MODEL },
+    params: {
+      id: AGENT_ID,
+      workspace: PATH_ABS,
+      description: FREEFORM,
+      model: MODEL,
+    },
     mutating: true,
     description: "Create an agent (starts disabled)",
   },
@@ -113,7 +134,13 @@ export const ACTIONS: Record<string, UiAction> = {
       ...(p.description ? ["--description", p.description] : []),
       ...(p.persona ? ["--persona", p.persona] : []),
     ],
-    params: { id: AGENT_ID, name: FREEFORM, model: MODEL, description: FREEFORM, persona: FREEFORM },
+    params: {
+      id: AGENT_ID,
+      name: FREEFORM,
+      model: MODEL,
+      description: FREEFORM,
+      persona: FREEFORM,
+    },
     mutating: true,
     description: "Change an agent",
   },
@@ -168,13 +195,21 @@ export function guardRequest(
   const host = req.headers.get("host");
   const allowedHosts = [`127.0.0.1:${opts.port}`, `localhost:${opts.port}`];
   if (!host || !allowedHosts.includes(host)) {
-    return { ok: false, status: 403, reason: `unexpected Host: ${host ?? "(none)"}` };
+    return {
+      ok: false,
+      status: 403,
+      reason: `unexpected Host: ${host ?? "(none)"}`,
+    };
   }
 
   // 5. Fetch metadata. A cross-site request cannot forge this.
   const site = req.headers.get("sec-fetch-site");
   if (site && site !== "same-origin" && site !== "none") {
-    return { ok: false, status: 403, reason: `cross-site request (Sec-Fetch-Site: ${site})` };
+    return {
+      ok: false,
+      status: 403,
+      reason: `cross-site request (Sec-Fetch-Site: ${site})`,
+    };
   }
 
   // 4. Origin, when the browser sends one, must be ours.
@@ -185,11 +220,17 @@ export function guardRequest(
 
   // 1 + 2. Token. Mutations must carry it in a header, which a cross-origin form cannot set.
   if (opts.mutating) {
-    if (req.method !== "POST") return { ok: false, status: 405, reason: "mutations must be POST" };
+    if (req.method !== "POST")
+      return { ok: false, status: 405, reason: "mutations must be POST" };
     if (!tokenMatches(opts.token, req.headers.get("x-crew-token"))) {
       return { ok: false, status: 401, reason: "missing or bad X-Crew-Token" };
     }
-  } else if (!tokenMatches(opts.token, url.searchParams.get("t") ?? req.headers.get("x-crew-token"))) {
+  } else if (
+    !tokenMatches(
+      opts.token,
+      url.searchParams.get("t") ?? req.headers.get("x-crew-token"),
+    )
+  ) {
     return { ok: false, status: 401, reason: "missing or bad token" };
   }
 
@@ -197,13 +238,20 @@ export function guardRequest(
 }
 
 /** Validate params against the action's own patterns. Unknown keys are dropped, not passed. */
-export function validateParams(action: UiAction, raw: Record<string, unknown>): { ok: true; params: Record<string, string> } | { ok: false; reason: string } {
+export function validateParams(
+  action: UiAction,
+  raw: Record<string, unknown>,
+):
+  | { ok: true; params: Record<string, string> }
+  | { ok: false; reason: string } {
   const out: Record<string, string> = {};
   for (const [key, pattern] of Object.entries(action.params ?? {})) {
     const v = raw[key];
     if (v === undefined || v === null || v === "") continue;
-    if (typeof v !== "string") return { ok: false, reason: `${key} must be a string` };
-    if (!pattern.test(v)) return { ok: false, reason: `${key} rejected by its pattern` };
+    if (typeof v !== "string")
+      return { ok: false, reason: `${key} must be a string` };
+    if (!pattern.test(v))
+      return { ok: false, reason: `${key} rejected by its pattern` };
     out[key] = v;
   }
   // Required-ness is expressed by the argv builder using `p.x!`; check the obvious ones.

@@ -10,7 +10,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function coreLogoPlaceholderDataUrl(): string {
-  const abs = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "logo.png");
+  const abs = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "assets",
+    "logo.png",
+  );
   if (!existsSync(abs)) {
     throw new Error(`Core logo missing: ${abs}`);
   }
@@ -120,6 +125,11 @@ export function patchEvalViewerTemplate(html: string): string {
     EVAL_FAVICON_END,
     `\n  ${buildJstackFaviconLink()}\n  `,
   );
-  out = replaceBetweenMarkerPair(out, EVAL_BRAND_BEGIN, EVAL_BRAND_END, `\n  ${buildJstackPlainBrandHeader()}\n  `);
+  out = replaceBetweenMarkerPair(
+    out,
+    EVAL_BRAND_BEGIN,
+    EVAL_BRAND_END,
+    `\n  ${buildJstackPlainBrandHeader()}\n  `,
+  );
   return out;
 }

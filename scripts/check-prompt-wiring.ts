@@ -22,7 +22,9 @@ import { Glob } from "bun";
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
 // mutating the real repo, which is how earlier verification work destroyed uncommitted files.
-const root = process.env.JSTACK_CHECK_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), "..");
+const root =
+  process.env.JSTACK_CHECK_ROOT ??
+  join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Prompt files that are deliberately not `!cat`'d, each with a reason. */
 const EXEMPT: Record<string, string> = {};
@@ -32,7 +34,9 @@ const loaded = new Map<string, Set<string>>();
 for (const dir of ["skills", "agents"]) {
   for (const rel of new Glob("**/*.md").scanSync(join(root, dir))) {
     const body = readFileSync(join(root, dir, rel), "utf8");
-    for (const m of body.matchAll(/!cat\s+\$\{CLAUDE_PLUGIN_ROOT\}\/(prompts\/[A-Za-z0-9_./-]+\.md)/g)) {
+    for (const m of body.matchAll(
+      /!cat\s+\$\{CLAUDE_PLUGIN_ROOT\}\/(prompts\/[A-Za-z0-9_./-]+\.md)/g,
+    )) {
       if (!loaded.has(m[1])) loaded.set(m[1], new Set());
       loaded.get(m[1])!.add(`${dir}/${dirname(rel)}`);
     }
@@ -57,7 +61,9 @@ for (const [p, consumers] of loaded) {
   try {
     readFileSync(join(root, p), "utf8");
   } catch {
-    missing.push(`${p} is !cat'd by ${[...consumers].join(", ")} but does not exist`);
+    missing.push(
+      `${p} is !cat'd by ${[...consumers].join(", ")} but does not exist`,
+    );
   }
 }
 
@@ -76,5 +82,7 @@ if (errors.length > 0) {
   for (const e of errors) console.error(`  ${e}`);
   process.exit(1);
 }
-console.log(`check-prompt-wiring OK (${ok} prompt file(s), all loaded by at least one skill or agent)`);
+console.log(
+  `check-prompt-wiring OK (${ok} prompt file(s), all loaded by at least one skill or agent)`,
+);
 void relative;

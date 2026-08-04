@@ -49,7 +49,7 @@ async function hmacSha256Base64Url(secret: string, message: string): Promise<str
   return bytesToBase64Url(new Uint8Array(sig));
 }
 
-function timingSafeEqualUtf8(a: string, b: string): boolean {
+export function timingSafeEqualUtf8(a: string, b: string): boolean {
   const ea = new TextEncoder().encode(a);
   const eb = new TextEncoder().encode(b);
   if (ea.length !== eb.length) return false;

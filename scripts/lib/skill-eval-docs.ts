@@ -33,7 +33,10 @@ export interface EvalDoc {
   name: string;
   prompt: string;
   criteria?: string[];
-  grading?: { rubric: Array<{ description: string; pass_if: string }>; pass_threshold: number };
+  grading?: {
+    rubric: Array<{ description: string; pass_if: string }>;
+    pass_threshold: number;
+  };
   assert?: Record<string, unknown>;
   expect_skill: boolean;
   timeout: number;
@@ -141,7 +144,9 @@ export function boundaryDoc(f: SkillFacts): EvalDoc {
     );
   }
   if (f.chainsTo.length > 0) {
-    criteria.push(`Hands off rather than absorbing the work (e.g. to ${f.chainsTo.join(", ")})`);
+    criteria.push(
+      `Hands off rather than absorbing the work (e.g. to ${f.chainsTo.join(", ")})`,
+    );
   }
 
   return {
@@ -171,7 +176,8 @@ export function rubricDoc(f: SkillFacts): EvalDoc {
 
   const rubric: Array<{ description: string; pass_if: string }> = [
     {
-      description: "Identifies this skill's specific purpose, not a generic description of an assistant",
+      description:
+        "Identifies this skill's specific purpose, not a generic description of an assistant",
       pass_if: `response states what ${f.id} is for and when to use it, in terms specific to ${
         f.category || "its domain"
       }`,

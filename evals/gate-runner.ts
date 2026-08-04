@@ -60,16 +60,22 @@ export function checkGates(
   const failures: string[] = [];
   if (rule.max_tokens != null) {
     if (!isCheckableMetric(metrics.tokens)) {
-      failures.push(`tokens metric missing/invalid (${JSON.stringify(metrics.tokens)}) — cannot verify max_tokens ${rule.max_tokens}`);
+      failures.push(
+        `tokens metric missing/invalid (${JSON.stringify(metrics.tokens)}) — cannot verify max_tokens ${rule.max_tokens}`,
+      );
     } else if (metrics.tokens > rule.max_tokens) {
       failures.push(`tokens ${metrics.tokens} > ${rule.max_tokens}`);
     }
   }
   if (rule.max_latency_ms != null) {
     if (!isCheckableMetric(metrics.latency_ms)) {
-      failures.push(`latency metric missing/invalid (${JSON.stringify(metrics.latency_ms)}) — cannot verify max_latency_ms ${rule.max_latency_ms}`);
+      failures.push(
+        `latency metric missing/invalid (${JSON.stringify(metrics.latency_ms)}) — cannot verify max_latency_ms ${rule.max_latency_ms}`,
+      );
     } else if (metrics.latency_ms > rule.max_latency_ms) {
-      failures.push(`latency ${metrics.latency_ms}ms > ${rule.max_latency_ms}ms`);
+      failures.push(
+        `latency ${metrics.latency_ms}ms > ${rule.max_latency_ms}ms`,
+      );
     }
   }
   for (const f of rule.required_output_fields ?? []) {
@@ -83,7 +89,12 @@ export function checkGates(
 
 /** Minimal shape `evaluateSemanticSummaryGate` needs from a persisted semantic report. */
 export interface GateableSummary {
-  results: Array<{ name: string; tokens?: unknown; elapsed?: unknown; response?: string }>;
+  results: Array<{
+    name: string;
+    tokens?: unknown;
+    elapsed?: unknown;
+    response?: string;
+  }>;
 }
 
 /**
@@ -101,10 +112,16 @@ export function evaluateSemanticSummaryGate(
   skill: string,
   summary: GateableSummary | null | undefined,
 ): { passed: boolean; failures: string[]; casesChecked: number } {
-  if (!summary || !Array.isArray(summary.results) || summary.results.length === 0) {
+  if (
+    !summary ||
+    !Array.isArray(summary.results) ||
+    summary.results.length === 0
+  ) {
     return {
       passed: false,
-      failures: ["semantic report has zero results — nothing to gate, refusing to report a pass"],
+      failures: [
+        "semantic report has zero results — nothing to gate, refusing to report a pass",
+      ],
       casesChecked: 0,
     };
   }
@@ -113,10 +130,20 @@ export function evaluateSemanticSummaryGate(
     const res = checkGates(
       rules,
       skill,
-      { tokens: r.tokens as number | undefined, latency_ms: typeof r.elapsed === "number" ? Math.round(r.elapsed * 1000) : r.elapsed as number | undefined },
+      {
+        tokens: r.tokens as number | undefined,
+        latency_ms:
+          typeof r.elapsed === "number"
+            ? Math.round(r.elapsed * 1000)
+            : (r.elapsed as number | undefined),
+      },
       r.response ?? "",
     );
     if (!res.passed) failures.push(`${r.name}: ${res.failures.join("; ")}`);
   }
-  return { passed: failures.length === 0, failures, casesChecked: summary.results.length };
+  return {
+    passed: failures.length === 0,
+    failures,
+    casesChecked: summary.results.length,
+  };
 }

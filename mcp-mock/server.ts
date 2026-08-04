@@ -59,7 +59,11 @@ function loadScenario(): ScenarioFile {
             content: [
               {
                 type: "text",
-                text: JSON.stringify({ ok: false, error: "missing_scenario_file", path: scenarioPath }),
+                text: JSON.stringify({
+                  ok: false,
+                  error: "missing_scenario_file",
+                  path: scenarioPath,
+                }),
               },
             ],
             isError: true,
@@ -83,7 +87,8 @@ const tools =
     : [
         {
           name: "echo",
-          description: "Echo input as structured content (default scenario fallback)",
+          description:
+            "Echo input as structured content (default scenario fallback)",
           inputSchema: {
             type: "object",
             properties: { message: { type: "string" } },
@@ -94,7 +99,9 @@ const tools =
 const responses = scenario.responses ?? {};
 
 // Turns scenario authoring into MCP text content; wire protocol stays JSON-RPC either way
-function coercedToolResult(entry: ScenarioResponseValue | undefined): McpToolResultPayload | null {
+function coercedToolResult(
+  entry: ScenarioResponseValue | undefined,
+): McpToolResultPayload | null {
   if (entry === undefined) return null;
   if (typeof entry === "string") {
     return { content: [{ type: "text", text: entry }] };
@@ -109,7 +116,10 @@ function coercedToolResult(entry: ScenarioResponseValue | undefined): McpToolRes
   return null;
 }
 
-function handleCall(name: string, args: Record<string, unknown>): Record<string, unknown> {
+function handleCall(
+  name: string,
+  args: Record<string, unknown>,
+): Record<string, unknown> {
   const entry = responses[name];
   const coerced = coercedToolResult(entry);
   if (coerced !== null) return coerced;
@@ -119,7 +129,12 @@ function handleCall(name: string, args: Record<string, unknown>): Record<string,
     };
   }
   return {
-    content: [{ type: "text", text: JSON.stringify({ error: "no_fixture", tool: name }) }],
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({ error: "no_fixture", tool: name }),
+      },
+    ],
     isError: true,
   };
 }
@@ -134,7 +149,11 @@ function notify(method: string, params?: Record<string, unknown>): void {
   process.stdout.write(`${msg}\n`);
 }
 
-function errReply(id: string | number | null | undefined, code: number, message: string): void {
+function errReply(
+  id: string | number | null | undefined,
+  code: number,
+  message: string,
+): void {
   const msg = JSON.stringify({
     jsonrpc: "2.0",
     id,
@@ -204,6 +223,9 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  console.error("[jstack-mcp-mock]", e instanceof Error ? e.stack ?? e.message : String(e));
+  console.error(
+    "[jstack-mcp-mock]",
+    e instanceof Error ? (e.stack ?? e.message) : String(e),
+  );
   process.exitCode = 1;
 });

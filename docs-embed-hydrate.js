@@ -34,7 +34,8 @@ export function hydrateJstackGlobalsFromEmbed() {
     skillsPayload &&
     typeof skillsPayload === "object" &&
     Array.isArray(skillsPayload.skills) &&
-    (!window.__JSTACK_SKILLS__ || !Array.isArray(window.__JSTACK_SKILLS__.skills))
+    (!window.__JSTACK_SKILLS__ ||
+      !Array.isArray(window.__JSTACK_SKILLS__.skills))
   ) {
     window.__JSTACK_SKILLS__ = skillsPayload;
   }

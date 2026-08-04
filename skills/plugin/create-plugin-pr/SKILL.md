@@ -114,7 +114,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-create-plugin-pr` workflow using values from `jstack.config.json`. There is no `templates/plugin/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Diff the local changes and confirm they serve one concern; if a skill body, a config default, and a gate are all touched, split before opening the PR. If any changed `skills/**/SKILL.md` is generator output, edit the generator data instead of the body (or add the skill to `SKIP`), and regenerate `skill-catalog.json`, `skills-data.js`, and the docs `index.html` if a skill was added or restructured. Write the PR body with the exact verification command and expected result (not "tested locally"), and state the blast radius — which skills, agents, or gates the change touches.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.

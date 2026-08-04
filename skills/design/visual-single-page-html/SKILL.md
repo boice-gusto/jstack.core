@@ -109,7 +109,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 
 ### Step 3 — Execute
-Apply the `jstack-visual-single-page-html` workflow using values from `jstack.config.json`. There is no `templates/design/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Build one self-contained `.html` file: inline `<style>` for the theme/tokens, CDN `<script>` tags pinned to an exact version with an SRI hash where the CDN provides one, and any Chart.js/D3 wiring bound directly to the provided or sample data. Implement all four states — empty, loading, error, populated — as visually distinct markup rather than only the happy path, and sanitize any rendered markdown or external content (e.g. `DOMPurify.sanitize(...)`) before it hits the DOM. Check contrast and focus-visible styles against the actual rendered colors, and pair any color-coded status with an icon or label.
 
 ### Step 4 — Validate
 Before reporting done: confirm the change landed where intended, that nothing outside the stated scope was touched, and that every id, path, and figure you emitted came from config or the conversation rather than from inference. Name anything you could not verify.

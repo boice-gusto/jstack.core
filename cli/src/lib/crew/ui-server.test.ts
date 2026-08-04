@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { ACTIONS, BLOCKED_FROM_UI, guardRequest, mintToken, tokenMatches, validateParams } from "./ui-server.js";
+import {
+  ACTIONS,
+  BLOCKED_FROM_UI,
+  guardRequest,
+  mintToken,
+  tokenMatches,
+  validateParams,
+} from "./ui-server.js";
 
 /**
  * These are the tests that justify letting a browser page touch the crew at all.
@@ -36,7 +43,8 @@ function req(
   });
 }
 
-const guard = (r: Request, mutating: boolean) => guardRequest(r, { token: TOKEN, port: PORT, mutating });
+const guard = (r: Request, mutating: boolean) =>
+  guardRequest(r, { token: TOKEN, port: PORT, mutating });
 
 describe("token", () => {
   test("mints something long and URL-safe", () => {
@@ -78,7 +86,9 @@ describe("CSRF: a cross-origin form POST cannot mutate", () => {
   });
 
   test("POST with the header token passes", () => {
-    expect(guard(req({ method: "POST", headerToken: TOKEN }), true).ok).toBe(true);
+    expect(guard(req({ method: "POST", headerToken: TOKEN }), true).ok).toBe(
+      true,
+    );
   });
 
   test("GET cannot mutate even with a valid header token", () => {
@@ -90,7 +100,10 @@ describe("CSRF: a cross-origin form POST cannot mutate", () => {
 
 describe("DNS rebinding: a hostile name resolving to 127.0.0.1 is rejected", () => {
   test("an unexpected Host is refused even with a good token", () => {
-    const r = guard(req({ host: "evil.example.com", headerToken: TOKEN, method: "POST" }), true);
+    const r = guard(
+      req({ host: "evil.example.com", headerToken: TOKEN, method: "POST" }),
+      true,
+    );
     expect(r.ok).toBe(false);
     expect(r.status).toBe(403);
     expect(r.reason).toContain("Host");
@@ -101,44 +114,81 @@ describe("DNS rebinding: a hostile name resolving to 127.0.0.1 is rejected", () 
   });
 
   test("localhost and 127.0.0.1 on the right port are both accepted", () => {
-    expect(guard(req({ host: `localhost:${PORT}`, token: TOKEN }), false).ok).toBe(true);
-    expect(guard(req({ host: `127.0.0.1:${PORT}`, token: TOKEN }), false).ok).toBe(true);
+    expect(
+      guard(req({ host: `localhost:${PORT}`, token: TOKEN }), false).ok,
+    ).toBe(true);
+    expect(
+      guard(req({ host: `127.0.0.1:${PORT}`, token: TOKEN }), false).ok,
+    ).toBe(true);
   });
 
   test("the right host on the WRONG port is refused", () => {
-    expect(guard(req({ host: "127.0.0.1:9999", token: TOKEN }), false).ok).toBe(false);
+    expect(guard(req({ host: "127.0.0.1:9999", token: TOKEN }), false).ok).toBe(
+      false,
+    );
   });
 });
 
 describe("cross-site requests are refused by fetch metadata and Origin", () => {
   test("Sec-Fetch-Site: cross-site is refused", () => {
-    const r = guard(req({ method: "POST", headerToken: TOKEN, site: "cross-site" }), true);
+    const r = guard(
+      req({ method: "POST", headerToken: TOKEN, site: "cross-site" }),
+      true,
+    );
     expect(r.ok).toBe(false);
     expect(r.status).toBe(403);
   });
 
   test("Sec-Fetch-Site: same-site is still refused -- only same-origin or none", () => {
-    expect(guard(req({ method: "POST", headerToken: TOKEN, site: "same-site" }), true).ok).toBe(false);
+    expect(
+      guard(
+        req({ method: "POST", headerToken: TOKEN, site: "same-site" }),
+        true,
+      ).ok,
+    ).toBe(false);
   });
 
   test("same-origin passes", () => {
-    expect(guard(req({ method: "POST", headerToken: TOKEN, site: "same-origin" }), true).ok).toBe(true);
+    expect(
+      guard(
+        req({ method: "POST", headerToken: TOKEN, site: "same-origin" }),
+        true,
+      ).ok,
+    ).toBe(true);
   });
 
   test("a foreign Origin is refused", () => {
-    const r = guard(req({ method: "POST", headerToken: TOKEN, origin: "https://evil.example.com" }), true);
+    const r = guard(
+      req({
+        method: "POST",
+        headerToken: TOKEN,
+        origin: "https://evil.example.com",
+      }),
+      true,
+    );
     expect(r.ok).toBe(false);
     expect(r.reason).toContain("Origin");
   });
 
   test("our own Origin passes", () => {
-    expect(guard(req({ method: "POST", headerToken: TOKEN, origin: `http://127.0.0.1:${PORT}` }), true).ok).toBe(true);
+    expect(
+      guard(
+        req({
+          method: "POST",
+          headerToken: TOKEN,
+          origin: `http://127.0.0.1:${PORT}`,
+        }),
+        true,
+      ).ok,
+    ).toBe(true);
   });
 });
 
 describe("the action allowlist is the boundary", () => {
   test("dangerous subcommands are not exposed at all", () => {
-    const exposed = Object.values(ACTIONS).flatMap((a) => a.argv({ id: "x", ts: "1.1", workspace: "/tmp", text: "x" }));
+    const exposed = Object.values(ACTIONS).flatMap((a) =>
+      a.argv({ id: "x", ts: "1.1", workspace: "/tmp", text: "x" }),
+    );
     for (const blocked of BLOCKED_FROM_UI) {
       expect(exposed).not.toContain(blocked);
     }
@@ -151,7 +201,13 @@ describe("the action allowlist is the boundary", () => {
 
   test("every action builds an argv array, so nothing goes through a shell", () => {
     for (const [name, a] of Object.entries(ACTIONS)) {
-      const argv = a.argv({ id: "ralph", ts: "1785141296.398489", workspace: "/tmp/x", text: "hi", reason: "r" });
+      const argv = a.argv({
+        id: "ralph",
+        ts: "1785141296.398489",
+        workspace: "/tmp/x",
+        text: "hi",
+        reason: "r",
+      });
       expect(Array.isArray(argv), name).toBe(true);
       for (const part of argv) expect(typeof part).toBe("string");
     }
@@ -173,23 +229,55 @@ describe("params are validated, so no user string reaches a command position unc
   });
 
   test("shell metacharacters in an id are rejected", () => {
-    for (const bad of ["scout; rm -rf /", "scout && id", "$(whoami)", "`id`", "scout|cat", "../etc"]) {
+    for (const bad of [
+      "scout; rm -rf /",
+      "scout && id",
+      "$(whoami)",
+      "`id`",
+      "scout|cat",
+      "../etc",
+    ]) {
       expect(validateParams(ACTIONS.agentEnable!, { id: bad }).ok).toBe(false);
     }
   });
 
   test("a flag-looking id is rejected, so it cannot become an option", () => {
-    expect(validateParams(ACTIONS.agentEnable!, { id: "--help" }).ok).toBe(false);
+    expect(validateParams(ACTIONS.agentEnable!, { id: "--help" }).ok).toBe(
+      false,
+    );
     expect(validateParams(ACTIONS.agentEnable!, { id: "-rf" }).ok).toBe(false);
   });
 
   test("a relative or traversing workspace is rejected", () => {
-    expect(validateParams(ACTIONS.agentAdd!, { id: "scout", workspace: "relative/path" }).ok).toBe(false);
-    expect(validateParams(ACTIONS.agentAdd!, { id: "scout", workspace: "/tmp/../../etc" }).ok).toBe(false);
-    expect(validateParams(ACTIONS.agentAdd!, { id: "scout", workspace: "/tmp/.." }).ok).toBe(false);
-    expect(validateParams(ACTIONS.agentAdd!, { id: "scout", workspace: "/Users/me/GitHub/repo" }).ok).toBe(true);
+    expect(
+      validateParams(ACTIONS.agentAdd!, {
+        id: "scout",
+        workspace: "relative/path",
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateParams(ACTIONS.agentAdd!, {
+        id: "scout",
+        workspace: "/tmp/../../etc",
+      }).ok,
+    ).toBe(false);
+    expect(
+      validateParams(ACTIONS.agentAdd!, { id: "scout", workspace: "/tmp/.." })
+        .ok,
+    ).toBe(false);
+    expect(
+      validateParams(ACTIONS.agentAdd!, {
+        id: "scout",
+        workspace: "/Users/me/GitHub/repo",
+      }).ok,
+    ).toBe(true);
     // A dot inside a name is fine; only a `..` path segment is refused.
-    expect(validateParams(ACTIONS.agentAdd!, { id: "scout", workspace: "/Users/me/jstack.core" }).ok).toBe(true);
+    expect(
+      validateParams(ACTIONS.agentAdd!, {
+        id: "scout",
+        workspace: "/Users/me/jstack.core",
+      }).ok,
+    ).toBe(true);
   });
 
   test("an id shorter than the minimum is rejected", () => {
@@ -198,16 +286,23 @@ describe("params are validated, so no user string reaches a command position unc
 
   test("a malformed timestamp is rejected", () => {
     expect(validateParams(ACTIONS.explain!, { ts: "not-a-ts" }).ok).toBe(false);
-    expect(validateParams(ACTIONS.explain!, { ts: "1785141296.398489" }).ok).toBe(true);
+    expect(
+      validateParams(ACTIONS.explain!, { ts: "1785141296.398489" }).ok,
+    ).toBe(true);
   });
 
   test("unknown keys are dropped rather than forwarded", () => {
-    const r = validateParams(ACTIONS.agentEnable!, { id: "scout", sneaky: "--dangerous" });
+    const r = validateParams(ACTIONS.agentEnable!, {
+      id: "scout",
+      sneaky: "--dangerous",
+    });
     expect(r.ok).toBe(true);
     if (r.ok) expect(Object.keys(r.params)).toEqual(["id"]);
   });
 
   test("a non-string value is rejected", () => {
-    expect(validateParams(ACTIONS.agentEnable!, { id: 42 as unknown as string }).ok).toBe(false);
+    expect(
+      validateParams(ACTIONS.agentEnable!, { id: 42 as unknown as string }).ok,
+    ).toBe(false);
   });
 });

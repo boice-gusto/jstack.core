@@ -1,7 +1,14 @@
 import chalk from "chalk";
 import * as p from "@clack/prompts";
+import { mkdirSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import { findProjectRoot } from "../lib/config.js";
-import { exitCancelled, handleCancel, isInteractive, nonInteractiveHint } from "../lib/cliUi.js";
+import {
+  exitCancelled,
+  handleCancel,
+  isInteractive,
+  nonInteractiveHint,
+} from "../lib/cliUi.js";
 import {
   deleteWorkflow,
   exportWorkflow,
@@ -13,8 +20,6 @@ import {
   workflowsDir,
 } from "../lib/workflow-engine.js";
 import type { WorkflowDefinition } from "../types/workflow.js";
-import { mkdirSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
 
 export async function runWorkflowList(opts: { json?: boolean }): Promise<void> {
   const root = findProjectRoot();
@@ -32,14 +37,19 @@ export async function runWorkflowList(opts: { json?: boolean }): Promise<void> {
           }
         : { id, name: id, start_url: "", steps: 0 };
     });
-    console.log(JSON.stringify({ workflows_dir: workflowsDir(root), items }, null, 2));
+    console.log(
+      JSON.stringify({ workflows_dir: workflowsDir(root), items }, null, 2),
+    );
     return;
   }
   console.log(chalk.bold(`Workflows (${workflowsDir(root)})`));
   for (const id of ids) console.log(`  • ${id}`);
 }
 
-export async function runWorkflowShow(id: string, opts: { json?: boolean }): Promise<void> {
+export async function runWorkflowShow(
+  id: string,
+  opts: { json?: boolean },
+): Promise<void> {
   const root = findProjectRoot();
   const def = loadWorkflow(root, id);
   if (!def) {
@@ -89,7 +99,10 @@ export async function runWorkflowRun(id: string, yes: boolean): Promise<void> {
   console.log(`- Workflow definition: \`config/workflows/${id}.json\` (local)`);
 }
 
-export async function runWorkflowCreate(id: string, urlMaybe?: string): Promise<void> {
+export async function runWorkflowCreate(
+  id: string,
+  urlMaybe?: string,
+): Promise<void> {
   let url = urlMaybe?.trim() ?? "";
   let displayName = "";
 
@@ -133,12 +146,17 @@ export async function runWorkflowCreate(id: string, urlMaybe?: string): Promise<
   console.log(`- Saved: config/workflows/${id}.json`);
 }
 
-export async function runWorkflowDelete(id: string, force: boolean): Promise<void> {
+export async function runWorkflowDelete(
+  id: string,
+  force: boolean,
+): Promise<void> {
   const root = findProjectRoot();
 
   if (!force) {
     if (!isInteractive()) {
-      console.error(chalk.red("Refusing to delete without --force (non-interactive)."));
+      console.error(
+        chalk.red("Refusing to delete without --force (non-interactive)."),
+      );
       process.exitCode = 1;
       return;
     }

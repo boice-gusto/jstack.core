@@ -22,14 +22,29 @@
  * `claude` CLI when running inside Claude Code. The latter is opt-in on purpose — see the comment
  * on `cliJudgeAllowed` below.
  */
-import { readdirSync, readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import {
+  readdirSync,
+  readFileSync,
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import yaml from "js-yaml";
-import { buildJudgePrompt, parseJudgeVerdict, VERDICT_FAIL, VERDICT_PASS } from "./protocol.js";
+import {
+  buildJudgePrompt,
+  parseJudgeVerdict,
+  VERDICT_FAIL,
+  VERDICT_PASS,
+} from "./protocol.js";
 import { exerciseSubject, type SubjectSpec } from "./subjects.js";
-import { runDeterministicAsserts, type DeterministicExpect, type AssertionResult } from "./assertions.js";
+import {
+  runDeterministicAsserts,
+  type DeterministicExpect,
+  type AssertionResult,
+} from "./assertions.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(here, "..", "..");
@@ -58,7 +73,8 @@ const apiKey = process.env.ANTHROPIC_API_KEY;
  * out into 20+ nested model calls at up to 120s each. So the CLI path is opt-in.
  */
 const cliJudgeAllowed =
-  process.env.JSTACK_ALLOW_CLI_JUDGE === "1" && !!process.env.CLAUDE_CODE_ENTRYPOINT;
+  process.env.JSTACK_ALLOW_CLI_JUDGE === "1" &&
+  !!process.env.CLAUDE_CODE_ENTRYPOINT;
 const judgeReachable = !!apiKey || cliJudgeAllowed;
 
 interface CaseSpec {
@@ -114,13 +130,18 @@ function askJudge(prompt: string): string | null {
 
 function judgeAvailable(): boolean {
   if (!judgeReachable) return false;
-  const probe = spawnSync(claudeBin, ["--version"], { encoding: "utf8", timeout: 20_000 });
+  const probe = spawnSync(claudeBin, ["--version"], {
+    encoding: "utf8",
+    timeout: 20_000,
+  });
   return !probe.error && probe.status === 0;
 }
 
 const cases = loadCases();
 const selected = cases.filter(
-  (c) => (!filter || c.id.includes(filter)) && (!surfaceFilter || c.surface === surfaceFilter),
+  (c) =>
+    (!filter || c.id.includes(filter)) &&
+    (!surfaceFilter || c.surface === surfaceFilter),
 );
 
 if (listOnly) {
@@ -174,7 +195,13 @@ for (const c of selected) {
   }
 
   if (!needsJudge) {
-    results.push({ id: c.id, surface: c.surface, status: "passed", asserts, elapsedMs: Date.now() - started });
+    results.push({
+      id: c.id,
+      surface: c.surface,
+      status: "passed",
+      asserts,
+      elapsedMs: Date.now() - started,
+    });
     continue;
   }
 
@@ -203,7 +230,11 @@ for (const c of selected) {
     surface: c.surface,
     status: verdict.passed ? "passed" : "failed",
     asserts,
-    judge: { passed: verdict.passed, message: verdict.message, protocolError: verdict.protocolError },
+    judge: {
+      passed: verdict.passed,
+      message: verdict.message,
+      protocolError: verdict.protocolError,
+    },
     elapsedMs: Date.now() - started,
   });
 }
@@ -215,19 +246,49 @@ const skipped = results.filter((r) => r.status === "skipped").length;
 mkdirSync(reportsDir, { recursive: true });
 writeFileSync(
   join(reportsDir, "a2a-latest.json"),
-  JSON.stringify({ total: results.length, passed, failed, skipped, judge_available: canJudge, results }, null, 2) + "\n",
+  JSON.stringify(
+    {
+      total: results.length,
+      passed,
+      failed,
+      skipped,
+      judge_available: canJudge,
+      results,
+    },
+    null,
+    2,
+  ) + "\n",
 );
 
 if (asJson) {
-  console.log(JSON.stringify({ total: results.length, passed, failed, skipped, judge_available: canJudge, results }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        total: results.length,
+        passed,
+        failed,
+        skipped,
+        judge_available: canJudge,
+        results,
+      },
+      null,
+      2,
+    ),
+  );
 } else {
   for (const r of results) {
-    const tag = r.status === "passed" ? VERDICT_PASS : r.status === "failed" ? VERDICT_FAIL : "TEST_SKIPPED";
+    const tag =
+      r.status === "passed"
+        ? VERDICT_PASS
+        : r.status === "failed"
+          ? VERDICT_FAIL
+          : "TEST_SKIPPED";
     console.log(`${tag}  [${r.surface}] ${r.id}`);
     for (const a of r.asserts.filter((x) => !x.passed)) {
       console.log(`    assert failed: ${a.label} — ${a.detail}`);
     }
-    if (r.judge?.protocolError) console.log(`    judge protocol error: ${r.judge.protocolError}`);
+    if (r.judge?.protocolError)
+      console.log(`    judge protocol error: ${r.judge.protocolError}`);
     if (r.judge?.message) console.log(`    MSG=${r.judge.message}`);
     if (r.reason) console.log(`    ${r.reason}`);
   }
@@ -235,13 +296,17 @@ if (asJson) {
     `\n${passed} passed, ${failed} failed, ${skipped} skipped (judge ${canJudge ? "available" : "unavailable"})`,
   );
   if (skipped > 0 && !requireJudge) {
-    console.log("Judge-backed cases were skipped. Use --require-judge to treat that as a failure.");
+    console.log(
+      "Judge-backed cases were skipped. Use --require-judge to treat that as a failure.",
+    );
   }
 }
 
 if (failed > 0) process.exit(1);
 if (skipped > 0 && requireJudge) {
-  console.error(`--require-judge was set but ${skipped} case(s) had no judge available.`);
+  console.error(
+    `--require-judge was set but ${skipped} case(s) had no judge available.`,
+  );
   process.exit(1);
 }
 process.exit(0);

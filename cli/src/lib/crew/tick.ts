@@ -1,9 +1,31 @@
-import { existsSync, mkdirSync, openSync, closeSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  openSync,
+  closeSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
-import { decide, stripSigils, allSigils, routeToAgent, identityPrefix } from "./guards.js";
+import {
+  decide,
+  stripSigils,
+  allSigils,
+  routeToAgent,
+  identityPrefix,
+} from "./guards.js";
 import { randomUUID } from "node:crypto";
 import { CrewStore, expandHome } from "./store.js";
-import { readChannelPaged, readThread, sendMessage, addReaction, recoverSentTs, stripServerSuffix, runClaude } from "./slack.js";
+import {
+  readChannelPaged,
+  readThread,
+  sendMessage,
+  addReaction,
+  recoverSentTs,
+  stripServerSuffix,
+  runClaude,
+} from "./slack.js";
 import type { AgentConfig, CrewConfig, InboundMessage } from "./types.js";
 
 /**
@@ -60,7 +82,9 @@ function tickId(): string {
  * name, because the id is what routing and config key off.
  */
 export function taskId(agentId: string): string {
-  const prefix = (agentId.replace(/[^a-z0-9]/gi, "").slice(0, 3) || "tsk").toLowerCase();
+  const prefix = (
+    agentId.replace(/[^a-z0-9]/gi, "").slice(0, 3) || "tsk"
+  ).toLowerCase();
   return `${prefix}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
@@ -90,7 +114,10 @@ export function findRecallRef(text: string): string | null {
 
 /** Strip the recall marker so the worker sees the request, not the plumbing. */
 export function stripRecallRef(text: string): string {
-  return text.replace(new RegExp(RECALL_RE.source, "gi"), "").replace(/\s{2,}/g, " ").trim();
+  return text
+    .replace(new RegExp(RECALL_RE.source, "gi"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 /**
@@ -143,18 +170,34 @@ function acquireLock(stateDir: string): (() => void) | null {
   };
 }
 
-function renderAck(cfg: CrewConfig, agent: AgentConfig, req: string, id: string): string {
-  const excerpt = stripSigils(stripServerSuffix(req), allSigils(cfg.agents)).slice(0, 180);
+function renderAck(
+  cfg: CrewConfig,
+  agent: AgentConfig,
+  req: string,
+  id: string,
+): string {
+  const excerpt = stripSigils(
+    stripServerSuffix(req),
+    allSigils(cfg.agents),
+  ).slice(0, 180);
   // identityPrefix() is shared with guards.ts G2a, so the format we emit is by construction
   // the format we recognise on read-back.
   return `${identityPrefix(agent)} · working\n> ${excerpt}\n\`${id}\``;
 }
 
-function renderResult(cfg: CrewConfig, agent: AgentConfig, body: string, id: string, cost: number): string {
+function renderResult(
+  cfg: CrewConfig,
+  agent: AgentConfig,
+  body: string,
+  id: string,
+  cost: number,
+): string {
   const prefix = identityPrefix(agent);
   const foot = `\n\n_\`${id}\` · $${cost.toFixed(3)}_`;
-  const room = cfg.policy.egress.max_message_chars - prefix.length - foot.length - 8;
-  const text = body.length > room ? `${body.slice(0, room)}\n…(truncated)` : body;
+  const room =
+    cfg.policy.egress.max_message_chars - prefix.length - foot.length - 8;
+  const text =
+    body.length > room ? `${body.slice(0, room)}\n…(truncated)` : body;
   return `${prefix}\n${text}${foot}`;
 }
 
@@ -201,7 +244,9 @@ async function runWorker(
 
   const r = await runClaude(
     [
-      ...(session.resume ? ["--resume", session.id] : ["--session-id", session.id]),
+      ...(session.resume
+        ? ["--resume", session.id]
+        : ["--session-id", session.id]),
       "--model",
       agent.model,
       "--tools",
@@ -241,10 +286,19 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
    * poller, guards, router and renderer and then stop at the Slack boundary; if it
    * inherited `live` it would be a message-sender wearing a test's name.
    */
-  const cfg: CrewConfig = opts.simulate !== undefined ? { ...opts.config, mode: "dry_run" } : opts.config;
+  const cfg: CrewConfig =
+    opts.simulate !== undefined
+      ? { ...opts.config, mode: "dry_run" }
+      : opts.config;
   const { log } = opts;
   const kid = tickId();
-  const summary: TickSummary = { read: 0, handled: 0, dropped: [], costUsd: 0, replies: [] };
+  const summary: TickSummary = {
+    read: 0,
+    handled: 0,
+    dropped: [],
+    costUsd: 0,
+    replies: [],
+  };
 
   if (!cfg.enabled) {
     log("crew.enabled is false; nothing to do");
@@ -254,7 +308,9 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
   const stateDir = expandHome(cfg.state_dir);
   if (existsSync(join(stateDir, "HALTED"))) {
     summary.halted = "HALTED sentinel present";
-    log("HALTED sentinel present; refusing to run. Clear with: jstackc crew resume");
+    log(
+      "HALTED sentinel present; refusing to run. Clear with: jstackc crew resume",
+    );
     return summary;
   }
 
@@ -268,7 +324,6 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
   try {
     const channel = cfg.policy.ingress.channels[0]!;
     let messages: InboundMessage[];
-
 
     if (opts.simulate !== undefined) {
       messages = [
@@ -295,13 +350,24 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       const spent = store.spentToday();
       if (spent >= cfg.budget.daily_usd) {
         summary.halted = "daily_cap";
-        store.logEvent({ tickId: kid, kind: "blocked_budget", detail: `spent $${spent.toFixed(2)}` });
-        log(`daily cap reached ($${spent.toFixed(2)} of $${cfg.budget.daily_usd}); not polling`);
+        store.logEvent({
+          tickId: kid,
+          kind: "blocked_budget",
+          detail: `spent $${spent.toFixed(2)}`,
+        });
+        log(
+          `daily cap reached ($${spent.toFixed(2)} of $${cfg.budget.daily_usd}); not polling`,
+        );
         return summary;
       }
 
       const wm = store.getWatermark(channel);
-      const res = await readChannelPaged(channel, wm, cfg.slack.read_limit, cfg.slack.max_pages);
+      const res = await readChannelPaged(
+        channel,
+        wm,
+        cfg.slack.read_limit,
+        cfg.slack.max_pages,
+      );
       summary.costUsd += res.costUsd;
       // The money is gone whether the read succeeded or not, so record it either way.
       store.addSpend(res.costUsd);
@@ -309,12 +375,19 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         // A permanent error must halt, not back off forever. Backing off on auth loss
         // IS the silent-death mode.
         if (res.authLost) {
-          writeFileSync(join(stateDir, "HALTED"), `auth_lost at ${new Date().toISOString()}\n${res.error ?? ""}`);
+          writeFileSync(
+            join(stateDir, "HALTED"),
+            `auth_lost at ${new Date().toISOString()}\n${res.error ?? ""}`,
+          );
           summary.halted = "auth_lost";
           store.logEvent({ tickId: kid, kind: "auth_lost", detail: res.error });
           log(`AUTH LOST: ${res.error}. Wrote HALTED. Run: claude mcp login`);
         } else {
-          store.logEvent({ tickId: kid, kind: "read_error", detail: res.error });
+          store.logEvent({
+            tickId: kid,
+            kind: "read_error",
+            detail: res.error,
+          });
           log(`read failed: ${res.error}`);
         }
         return summary;
@@ -341,8 +414,12 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
           channelId: channel,
           detail: `skipped ${from} .. ${oldestFetched} (over ${cfg.slack.max_pages} pages of ${cfg.slack.read_limit})`,
         });
-        log(`  ! BACKLOG SKIPPED: messages between ${from} and ${oldestFetched} were not read.`);
-        log(`    Raise slack.max_pages or slack.read_limit, or tick more often. Recorded as backlog_skipped.`);
+        log(
+          `  ! BACKLOG SKIPPED: messages between ${from} and ${oldestFetched} were not read.`,
+        );
+        log(
+          `    Raise slack.max_pages or slack.read_limit, or tick more often. Recorded as backlog_skipped.`,
+        );
       }
     }
 
@@ -369,15 +446,24 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         return;
       }
       log(`  send returned no ts (${step}); recovering by read-back`);
-      const rec = await recoverSentTs(channelId, threadTs, text, (ts) => store.outboxHas(channelId, ts));
+      const rec = await recoverSentTs(channelId, threadTs, text, (ts) =>
+        store.outboxHas(channelId, ts),
+      );
       if (rec) {
         store.recordOutbox({ channelId, ts: rec, taskId: taskIdFor, step });
         log(`  recovered ts ${rec}`);
       } else {
         // Unrecorded post: say so loudly. This is the one state where a self-reply is
         // possible, and it must never be silent.
-        store.logEvent({ tickId: kid, kind: "unrecorded_post", channelId, detail: `${taskIdFor}/${step}` });
-        log(`  ! could not record the post; G1 is blind to it. Check with: jstackc crew status`);
+        store.logEvent({
+          tickId: kid,
+          kind: "unrecorded_post",
+          channelId,
+          detail: `${taskIdFor}/${step}`,
+        });
+        log(
+          `  ! could not record the post; G1 is blind to it. Check with: jstackc crew status`,
+        );
       }
     };
 
@@ -408,9 +494,18 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       await react(cfg.slack.reactions.seen);
 
       const isFollowUp = existing !== null;
-      if (isFollowUp && existing.turns >= cfg.policy.egress.max_messages_per_task) {
+      if (
+        isFollowUp &&
+        existing.turns >= cfg.policy.egress.max_messages_per_task
+      ) {
         log(`  turn limit reached on ${existing.id}`);
-        store.logEvent({ tickId: kid, kind: "turn_limit", channelId: m.channelId, msgTs: m.ts, detail: existing.id });
+        store.logEvent({
+          tickId: kid,
+          kind: "turn_limit",
+          channelId: m.channelId,
+          msgTs: m.ts,
+          detail: existing.id,
+        });
         await react(cfg.slack.reactions.failed);
         return;
       }
@@ -433,14 +528,20 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       if (ref) {
         const found = store.findTaskById(ref);
         if (!found) {
-          recall = { sessionId: "", note: `I could not find session \`${ref}\`, so this starts fresh.` };
+          recall = {
+            sessionId: "",
+            note: `I could not find session \`${ref}\`, so this starts fresh.`,
+          };
         } else if (found.agentId && found.agentId !== agentId) {
           recall = {
             sessionId: "",
             note: `\`${ref}\` belongs to *${found.agentId}*, not me — I cannot resume another agent's session, so this starts fresh.`,
           };
         } else if (!found.sessionId.trim()) {
-          recall = { sessionId: "", note: `Session \`${ref}\` has no resumable id recorded, so this starts fresh.` };
+          recall = {
+            sessionId: "",
+            note: `Session \`${ref}\` has no resumable id recorded, so this starts fresh.`,
+          };
         } else {
           recall = { sessionId: found.sessionId.trim() };
           log(`  recall ${ref} -> session ${found.sessionId.slice(0, 8)}`);
@@ -457,7 +558,11 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       const canResume = !!prior;
       const sessionId = prior || randomUUID();
       // A follow-up threads on the SAME parent, so the whole exchange stays in one place.
-      const threadTs = cfg.slack.reply_in_thread ? (isFollowUp ? threadParentOf(m) : m.ts) : undefined;
+      const threadTs = cfg.slack.reply_in_thread
+        ? isFollowUp
+          ? threadParentOf(m)
+          : m.ts
+        : undefined;
 
       /**
        * simulate must leave no trace. An earlier version created task rows for synthetic
@@ -466,19 +571,40 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
        * forever.
        */
       const persist = opts.simulate === undefined;
-      if (persist && !isFollowUp && !store.createTask(id, m.channelId, m.ts, threadTs ?? m.ts, sessionId, agentId)) {
+      if (
+        persist &&
+        !isFollowUp &&
+        !store.createTask(
+          id,
+          m.channelId,
+          m.ts,
+          threadTs ?? m.ts,
+          sessionId,
+          agentId,
+        )
+      ) {
         log(`  skip ${m.ts}  already handled`);
         return;
       }
 
-      if (persist && !store.reserve(cfg.budget.per_task_usd, cfg.budget.daily_usd)) {
-        store.logEvent({ tickId: kid, kind: "blocked_budget", channelId: m.channelId, msgTs: m.ts });
+      if (
+        persist &&
+        !store.reserve(cfg.budget.per_task_usd, cfg.budget.daily_usd)
+      ) {
+        store.logEvent({
+          tickId: kid,
+          kind: "blocked_budget",
+          channelId: m.channelId,
+          msgTs: m.ts,
+        });
         log(`  BLOCKED ${m.ts}  daily budget cap ($${cfg.budget.daily_usd})`);
         await react(cfg.slack.reactions.failed);
         return;
       }
 
-      log(`  ${isFollowUp ? "follow-up" : "handle"} ${m.ts}  task ${id}${isFollowUp ? ` (turn ${existing.turns + 1})` : ""}`);
+      log(
+        `  ${isFollowUp ? "follow-up" : "handle"} ${m.ts}  task ${id}${isFollowUp ? ` (turn ${existing.turns + 1})` : ""}`,
+      );
 
       // Only the first turn gets an ack. A follow-up just gets answered; an ack per
       // turn turns a conversation into noise.
@@ -487,7 +613,12 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         if (cfg.mode === "live") {
           await postAndRecord(m.channelId, ack, threadTs, id, "ack");
         } else {
-          log(`  [dry_run] ack in thread on ${threadTs}:\n${ack.split("\n").map((l) => `      ${l}`).join("\n")}`);
+          log(
+            `  [dry_run] ack in thread on ${threadTs}:\n${ack
+              .split("\n")
+              .map((l) => `      ${l}`)
+              .join("\n")}`,
+          );
         }
       }
 
@@ -495,12 +626,23 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       const nonce = Math.random().toString(36).slice(2, 10);
       if (isFollowUp && !canResume) {
         log(`  no session id on ${id}; answering without prior context`);
-        store.logEvent({ tickId: kid, kind: "session_missing", channelId: m.channelId, msgTs: m.ts, detail: id });
+        store.logEvent({
+          tickId: kid,
+          kind: "session_missing",
+          channelId: m.channelId,
+          msgTs: m.ts,
+          detail: id,
+        });
       }
       // A recall resumes even on a FIRST turn -- that is the whole point of naming a session.
       const wantResume = canResume && (isFollowUp || !!recall?.sessionId);
-      const request = stripRecallRef(stripSigils(m.text, allSigils(cfg.agents)));
-      let w = await runWorker(cfg, agent, request, nonce, { id: sessionId, resume: wantResume });
+      const request = stripRecallRef(
+        stripSigils(m.text, allSigils(cfg.agents)),
+      );
+      let w = await runWorker(cfg, agent, request, nonce, {
+        id: sessionId,
+        resume: wantResume,
+      });
 
       /**
        * If resuming FAILED, answer cold and say so.
@@ -512,11 +654,22 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
        */
       let recallFailed = false;
       if (!w.ok && wantResume) {
-        log(`  resume of ${sessionId.slice(0, 8)} failed; retrying without prior context`);
-        store.logEvent({ tickId: kid, kind: "resume_failed", channelId: m.channelId, msgTs: m.ts, detail: id });
+        log(
+          `  resume of ${sessionId.slice(0, 8)} failed; retrying without prior context`,
+        );
+        store.logEvent({
+          tickId: kid,
+          kind: "resume_failed",
+          channelId: m.channelId,
+          msgTs: m.ts,
+          detail: id,
+        });
         recallFailed = true;
         const fresh = randomUUID();
-        w = await runWorker(cfg, agent, request, nonce, { id: fresh, resume: false });
+        w = await runWorker(cfg, agent, request, nonce, {
+          id: fresh,
+          resume: false,
+        });
       }
       // Persist the session so the NEXT follow-up can resume, even if this one could not.
       if (persist && w.sessionId) store.setTaskSession(id, w.sessionId);
@@ -527,7 +680,9 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       // needs to know the answer was written without the context they asked for.
       const notes = [
         recall?.note,
-        recallFailed ? `That session could no longer be resumed, so I answered without its history.` : null,
+        recallFailed
+          ? `That session could no longer be resumed, so I answered without its history.`
+          : null,
       ].filter(Boolean);
       const prefixNote = notes.length ? `_${notes.join(" ")}_\n\n` : "";
 
@@ -537,17 +692,40 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       const out = renderResult(cfg, agent, body, id, w.cost);
 
       if (cfg.mode === "live") {
-        await postAndRecord(m.channelId, out, threadTs, id, `result:${existing?.turns ?? 0}`);
+        await postAndRecord(
+          m.channelId,
+          out,
+          threadTs,
+          id,
+          `result:${existing?.turns ?? 0}`,
+        );
       } else {
-        log(`  [dry_run] result in thread on ${threadTs}:\n${out.split("\n").map((l) => `      ${l}`).join("\n")}`);
+        log(
+          `  [dry_run] result in thread on ${threadTs}:\n${out
+            .split("\n")
+            .map((l) => `      ${l}`)
+            .join("\n")}`,
+        );
       }
 
       await react(w.ok ? cfg.slack.reactions.done : cfg.slack.reactions.failed);
       if (persist) {
         if (isFollowUp) store.bumpTurn(id, w.cost);
-        else store.finishTask(id, w.ok ? "done" : "failed", w.cost, w.ok ? undefined : w.text.slice(0, 200));
+        else
+          store.finishTask(
+            id,
+            w.ok ? "done" : "failed",
+            w.cost,
+            w.ok ? undefined : w.text.slice(0, 200),
+          );
       }
-      store.logEvent({ tickId: kid, kind: "handled", channelId: m.channelId, msgTs: m.ts, detail: id });
+      store.logEvent({
+        tickId: kid,
+        kind: "handled",
+        channelId: m.channelId,
+        msgTs: m.ts,
+        detail: id,
+      });
       summary.replies.push({
         taskId: id,
         agentId,
@@ -563,17 +741,34 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
 
     // ---- channel poll: new root messages -----------------------------------
     for (const m of messages) {
-      const d = decide(m, { config: cfg, outboxHas: (c, t) => store.outboxHas(c, t), nowMs: Date.now() });
+      const d = decide(m, {
+        config: cfg,
+        outboxHas: (c, t) => store.outboxHas(c, t),
+        nowMs: Date.now(),
+      });
       store.markSeen(m.channelId, m.ts, m.author, d.allow ? null : d.ruleId);
       if (!d.allow) {
         summary.dropped.push({ ts: m.ts, ruleId: d.ruleId });
-        store.logEvent({ tickId: kid, kind: "drop", channelId: m.channelId, msgTs: m.ts, ruleId: d.ruleId, detail: d.reason });
+        store.logEvent({
+          tickId: kid,
+          kind: "drop",
+          channelId: m.channelId,
+          msgTs: m.ts,
+          ruleId: d.ruleId,
+          detail: d.reason,
+        });
         log(`  drop ${m.ts}  ${d.ruleId}: ${d.reason}`);
       } else {
         const route = routeToAgent(m.text, cfg.agents);
         if (!route) {
           log(`  drop ${m.ts}  no_agent: matched no enabled agent`);
-          store.logEvent({ tickId: kid, kind: "drop", channelId: m.channelId, msgTs: m.ts, ruleId: "no_agent" });
+          store.logEvent({
+            tickId: kid,
+            kind: "drop",
+            channelId: m.channelId,
+            msgTs: m.ts,
+            ruleId: "no_agent",
+          });
           summary.dropped.push({ ts: m.ts, ruleId: "no_agent" });
         } else {
           await handle(m, route.id, null);
@@ -592,8 +787,15 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       log(`  polling ${threads.length} active thread(s)`);
       for (const t of threads) {
         const tw = store.getThreadWatermark(channel, t.threadTs);
-        log(`  thread ${t.threadTs} oldest=${tw ?? "none"} limit=${cfg.slack.read_limit}`);
-        const res = await readThread(channel, t.threadTs, tw, cfg.slack.read_limit);
+        log(
+          `  thread ${t.threadTs} oldest=${tw ?? "none"} limit=${cfg.slack.read_limit}`,
+        );
+        const res = await readThread(
+          channel,
+          t.threadTs,
+          tw,
+          cfg.slack.read_limit,
+        );
         summary.costUsd += res.costUsd;
         store.addSpend(res.costUsd);
         if (!res.ok) {
@@ -601,8 +803,15 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
           // the same failed read on every tick from now on.
           if (/thread_not_found|channel_not_found/i.test(res.error ?? "")) {
             store.retireThread(t.id);
-            store.logEvent({ tickId: kid, kind: "thread_retired", channelId: channel, detail: t.threadTs });
-            log(`  thread ${t.threadTs} no longer exists; retired (will not be polled again)`);
+            store.logEvent({
+              tickId: kid,
+              kind: "thread_retired",
+              channelId: channel,
+              detail: t.threadTs,
+            });
+            log(
+              `  thread ${t.threadTs} no longer exists; retired (will not be polled again)`,
+            );
           } else {
             log(`  thread ${t.threadTs} read failed: ${res.error}`);
           }
@@ -619,17 +828,31 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
             nowMs: Date.now(),
             inActiveThread: true,
           });
-          store.markSeen(rm.channelId, rm.ts, rm.author, d.allow ? null : d.ruleId);
+          store.markSeen(
+            rm.channelId,
+            rm.ts,
+            rm.author,
+            d.allow ? null : d.ruleId,
+          );
           if (!d.allow) {
             summary.dropped.push({ ts: rm.ts, ruleId: d.ruleId });
-            store.logEvent({ tickId: kid, kind: "drop", channelId: rm.channelId, msgTs: rm.ts, ruleId: d.ruleId, detail: d.reason });
+            store.logEvent({
+              tickId: kid,
+              kind: "drop",
+              channelId: rm.channelId,
+              msgTs: rm.ts,
+              ruleId: d.ruleId,
+              detail: d.reason,
+            });
             log(`  drop ${rm.ts} (thread) ${d.ruleId}: ${d.reason}`);
           } else {
             threadParent.set(rm.ts, t.threadTs);
             // A follow-up belongs to whichever agent owns the thread, not to a sigil.
             const owner = store.findTaskByThread(channel, t.threadTs);
             const agentId =
-              (owner?.agentId && cfg.agents[owner.agentId] ? owner.agentId : undefined) ??
+              (owner?.agentId && cfg.agents[owner.agentId]
+                ? owner.agentId
+                : undefined) ??
               routeToAgent(rm.text, cfg.agents)?.id ??
               Object.keys(cfg.agents)[0]!;
             await handle(rm, agentId, owner);

@@ -42,7 +42,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled job that fails silently goes unnoticed for weeks.
 
 ### Step 3 — Execute
-Apply the `jstack-morning-kickoff` workflow using values from `jstack.config.json`. There is no `templates/routines/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Run the ordered steps from `kickoff_workflows` in sequence, recording PASS/FAIL/SKIP/BLOCKED for each as a markdown checklist. Pull today's calendar and open threads, then surface the shortlist worth attention first — do not act on any item or reorder the user's actual priorities. Apply each step's configured `on_fail` (stop|continue|ask) to decide whether to halt the run or proceed to the next step.
 
 ### Step 4 — Validate
 Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.

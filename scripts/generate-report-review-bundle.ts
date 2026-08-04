@@ -8,7 +8,10 @@
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { REPORT_KINDS, parseReportPayload } from "../types/report-payload-v1.ts";
+import {
+  REPORT_KINDS,
+  parseReportPayload,
+} from "../types/report-payload-v1.ts";
 
 const ROOT = process.cwd();
 const PAYLOAD_DIR = join(ROOT, "examples/reports/payloads");
@@ -46,7 +49,15 @@ function main(): void {
     const outRel = join("examples/reports/rendered", `${kind}.html`);
     const r = spawnSync(
       "bun",
-      ["cli/src/index.ts", "report", "render", "--data", dataRel, "--out", outRel],
+      [
+        "cli/src/index.ts",
+        "report",
+        "render",
+        "--data",
+        dataRel,
+        "--out",
+        outRel,
+      ],
       { cwd: ROOT, stdio: "inherit" },
     );
     if (r.status !== 0) {
@@ -56,7 +67,9 @@ function main(): void {
   }
 
   console.log("");
-  console.log(`OK: ${REPORT_KINDS.length} payloads validated and HTML written under examples/reports/rendered/`);
+  console.log(
+    `OK: ${REPORT_KINDS.length} payloads validated and HTML written under examples/reports/rendered/`,
+  );
 }
 
 main();

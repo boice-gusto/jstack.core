@@ -75,9 +75,15 @@ export class CrewStore {
       );
       CREATE INDEX IF NOT EXISTS event_msg ON event(channel_id, msg_ts);
     `);
-    const row = this.db.query<{ value: string }, []>("SELECT value FROM meta WHERE key='schema_version'").get();
+    const row = this.db
+      .query<{ value: string }, []>(
+        "SELECT value FROM meta WHERE key='schema_version'",
+      )
+      .get();
     if (!row) {
-      this.db.query("INSERT INTO meta (key,value) VALUES ('schema_version',?)").run(String(SCHEMA_VERSION));
+      this.db
+        .query("INSERT INTO meta (key,value) VALUES ('schema_version',?)")
+        .run(String(SCHEMA_VERSION));
     } else if (Number(row.value) > SCHEMA_VERSION) {
       throw new Error(
         `crew.db was written by a newer version (schema ${row.value} > ${SCHEMA_VERSION}). Upgrade jstack or move the file aside.`,
@@ -87,19 +93,25 @@ export class CrewStore {
 
   // -- G1's authority --------------------------------------------------------
   outboxHas(channelId: string, ts: string): boolean {
-    return !!this.db.query("SELECT 1 FROM outbox WHERE channel_id=? AND ts=?").get(channelId, ts);
+    return !!this.db
+      .query("SELECT 1 FROM outbox WHERE channel_id=? AND ts=?")
+      .get(channelId, ts);
   }
 
   recordOutbox(r: OutboxRow): void {
     this.db
-      .query("INSERT OR IGNORE INTO outbox (channel_id,ts,task_id,step,posted_at) VALUES (?,?,?,?,?)")
+      .query(
+        "INSERT OR IGNORE INTO outbox (channel_id,ts,task_id,step,posted_at) VALUES (?,?,?,?,?)",
+      )
       .run(r.channelId, r.ts, r.taskId, r.step, Date.now());
   }
 
   // -- watermark -------------------------------------------------------------
   getWatermark(channelId: string): string | null {
     const r = this.db
-      .query<{ last_ts: string }, [string]>("SELECT last_ts FROM watermark WHERE channel_id=? AND thread_ts=''")
+      .query<{ last_ts: string }, [string]>(
+        "SELECT last_ts FROM watermark WHERE channel_id=? AND thread_ts=''",
+      )
       .get(channelId);
     return r?.last_ts ?? null;
   }
@@ -118,7 +130,9 @@ export class CrewStore {
 
   getThreadWatermark(channelId: string, threadTs: string): string | null {
     const r = this.db
-      .query<{ last_ts: string }, [string, string]>("SELECT last_ts FROM watermark WHERE channel_id=? AND thread_ts=?")
+      .query<{ last_ts: string }, [string, string]>(
+        "SELECT last_ts FROM watermark WHERE channel_id=? AND thread_ts=?",
+      )
       .get(channelId, threadTs);
     return r?.last_ts ?? null;
   }
@@ -134,9 +148,16 @@ export class CrewStore {
       .run(channelId, threadTs, ts, Date.now());
   }
 
-  markSeen(channelId: string, ts: string, author: string, ruleId: string | null): void {
+  markSeen(
+    channelId: string,
+    ts: string,
+    author: string,
+    ruleId: string | null,
+  ): void {
     this.db
-      .query("INSERT OR IGNORE INTO seen (channel_id,ts,author,rule_id,seen_at) VALUES (?,?,?,?,?)")
+      .query(
+        "INSERT OR IGNORE INTO seen (channel_id,ts,author,rule_id,seen_at) VALUES (?,?,?,?,?)",
+      )
       .run(channelId, ts, author, ruleId, Date.now());
   }
 
@@ -146,14 +167,18 @@ export class CrewStore {
   }
 
   spentToday(): number {
-    const r = this.db.query<{ usd: number }, [string]>("SELECT usd FROM spend WHERE day=?").get(this.today());
+    const r = this.db
+      .query<{ usd: number }, [string]>("SELECT usd FROM spend WHERE day=?")
+      .get(this.today());
     return r?.usd ?? 0;
   }
 
   /** Reserve in one statement. A read-then-spend check lets two ticks both pass. */
   reserve(amount: number, dailyCap: number): boolean {
     const day = this.today();
-    this.db.query("INSERT OR IGNORE INTO spend (day,usd) VALUES (?,0)").run(day);
+    this.db
+      .query("INSERT OR IGNORE INTO spend (day,usd) VALUES (?,0)")
+      .run(day);
     const res = this.db
       .query("UPDATE spend SET usd = usd + ? WHERE day = ? AND usd + ? <= ?")
       .run(amount, day, amount, dailyCap);
@@ -162,7 +187,9 @@ export class CrewStore {
 
   /** Settle a reservation down (or up) to what the child actually reported. */
   settle(reserved: number, actual: number): void {
-    this.db.query("UPDATE spend SET usd = MAX(0, usd - ? + ?) WHERE day = ?").run(reserved, actual, this.today());
+    this.db
+      .query("UPDATE spend SET usd = MAX(0, usd - ? + ?) WHERE day = ?")
+      .run(reserved, actual, this.today());
   }
 
   /**
@@ -178,7 +205,9 @@ export class CrewStore {
   addSpend(usd: number): void {
     if (!(usd > 0)) return;
     const day = this.today();
-    this.db.query("INSERT OR IGNORE INTO spend (day,usd) VALUES (?,0)").run(day);
+    this.db
+      .query("INSERT OR IGNORE INTO spend (day,usd) VALUES (?,0)")
+      .run(day);
     this.db.query("UPDATE spend SET usd = usd + ? WHERE day = ?").run(usd, day);
   }
 
@@ -197,7 +226,16 @@ export class CrewStore {
           "INSERT INTO task (id,channel_id,source_ts,agent_id,thread_ts,session_id,turns,state,started_at,last_at) " +
             "VALUES (?,?,?,?,?,?,1,'running',?,?)",
         )
-        .run(id, channelId, sourceTs, agentId, threadTs, sessionId, Date.now(), Date.now());
+        .run(
+          id,
+          channelId,
+          sourceTs,
+          agentId,
+          threadTs,
+          sessionId,
+          Date.now(),
+          Date.now(),
+        );
       return true;
     } catch {
       return false; // UNIQUE(channel_id, source_ts): already handled
@@ -208,17 +246,40 @@ export class CrewStore {
   findTaskByThread(
     channelId: string,
     threadTs: string,
-  ): { id: string; sessionId: string | null; turns: number; agentId: string } | null {
+  ): {
+    id: string;
+    sessionId: string | null;
+    turns: number;
+    agentId: string;
+  } | null {
     const r = this.db
-      .query<{ id: string; session_id: string | null; turns: number; agent_id: string }, [string, string]>(
+      .query<
+        {
+          id: string;
+          session_id: string | null;
+          turns: number;
+          agent_id: string;
+        },
+        [string, string]
+      >(
         "SELECT id, session_id, turns, agent_id FROM task WHERE channel_id=? AND thread_ts=? ORDER BY started_at DESC LIMIT 1",
       )
       .get(channelId, threadTs);
-    return r ? { id: r.id, sessionId: r.session_id, turns: r.turns, agentId: r.agent_id } : null;
+    return r
+      ? {
+          id: r.id,
+          sessionId: r.session_id,
+          turns: r.turns,
+          agentId: r.agent_id,
+        }
+      : null;
   }
 
   /** Threads worth polling: recent, so an old conversation stops costing reads forever. */
-  activeThreads(channelId: string, sinceMs: number): Array<{ id: string; threadTs: string }> {
+  activeThreads(
+    channelId: string,
+    sinceMs: number,
+  ): Array<{ id: string; threadTs: string }> {
     return this.db
       .query<{ id: string; thread_ts: string }, [string, number]>(
         "SELECT id, thread_ts FROM task WHERE channel_id=? AND thread_ts IS NOT NULL AND last_at >= ? " +
@@ -236,18 +297,33 @@ export class CrewStore {
    * resolve it, so continuity was available only by staying inside the thread. This is what
    * makes `#<handle>` recall -- and the CLI handoff -- possible.
    */
-  findTaskById(id: string): { id: string; agentId: string; sessionId: string; threadTs: string } | null {
+  findTaskById(id: string): {
+    id: string;
+    agentId: string;
+    sessionId: string;
+    threadTs: string;
+  } | null {
     const r = this.db
-      .query<{ id: string; agent_id: string; session_id: string; thread_ts: string }, [string]>(
-        "SELECT id, agent_id, session_id, thread_ts FROM task WHERE id = ?",
-      )
+      .query<
+        { id: string; agent_id: string; session_id: string; thread_ts: string },
+        [string]
+      >("SELECT id, agent_id, session_id, thread_ts FROM task WHERE id = ?")
       .get(id);
     if (!r) return null;
-    return { id: r.id, agentId: r.agent_id ?? "", sessionId: r.session_id ?? "", threadTs: r.thread_ts ?? "" };
+    return {
+      id: r.id,
+      agentId: r.agent_id ?? "",
+      sessionId: r.session_id ?? "",
+      threadTs: r.thread_ts ?? "",
+    };
   }
 
   setTaskSession(id: string, sessionId: string): void {
-    this.db.query("UPDATE task SET session_id=? WHERE id=? AND (session_id IS NULL OR session_id='')").run(sessionId, id);
+    this.db
+      .query(
+        "UPDATE task SET session_id=? WHERE id=? AND (session_id IS NULL OR session_id='')",
+      )
+      .run(sessionId, id);
   }
 
   /**
@@ -260,13 +336,17 @@ export class CrewStore {
 
   bumpTurn(id: string, costUsd: number): void {
     this.db
-      .query("UPDATE task SET turns = turns + 1, cost_usd = cost_usd + ?, last_at = ? WHERE id = ?")
+      .query(
+        "UPDATE task SET turns = turns + 1, cost_usd = cost_usd + ?, last_at = ? WHERE id = ?",
+      )
       .run(costUsd, Date.now(), id);
   }
 
   finishTask(id: string, state: string, costUsd: number, error?: string): void {
     this.db
-      .query("UPDATE task SET state=?, cost_usd=?, ended_at=?, error=? WHERE id=?")
+      .query(
+        "UPDATE task SET state=?, cost_usd=?, ended_at=?, error=? WHERE id=?",
+      )
       .run(state, costUsd, Date.now(), error ?? null, id);
   }
 
@@ -280,7 +360,9 @@ export class CrewStore {
     detail?: string;
   }): void {
     this.db
-      .query("INSERT INTO event (ts,tick_id,channel_id,msg_ts,kind,rule_id,detail) VALUES (?,?,?,?,?,?,?)")
+      .query(
+        "INSERT INTO event (ts,tick_id,channel_id,msg_ts,kind,rule_id,detail) VALUES (?,?,?,?,?,?,?)",
+      )
       .run(
         Date.now(),
         e.tickId,
@@ -294,7 +376,9 @@ export class CrewStore {
 
   explain(channelId: string, msgTs: string): Array<Record<string, unknown>> {
     return this.db
-      .query("SELECT ts,kind,rule_id,detail FROM event WHERE channel_id=? AND msg_ts=? ORDER BY id")
+      .query(
+        "SELECT ts,kind,rule_id,detail FROM event WHERE channel_id=? AND msg_ts=? ORDER BY id",
+      )
       .all(channelId, msgTs) as Array<Record<string, unknown>>;
   }
 
@@ -309,17 +393,27 @@ export class CrewStore {
 
   recentEvents(limit = 60): Array<Record<string, unknown>> {
     return this.db
-      .query("SELECT ts, kind, rule_id, detail FROM event ORDER BY id DESC LIMIT ?")
+      .query(
+        "SELECT ts, kind, rule_id, detail FROM event ORDER BY id DESC LIMIT ?",
+      )
       .all(limit) as Array<Record<string, unknown>>;
   }
 
   lastTickAt(): number | null {
-    const r = this.db.query<{ ts: number }, []>("SELECT MAX(ts) ts FROM event").get();
+    const r = this.db
+      .query<{ ts: number }, []>("SELECT MAX(ts) ts FROM event")
+      .get();
     return r?.ts ?? null;
   }
 
-  stats(): { tasks: number; outbox: number; spentToday: number; watermarks: number } {
-    const one = (q: string) => (this.db.query<{ n: number }, []>(q).get()?.n ?? 0);
+  stats(): {
+    tasks: number;
+    outbox: number;
+    spentToday: number;
+    watermarks: number;
+  } {
+    const one = (q: string) =>
+      this.db.query<{ n: number }, []>(q).get()?.n ?? 0;
     return {
       tasks: one("SELECT COUNT(*) n FROM task"),
       outbox: one("SELECT COUNT(*) n FROM outbox"),

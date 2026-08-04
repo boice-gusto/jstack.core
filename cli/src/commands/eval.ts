@@ -17,7 +17,11 @@ export function runEval(action: string, opts?: RunEvalOptions): void {
   const pluginRoot = findPluginRoot();
   const runner = join(pluginRoot, "evals", "run-evals.ts");
   if (!existsSync(runner)) {
-    console.error(chalk.red("evals/run-evals.ts not found (set CLAUDE_PLUGIN_ROOT or run from the jstack plugin directory)"));
+    console.error(
+      chalk.red(
+        "evals/run-evals.ts not found (set CLAUDE_PLUGIN_ROOT or run from the jstack plugin directory)",
+      ),
+    );
     process.exitCode = 1;
     return;
   }

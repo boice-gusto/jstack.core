@@ -10,7 +10,14 @@
  * real repo is never touched.
  */
 import { describe, expect, test, beforeAll, afterAll } from "bun:test";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, existsSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  cpSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -41,13 +48,22 @@ function writeAgent(dir: string, file: string, contents: string) {
   writeFileSync(join(dir, "agents", file), contents);
 }
 
-async function run(dir: string, args: string[] = []): Promise<{ code: number; out: string; err: string }> {
-  const proc = Bun.spawn(["bun", join(dir, "scripts", "agents-depth-check.ts"), ...args], {
-    cwd: dir,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+async function run(
+  dir: string,
+  args: string[] = [],
+): Promise<{ code: number; out: string; err: string }> {
+  const proc = Bun.spawn(
+    ["bun", join(dir, "scripts", "agents-depth-check.ts"), ...args],
+    {
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
+  const [out, err] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
   const code = await proc.exited;
   return { code, out, err };
 }
@@ -131,7 +147,10 @@ describe("agents-depth-check — correctness (always fatal)", () => {
     writeAgent(
       sandbox,
       "bad-keys.md",
-      RICH_AGENT.replace("model: inherit", "model: inherit\nhooks:\n  Stop: []"),
+      RICH_AGENT.replace(
+        "model: inherit",
+        "model: inherit\nhooks:\n  Stop: []",
+      ),
     );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
@@ -141,7 +160,11 @@ describe("agents-depth-check — correctness (always fatal)", () => {
   });
 
   test("rejects a name that is not jstack-<kebab>", async () => {
-    writeAgent(sandbox, "bad-name.md", RICH_AGENT.replace("jstack-rich-example", "NotJstack_Name"));
+    writeAgent(
+      sandbox,
+      "bad-name.md",
+      RICH_AGENT.replace("jstack-rich-example", "NotJstack_Name"),
+    );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
     expect(out).toContain("name must match jstack-<kebab-case>");
@@ -149,7 +172,11 @@ describe("agents-depth-check — correctness (always fatal)", () => {
   });
 
   test("rejects a missing required section", async () => {
-    writeAgent(sandbox, "no-section.md", RICH_AGENT.replace("## Failure modes", "## Something Else"));
+    writeAgent(
+      sandbox,
+      "no-section.md",
+      RICH_AGENT.replace("## Failure modes", "## Something Else"),
+    );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
     expect(out).toContain("## Failure modes");
@@ -157,7 +184,11 @@ describe("agents-depth-check — correctness (always fatal)", () => {
   });
 
   test("rejects fabricated organization data", async () => {
-    writeAgent(sandbox, "fiction.md", RICH_AGENT + "\nWe track ARR at Acme Platform this quarter.\n");
+    writeAgent(
+      sandbox,
+      "fiction.md",
+      RICH_AGENT + "\nWe track ARR at Acme Platform this quarter.\n",
+    );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
     expect(out).toContain("fabricated organization data");
@@ -165,7 +196,14 @@ describe("agents-depth-check — correctness (always fatal)", () => {
   });
 
   test("rejects a description too thin to route on", async () => {
-    writeAgent(sandbox, "thin.md", RICH_AGENT.replace(/description: >-\n(.*\n)+?model:/, "description: Does stuff.\nmodel:"));
+    writeAgent(
+      sandbox,
+      "thin.md",
+      RICH_AGENT.replace(
+        /description: >-\n(.*\n)+?model:/,
+        "description: Does stuff.\nmodel:",
+      ),
+    );
     const { code, out } = await run(sandbox);
     expect(code).toBe(1);
     expect(out).toContain("too thin to route on");

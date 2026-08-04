@@ -46,7 +46,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
-Apply the `jstack-ingest-all` workflow using values from `jstack.config.json`. There is no `templates/knowledge/` directory — derive the output shape from the Output shape section below rather than looking for a template file.
+Walk the ordered `ingest_all` array from config, running each source's configured skill+prompt chain in turn — never a source absent from that array. For each artifact: tag, dedupe, and link before routing it to gbrain/Notion per config, keeping a per-source running count of items ingested versus skipped with the specific reason for every skip. Finish with the GBrain write when `gbrain_destination` calls for it.
 
 ### Step 4 — Validate
 Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.

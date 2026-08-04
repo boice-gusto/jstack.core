@@ -56,14 +56,23 @@ async function promptTeamRosterSection(
   });
   if (p.isCancel(go) || !go) return null;
 
-  const defCg = (defaultsTeam?.canonical_group as Record<string, unknown> | undefined) ?? {};
+  const defCg =
+    (defaultsTeam?.canonical_group as Record<string, unknown> | undefined) ??
+    {};
 
   const modeRaw = await p.select({
-    message: "Canonical team identity mode (how tools resolve the team beyond this file)",
+    message:
+      "Canonical team identity mode (how tools resolve the team beyond this file)",
     options: [
       { value: "none", label: "none — no Slack/Google group" },
-      { value: "manual_list", label: "manual_list — roster in config is source of truth" },
-      { value: "slack_user_group", label: "slack_user_group — Slack user group" },
+      {
+        value: "manual_list",
+        label: "manual_list — roster in config is source of truth",
+      },
+      {
+        value: "slack_user_group",
+        label: "slack_user_group — Slack user group",
+      },
       { value: "google_group", label: "google_group — Google Group email" },
     ],
     initialValue: String(defCg.mode ?? "manual_list"),
@@ -175,7 +184,8 @@ async function promptTeamRosterSection(
     if (p.isCancel(emailPrimary)) throw new Error("cancelled");
 
     const jiraAccountId = await p.text({
-      message: "Jira account id (optional — jira.account_id; from Jira profile/API)",
+      message:
+        "Jira account id (optional — jira.account_id; from Jira profile/API)",
       placeholder: "",
     });
     if (p.isCancel(jiraAccountId)) throw new Error("cancelled");
@@ -193,7 +203,8 @@ async function promptTeamRosterSection(
     if (p.isCancel(slackUserId)) throw new Error("cancelled");
 
     const miscNote = await p.text({
-      message: "Misc one-line note (optional — misc.note; add more keys in config by hand)",
+      message:
+        "Misc one-line note (optional — misc.note; add more keys in config by hand)",
       placeholder: "",
     });
     if (p.isCancel(miscNote)) throw new Error("cancelled");
@@ -274,7 +285,10 @@ async function promptTeamRosterSection(
 
     members.push(row);
 
-    const more = await p.confirm({ message: "Add another team member?", initialValue: false });
+    const more = await p.confirm({
+      message: "Add another team member?",
+      initialValue: false,
+    });
     if (p.isCancel(more)) throw new Error("cancelled");
     addMember = more;
   }
@@ -321,8 +335,13 @@ async function runSetupInner(opts: {
 
   const { existsSync } = await import("node:fs");
   if (existsSync(cfgPath) && !opts.reconfigure) {
-    p.log.warn(`Config exists: ${cfgPath}. Use --reconfigure to overwrite sections interactively.`);
-    const go = await p.confirm({ message: "Re-run setup anyway?", initialValue: false });
+    p.log.warn(
+      `Config exists: ${cfgPath}. Use --reconfigure to overwrite sections interactively.`,
+    );
+    const go = await p.confirm({
+      message: "Re-run setup anyway?",
+      initialValue: false,
+    });
     if (p.isCancel(go) || !go) {
       p.outro("Skipped.");
       return;
@@ -332,7 +351,11 @@ async function runSetupInner(opts: {
   const defaults = loadDefaults(pluginRoot);
   // B3 fix: re-running setup must layer in the user's existing config, so unanswered
   // prompts don't snap back to defaults.json values and silently overwrite previous work.
-  const existingCfg = (readConfigOptional(projectRoot) as unknown as Record<string, unknown> | null) ?? {};
+  const existingCfg =
+    (readConfigOptional(projectRoot) as unknown as Record<
+      string,
+      unknown
+    > | null) ?? {};
   const layered = mergeDeep(defaults as Record<string, unknown>, existingCfg);
   const s = extractSetupSlices(layered);
   const defaultKb = s.defaultKb;
@@ -348,7 +371,9 @@ async function runSetupInner(opts: {
   const tz = await p.text({
     message: "Timezone (IANA)",
     initialValue:
-      typeof s.defaultsTeam.timezone === "string" ? s.defaultsTeam.timezone : "UTC",
+      typeof s.defaultsTeam.timezone === "string"
+        ? s.defaultsTeam.timezone
+        : "UTC",
   });
   if (p.isCancel(tz)) throw new Error("cancelled");
 
@@ -420,7 +445,8 @@ async function runSetupInner(opts: {
     if (p.isCancel(teamGbrainUrl)) throw new Error("cancelled");
 
     const personalGbrainUrl = await p.text({
-      message: "GBrain personal base URL (optional; often set only in a private overlay — see outro)",
+      message:
+        "GBrain personal base URL (optional; often set only in a private overlay — see outro)",
       initialValue: defaultGbrain.personal?.url ?? "",
       placeholder: "https://…",
     });
@@ -437,7 +463,8 @@ async function runSetupInner(opts: {
     );
 
     const teamKbGit = await p.text({
-      message: "Team knowledge Git repo URL (optional; shared GitHub org repo your team clones and pushes)",
+      message:
+        "Team knowledge Git repo URL (optional; shared GitHub org repo your team clones and pushes)",
       initialValue: String(defKsTeam.git_remote ?? ""),
       placeholder: "https://github.com/org/team-knowledge.git",
     });
@@ -452,14 +479,16 @@ async function runSetupInner(opts: {
     if (p.isCancel(teamKbPath)) throw new Error("cancelled");
 
     const personalKbGit = await p.text({
-      message: "Personal knowledge Git repo URL (optional; private repo — often in personal overlay only)",
+      message:
+        "Personal knowledge Git repo URL (optional; private repo — often in personal overlay only)",
       initialValue: String(defKsPersonal.git_remote ?? ""),
       placeholder: "https://github.com/you/jstack-personal-kb.git",
     });
     if (p.isCancel(personalKbGit)) throw new Error("cancelled");
 
     const personalKbPath = await p.text({
-      message: "Personal KB local checkout (optional; relative to workspace). Empty = personal markdown may use disk fallback only.",
+      message:
+        "Personal KB local checkout (optional; relative to workspace). Empty = personal markdown may use disk fallback only.",
       initialValue: String(defKsPersonal.local_checkout ?? ""),
       placeholder: "personal-knowledge",
     });
@@ -486,21 +515,27 @@ async function runSetupInner(opts: {
     if (p.isCancel(target)) throw new Error("cancelled");
 
     const rootsHint =
-      (defaultKb.roots ?? ["docs", "README.md"]).join(", ") + ", sessions, plans, tmp";
+      (defaultKb.roots ?? ["docs", "README.md"]).join(", ") +
+      ", sessions, plans, tmp";
     const rootsRaw = await p.text({
-      message: "Knowledge base roots (comma-separated, relative to workspace root)",
+      message:
+        "Knowledge base roots (comma-separated, relative to workspace root)",
       initialValue: rootsHint,
     });
     if (p.isCancel(rootsRaw)) throw new Error("cancelled");
 
     const roots = uniqRoots([
-      ...parseRootsInput(String(rootsRaw), defaultKb.roots ?? ["docs", "README.md"]),
+      ...parseRootsInput(
+        String(rootsRaw),
+        defaultKb.roots ?? ["docs", "README.md"],
+      ),
       String(teamKbPath).trim(),
       String(personalKbPath).trim(),
     ]);
 
     const includeGbrainInSearch = await p.confirm({
-      message: "Also query GBrain on knowledge-search when paths/URLs are used? (knowledge_base.gbrain.include)",
+      message:
+        "Also query GBrain on knowledge-search when paths/URLs are used? (knowledge_base.gbrain.include)",
       initialValue: defaultKb.gbrain?.include === true,
     });
     if (p.isCancel(includeGbrainInSearch)) throw new Error("cancelled");
@@ -541,7 +576,9 @@ async function runSetupInner(opts: {
   }
 
   const discovered = discoverFromMcpJson(projectRoot);
-  p.log.info(`Discovered ${Object.keys(discovered).length} MCP entries from .mcp.json`);
+  p.log.info(
+    `Discovered ${Object.keys(discovered).length} MCP entries from .mcp.json`,
+  );
 
   let draft: Record<string, unknown> = mergeDeep(defaults, {
     team: teamForDraft,
@@ -607,14 +644,20 @@ async function runSetupInner(opts: {
     parsed = JstackConfigSchema.parse(draft);
   } catch (err) {
     // B4 fix: surface validation failures cleanly with no partial write.
-    p.cancel(`Validation failed; nothing written. ${err instanceof Error ? err.message : String(err)}`);
+    p.cancel(
+      `Validation failed; nothing written. ${err instanceof Error ? err.message : String(err)}`,
+    );
     process.exitCode = 1;
     return;
   }
   writeConfig(projectRoot, parsed);
 
   p.outro(chalk.green(`Wrote ${cfgPath}`));
-  console.log(chalk.dim("Next: run session init in the agent (e.g. /jstack:init-session), then jstack doctor"));
+  console.log(
+    chalk.dim(
+      "Next: run session init in the agent (e.g. /jstack:init-session), then jstack doctor",
+    ),
+  );
   console.log(
     chalk.dim(
       "Team roster + Slack/Google canonical group: skills/team/references/team-canonical-identity.md",
@@ -625,18 +668,27 @@ async function runSetupInner(opts: {
       "Personal-only GBrain URL and identity: copy config/personal.example.json → ~/.config/jstack/jstack.personal.json (do not commit private URLs to a team repo). See skills/_core/references/config-team-vs-personal.md",
     ),
   );
-  console.log(chalk.dim("Next: keep CLAUDE.md sharp — /jstack:skill-creator/improve-claude-md (read-only by default)."));
+  console.log(
+    chalk.dim(
+      "Next: keep CLAUDE.md sharp — /jstack:skill-creator/improve-claude-md (read-only by default).",
+    ),
+  );
 }
 
 /** Non-interactive config for CI / proof scripts (no prompts). */
-export async function runSetupCi(opts: { diskFallbackRoot?: string }): Promise<void> {
+export async function runSetupCi(opts: {
+  diskFallbackRoot?: string;
+}): Promise<void> {
   const projectRoot = findProjectRoot();
   const pluginRoot = findPluginRoot();
   const cfgPath = configPath(projectRoot);
   const defaults = loadDefaults(pluginRoot);
   const s = extractSetupSlices(defaults);
   const discovered = discoverFromMcpJson(projectRoot);
-  const disk = (opts.diskFallbackRoot ?? "/tmp/knowledgebase").replace(/\/$/, "");
+  const disk = (opts.diskFallbackRoot ?? "/tmp/knowledgebase").replace(
+    /\/$/,
+    "",
+  );
 
   let draft: Record<string, unknown> = mergeDeep(defaults, {
     team: { name: "ci-fixture", timezone: "UTC" },
@@ -644,7 +696,10 @@ export async function runSetupCi(opts: { diskFallbackRoot?: string }): Promise<v
     telemetry: { enabled: false },
     debug: { enabled: false },
     mcp_servers: mergeMcpRegistry(s.mcpExisting, discovered),
-    session: mergeDeep(s.defSession, { default_gbrain_target: "team", current_session_id: "" }),
+    session: mergeDeep(s.defSession, {
+      default_gbrain_target: "team",
+      current_session_id: "",
+    }),
     gbrain: mergeDeep(s.defGbrain, {
       team: { url: "" },
       personal: { url: "" },
@@ -674,5 +729,9 @@ export async function runSetupCi(opts: { diskFallbackRoot?: string }): Promise<v
       `[setup --ci] Wrote ${cfgPath} (team=ci-fixture, disk_fallback_root=${disk}, knowledge_base.roots=[docs])`,
     ),
   );
-  console.log(chalk.dim("Next: keep CLAUDE.md sharp — /jstack:skill-creator/improve-claude-md (read-only by default)."));
+  console.log(
+    chalk.dim(
+      "Next: keep CLAUDE.md sharp — /jstack:skill-creator/improve-claude-md (read-only by default).",
+    ),
+  );
 }

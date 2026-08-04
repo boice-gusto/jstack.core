@@ -7,6 +7,15 @@ const DashboardEnvSchema = z.object({
   DASHBOARD_ADMIN_USER: z.string().optional(),
   DASHBOARD_ADMIN_PASSWORD: z.string().optional(),
   DASHBOARD_SESSION_SECRET: z.string().min(16).optional(),
+  /**
+   * Opt-in only, for local HTTP dev without TLS. Session cookies are Secure by default.
+   * `z.coerce.boolean()` would treat the string "false" as true (any non-empty string is
+   * truthy), so this reads the literal value instead.
+   */
+  DASHBOARD_ALLOW_INSECURE_COOKIES: z
+    .string()
+    .optional()
+    .transform((value) => value === "1" || value?.trim().toLowerCase() === "true"),
   DASHBOARD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
   DASHBOARD_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   DASHBOARD_AGENT_CWD: z.string().optional(),
