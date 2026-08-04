@@ -41,7 +41,7 @@ Fetch one or more Jira issues by key or JQL and present a clean table. Read-only
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Search before you create — a duplicate ticket is worse than a missing one. Read the issue's current status and its legal transitions before transitioning; do not assume a workflow. Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk change, show the count, the field diff, and a sample of affected keys, then wait for confirmation.
+Never invent an issue key or field value — fetch it or ask. For a JQL query, confirm the scope (project, date range) is what the user meant before running it; an overly broad filter wastes tokens and buries the answer in noise.
 
 ### Step 3 — Execute
 Fetch by **key** or **JQL**. For JQL, echo the exact filter and cap the result count with a "narrow further" line if over limit.
@@ -49,7 +49,7 @@ Fetch by **key** or **JQL**. For JQL, echo the exact filter and cap the result c
 - Output: key table with status, assignee, priority, updated, link.
 
 ### Step 4 — Validate
-Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
+Confirm every field in the output table came from the fetched issue(s), not memory or assumption. For a JQL result, confirm the returned count matches what was reported to the user.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

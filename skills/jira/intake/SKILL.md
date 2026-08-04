@@ -41,7 +41,7 @@ Shape raw text into Jira-ready fields: summary, description with AC, issuetype, 
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Search before you create — a duplicate ticket is worse than a missing one. Read the issue's current status and its legal transitions before transitioning; do not assume a workflow. Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk change, show the count, the field diff, and a sample of affected keys, then wait for confirmation.
+Never invent a field value to fill a gap in the source text — leave it for the form instead. Check `jira_rules` for required fields and labels before assembling the payload, so the form asks for everything `jira-create` will need in one pass.
 
 ### Step 3 — Execute
 Convert raw text or `jstack:intake` output to Jira-ready fields: summary, description with AC as checklist markdown, issuetype, priority, labels from policy.
@@ -49,7 +49,7 @@ Convert raw text or `jstack:intake` output to Jira-ready fields: summary, descri
 - Do NOT create the issue. End with `suggested_next: jstack-jira-create` and the payload.
 
 ### Step 4 — Validate
-Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
+Confirm the payload has every field `jira_rules` requires, and that nothing in it was invented rather than sourced from the raw text or the user's form answers.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

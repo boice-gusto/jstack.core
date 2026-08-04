@@ -42,7 +42,7 @@ Draft a Slack or email message about a Jira event. **Draft only** — do not pos
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Search before you create — a duplicate ticket is worse than a missing one. Read the issue's current status and its legal transitions before transitioning; do not assume a workflow. Never invent an issue key, field value, or transition id — fetch metadata or ask. For any bulk change, show the count, the field diff, and a sample of affected keys, then wait for confirmation.
+Fetch the issue's current fields — never invent the summary, status, or link from memory. For a bulk notify, show the count and a sample of affected keys before drafting, so the user can catch a wrong scope before any drafts are written.
 
 ### Step 3 — Execute
 Build Slack (or email) text from the issue: summary, why it matters, link. Match @channel rules from team policy.
@@ -50,7 +50,7 @@ Build Slack (or email) text from the issue: summary, why it matters, link. Match
 - For bulk, batch into one post or thread per the user's request.
 
 ### Step 4 — Validate
-Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
+Confirm the draft's summary, status, and link match what was actually fetched from the issue, and that nothing was posted without explicit approval.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
