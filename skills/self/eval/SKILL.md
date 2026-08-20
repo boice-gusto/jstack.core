@@ -2,7 +2,9 @@
 name: jstack-self-eval
 description: Self-assessment on a 9-grid with one growth goal for next 2 weeks. Not formal HR input unless user says so.
 category: self
+data_class: people_performance
 effort: high
+gbrain_destination: personal
 ---
 
 <!-- Chain Contract -->
@@ -81,6 +83,7 @@ Personal target by default; write to a shared store only when the user asks expl
 ### Step 3 — Execute
 Self assessment only. Suggest one growth goal for next 2 weeks.
 - Do not use as formal HR input unless user says so.
+- Grid axes and placement guidance: !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/9-grid-framework.md
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

@@ -48,6 +48,8 @@ Search before you create — a duplicate ticket is worse than a missing one. Rea
 Map **issue type** and **components** to `jira_rules`; pre-fill description from `templates/jira/*.json` when the template key matches.
 - **Dup check:** if summary matches a likely existing issue, list 1-2 candidate keys and ask **one** disambiguation before create.
 - Output: return key, id, URL. For epics, note epic name in the summary line.
+- Field/screen metadata and CRUD conventions (resolve required fields and options from `createmeta`, never from memory): !cat ${CLAUDE_PLUGIN_ROOT}/skills/jira/references/field-metadata.md
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/jira/references/jira-crud-patterns.md
 
 ### Step 4 — Validate
 Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.

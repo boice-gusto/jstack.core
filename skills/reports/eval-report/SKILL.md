@@ -105,6 +105,7 @@ Every figure traces to a named source with an as-of time. Mark a missing metric 
 
 ### Step 3 — Execute
 Sensitive: growth framing. Avoid comparing to other individuals by name. Mark manager-only if not peer-shareable.
+- Grid axes and placement guidance: !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/9-grid-framework.md
 
 ### Step 4 — Validate
 Confirm every figure has a source and as-of time, that gaps read `[no data]`, and that the footer and scope match this report's kind. Re-run the render and confirm identical output from identical inputs.

@@ -131,7 +131,7 @@ If an MCP tool is available but the call fails:
 
 ## CLI helpers (workflows + transcripts)
 
-- **`jstack workflow`** — CRUD on `config/workflows/*.json` (`list --json`, `show`, `create`, `run --yes`, `delete --force`, `export`, `import`, `edit`). Execution is still **stub** until Playwright is wired; skills **`workflows/workflow-wizard`** and **`workflows/execute`** document the flow.
+- **`jstack workflow`** — CRUD on `config/workflows/*.json` (`list --json`, `show`, `create`, `run --yes`, `delete --force`, `export`, `import`, `edit`). Execution is still **stub** until Playwright is wired; skill **`workflows/execute`** documents the flow.
 - **`jstack transcripts status|ingest`** — prints config snapshot and points to **`jstack-transcripts-ingest`** / **`jstack-ingest-all`** (MCP runs in the agent).
 
 ## Health checking
@@ -139,6 +139,7 @@ If an MCP tool is available but the call fails:
 - **`jstack doctor`** — validates all configured integrations are reachable. Point users here when a required integration is missing or broken.
 - **`jstack mcp refresh`** — restarts MCP servers. Useful after config changes or token rotation.
 - **`jstack setup`** — first-time onboarding wizard for adding integrations.
+- **Debugging a failing integration call or chain handoff** — enable `debug.enabled`/`debug.verbose` in `jstack.config.json` and read the log-prefix/what-to-log(-never-log) conventions in [`debug-guide.md`](debug-guide.md) before improvising a logging format.
 
 ## When an integration is missing
 

@@ -49,6 +49,8 @@ Search before you create — a duplicate ticket is worse than a missing one. Rea
 Resolve the transition id from API metadata — never hardcode. Validate the transition is legal for the current state.
 - **Guards:** if a field is required for the transition, collect it before attempting.
 - Output: from-status → to-status with timestamp; link to view issue.
+- Transition-metadata and CRUD conventions (map user intent to a real transition id from the API response, not from memory): !cat ${CLAUDE_PLUGIN_ROOT}/skills/jira/references/field-metadata.md
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/jira/references/jira-crud-patterns.md
 
 ### Step 4 — Validate
 Re-read the issue after writing: the status, the fields you set, and the links you added are what you intended, and nothing else changed. Confirm you created exactly one ticket, not a duplicate.
