@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T20:35:05.413Z",
+  "generatedAt": "2026-08-20T20:39:32.826Z",
   "count": 142,
   "skills": [
     {
@@ -162,7 +162,7 @@
       "path": "skills/engineering/SKILL.md",
       "relPath": "skills/engineering/SKILL.md",
       "gateId": "jstack:engineering",
-      "description": "\"Summarize engineering health: CI status, PR queue, flaky tests, revert risk from configured repos.\"",
+      "description": "Quick composite snapshot of CI status, PR queue, flaky tests, and revert risk from configured repos. For DORA-banded deep analysis with thresholds and trend context, use jstack:engineering-health instead.",
       "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"

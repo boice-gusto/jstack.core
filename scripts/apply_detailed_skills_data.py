@@ -99,7 +99,7 @@ DESCRIPTIONS: dict[str, str] = {
     "adr": "Create or update a local markdown Architecture Decision Record (ADR) with typed context (engineering, design, team, codebase, org); discover existing adr folders; confirm path before write.",
     "intake": "Convert unstructured feature/ticket requests into shaped ticket fields. Split bundled requests into separate candidates.",
     "announcements": "Draft channel-ready or email-ready announcements from rough notes, respecting tone policies and internal/external distinction.",
-    "engineering": "Summarize engineering health: CI status, PR queue, flaky tests, revert risk from configured repos.",
+    "engineering": "Quick composite snapshot of CI status, PR queue, flaky tests, and revert risk from configured repos. For DORA-banded deep analysis with thresholds and trend context, use jstack:engineering-health instead.",
     "sdlc": "Map SDLC stages to evidence (tests, sign-offs, flags, migrations). Produce gate checklists, not Jira state changes.",
     "setup": "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that.",
     "update-config": "Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner. Not for first-time setup — use jstack:onboarding.",
