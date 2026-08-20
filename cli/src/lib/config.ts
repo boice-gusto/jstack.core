@@ -89,9 +89,9 @@ export function writeConfig(root: string, cfg: JstackConfig): void {
 
 /**
  * Sentinel value used to mark a field as "explicitly skipped" in a partial
- * config / wizard output. When `mergeDeep` encounters this value it deletes
- * the corresponding key in the merged output, distinguishing "skip" from
- * empty string or undefined.
+ * config / wizard output, distinguishing "skip" from empty string or
+ * undefined. `pruneSkipped` is what actually removes it from a value tree —
+ * `mergeDeep` treats it as an ordinary value and does not special-case it.
  */
 export const SKIP_SENTINEL: unique symbol = Symbol.for("jstack:skip");
 export type SkipSentinel = typeof SKIP_SENTINEL;
@@ -107,10 +107,6 @@ export function mergeDeep<T extends Record<string, unknown>>(
   for (const k of Object.keys(over)) {
     const v = over[k as keyof T];
     if (v === undefined) continue;
-    if (isSkipSentinel(v)) {
-      delete (out as Record<string, unknown>)[k];
-      continue;
-    }
     const b = base[k as keyof T];
     if (
       v &&

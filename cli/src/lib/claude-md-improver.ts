@@ -791,8 +791,9 @@ export function detect(
     ...detectD9ReadmeDuplication(collected),
     ...detectD10DontGap(prompts, md),
   ];
+  const declined = loadDeclinedFingerprints(collected.project_root);
   const filteredIssues = rawIssues.filter(
-    (i) => !isDeclined(collected.project_root, i),
+    (i) => !declined.has(evidenceFingerprint(i)),
   );
   const scored: ScoredIssue[] = filteredIssues
     .map((i) => ({
@@ -824,18 +825,29 @@ function evidenceFingerprint(issue: Issue): string {
   return parts.join("|");
 }
 
+type DeclinedRecord = { fingerprint: string; declined_at: string };
+
+/** Reads the declined-history file, tolerating "missing" and "malformed" as an empty history. */
+function readDeclinedHistory(path: string): DeclinedRecord[] {
+  if (!existsSync(path)) return [];
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+/** Loads the declined-history file once and returns the set of fingerprints already declined. */
+export function loadDeclinedFingerprints(projectRoot: string): Set<string> {
+  const path = join(projectRoot, HISTORY_REL);
+  return new Set(readDeclinedHistory(path).map((p) => p.fingerprint));
+}
+
 export function recordDeclined(projectRoot: string, issues: Issue[]): void {
   const dir = join(projectRoot, ".jstack");
   mkdirSync(dir, { recursive: true });
   const path = join(projectRoot, HISTORY_REL);
-  let prior: { fingerprint: string; declined_at: string }[] = [];
-  if (existsSync(path)) {
-    try {
-      prior = JSON.parse(readFileSync(path, "utf8"));
-    } catch {
-      prior = [];
-    }
-  }
+  const prior = readDeclinedHistory(path);
   const now = new Date().toISOString();
   for (const i of issues) {
     prior.push({ fingerprint: evidenceFingerprint(i), declined_at: now });
@@ -844,14 +856,5 @@ export function recordDeclined(projectRoot: string, issues: Issue[]): void {
 }
 
 export function isDeclined(projectRoot: string, issue: Issue): boolean {
-  const path = join(projectRoot, HISTORY_REL);
-  if (!existsSync(path)) return false;
-  try {
-    const prior: { fingerprint: string }[] = JSON.parse(
-      readFileSync(path, "utf8"),
-    );
-    return prior.some((p) => p.fingerprint === evidenceFingerprint(issue));
-  } catch {
-    return false;
-  }
+  return loadDeclinedFingerprints(projectRoot).has(evidenceFingerprint(issue));
 }

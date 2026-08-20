@@ -30,27 +30,18 @@ describe("config", () => {
       expect(result).toEqual({ a: 1, b: { c: 2, d: 3 } });
     });
 
-    it("deletes a top-level key when override is SKIP_SENTINEL", () => {
+    it("does not special-case SKIP_SENTINEL — it leaks through unpruned (pruneSkipped owns that semantic)", () => {
       const result = mergeDeep<Record<string, unknown>>(
         { a: "x", b: 1 },
         { a: SKIP_SENTINEL as unknown as string },
       );
-      expect(result).toEqual({ b: 1 });
-      expect("a" in result).toBe(false);
-    });
-
-    it("deletes a nested key when override is SKIP_SENTINEL", () => {
-      const result = mergeDeep<Record<string, unknown>>(
-        { team: { name: "x", tz: "UTC" } },
-        { team: { name: SKIP_SENTINEL as unknown as string } },
-      );
-      expect(result).toEqual({ team: { tz: "UTC" } });
-      expect("name" in (result.team as Record<string, unknown>)).toBe(false);
+      expect(result.a).toBe(SKIP_SENTINEL);
+      expect(result.b).toBe(1);
     });
 
     it("does not mutate the base object", () => {
       const base = { a: "x", b: 1 } as Record<string, unknown>;
-      mergeDeep(base, { a: SKIP_SENTINEL as unknown as string });
+      mergeDeep(base, { a: "y" });
       expect(base).toEqual({ a: "x", b: 1 });
     });
 

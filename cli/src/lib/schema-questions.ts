@@ -44,11 +44,6 @@ export type QuestionSpec = {
     defaults: Record<string, unknown>,
     existing: Record<string, unknown>,
   ) => unknown;
-  /**
-   * What to do when the user skips. "omit" leaves the path absent in the patch (recommended);
-   * "empty" writes a typed-empty value (e.g. "" or []).
-   */
-  skipBehavior?: "omit" | "empty";
   /** ID into the dependency-resolver registry (resolver lives in dependency-resolver.ts). */
   depId?: string;
   /** Optional simple validator. Returns null on success or an error message string. */
@@ -59,7 +54,7 @@ export type QuestionSpec = {
 
 function validateUrl(v: unknown): string | null {
   if (typeof v !== "string") return "expected a string";
-  if (v === "") return null; // skip-equivalent under empty skipBehavior
+  if (v === "") return null; // empty string is a valid "not set" value
   if (!/^https?:\/\//i.test(v)) return "must start with http:// or https://";
   return null;
 }
@@ -135,7 +130,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "this config, prefer the umbrella name (e.g. 'Platform Eng') over a project codename. Renaming " +
       "later is safe — nothing keys off this string for routing.",
     default: existingOrDefault(["team", "name"]),
-    skipBehavior: "omit",
   },
   {
     id: "team-timezone",
@@ -153,7 +147,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "pick the office zone; if not, pick the manager's zone or UTC and document it elsewhere.",
     default: existingOrDefault(["team", "timezone"], "UTC"),
     validate: validateIanaTz,
-    skipBehavior: "omit",
   },
   {
     id: "team-business-hours-start",
@@ -170,7 +163,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "If the team is split across zones, this is interpreted in team.timezone — distributed teams " +
       "may want to widen the window or override per-member later.",
     default: existingOrDefault(["team", "business_hours", "start"], "09:00"),
-    skipBehavior: "omit",
   },
   {
     id: "team-business-hours-end",
@@ -186,7 +178,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "the evening, push this to 18:00 or 19:00; the field doesn't block work, it just informs scheduling " +
       "and 'is it polite to ping' heuristics. Keep start < end.",
     default: existingOrDefault(["team", "business_hours", "end"], "17:00"),
-    skipBehavior: "omit",
   },
   {
     id: "team-canonical-group-mode",
@@ -221,7 +212,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       ["team", "canonical_group", "mode"],
       "manual_list",
     ),
-    skipBehavior: "omit",
   },
   {
     id: "team-canonical-group-slack-id",
@@ -242,7 +232,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "canonical_group",
       "slack_user_group_id",
     ]),
-    skipBehavior: "omit",
   },
   {
     id: "team-canonical-group-google-email",
@@ -263,7 +252,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "canonical_group",
       "google_group_email",
     ]),
-    skipBehavior: "omit",
   },
 
   // -------------------- Integrations / JIRA --------------------
@@ -283,7 +271,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "on auth redirects.",
     default: existingOrDefault(["integrations", "jira", "base_url"]),
     validate: validateUrl,
-    skipBehavior: "empty",
   },
   {
     id: "integrations-jira-project-key",
@@ -299,7 +286,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "that gets the most traffic — per-skill overrides are still possible. Leave empty if this config is " +
       "shared across teams with different projects.",
     default: existingOrDefault(["integrations", "jira", "project_key"]),
-    skipBehavior: "empty",
   },
 
   // -------------------- Integrations / Slack --------------------
@@ -316,7 +302,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "weekly digests, and announce-style messages will land by default. Pick one that the team actually " +
       "watches — a low-traffic channel is better than a noisy one. Per-skill overrides still work.",
     default: existingOrDefault(["integrations", "slack", "public_channel"]),
-    skipBehavior: "empty",
   },
   {
     id: "integrations-slack-private-channel",
@@ -333,7 +318,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "and 'private'. If you don't have a private channel yet, leave empty and tools will fall back to " +
       "DMs with the invoking user.",
     default: existingOrDefault(["integrations", "slack", "private_channel"]),
-    skipBehavior: "empty",
   },
   {
     id: "integrations-slack-webhook-url",
@@ -351,7 +335,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "anyone with it can post as your app.",
     default: existingOrDefault(["integrations", "slack", "webhook_url"]),
     validate: validateUrl,
-    skipBehavior: "empty",
   },
 
   // -------------------- Integrations / Notion --------------------
@@ -370,7 +353,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "create pages in the wrong place. The ID format is a UUID; you can grab it from any page URL or " +
       "via the Notion API.",
     default: existingOrDefault(["integrations", "notion", "workspace_id"]),
-    skipBehavior: "empty",
   },
 
   // -------------------- Integrations / GitHub --------------------
@@ -388,7 +370,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "default scope for skills that create issues or PRs. Personal accounts: use your username. If you " +
       "switch employers or get acquired, remember to update this — it does not auto-detect.",
     default: existingOrDefault(["integrations", "github", "org"]),
-    skipBehavior: "empty",
   },
   {
     id: "integrations-github-default-repo",
@@ -405,7 +386,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "creation default here. Skills that act across many repos (e.g. health checks) ignore this and " +
       "use their own scope.",
     default: existingOrDefault(["integrations", "github", "default_repo"]),
-    skipBehavior: "empty",
   },
 
   // -------------------- Integrations / Google --------------------
@@ -424,7 +404,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "receive new events created by jstack — usually a shared team calendar so everyone sees them, " +
       "not a personal one.",
     default: existingOrDefault(["integrations", "gcal", "primary_calendar_id"]),
-    skipBehavior: "empty",
   },
   {
     id: "integrations-sheets-default-spreadsheet-id",
@@ -443,7 +422,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "sheets",
       "default_spreadsheet_id",
     ]),
-    skipBehavior: "empty",
   },
 
   // -------------------- GBrain & Knowledge --------------------
@@ -463,7 +441,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     default: existingOrDefault(["gbrain", "team", "url"]),
     validate: validateUrl,
     depId: "gbrain-target-empty-url",
-    skipBehavior: "empty",
   },
   {
     id: "gbrain-personal-url",
@@ -480,7 +457,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
     default: existingOrDefault(["gbrain", "personal", "url"]),
     validate: validateUrl,
     depId: "gbrain-target-empty-url",
-    skipBehavior: "empty",
   },
   {
     id: "session-default-gbrain-target",
@@ -500,7 +476,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "'team'. If you draft a lot of sensitive material (perf reviews, manager notes), pick 'personal' — " +
       "the safe default. You can always switch per-session; this only sets the boot-up choice.",
     default: existingOrDefault(["session", "default_gbrain_target"], "team"),
-    skipBehavior: "omit",
   },
   {
     id: "knowledge-base-roots",
@@ -521,7 +496,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       ["docs", "README.md"],
     ),
     depId: "kb-root-missing",
-    skipBehavior: "omit",
   },
   {
     id: "knowledge-base-gbrain-include",
@@ -538,7 +512,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "memory hygiene is good, turn it on for richer answers. GBrain is a complement to listed roots, " +
       "not a replacement: keep docs/README.md in roots either way.",
     default: existingOrDefault(["knowledge_base", "gbrain", "include"], false),
-    skipBehavior: "omit",
   },
   {
     id: "knowledge-storage-team-git-remote",
@@ -555,7 +528,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "extra auth setup.",
     default: existingOrDefault(["knowledge_storage", "team", "git_remote"]),
     validate: validateUrl,
-    skipBehavior: "empty",
   },
   {
     id: "knowledge-storage-team-local-checkout",
@@ -572,7 +544,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "both work; relative paths resolve from the workspace.",
     default: existingOrDefault(["knowledge_storage", "team", "local_checkout"]),
     depId: "ks-team-checkout-not-on-disk",
-    skipBehavior: "empty",
   },
   {
     id: "knowledge-storage-personal-git-remote",
@@ -589,7 +560,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "disk_fallback_root.",
     default: existingOrDefault(["knowledge_storage", "personal", "git_remote"]),
     validate: validateUrl,
-    skipBehavior: "empty",
   },
   {
     id: "knowledge-storage-personal-local-checkout",
@@ -608,7 +578,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "personal",
       "local_checkout",
     ]),
-    skipBehavior: "empty",
   },
   {
     id: "knowledge-storage-disk-fallback-root",
@@ -628,7 +597,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       ["knowledge_storage", "disk_fallback_root"],
       "/tmp/knowledgebase",
     ),
-    skipBehavior: "omit",
   },
 
   // -------------------- Telemetry & Debug --------------------
@@ -647,7 +615,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "or if your org runs its own telemetry sink. Pair with telemetry.endpoint; both must be set for " +
       "events to actually flow.",
     default: existingOrDefault(["telemetry", "enabled"], false),
-    skipBehavior: "omit",
   },
   {
     id: "telemetry-endpoint",
@@ -664,7 +631,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "error messages.",
     default: existingOrDefault(["telemetry", "endpoint"]),
     validate: validateUrl,
-    skipBehavior: "empty",
   },
   {
     id: "debug-enabled",
@@ -680,7 +646,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "errors in some checks. Useful when you're chasing a bug or building a new skill — noisy " +
       "otherwise. Combine with debug.log_level and debug.trace_skills for finer control.",
     default: existingOrDefault(["debug", "enabled"], false),
-    skipBehavior: "omit",
   },
   {
     id: "debug-mock-mcp",
@@ -697,7 +662,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "production works. Pair with debug.mock_mcp_scenario to pick which fixture set is active.",
     default: existingOrDefault(["debug", "mock_mcp"], false),
     depId: "mcp-mock-missing",
-    skipBehavior: "omit",
   },
   {
     id: "debug-mock-mcp-scenario",
@@ -712,7 +676,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "(e.g. 'happy-path', 'jira-down', 'slack-rate-limited'). Use scenarios to write tests that exercise " +
       "specific failure modes deterministically. Empty string falls back to the default scenario.",
     default: existingOrDefault(["debug", "mock_mcp_scenario"]),
-    skipBehavior: "empty",
   },
 
   // -------------------- Routines --------------------
@@ -730,7 +693,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "respects team.timezone for cron interpretation. Enabling this on a personal laptop fires only " +
       "while the laptop is awake — for reliability, run it on a server.",
     default: existingOrDefault(["routines", "standup", "enabled"], false),
-    skipBehavior: "omit",
   },
   {
     id: "routines-standup-cron",
@@ -745,7 +707,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "actual standup so the digest has had time to land in Slack. Avoid times that collide with " +
       "calendar updates or sprint cron jobs — the routine has no internal queueing.",
     default: existingOrDefault(["routines", "standup", "cron"], "0 9 * * 1-5"),
-    skipBehavior: "omit",
   },
   {
     id: "routines-weekly-digest-enabled",
@@ -761,7 +722,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "once you've vetted the chain output once or twice manually so you're not surprised by a public " +
       "post. As with standup, run on a stable host (not a laptop that sleeps) for reliability.",
     default: existingOrDefault(["routines", "weekly_digest", "enabled"], false),
-    skipBehavior: "omit",
   },
   {
     id: "routines-weekly-digest-cron",
@@ -779,7 +739,6 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       ["routines", "weekly_digest", "cron"],
       "0 16 * * 5",
     ),
-    skipBehavior: "omit",
   },
 
   // -------------------- Cross-plugins --------------------
@@ -799,6 +758,5 @@ export const QUESTION_CATALOG: QuestionSpec[] = [
       "skill resolution warnings.",
     default: existingOrDefault(["cross_plugins", "gbrain", "enabled"], false),
     depId: "cross-plugins-gbrain-empty-skills",
-    skipBehavior: "omit",
   },
 ];
