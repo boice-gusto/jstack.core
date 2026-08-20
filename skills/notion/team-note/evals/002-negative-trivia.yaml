@@ -1,6 +1,6 @@
 name: Boundary — refuses the work this skill declares out of scope
 prompt: >-
-  You are applying the jstack skill **jstack-notion-teamnote** (path: `notion/team-note`).
+  You are applying the jstack skill **jstack-notion-team-note** (path: `notion/team-note`).
 
   Category: notion.
 

@@ -23,7 +23,7 @@ Route Notion requests to the most specific sub-skill. Do not write pages directl
 - No workspace-wide member or public-web changes without a dedicated sub-step the user approves.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/notion/`:** update, planning, sprint, project, report, adr, article, knowledge-base, team-note, standup, team-report, performance, one-on-one, setup
+**Under `skills/notion/`:** update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

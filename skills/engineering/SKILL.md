@@ -2,6 +2,8 @@
 name: jstack-engineering
 description: "Summarize engineering health: CI status, PR queue, flaky tests, revert risk from configured repos."
 category: engineering
+agent: Explore
+context: fork
 effort: high
 ---
 

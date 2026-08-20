@@ -1,5 +1,5 @@
 ---
-name: jstack-notion-teamnote
+name: jstack-notion-team-note
 description: Create a lightweight team note in Notion. Suggest ADR for binding decisions instead.
 category: notion
 disable-model-invocation: true

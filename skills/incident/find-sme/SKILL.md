@@ -3,6 +3,8 @@ name: jstack-incident-find-sme
 description: Rank subject-matter experts from Jira history + Slack presence for an incident description or incident id; config project scope.
 category: incident
 effort: medium
+gbrain_destination: none
+data_class: internal
 ---
 
 <!-- Chain Contract -->

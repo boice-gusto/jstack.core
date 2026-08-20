@@ -1,6 +1,6 @@
 name: Graded rubric — self-description checked against declared scope and failure modes
 prompt: >-
-  You are applying the jstack skill **jstack-notion-teamnote** (path: `notion/team-note`).
+  You are applying the jstack skill **jstack-notion-team-note** (path: `notion/team-note`).
 
   Category: notion.
 
@@ -17,7 +17,7 @@ grading:
   rubric:
     - description: Identifies this skill's specific purpose, not a generic description of an assistant
       pass_if: >-
-        response states what jstack-notion-teamnote is for and when to use it, in terms specific to
+        response states what jstack-notion-team-note is for and when to use it, in terms specific to
         notion
     - description: Names the boundary this skill actually declares
       pass_if: >-

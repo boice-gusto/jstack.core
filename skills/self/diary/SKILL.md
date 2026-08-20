@@ -2,8 +2,10 @@
 name: jstack-self-diary
 description: Write a single journal entry to personal gbrain. Never auto-post to team channels.
 category: self
+data_class: internal
 disable-model-invocation: true
 effort: low
+gbrain_destination: personal
 ---
 
 <!-- Chain Contract -->
@@ -44,6 +46,7 @@ Personal target by default; write to a shared store only when the user asks expl
 ### Step 3 — Execute
 One session journal entry. gbrain personal target only unless user overrides.
 - No auto-post to team channels.
+- Structure the entry situation → emotion → learning → next experiment: !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/reflection-patterns.md
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

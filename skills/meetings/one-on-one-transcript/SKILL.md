@@ -6,13 +6,14 @@ description: >-
 category: meetings
 arguments: [person_name]
 argument-hint: [person-name]
+disable-model-invocation: true
 effort: high
 ---
 
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config, transcript_paths_or_paste -->
 <!-- outputs: structured_result, optional_notion_or_lattice_write -->
-<!-- chains-to: jstack-notion-one-on-one (Notion path) -->
+<!-- chains-to: jstack:notion-one-on-one -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md

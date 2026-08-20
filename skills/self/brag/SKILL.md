@@ -4,6 +4,8 @@ description: Daily or weekly activity brag from Slack, GitHub, and Jira mapped t
 category: self
 disable-model-invocation: true
 effort: high
+gbrain_destination: personal
+data_class: people_performance
 ---
 
 <!-- Chain Contract -->

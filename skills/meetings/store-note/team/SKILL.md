@@ -2,8 +2,10 @@
 name: jstack-meetings-store-team
 description: Save meeting notes to team gbrain or Notion per config. Follow team storage rules.
 category: meetings
+data_class: internal
 disable-model-invocation: true
 effort: low
+gbrain_destination: team
 ---
 
 <!-- Chain Contract -->

@@ -1,6 +1,6 @@
 name: Skill smoke — produces a structured outline for its own job, without live integrations
 prompt: >-
-  You are applying the jstack skill **jstack-notion-teamnote** (path: `notion/team-note`).
+  You are applying the jstack skill **jstack-notion-team-note** (path: `notion/team-note`).
 
   Category: notion.
 

@@ -13,8 +13,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route meeting requests to the most specific sub-skill: prepare, transcribe, action-items, post-slack, notion-highlights, or store-note.
-- **Out of scope:** Sending calendar invites or joining calls.
+Route a note-storage request to the personal or team child skill based on the session gbrain target.
+- **Out of scope:** Writing content directly — routes to `jstack:meetings-store-note-personal` or `jstack:meetings-store-note-team`.
 
 ## Domain rules — meetings
 - Privacy: mark sensitive transcript segments; offer redacted summary for public channels.

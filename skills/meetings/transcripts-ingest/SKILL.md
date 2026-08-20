@@ -12,7 +12,7 @@ disable-model-invocation: true
 <!-- Chain Contract -->
 <!-- inputs: user_request, drive_manifest, jstack_config -->
 <!-- outputs: routed_transcript_refs, structured_result -->
-<!-- chains-to: meetings/granola-highlights, meetings/transcribe, meetings/action-items -->
+<!-- chains-to: jstack:meetings-granola, jstack:meetings-transcribe, jstack:meetings-action-items -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md

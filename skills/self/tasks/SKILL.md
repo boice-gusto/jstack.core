@@ -2,7 +2,9 @@
 name: jstack-self-tasks
 description: Roll up personal tasks from Jira + gbrain TODOs. Deduplicate and return top 5 with a parking lot.
 category: self
+data_class: internal
 effort: low
+gbrain_destination: none
 ---
 
 <!-- Chain Contract -->

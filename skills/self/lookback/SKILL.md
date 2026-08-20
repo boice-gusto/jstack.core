@@ -101,6 +101,7 @@ Personal target by default; write to a shared store only when the user asks expl
 ### Step 3 — Execute
 Last N days of personal gbrain + calendar. Surface patterns in one short section.
 - Gentle tone; not therapy.
+- Structure around wins, misses, surprises, one habit to change: !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/reflection-patterns.md
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.
