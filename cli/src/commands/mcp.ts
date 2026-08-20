@@ -15,21 +15,17 @@ import {
   isInteractive,
   nonInteractiveHint,
 } from "../lib/cliUi.js";
-import { discoverFromMcpJson, mergeMcpRegistry } from "../lib/mcp-discovery.js";
-import { listPresetIds, resolvePreset } from "../lib/mcp-templates.js";
+import {
+  discoverFromMcpJson,
+  mergeMcpRegistry,
+  type McpFile,
+} from "../lib/mcp-discovery.js";
+import {
+  MCP_ADD_PRESETS,
+  listPresetIds,
+  resolvePreset,
+} from "../lib/mcp-templates.js";
 import type { McpRegistry } from "../types/mcp-registry.js";
-
-interface McpFile {
-  mcpServers?: Record<
-    string,
-    {
-      command?: string;
-      args?: string[];
-      url?: string;
-      env?: Record<string, string>;
-    }
-  >;
-}
 
 function mcpJsonPath(root: string): string {
   return join(root, ".mcp.json");
@@ -91,17 +87,6 @@ export function runMcpHealth(): void {
   );
 }
 
-const MCP_ADD_HINTS: Record<string, string> = {
-  github: "GitHub PR/issues (needs PAT)",
-  notion: "Notion workspace",
-  filesystem: "Local dirs as MCP roots",
-  memory: "Ephemeral memory MCP",
-  fetch: "HTTP fetch MCP",
-  glean: "Glean search (instance + token)",
-  gdrive: "Google Drive",
-  "jstack-mock": "Local jstack MCP mock (fixtures)",
-};
-
 export async function runMcpAdd(serverIdMaybe?: string): Promise<void> {
   let id = serverIdMaybe?.trim().toLowerCase() ?? "";
 
@@ -119,7 +104,7 @@ export async function runMcpAdd(serverIdMaybe?: string): Promise<void> {
       options: ids.map((sid) => ({
         value: sid,
         label: sid,
-        hint: MCP_ADD_HINTS[sid],
+        hint: MCP_ADD_PRESETS[sid]?.hint,
       })),
     });
     if (handleCancel(picked)) exitCancelled();

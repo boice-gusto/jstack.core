@@ -2,10 +2,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { McpRegistry, McpServer } from "../types/mcp-registry.js";
 
-interface McpFile {
+export interface McpFile {
   mcpServers?: Record<
     string,
-    { command?: string; args?: string[]; url?: string }
+    {
+      command?: string;
+      args?: string[];
+      url?: string;
+      env?: Record<string, string>;
+    }
   >;
 }
 
