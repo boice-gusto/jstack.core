@@ -82,7 +82,7 @@ DESCRIPTIONS: dict[str, str] = {
     # --- routines ---
     "routines": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff).",
     "routines/standup": "Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.",
-    "routines/weekly-digest": "Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.",
+    "routines/weekly-digest": "Run the scheduled weekly digest wrapper around jstack:team-report: two-audience split, exec summary + links, unattended-safe.",
     "routines/sprint-close": "Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.",
     "routines/health-check": "Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.",
     "routines/custom": "Execute a custom routine from its config/schedules/<id>.json definition plus the routines block in config/defaults.json. If schedule JSON is invalid, return a fix, not a fake result.",
@@ -403,6 +403,7 @@ CHAINS_TO: dict[str, str] = {
     "intake": "jstack:jira-intake",
     "routines/standup": "jstack:meetings-post-slack",
     "routines/sprint-close": "jstack:notion-sprint",
+    "routines/weekly-digest": "jstack:team-report",
 }
 
 # ---------------------------------------------------------------------------
@@ -1127,7 +1128,7 @@ MISSIONS.update({
 
     # ── Leaves: routines ──
     "routines/standup": "Produce standup content — yesterday, today, blockers — from Jira and Slack, capped at three bullets per person, as a draft for review.\n- **Out of scope:** Posting to the channel, and inventing an update for someone with no activity — say there is none.",
-    "routines/weekly-digest": "Assemble the weekly digest over the configured window for both team and stakeholder audiences.\n- **Out of scope:** Sending the digest, and padding a quiet week with restated work from a previous one.",
+    "routines/weekly-digest": "Run the weekly digest on schedule and shape it into a two-audience Slack-ready post — the actual figures come from `jstack:team-report` (call it, don't reassemble its logic here). This skill owns the unattended/idempotent scheduling wrapper and the customer-facing-section split, not the report assembly.\n- **Out of scope:** Sending the digest, padding a quiet week with restated work from a previous one, and re-deriving figures that `jstack:team-report` already computes.",
     "routines/sprint-close": "Run the sprint-close sequence: reconcile committed versus delivered, capture carry-over with reasons, and produce the close summary.\n- **Out of scope:** Moving unfinished issues between sprints without confirmation, and closing the sprint in Jira.",
     "routines/health-check": "Run the periodic health check across configured sources and report only what changed materially since the last run.\n- **Out of scope:** Fixing anything it finds, and paging on a finding — surface it for a human.",
     "routines/morning-kickoff": "Run the morning kickoff from `kickoff_workflows`: today's calendar, open threads, and the shortlist worth attention first.\n- **Out of scope:** Acting on any item, and reordering the user's actual priorities for them.",

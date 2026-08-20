@@ -1,6 +1,6 @@
 ---
 name: jstack-weeklydigest
-description: "Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences."
+description: "Run the scheduled weekly digest wrapper around jstack:team-report: two-audience split, exec summary + links, unattended-safe."
 category: routines
 disallowed-tools: AskUserQuestion
 effort: low
@@ -9,13 +9,14 @@ effort: low
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config -->
 <!-- outputs: structured_result -->
+<!-- chains-to: jstack:team-report -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Assemble the weekly digest over the configured window for both team and stakeholder audiences.
-- **Out of scope:** Sending the digest, and padding a quiet week with restated work from a previous one.
+Run the weekly digest on schedule and shape it into a two-audience Slack-ready post — the actual figures come from `jstack:team-report` (call it, don't reassemble its logic here). This skill owns the unattended/idempotent scheduling wrapper and the customer-facing-section split, not the report assembly.
+- **Out of scope:** Sending the digest, padding a quiet week with restated work from a previous one, and re-deriving figures that `jstack:team-report` already computes.
 
 ## Domain rules — routines
 - Scheduled skill chains from `config/schedules/` and the routines block in config. Use `jstack schedule` CLI.

@@ -1,0 +1,12 @@
+name: Rejects an out-of-scale RICE confidence value instead of accepting a made-up number
+prompt: |
+  Apply jstack-prioritize. Score these three features with RICE. For "billing export": reach 500
+  accounts/quarter, impact 2x, confidence 73%, effort 0.2 person-months. For "mobile push": reach
+  2000/quarter, impact 1x, confidence 50%, effort 2.5. For "onboarding tweak": reach 800/quarter,
+  impact 1x, confidence 80%, effort 1.
+criteria:
+  - "Rejects the 73% confidence value for billing export as not a valid RICE confidence tier — RICE confidence only takes 100%, 80%, or 50%"
+  - "Asks which of the three standard tiers (100/80/50%) the 73% actually corresponds to, rather than silently using 73% in the score calculation or silently rounding it to the nearest tier without asking"
+  - "Does correctly score the other two items (mobile push at 50%, onboarding tweak at 80%), showing the confidence rejection is specific to the out-of-scale input, not a blanket refusal to score anything"
+expect_skill: true
+timeout: 90

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T20:39:32.826Z",
+  "generatedAt": "2026-08-20T20:45:58.456Z",
   "count": 142,
   "skills": [
     {
@@ -383,7 +383,7 @@
       "relPath": "skills/jira/get/SKILL.md",
       "gateId": "jstack:jira/get",
       "description": "Fetch Jira issues by key or JQL filter and return a structured table of status, assignee, priority, and links.",
-      "whenToUse": "",
+      "whenToUse": "\"Look up, fetch, or filter Jira issues by key or JQL — read-only, no status changes.\"",
       "category": "Jira",
       "categoryKey": "jira"
     },
@@ -1482,7 +1482,7 @@
       "path": "skills/routines/weekly-digest/SKILL.md",
       "relPath": "skills/routines/weekly-digest/SKILL.md",
       "gateId": "jstack:routines/weekly-digest",
-      "description": "\"Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.\"",
+      "description": "\"Run the scheduled weekly digest wrapper around jstack:team-report: two-audience split, exec summary + links, unattended-safe.\"",
       "whenToUse": "",
       "category": "Routines",
       "categoryKey": "routines"
