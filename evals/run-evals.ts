@@ -43,7 +43,11 @@ import {
   writeMultiReport,
   writeSemanticReportFiles,
 } from "./report.js";
-import type { CaseReport, SemanticSummary } from "./report.js";
+import type {
+  CaseReport,
+  SemanticCaseRecord,
+  SemanticSummary,
+} from "./report.js";
 import type { EvalCase } from "./eval-config.js";
 import {
   expandPackForSkill,
@@ -344,7 +348,7 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
 
   const skillContent = readSkillMd(pluginRoot, skillRel);
 
-  const execResults = [];
+  const records: SemanticCaseRecord[] = [];
   for (let i = 0; i < cases.length; i++) {
     const c = cases[i];
     const slug = caseSlug(c.name);
@@ -354,17 +358,8 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
       `\n--- Execute [${i + 1}/${cases.length}] ${skillRel}: ${c.name} ---`,
     );
     const er = executeCase(env, skillRel, skillContent, c, caseDir);
-    execResults.push(er);
     console.log(`status=${er.status} time=${er.elapsed}s tokens=${er.tokens}`);
-  }
 
-  const gradings = [];
-  const gateFailuresPerCase: string[][] = [];
-  for (let i = 0; i < cases.length; i++) {
-    const c = cases[i];
-    const er = execResults[i];
-    const slug = caseSlug(c.name);
-    const caseDir = join(skillWorkspace, slug);
     console.log(`\n--- Grade [${i + 1}/${cases.length}] ${c.name} ---`);
     let gr;
     if (er.status !== "completed") {
@@ -388,7 +383,6 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
     } else {
       gr = gradeCase(env, c, er, caseDir);
     }
-    gradings.push(gr);
 
     let gateFails: string[] = [];
     if (mergedGate && er.status === "completed") {
@@ -400,24 +394,19 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
       );
       gateFails = g.passed ? [] : g.failures;
     }
-    gateFailuresPerCase.push(gateFails);
     if (gateFails.length) console.log(`gate failures: ${gateFails.join("; ")}`);
     const s = gr.summary;
     console.log(`criteria: ${s.passed}/${s.total} passed`);
+
+    records.push({ case: c, exec: er, grading: gr, gateFailures: gateFails });
   }
 
   const label = summarySkillName ?? skillRel;
-  const summary = buildSemanticSummary(
-    label,
-    cases,
-    execResults,
-    gradings,
-    gateFailuresPerCase,
-  );
+  const summary = buildSemanticSummary(label, records);
   const thresh =
     passThresholdOverride ??
     sanitizePassThreshold(skillCfg?.pass_threshold, defaultPassThreshold);
-  const allGatesOk = gateFailuresPerCase.every((g) => g.length === 0);
+  const allGatesOk = records.every((r) => r.gateFailures.length === 0);
   const passed = summary.pass_rate >= thresh && allGatesOk;
 
   printSkillTable(summary, thresh);
@@ -506,33 +495,33 @@ if (args.help) {
   process.exit(0);
 }
 
-const cmd = args.command;
+type CliArgs = ReturnType<typeof parseArgs>;
 
-if (cmd === "structural") {
+function cmdStructural(args: CliArgs): number {
   const { ok, total } = runStructural(args.skill);
-  process.exit(ok === total ? 0 : 1);
+  return ok === total ? 0 : 1;
 }
 
-if (cmd === "chain") {
+function cmdChain(_args: CliArgs): number {
   const { ok, total } = runChain();
-  process.exit(ok === total ? 0 : 1);
+  return ok === total ? 0 : 1;
 }
 
-if (cmd === "gate") {
-  process.exit(runGate(args.skill) ? 0 : 1);
+function cmdGate(args: CliArgs): number {
+  return runGate(args.skill) ? 0 : 1;
 }
 
-if (cmd === "validate") {
+function cmdValidate(_args: CliArgs): number {
   const { errors } = runValidate();
-  process.exit(errors.length ? 1 : 0);
+  return errors.length ? 1 : 0;
 }
 
-if (cmd === "coverage") {
+function cmdCoverage(_args: CliArgs): number {
   runCoverage();
-  process.exit(0);
+  return 0;
 }
 
-if (cmd === "report") {
+function cmdReport(_args: CliArgs): number {
   const { evals } = loadUnit();
   const { chains } = loadChain();
   const cov = evalCoverageReport(skillsRoot);
@@ -551,17 +540,17 @@ if (cmd === "report") {
       2,
     ),
   );
-  process.exit(0);
+  return 0;
 }
 
-if (cmd === "semantic") {
+function cmdSemantic(args: CliArgs): number {
   const env = loadGlobalEvalEnv(pluginRoot);
   mkdirSync(env.workspaceDir, { recursive: true });
   if (!env.anthropicApiKey && !process.env.ANTHROPIC_API_KEY) {
     console.error(
       "semantic eval requires ANTHROPIC_API_KEY in the environment.",
     );
-    process.exit(1);
+    return 1;
   }
   const threshold = args.threshold ?? env.passThreshold;
   const gateRules = loadGateRules(pluginRoot);
@@ -572,7 +561,7 @@ if (cmd === "semantic") {
     );
     if (targets.length === 0) {
       console.error(`No semantic evals found for skill filter: ${args.skill}`);
-      process.exit(1);
+      return 1;
     }
   }
   const parts: {
@@ -603,13 +592,13 @@ if (cmd === "semantic") {
     console.log(`\nMulti-skill report: ${multiPath}`);
     console.log(`Also: ${join(reportsDir, "REPORT_LATEST.md")}`);
   }
-  process.exit(allPass ? 0 : 1);
+  return allPass ? 0 : 1;
 }
 
-if (cmd === "scenarios-validate") {
+function cmdScenariosValidate(_args: CliArgs): number {
   if (!existsSync(scenarioPacksDir)) {
     console.log("No scenario packs directory; nothing to validate.");
-    process.exit(0);
+    return 0;
   }
   const errors: string[] = [];
   for (const name of readdirSync(scenarioPacksDir)) {
@@ -620,13 +609,13 @@ if (cmd === "scenarios-validate") {
   if (errors.length) {
     console.error("Scenario pack validation failed:");
     for (const e of errors) console.error(`  - ${e}`);
-    process.exit(1);
+    return 1;
   }
   console.log(`Scenario packs OK (${packIds.length} pack(s)).`);
-  process.exit(0);
+  return 0;
 }
 
-if (cmd === "scenarios") {
+function cmdScenarios(args: CliArgs): number {
   if (args.listPacks) {
     const packs = listScenarioPacks(scenarioPacksDir);
     if (!packs.length) {
@@ -635,7 +624,7 @@ if (cmd === "scenarios") {
       console.log("Scenario packs:\n");
       for (const p of packs) console.log(`  - ${p}`);
     }
-    process.exit(0);
+    return 0;
   }
 
   const pack = loadScenarioPack(scenarioPacksDir, args.pack);
@@ -721,9 +710,9 @@ if (cmd === "scenarios") {
     );
     if (expandedSkills === 0) {
       console.error("Dry run: no matching skills with SKILL.md.");
-      process.exit(1);
+      return 1;
     }
-    process.exit(validationErrors ? 1 : 0);
+    return validationErrors ? 1 : 0;
   }
 
   mkdirSync(env.workspaceDir, { recursive: true });
@@ -734,7 +723,7 @@ if (cmd === "scenarios") {
     console.error(
       "Tip: use --dry-run to list cases without API; or export ANTHROPIC_API_KEY and re-run.",
     );
-    process.exit(1);
+    return 1;
   }
 
   const gateRules = loadGateRules(pluginRoot);
@@ -781,7 +770,7 @@ if (cmd === "scenarios") {
   }
   if (parts.length === 0) {
     console.error("No matching skills to run.");
-    process.exit(1);
+    return 1;
   }
   if (parts.length > 1) {
     const multiPath = writeMultiReport(
@@ -792,10 +781,10 @@ if (cmd === "scenarios") {
     console.log(`\nMulti-skill report: ${multiPath}`);
     console.log(`Also: ${join(reportsDir, "REPORT_LATEST.md")}`);
   }
-  process.exit(allPass ? 0 : 1);
+  return allPass ? 0 : 1;
 }
 
-if (cmd === "quick") {
+function cmdQuick(args: CliArgs): number {
   console.log("=== Structural (SKILL.md for every skill) ===\n");
   const u = runStructural(args.skill);
   console.log("\n=== Chain (chain-evals.json) ===\n");
@@ -850,13 +839,29 @@ if (cmd === "quick") {
     );
   }
 
-  const exitCode =
-    u.ok === u.total && c.ok === c.total && v.errors.length === 0 && covOk
-      ? 0
-      : 1;
-  process.exit(exitCode);
+  return u.ok === u.total && c.ok === c.total && v.errors.length === 0 && covOk
+    ? 0
+    : 1;
 }
 
-console.error(`Unknown command: ${cmd}`);
-printHelp();
-process.exit(1);
+const commands: Record<string, (args: CliArgs) => number> = {
+  structural: cmdStructural,
+  chain: cmdChain,
+  gate: cmdGate,
+  validate: cmdValidate,
+  coverage: cmdCoverage,
+  report: cmdReport,
+  semantic: cmdSemantic,
+  "scenarios-validate": cmdScenariosValidate,
+  scenarios: cmdScenarios,
+  quick: cmdQuick,
+};
+
+const cmd = args.command;
+const handler = commands[cmd];
+if (!handler) {
+  console.error(`Unknown command: ${cmd}`);
+  printHelp();
+  process.exit(1);
+}
+process.exit(handler(args));
