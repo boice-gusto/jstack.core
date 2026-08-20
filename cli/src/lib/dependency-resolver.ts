@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+import type { JstackConfig } from "../types/config.js";
 
 /**
  * Pure dependency resolution for jstack config: given a parsed config object
@@ -30,17 +31,28 @@ export type DependencyIssue = {
 };
 
 export type ResolverInput = {
-  cfg: Record<string, unknown>;
+  cfg: JstackConfig;
   projectRoot: string;
   pluginRoot?: string;
 };
 
+/**
+ * Narrow a possibly-untrusted value to a plain object record, or undefined.
+ *
+ * `cfg` is typed as `JstackConfig`, but callers may not have actually run it
+ * through `JstackConfigSchema.parse()` before handing it here (see the casts
+ * in doctor.ts / setup-schema.ts) — so a handful of checks that touch shapes
+ * the schema doesn't fully pin down (arbitrary `mcp_servers[name]` payloads,
+ * free-form `team.members` entries) still defend against genuinely malformed
+ * data at runtime.
+ */
 function asRecord(v: unknown): Record<string, unknown> | undefined {
   return v && typeof v === "object" && !Array.isArray(v)
     ? (v as Record<string, unknown>)
     : undefined;
 }
 
+/** Coerce a possibly-untrusted value to a trimmed string, defaulting to "". */
 function asString(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
@@ -53,8 +65,7 @@ function checkKnowledgeBaseRoots(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const kb = asRecord(input.cfg.knowledge_base);
-  const roots = kb?.roots;
+  const roots = input.cfg.knowledge_base?.roots;
   if (!Array.isArray(roots)) return;
   for (const r of roots) {
     const rel = asString(r);
@@ -77,8 +88,7 @@ function checkKnowledgeStorageSide(
   side: "team" | "personal",
   issues: DependencyIssue[],
 ): void {
-  const ks = asRecord(input.cfg.knowledge_storage);
-  const node = asRecord(ks?.[side]);
+  const node = input.cfg.knowledge_storage?.[side];
   const remote = asString(node?.git_remote);
   const checkout = asString(node?.local_checkout);
 
@@ -126,12 +136,11 @@ function checkGbrainTargetUrl(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const kb = asRecord(input.cfg.knowledge_base);
-  const include = asRecord(kb?.gbrain)?.include === true;
-  if (!include) return;
+  if (input.cfg.knowledge_base?.gbrain?.include !== true) return;
 
-  const session = asRecord(input.cfg.session);
-  const targetRaw = asString(session?.default_gbrain_target).toLowerCase();
+  const targetRaw = asString(
+    input.cfg.session?.default_gbrain_target,
+  ).toLowerCase();
   const target: "team" | "personal" | null =
     targetRaw === "team"
       ? "team"
@@ -140,8 +149,7 @@ function checkGbrainTargetUrl(
         : null;
   if (target === null) return;
 
-  const gb = asRecord(input.cfg.gbrain);
-  const url = asString(asRecord(gb?.[target])?.url);
+  const url = asString(input.cfg.gbrain?.[target]?.url);
   if (url) return;
 
   issues.push({
@@ -167,8 +175,7 @@ function checkGbrainTargetUrl(
 }
 
 function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
-  const dbg = asRecord(input.cfg.debug);
-  if (dbg?.mock_mcp !== true) return;
+  if (input.cfg.debug?.mock_mcp !== true) return;
 
   const mcpPath = join(input.projectRoot, ".mcp.json");
   let hasMockEntry = false;
@@ -212,11 +219,15 @@ function checkRequiredIntegrations(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const onboarding = asRecord(input.cfg.onboarding);
-  const required = onboarding?.required_integrations;
+  const required = input.cfg.onboarding?.required_integrations;
   if (!Array.isArray(required) || required.length === 0) return;
 
-  const integrations = asRecord(input.cfg.integrations);
+  // `integrations` only names the specific integrations the schema knows about (jira, slack,
+  // ...); onboarding.required_integrations can list arbitrary ids beyond those, so this has to
+  // be indexed as a loose record rather than through the typed IntegrationsSchema shape.
+  const integrations = input.cfg.integrations as unknown as
+    | Record<string, unknown>
+    | undefined;
 
   for (const idRaw of required) {
     const id = asString(idRaw);
@@ -254,8 +265,7 @@ function checkNotionTemplateSet(
   issues: DependencyIssue[],
 ): void {
   if (!input.pluginRoot) return;
-  const nd = asRecord(input.cfg.notion_defaults);
-  if (asString(nd?.template_set) !== "custom") return;
+  if (input.cfg.notion_defaults?.template_set !== "custom") return;
   const catalogPath = join(
     input.pluginRoot,
     "templates/notion/catalog/custom.json",
@@ -282,17 +292,15 @@ function checkNotionParentPages(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const nd = asRecord(input.cfg.notion_defaults);
+  const nd = input.cfg.notion_defaults;
   if (!nd) return;
-  const teamNotion = asRecord(nd.team_notion);
-  const privateVault = asRecord(nd.private_vault);
   if (
-    teamNotion?.setup_complete !== true &&
-    privateVault?.setup_complete !== true
+    nd.team_notion?.setup_complete !== true &&
+    nd.private_vault?.setup_complete !== true
   )
     return;
-  const parentPages = asRecord(nd.parent_pages);
-  for (const key of ["team_hub", "private_root", "one_on_ones"]) {
+  const parentPages = nd.parent_pages;
+  for (const key of ["team_hub", "private_root", "one_on_ones"] as const) {
     if (!asString(parentPages?.[key])) {
       issues.push({
         id: "notion-parent-pages-incomplete",
@@ -315,7 +323,7 @@ function checkMcpServerWiring(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const mcpServers = asRecord(input.cfg.mcp_servers);
+  const mcpServers = input.cfg.mcp_servers;
   if (!mcpServers || Object.keys(mcpServers).length === 0) return;
   const mcpJsonPath = join(input.projectRoot, ".mcp.json");
   if (!existsSync(mcpJsonPath)) return;
@@ -330,6 +338,8 @@ function checkMcpServerWiring(
     return;
   }
   for (const [name, serverRaw] of Object.entries(mcpServers)) {
+    // mcp_servers[name] is typed as a full McpServer, but this cfg may not have gone through
+    // JstackConfigSchema.parse() at the call site — keep the defensive narrowing.
     const server = asRecord(serverRaw);
     const serverId = asString(server?.server_id);
     if (!serverId) continue;
@@ -355,11 +365,9 @@ function checkApprovalChainMembers(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const ac = asRecord(input.cfg.approval_chains);
-  const chains = asRecord(ac?.chains);
+  const chains = input.cfg.approval_chains?.chains;
   if (!chains || Object.keys(chains).length === 0) return;
-  const team = asRecord(input.cfg.team);
-  const membersRaw = team?.members;
+  const membersRaw = input.cfg.team?.members;
   if (!Array.isArray(membersRaw) || membersRaw.length === 0) return;
   const memberIds = new Set<string>();
   for (const m of membersRaw) {
@@ -368,6 +376,8 @@ function checkApprovalChainMembers(
   }
   if (memberIds.size === 0) return;
   for (const [chainName, chainRaw] of Object.entries(chains)) {
+    // approval_chains.chains values are typed as string[], but this cfg may not have gone
+    // through JstackConfigSchema.parse() at the call site — keep the defensive narrowing.
     if (!Array.isArray(chainRaw)) continue;
     for (const memberIdRaw of chainRaw) {
       const memberId = asString(memberIdRaw);
@@ -395,9 +405,9 @@ function checkPeConfigured(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const pe = asRecord(input.cfg.pe);
-  if (pe?.configured !== true) return;
-  for (const field of ["jira_project_keys", "notion_parent_keys"]) {
+  const pe = input.cfg.pe;
+  if (!pe || pe.configured !== true) return;
+  for (const field of ["jira_project_keys", "notion_parent_keys"] as const) {
     const val = pe[field];
     if (!Array.isArray(val) || val.length === 0) {
       issues.push({
@@ -421,10 +431,9 @@ function checkCrossPluginsGbrain(
   input: ResolverInput,
   issues: DependencyIssue[],
 ): void {
-  const cross = asRecord(input.cfg.cross_plugins);
-  const gb = asRecord(cross?.gbrain);
-  if (gb?.enabled !== true) return;
-  const skills = gb?.skills;
+  const gb = input.cfg.cross_plugins?.gbrain;
+  if (!gb || gb.enabled !== true) return;
+  const skills = gb.skills;
   if (Array.isArray(skills) && skills.length > 0) return;
   issues.push({
     id: "cross-plugins-gbrain-empty-skills",

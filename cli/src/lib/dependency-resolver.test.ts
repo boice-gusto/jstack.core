@@ -2,13 +2,18 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import type { JstackConfig } from "../types/config.js";
 import {
   resolveDependencies,
   type DependencyIssue,
   type RepairAction,
 } from "./dependency-resolver.js";
 
-function baseCfg(over: Record<string, unknown> = {}): Record<string, unknown> {
+// Fixtures below deliberately include malformed/edge-case shapes (e.g. `server_id: null`,
+// missing zod-`.default()`-only fields) that a hand-built config never went through
+// `JstackConfigSchema.parse()` for — the cast reflects that resolveDependencies must tolerate
+// exactly that, same as its real callers (doctor.ts, setup-schema.ts).
+function baseCfg(over: Record<string, unknown> = {}): JstackConfig {
   return {
     team: { name: "t" },
     knowledge_base: { roots: ["docs"], gbrain: { include: false } },
@@ -23,7 +28,7 @@ function baseCfg(over: Record<string, unknown> = {}): Record<string, unknown> {
     },
     session: { default_gbrain_target: "team", current_session_id: "" },
     ...over,
-  };
+  } as unknown as JstackConfig;
 }
 
 function ids(issues: DependencyIssue[]): string[] {

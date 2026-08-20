@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { JstackConfig } from "../types/config.js";
 import {
   collectDoctorConfigWarnings,
   collectMockMcpDoctorWarnings,
@@ -10,8 +11,9 @@ import {
 /** jstack.core package root (cli/src/lib → ../../../). */
 const PLUGIN_ROOT = join(import.meta.dir, "..", "..", "..");
 
-function baseCfg(over: Record<string, unknown> = {}): Record<string, unknown> {
+function baseCfg(over: Partial<JstackConfig> = {}): JstackConfig {
   return {
+    mcp_servers: {},
     team: { name: "t" },
     knowledge_base: { roots: ["docs"], gbrain: { include: false } },
     knowledge_storage: {
@@ -26,6 +28,11 @@ function baseCfg(over: Record<string, unknown> = {}): Record<string, unknown> {
     session: { default_gbrain_target: "team", current_session_id: "" },
     ...over,
   };
+}
+
+/** Minimal JstackConfig for collectMockMcpDoctorWarnings fixtures (only `debug` is read). */
+function debugCfg(debug: NonNullable<JstackConfig["debug"]>): JstackConfig {
+  return { mcp_servers: {}, debug };
 }
 
 describe("collectDoctorConfigWarnings", () => {
@@ -146,11 +153,15 @@ describe("collectDoctorConfigWarnings", () => {
   test("effective enabled false from defaults when user omits skills", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-doc-"));
     mkdirSync(join(root, "docs"), { recursive: true });
-    const w = collectDoctorConfigWarnings(root, baseCfg(), {
-      skills: {
-        machine_readable: { enabled: false, require_schema_ref: false },
-      },
-    });
+    const w = collectDoctorConfigWarnings(
+      root,
+      baseCfg(),
+      baseCfg({
+        skills: {
+          machine_readable: { enabled: false, require_schema_ref: false },
+        },
+      }),
+    );
     expect(
       w.some((m) => m.includes("skills.machine_readable.enabled is false")),
     ).toBe(true);
@@ -160,17 +171,21 @@ describe("collectDoctorConfigWarnings", () => {
 describe("collectMockMcpDoctorWarnings", () => {
   test("returns nothing when debug.mock_mcp is not true", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-mock-doc-"));
-    const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, {
-      debug: { mock_mcp: false },
-    });
+    const w = collectMockMcpDoctorWarnings(
+      root,
+      PLUGIN_ROOT,
+      debugCfg({ mock_mcp: false }),
+    );
     expect(w).toEqual([]);
   });
 
   test("warns when mock_mcp is true but .mcp.json is missing", () => {
     const root = mkdtempSync(join(tmpdir(), "jstack-mock-doc-"));
-    const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, {
-      debug: { mock_mcp: true, mock_mcp_scenario: "default" },
-    });
+    const w = collectMockMcpDoctorWarnings(
+      root,
+      PLUGIN_ROOT,
+      debugCfg({ mock_mcp: true, mock_mcp_scenario: "default" }),
+    );
     expect(w.some((m) => m.includes(".mcp.json is missing"))).toBe(true);
   });
 
@@ -188,9 +203,11 @@ describe("collectMockMcpDoctorWarnings", () => {
       }),
       "utf8",
     );
-    const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, {
-      debug: { mock_mcp: true, mock_mcp_scenario: "default" },
-    });
+    const w = collectMockMcpDoctorWarnings(
+      root,
+      PLUGIN_ROOT,
+      debugCfg({ mock_mcp: true, mock_mcp_scenario: "default" }),
+    );
     expect(w).toEqual([]);
   });
 
@@ -208,12 +225,14 @@ describe("collectMockMcpDoctorWarnings", () => {
       }),
       "utf8",
     );
-    const w = collectMockMcpDoctorWarnings(root, PLUGIN_ROOT, {
-      debug: {
+    const w = collectMockMcpDoctorWarnings(
+      root,
+      PLUGIN_ROOT,
+      debugCfg({
         mock_mcp: true,
         mock_mcp_scenario: "definitely-missing-scenario-xyz",
-      },
-    });
+      }),
+    );
     expect(w.some((m) => m.includes("scenario file is missing"))).toBe(true);
   });
 
@@ -234,9 +253,11 @@ describe("collectMockMcpDoctorWarnings", () => {
       }),
       "utf8",
     );
-    const w = collectMockMcpDoctorWarnings(root, wrongPluginRoot, {
-      debug: { mock_mcp: true, mock_mcp_scenario: "default" },
-    });
+    const w = collectMockMcpDoctorWarnings(
+      root,
+      wrongPluginRoot,
+      debugCfg({ mock_mcp: true, mock_mcp_scenario: "default" }),
+    );
     expect(w.filter((m) => m.includes("scenario file is missing"))).toEqual([]);
   });
 });
