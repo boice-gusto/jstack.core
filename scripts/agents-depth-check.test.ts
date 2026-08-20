@@ -29,9 +29,14 @@ let sandbox: string;
 /** Minimal sandbox: the script resolves agents/ relative to its own parent, so mirror that. */
 function makeSandbox(): string {
   const dir = mkdtempSync(join(tmpdir(), "agents-depth-"));
-  mkdirSync(join(dir, "scripts"), { recursive: true });
+  mkdirSync(join(dir, "scripts", "lib"), { recursive: true });
   mkdirSync(join(dir, "agents"), { recursive: true });
   cpSync(script, join(dir, "scripts", "agents-depth-check.ts"));
+  // The script now sources frontmatter parsing from the shared module — mirror it too.
+  cpSync(
+    join(repoRoot, "scripts", "lib", "parse-frontmatter.ts"),
+    join(dir, "scripts", "lib", "parse-frontmatter.ts"),
+  );
   // The script imports js-yaml; reuse the repo's install rather than re-resolving.
   const nm = join(repoRoot, "node_modules");
   if (existsSync(nm)) {

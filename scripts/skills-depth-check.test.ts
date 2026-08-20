@@ -34,9 +34,14 @@ let sandbox: string;
 
 function makeSandbox(): string {
   const dir = mkdtempSync(join(tmpdir(), "skills-depth-"));
-  mkdirSync(join(dir, "scripts"), { recursive: true });
+  mkdirSync(join(dir, "scripts", "lib"), { recursive: true });
   mkdirSync(join(dir, "skills"), { recursive: true });
   cpSync(script, join(dir, "scripts", "skills-depth-check.ts"));
+  // The script now sources frontmatter parsing from the shared module — mirror it too.
+  cpSync(
+    join(repoRoot, "scripts", "lib", "parse-frontmatter.ts"),
+    join(dir, "scripts", "lib", "parse-frontmatter.ts"),
+  );
   const nm = join(repoRoot, "node_modules");
   if (existsSync(nm)) {
     try {

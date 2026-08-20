@@ -40,6 +40,7 @@ import {
   discoverEvalCases,
 } from "../evals/discover.js";
 import { extractSkillFacts } from "./lib/skill-eval-facts.js";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 import {
   GENERATED_MARKER,
   NEG_NAME,
@@ -116,15 +117,25 @@ function str(v: unknown, max = 400): string {
   return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
 }
 
-function parseFrontmatter(md: string): Record<string, unknown> {
-  if (!md.startsWith("---\n")) return {};
-  const end = md.indexOf("\n---\n", 4);
-  if (end === -1) return {};
-  try {
-    return (yaml.load(md.slice(4, end)) as Record<string, unknown>) ?? {};
-  } catch {
+/**
+ * Frontmatter for the paraphrase-routing case only (skillId falls back to a derived name,
+ * and `whenToUse` degrading to "" is harmless — see call site). This used to swallow ANY
+ * parse error and return `{}` with zero indication anything failed, which is the same
+ * silent-failure shape that once cost 27/137 skill files their frontmatter (see the comment
+ * in `skills-depth-check.ts`). Warn to stderr instead so a broken SKILL.md is visible, then
+ * continue with the same safe empty-frontmatter fallback rather than dropping the skill from
+ * eval generation entirely.
+ */
+function parseFrontmatter(md: string, rel: string): Record<string, unknown> {
+  const parsed = parseYamlFrontmatter(md);
+  if (parsed.error) {
+    console.error(
+      `generate-skill-evals: ${rel}/SKILL.md frontmatter failed to parse (${parsed.error}) — ` +
+        "using empty frontmatter for this skill's paraphrase-routing case.",
+    );
     return {};
   }
+  return parsed.meta;
 }
 
 interface Tally {
@@ -215,7 +226,7 @@ function main(): void {
     if (existsSync(paraphrasePath) && !rewrite) continue;
 
     const md = readFileSync(join(skillPath, "SKILL.md"), "utf8");
-    const fm = parseFrontmatter(md);
+    const fm = parseFrontmatter(md, rel);
     const skillId = str(fm.name) || `jstack-${rel.replace(/\//g, "-")}`;
     const whenToUse =
       typeof fm.when_to_use === "string" ? str(fm.when_to_use, 400) : "";

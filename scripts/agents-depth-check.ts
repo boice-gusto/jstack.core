@@ -22,7 +22,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import yaml from "js-yaml";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const agentsDir = join(root, "agents");
@@ -159,30 +159,23 @@ const depthScores = new Map<string, number>();
 
 for (const file of files) {
   const raw = readFileSync(join(agentsDir, file), "utf8");
-  const fm = raw.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!fm) {
+  const parsed = parseYamlFrontmatter(raw);
+  if (parsed.error) {
+    // `frontmatterText` is only set once the `---` delimiters were found — that's what
+    // distinguishes "no frontmatter block at all" from "block present but not valid YAML",
+    // matching this gate's original two messages exactly.
     findings.push({
       file,
       kind: "correctness",
       id: "frontmatter",
-      message: "missing YAML frontmatter",
+      message:
+        parsed.frontmatterText === undefined
+          ? parsed.error
+          : `invalid YAML: ${parsed.error}`,
     });
     continue;
   }
-  const body = raw.slice(fm[0].length);
-
-  let meta: Record<string, unknown>;
-  try {
-    meta = (yaml.load(fm[1]) ?? {}) as Record<string, unknown>;
-  } catch (err) {
-    findings.push({
-      file,
-      kind: "correctness",
-      id: "frontmatter",
-      message: `invalid YAML: ${err instanceof Error ? err.message : String(err)}`,
-    });
-    continue;
-  }
+  const { meta, body } = parsed;
 
   // --- correctness ---
   for (const key of Object.keys(meta)) {
