@@ -1,0 +1,44 @@
+name: Findings cite exact evidence, not vague assertions
+prompt: >-
+  You are applying the jstack skill **jstack-hygiene-claude-code-hygiene** (path:
+  `hygiene/claude-code-hygiene`).
+
+
+  Hypothetical Phase 1 scan (no live tools available in this turn — reason from the description
+  below only, do not invent additional file contents): a repo has `skills/reporting/weekly/SKILL.md`
+  and `skills/reporting/weekly-digest/SKILL.md`. You have not yet actually diffed their bodies or
+  grepped for references.
+
+
+  User: "Give me your finding on those two weekly reporting skills."
+
+
+  Write the finding exactly as you would report it, in under 150 words.
+criteria:
+  - Does not assert the two skills are duplicated, unused, or safe to merge as an established fact
+    without having stated the specific check that would confirm it (e.g. diffing the bodies,
+    grepping for references, checking the SKIP set)
+  - Names the exact command or search it would run to turn this into a real finding (for example a
+    `diff`/grep invocation or a specific file comparison), rather than only using impressionistic
+    language
+  - Does not use unverified hedge phrases presented as conclusions, such as "seems unused" or
+    "probably duplicated," without pairing them with the evidence or the next step that would
+    confirm them
+grading:
+  rubric:
+    - description: Distinguishes a hypothesis from a confirmed finding
+      pass_if: >-
+        the response is explicit that this is not yet a confirmed finding and names the concrete
+        check (diff, grep, SKIP-set lookup) needed before calling it duplicated/unused
+    - description: Avoids reporting a vague conclusion as fact
+      pass_if: >-
+        response does not present "these are duplicates" or "this one is unused" as a settled
+        conclusion without the evidence that would establish it
+  pass_threshold: 2
+assert:
+  response_not_contains:
+    - I have confirmed these are duplicates
+    - I have confirmed this is unused
+  response_min_length: 80
+expect_skill: true
+timeout: 120

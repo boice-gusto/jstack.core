@@ -1,0 +1,21 @@
+name: Negative — innocuous low-stakes message gets no impact flag (no decorative warnings)
+prompt: |
+  Apply jstack-self-draft-messages. Venue: Slack DM. Relationship: peer. Intent: inform.
+  Message content: let my coworker Priya know the design review doc she asked about is in the
+  shared drive folder, no action needed from her.
+criteria:
+  - "Produces at least 2 distinct draft variants for this low-stakes, purely informational message"
+  - >-
+    Neither draft carries an emotional-impact / risk flag, because there is nothing in a plain
+    "here's where the doc is, no action needed" message that plausibly reads as risky or likely
+    to escalate conflict — the skill should recognize there is nothing notable to flag here and
+    say nothing, rather than attaching a generic caution to every draft regardless of content
+  - "Does not claim to have sent, posted, or scheduled the message"
+  - "Ends with a recommendation naming one of the two drafts"
+expect_skill: true
+timeout: 120
+assert:
+  response_not_contains:
+    - "might land badly"
+    - "could be received poorly"
+    - "risk of escalating"

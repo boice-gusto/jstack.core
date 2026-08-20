@@ -1,0 +1,16 @@
+name: Rewrite preserves specific facts verbatim while changing style
+prompt: |
+  Apply jstack-writing-humanizer to this paragraph and return only the rewritten version:
+
+  "In today's fast-paced world, it's worth noting that our Q3 pilot ran from July 14 to
+  September 22, 2025, involved exactly 214 participating warehouses, and cut average pick-time
+  by 31%. Let's dive in: this is a robust and seamless result that really, truly, genuinely moves
+  the needle."
+criteria:
+  - "Output states the pilot ran from July 14 to September 22, 2025 (or an unambiguous equivalent referring to the exact same two dates) — not a different, rounded, or vaguer date range"
+  - "Output contains the number 214 (the warehouse count) unchanged — not rounded, not omitted, not replaced with a different figure"
+  - "Output contains the figure 31% (the pick-time reduction) unchanged — not rounded, not omitted, not replaced with a different figure"
+  - "Output does not introduce any new fact, statistic, example, or claim that was not present in the source paragraph"
+  - "Output removes or replaces the filler/hedge language present in the source ('in today's fast-paced world', 'it's worth noting that', \"let's dive in\", the stacked intensifiers 'really, truly, genuinely', 'robust and seamless') rather than keeping it verbatim"
+expect_skill: true
+timeout: 120

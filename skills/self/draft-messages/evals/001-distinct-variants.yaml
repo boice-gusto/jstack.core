@@ -1,0 +1,17 @@
+name: Distinct variants — direct vs. warmer drafts, not one sentiment reworded twice
+prompt: |
+  Apply jstack-self-draft-messages. Venue: Slack DM. Relationship: peer. Intent: deliver
+  difficult feedback. Message content: I need to tell my peer Sam that their PR reviews have
+  been taking 4+ days and it's blocking our sprint. Give me the drafts.
+criteria:
+  - "Produces at least 2 numbered draft variants (e.g. 'Draft 1' / 'Draft 2'), not a single draft"
+  - >-
+    The two variants genuinely differ in approach (e.g. one is noticeably more direct/blunt and
+    the other more warm/context-giving), not the same sentence reworded with a synonym swap —
+    a reader should be able to describe a real difference in tone or framing between them, not
+    just different word choice for the same sentiment
+  - "Names Sam and the review-turnaround/sprint-blocking facts in the drafted text, not just in commentary about the drafts"
+  - "Ends with a recommendation naming one specific draft (by number or label) to use, not a bare list with no pick"
+  - "Does not claim to have sent, posted, or scheduled the message"
+expect_skill: true
+timeout: 120

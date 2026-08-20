@@ -1,0 +1,35 @@
+name: Distinguishes intentionally thin (SKIP-set) from stale auto-generated
+prompt: >-
+  You are applying the jstack skill **jstack-hygiene-claude-code-hygiene** (path:
+  `hygiene/claude-code-hygiene`).
+
+
+  Two skills you are comparing during a depth-gate review:
+
+
+  Skill A — `skills/jira/get/SKILL.md`, ~35 lines. It IS listed in `scripts/apply_detailed_skills.py`'s
+  `SKIP` set, with a comment explaining the generator has no per-key data for it and would otherwise
+  overwrite its correct "read-only, no confirmation gate" domain rule with the generic write-oriented
+  `jira` category template.
+
+
+  Skill B — a hypothetical `skills/reports/quarterly/SKILL.md`, also ~35 lines, NOT listed in the
+  `SKIP` set, whose body is the generic five-step "Load config / Plan the safe path / Execute /
+  Validate / Summarize and hand off" template with no quarterly-reporting-specific content anywhere.
+
+
+  User: "Both of these are short and generic-looking — are they both hygiene findings?"
+
+
+  Answer in under 150 words.
+criteria:
+  - Explicitly checks (or states it would check) the `SKIP` set before judging either skill's
+    thinness
+  - Concludes Skill A (in SKIP, with a stated hand-authored reason) is NOT a finding on its own —
+    its shortness is deliberate and documented, not evidence of staleness
+  - Concludes Skill B (not in SKIP, generic unmodified template) IS a finding — specifically that
+    it is auto-generated boilerplate with no domain-specific content, which is a real defect
+  - Does not recommend running the regenerator on Skill A, and does not treat "both are short" as
+    grounds for treating them the same way
+expect_skill: true
+timeout: 120

@@ -1,0 +1,21 @@
+name: Negative — source code must not be "humanized" for style
+prompt: |
+  Apply jstack-writing-humanizer to this and return the humanized version:
+
+  ```python
+  def calculate_withholding(income: float, rate: float = 0.22) -> float:
+      """Return withholding tax for a given income and rate.
+
+      income must be non-negative; rate is expressed as a decimal fraction.
+      """
+      if income < 0:
+          raise ValueError("income must be non-negative")
+      return round(income * rate, 2)
+  ```
+criteria:
+  - "Response declines to rewrite the code for tone/style, or clearly states that this skill does not apply to source code, code comments, or config files"
+  - "Response does not return a modified version of the function body, signature, variable names, docstring wording, or comments framed as a 'humanized' or 'de-AI'd' rewrite"
+  - "Response does not treat 'sounding more human' as a valid goal for code and does not claim to have applied the punctuation/filler-word/structure rules to it"
+  - "If the response offers any next step, it points at getting the code reviewed or edited on technical merits, not at a style pass"
+expect_skill: true
+timeout: 90

@@ -1,0 +1,21 @@
+name: Go-deeper follow-up stays concise, not a full re-expansion
+prompt: |
+  Apply jstack-self-tldr. Here is the exchange so far:
+
+  User pasted a long explanation of a Redis Cluster migration (dual-write rollout, a 0.3%
+  legacy-pickle deserialization bug causing ~3x latency on fallback reads, and one of three
+  producers not yet confirmed upgraded).
+
+  Claude (this skill) already replied with a 4-bullet tl;dr ending in: "Want the reasoning
+  behind the pickle-format issue, or the failover test numbers?"
+
+  User: "go deeper on the pickle-format issue"
+
+  Give the next reply.
+criteria:
+  - "The reply is substantially shorter than a full paragraph-by-paragraph re-explanation of the original migration (roughly a paragraph or a handful of sentences, not a multi-section restatement)"
+  - "Explains only the pickle-format / deserialization issue specifically, not the whole migration again (dual-write setup, hit-rate numbers, etc. are not re-explained)"
+  - "Does not re-list the other original bullets (failover behavior, hit rate, memory usage) as if starting over"
+  - "Stays direct and specific rather than adding hedging filler"
+expect_skill: true
+timeout: 120

@@ -1,0 +1,17 @@
+name: Em-dash and triadic-rhythm paragraph is restructured, not just re-punctuated
+prompt: |
+  Apply jstack-writing-humanizer to this paragraph and return only the rewritten version:
+
+  "Our platform isn't just fast — it's transformative. It's not just a tool — it's a partner in
+  your workflow. Whether you're a startup or an enterprise, we deliver innovative, scalable, and
+  reliable solutions that leverage cutting-edge AI to help you navigate the complexities of modern
+  business. At the end of the day, when it comes to results, our customers see them."
+criteria:
+  - "Output contains no em-dash character (—) anywhere"
+  - "Output does not simply substitute one hedge/filler word for a different one while keeping the same sentence shape (e.g. replacing 'leverage' with 'utilize' or 'harness' rather than restructuring the sentence) — the fix must be structural, not a synonym swap"
+  - "Output does not contain the 'It's not just X — it's Y' or 'isn't just X, it's Y' construction in any form, with or without a dash"
+  - "Output does not contain a 'Whether you're X or Y' framing sentence"
+  - "Output does not contain more than one triadic 'A, B, and C' adjective list (e.g. 'innovative, scalable, and reliable') in the passage"
+  - "Output does not contain the stacked filler phrases 'at the end of the day' or 'when it comes to'"
+expect_skill: true
+timeout: 120

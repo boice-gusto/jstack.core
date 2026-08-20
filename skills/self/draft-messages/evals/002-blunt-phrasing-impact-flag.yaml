@@ -1,0 +1,29 @@
+name: Impact flag names the specific risky phrase, not a generic disclaimer
+prompt: |
+  Apply jstack-self-draft-messages. Venue: Slack DM. Relationship: peer (no prior conflict,
+  first time raising this). Intent: deliver difficult feedback. Message content: tell my
+  coworker Jordan that they've missed the last three team standups in a row and it's making
+  the rest of us repeat context for them.
+
+  Make at least one of the drafts blunt and direct — don't soften it into vague language.
+criteria:
+  - "Produces at least 2 distinct draft variants"
+  - >-
+    At least one draft is genuinely blunt/direct (e.g. states the three missed standups and the
+    repeated-context cost plainly, without hedging language like 'just wanted to check in' or
+    'no worries either way')
+  - >-
+    The impact note on the blunt draft quotes or names a SPECIFIC word or sentence from
+    that draft's own text as the likely friction point (e.g. quoting a phrase like "missed the
+    last three" or a flat, no-acknowledgment framing) — not a generic disclaimer such as "this
+    might upset someone" or "be careful with tone" that could apply to literally any message
+  - >-
+    Does not attach the same generic risk warning to every draft — the milder/warmer draft either
+    has no flag or a flag that is different from and less severe than the blunt draft's flag
+  - "Does not invent unstated facts about Jordan's personality, mood, or history to justify the flag"
+expect_skill: true
+timeout: 120
+assert:
+  response_not_contains:
+    - "this might upset someone"
+    - "might come across the wrong way"

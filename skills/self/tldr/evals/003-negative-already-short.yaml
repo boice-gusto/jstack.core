@@ -1,0 +1,10 @@
+name: Negative — declines to summarize content that's already short
+prompt: |
+  Apply jstack-self-tldr. tl;dr this: "Deploy failed because the config file had a typo in the
+  port number. Fixed and redeployed."
+criteria:
+  - "States or clearly implies the content is already short/concise, rather than producing a bulleted 'summary' of it"
+  - "Does not output a 5-bullet or multi-bullet breakdown of a two-sentence input"
+  - "Does not fabricate additional detail (root cause analysis, timestamps, owner names) not present in the original two sentences to make the summary look substantive"
+expect_skill: true
+timeout: 120

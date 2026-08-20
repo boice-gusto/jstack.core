@@ -1,0 +1,27 @@
+name: Caveat buried in paragraph 3 survives the summary
+prompt: |
+  Apply jstack-self-tldr. Give me the tl;dr of this:
+
+  "The team finished migrating the order-lookup service from a single Redis instance to a
+  three-node Redis Cluster to fix the intermittent timeout spikes seen under peak load.
+
+  The rollout used a dual-write approach: for two weeks, writes went to both the old instance
+  and the new cluster while reads stayed on the old instance, so the team could compare hit
+  rates and catch serialization mismatches before cutting reads over. Hit rate and memory usage
+  on the new cluster matched the old setup within noise for the full two weeks.
+
+  That comparison surfaced one real problem: about 0.3% of cached objects using the legacy
+  binary pickle format fail to deserialize on the new cluster's client library, because the
+  client library was upgraded to a version that changed its default pickle protocol. Until
+  every producer of those objects is updated, those cache misses fall back to a full database
+  read — correct, but roughly 3x the latency for that slice of traffic. Two of three known
+  producers are upgraded; the third, a nightly batch job, has not confirmed it deployed the new
+  client version yet. Reads were cut over to the cluster yesterday."
+criteria:
+  - "Summary is 5 bullets or fewer"
+  - "Mentions the 0.3% deserialization failure / legacy pickle format issue, or the roughly 3x latency fallback it causes, rather than omitting it"
+  - "Mentions that at least one producer (the nightly batch job) has not yet confirmed the client upgrade, i.e. the caveat is still open, not resolved"
+  - "Ends with an explicit offer to go deeper (e.g. asks if the user wants more detail on a specific point), not a silent stop"
+  - "Does not use filler openers like 'It's worth noting' or 'In summary'"
+expect_skill: true
+timeout: 120
