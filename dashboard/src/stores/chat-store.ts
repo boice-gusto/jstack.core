@@ -1,6 +1,9 @@
 import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
+import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
+
+export type { AgentStreamEvent } from "@/lib/agent-stream-runner";
 
 export type ChatMessage = {
   id: string;
@@ -14,23 +17,32 @@ export type ToolEvent = {
   input: unknown;
 };
 
-export type AgentStreamEvent = Record<string, unknown>;
-
 export type AgentRunContext = {
   cwd: string;
   skillId: string | null;
 };
 
+/**
+ * Streaming lifecycle for a single `runAgent()` call, collapsed into one
+ * union so "streaming" / "error" / "draft text" can't disagree with each
+ * other (e.g. a mid-stream read failure used to clear `isStreaming` and set
+ * `error` while leaving a stale `assistantDraft` around, rendering an
+ * "(streaming)" box next to an error banner).
+ */
+export type RunState =
+  | { status: "idle" }
+  | { status: "streaming"; draft: string }
+  | { status: "error"; message: string; draft: string }
+  | { status: "done" };
+
 type ChatState = {
   messages: ChatMessage[];
-  assistantDraft: string;
+  run: RunState;
   toolEvents: ToolEvent[];
   streamEvents: AgentStreamEvent[];
   lastRunContext: AgentRunContext | null;
   costSeries: number[];
   tokenSeries: number[];
-  isStreaming: boolean;
-  error: string | null;
   skillId: string;
   expectStructuredJson: boolean;
   structuredJsonText: string | null;
@@ -47,14 +59,12 @@ function newId(): string {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
-  assistantDraft: "",
+  run: { status: "idle" },
   toolEvents: [],
   streamEvents: [],
   lastRunContext: null,
   costSeries: [],
   tokenSeries: [],
-  isStreaming: false,
-  error: null,
   skillId: "",
   expectStructuredJson: false,
   structuredJsonText: null,
@@ -75,13 +85,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   resetConversation: () => {
     set({
       messages: [],
-      assistantDraft: "",
+      run: { status: "idle" },
       toolEvents: [],
       streamEvents: [],
       lastRunContext: null,
       costSeries: [],
       tokenSeries: [],
-      error: null,
       structuredJsonText: null,
     });
   },
@@ -90,17 +99,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
 
   runAgent: async () => {
-    const {
-      messages,
-      skillId,
-      expectStructuredJson,
-      isStreaming,
-    } = get();
-    if (isStreaming) {
+    const { messages, skillId, expectStructuredJson, run } = get();
+    if (run.status === "streaming") {
       return;
     }
     if (messages.length === 0) {
-      set({ error: "Add a message first." });
+      set({ run: { status: "error", message: "Add a message first.", draft: "" } });
       return;
     }
 
@@ -114,50 +118,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
 
     set({
-      isStreaming: true,
-      error: null,
-      assistantDraft: "",
+      run: { status: "streaming", draft: "" },
       streamEvents: [],
       toolEvents: [],
       structuredJsonText: null,
       lastRunContext: null,
     });
 
-    let res: Response;
-    try {
-      res = await fetch("/api/agent/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Network error";
-      set({ isStreaming: false, error: msg });
-      return;
-    }
-
-    if (!res.ok) {
-      const text = await res.text();
-      set({
-        isStreaming: false,
-        error: `Agent request failed (${res.status}): ${text.slice(0, 500)}`,
-      });
-      return;
-    }
-
-    const reader = res.body?.getReader();
-    if (reader === undefined) {
-      set({ isStreaming: false, error: "No response body" });
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
     let draft = "";
-    let exitCode: number | null = null;
 
-    const appendEvent = (evt: AgentStreamEvent): void => {
+    // Keep updating the draft text as it streams in, without reviving a
+    // "streaming" status once an error event has already flipped us to
+    // "error" (the error stays visible; only the attached draft refreshes).
+    const setDraft = (): void => {
+      set((s) => ({
+        run: s.run.status === "error" ? { ...s.run, draft } : { status: "streaming", draft },
+      }));
+    };
+
+    const onEvent = (evt: AgentStreamEvent): void => {
       set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
       const type = evt.type;
       if (type === "start" && typeof evt.cwd === "string") {
@@ -171,16 +150,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
       if (type === "text" && typeof evt.text === "string") {
         draft += evt.text;
-        set({ assistantDraft: draft });
+        setDraft();
       }
       if (type === "error" && typeof evt.message === "string") {
-        set({ error: evt.message });
+        set({ run: { status: "error", message: evt.message, draft } });
       }
       if (type === "stderr" && typeof evt.text === "string") {
         const piece = evt.text.trimEnd();
         if (piece.length > 0) {
           draft += `${draft.length > 0 ? "\n\n" : ""}\`\`\`stderr\n${piece.slice(0, 8000)}\n\`\`\``;
-          set({ assistantDraft: draft });
+          setDraft();
         }
       }
       if (type === "tool_use") {
@@ -221,75 +200,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
           typeof evt.result === "string" ? evt.result.trim() : "";
         if (resultText.length > 0 && draft.trim().length === 0) {
           draft += resultText;
-          set({ assistantDraft: draft });
+          setDraft();
         }
-      }
-      if (type === "done") {
-        const code = evt.code;
-        exitCode = typeof code === "number" ? code : null;
       }
     };
 
+    let exitCode: number | null = null;
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.length === 0) {
-            continue;
-          }
-          if (trimmed.startsWith("data:")) {
-            const jsonStr = trimmed.slice(5).trim();
-            try {
-              const obj = JSON.parse(jsonStr) as AgentStreamEvent;
-              appendEvent(obj);
-            } catch {
-              // ignore malformed chunk
-            }
-          }
-        }
-      }
-      const tail = buffer.trim();
-      if (tail.length > 0 && tail.startsWith("data:")) {
-        const jsonStr = tail.slice(5).trim();
-        try {
-          appendEvent(JSON.parse(jsonStr) as AgentStreamEvent);
-        } catch {
-          // ignore
-        }
-      }
+      const result = await runAgentStream(body, onEvent);
+      exitCode = result.exitCode;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Stream read error";
-      set({ isStreaming: false, error: msg });
+      const msg = e instanceof Error ? e.message : "Stream error";
+      set({ run: { status: "error", message: msg, draft } });
       return;
     }
 
     const finalContent = draft.trim();
-    if (finalContent.length > 0) {
-      set((s) => ({
-        messages: [
-          ...s.messages,
-          { id: newId(), role: "assistant", content: finalContent },
-        ],
-        assistantDraft: "",
-      }));
-      if (expectStructuredJson) {
-        set({ structuredJsonText: finalContent });
+    set((s) => {
+      if (finalContent.length > 0) {
+        return {
+          messages: [
+            ...s.messages,
+            { id: newId(), role: "assistant" as const, content: finalContent },
+          ],
+          run: { status: "done" as const },
+        };
       }
-    } else if (exitCode !== null && exitCode !== 0) {
-      set((s) => ({
-        error:
-          s.error ??
-          `Agent process exited with code ${exitCode}. Check server logs and CLAUDE_BIN.`,
-      }));
-    }
+      if (s.run.status === "error") {
+        // A server-side error already explains why there's no content;
+        // leave it in place rather than overwriting it with "done".
+        return {};
+      }
+      if (exitCode !== null && exitCode !== 0) {
+        return {
+          run: {
+            status: "error" as const,
+            message: `Agent process exited with code ${exitCode}. Check server logs and CLAUDE_BIN.`,
+            draft: "",
+          },
+        };
+      }
+      return { run: { status: "done" as const } };
+    });
 
-    set({ isStreaming: false });
+    if (expectStructuredJson && finalContent.length > 0) {
+      set({ structuredJsonText: finalContent });
+    }
   },
 }));

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
+import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
 export const WIZARD_STEPS = [
   { id: "context", label: "Context", prompt: "Summarize the problem and constraints in 3–5 bullets." },
@@ -12,18 +13,28 @@ export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"];
 
 type WizardMessage = { role: "user" | "assistant"; content: string };
 
+/**
+ * Streaming lifecycle for a single `nextStep()` call. See `RunState` in
+ * `@/stores/chat-store` for the rationale — mirrored here so wizard steps
+ * can't end up with a lingering "streaming" draft box next to (or instead
+ * of) a surfaced error.
+ */
+export type WizardRunState =
+  | { status: "idle" }
+  | { status: "streaming"; draft: string }
+  | { status: "error"; message: string; draft: string }
+  | { status: "done" };
+
 type WizardState = {
   stepIndex: number;
   transcript: WizardMessage[];
   /** Optional user notes appended to the current step prompt when running. */
   stepContext: string;
-  assistantDraft: string;
+  run: WizardRunState;
   toolEvents: { id: string; name: string; input: unknown }[];
-  streamEvents: Record<string, unknown>[];
+  streamEvents: AgentStreamEvent[];
   costSeries: number[];
   tokenSeries: number[];
-  isStreaming: boolean;
-  error: string | null;
   skillId: string;
   expectStructuredJson: boolean;
   structuredJsonText: string | null;
@@ -42,13 +53,11 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   stepIndex: 0,
   transcript: [],
   stepContext: "",
-  assistantDraft: "",
+  run: { status: "idle" },
   toolEvents: [],
   streamEvents: [],
   costSeries: [],
   tokenSeries: [],
-  isStreaming: false,
-  error: null,
   skillId: "",
   expectStructuredJson: false,
   structuredJsonText: null,
@@ -62,12 +71,11 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       stepIndex: 0,
       transcript: [],
       stepContext: "",
-      assistantDraft: "",
+      run: { status: "idle" },
       toolEvents: [],
       streamEvents: [],
       costSeries: [],
       tokenSeries: [],
-      error: null,
       structuredJsonText: null,
     });
   },
@@ -79,9 +87,9 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       stepContext,
       skillId,
       expectStructuredJson,
-      isStreaming,
+      run,
     } = get();
-    if (isStreaming) {
+    if (run.status === "streaming") {
       return;
     }
     if (stepIndex >= WIZARD_STEPS.length) {
@@ -107,53 +115,41 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     };
 
     set({
-      isStreaming: true,
-      error: null,
-      assistantDraft: "",
+      run: { status: "streaming", draft: "" },
       streamEvents: [],
       toolEvents: [],
       structuredJsonText: null,
     });
 
-    let res: Response;
-    try {
-      res = await fetch("/api/agent/stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(body),
-      });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Network error";
-      set({ isStreaming: false, error: msg });
-      return;
-    }
-
-    if (!res.ok) {
-      const text = await res.text();
-      set({
-        isStreaming: false,
-        error: `Agent request failed (${res.status}): ${text.slice(0, 500)}`,
-      });
-      return;
-    }
-
-    const reader = res.body?.getReader();
-    if (reader === undefined) {
-      set({ isStreaming: false, error: "No response body" });
-      return;
-    }
-
-    const decoder = new TextDecoder();
-    let buffer = "";
     let draft = "";
 
-    const appendEvent = (evt: Record<string, unknown>): void => {
+    // Same rule as chat-store: keep refreshing the draft without reviving
+    // "streaming" once an error event has flipped us to "error".
+    const setDraft = (): void => {
+      set((s) => ({
+        run: s.run.status === "error" ? { ...s.run, draft } : { status: "streaming", draft },
+      }));
+    };
+
+    const onEvent = (evt: AgentStreamEvent): void => {
       set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
       const type = evt.type;
       if (type === "text" && typeof evt.text === "string") {
         draft += evt.text;
-        set({ assistantDraft: draft });
+        setDraft();
+      }
+      // Parity fix: chat-store has always surfaced server-side "error" and
+      // "stderr" events; wizard-store previously ignored both, so a failure
+      // mid-wizard was silently dropped instead of shown to the user.
+      if (type === "error" && typeof evt.message === "string") {
+        set({ run: { status: "error", message: evt.message, draft } });
+      }
+      if (type === "stderr" && typeof evt.text === "string") {
+        const piece = evt.text.trimEnd();
+        if (piece.length > 0) {
+          draft += `${draft.length > 0 ? "\n\n" : ""}\`\`\`stderr\n${piece.slice(0, 8000)}\n\`\`\``;
+          setDraft();
+        }
       }
       if (type === "tool_use") {
         const name =
@@ -193,33 +189,12 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     };
 
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.length === 0) {
-            continue;
-          }
-          if (trimmed.startsWith("data:")) {
-            const jsonStr = trimmed.slice(5).trim();
-            try {
-              const obj = JSON.parse(jsonStr) as Record<string, unknown>;
-              appendEvent(obj);
-            } catch {
-              // ignore
-            }
-          }
-        }
-      }
+      // Return value (exit code) intentionally unused here, same as before
+      // this extraction: wizard-store never branched on process exit code.
+      await runAgentStream(body, onEvent);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Stream read error";
-      set({ isStreaming: false, error: msg });
+      const msg = e instanceof Error ? e.message : "Stream error";
+      set({ run: { status: "error", message: msg, draft } });
       return;
     }
 
@@ -237,8 +212,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       ],
       stepIndex: s.stepIndex + 1,
       stepContext: "",
-      assistantDraft: "",
-      isStreaming: false,
+      run: s.run.status === "error" ? { ...s.run, draft: "" } : { status: "done" as const },
       structuredJsonText:
         expectStructuredJson && assistantMsg !== null
           ? assistantMsg.content

@@ -19,12 +19,13 @@ export default function AgentPage(): ReactElement {
   const [draft, setDraft] = useState("");
 
   const messages = useChatStore((s) => s.messages);
-  const assistantDraft = useChatStore((s) => s.assistantDraft);
+  const run = useChatStore((s) => s.run);
+  const isStreaming = run.status === "streaming";
+  const assistantDraft = run.status === "streaming" || run.status === "error" ? run.draft : "";
+  const error = run.status === "error" ? run.message : null;
   const toolEvents = useChatStore((s) => s.toolEvents);
   const costSeries = useChatStore((s) => s.costSeries);
   const tokenSeries = useChatStore((s) => s.tokenSeries);
-  const isStreaming = useChatStore((s) => s.isStreaming);
-  const error = useChatStore((s) => s.error);
   const skillId = useChatStore((s) => s.skillId);
   const expectStructuredJson = useChatStore((s) => s.expectStructuredJson);
   const structuredJsonText = useChatStore((s) => s.structuredJsonText);
@@ -123,7 +124,7 @@ export default function AgentPage(): ReactElement {
               {assistantDraft.length > 0 ? (
                 <div className="rounded-md border border-dashed border-border px-3 py-2">
                   <div className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                    assistant (streaming)
+                    {run.status === "streaming" ? "assistant (streaming)" : "assistant (interrupted)"}
                   </div>
                   <ChatMarkdown content={assistantDraft} />
                 </div>

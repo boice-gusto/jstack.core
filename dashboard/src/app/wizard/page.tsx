@@ -19,12 +19,13 @@ const textareaClass = cn(
 export default function WizardPage(): ReactElement {
   const stepIndex = useWizardStore((s) => s.stepIndex);
   const transcript = useWizardStore((s) => s.transcript);
-  const assistantDraft = useWizardStore((s) => s.assistantDraft);
+  const run = useWizardStore((s) => s.run);
+  const isStreaming = run.status === "streaming";
+  const assistantDraft = run.status === "streaming" || run.status === "error" ? run.draft : "";
+  const error = run.status === "error" ? run.message : null;
   const toolEvents = useWizardStore((s) => s.toolEvents);
   const costSeries = useWizardStore((s) => s.costSeries);
   const tokenSeries = useWizardStore((s) => s.tokenSeries);
-  const isStreaming = useWizardStore((s) => s.isStreaming);
-  const error = useWizardStore((s) => s.error);
   const skillId = useWizardStore((s) => s.skillId);
   const expectStructuredJson = useWizardStore((s) => s.expectStructuredJson);
   const structuredJsonText = useWizardStore((s) => s.structuredJsonText);
@@ -155,7 +156,7 @@ export default function WizardPage(): ReactElement {
               {assistantDraft.length > 0 ? (
                 <div className="rounded-md border border-dashed border-border px-3 py-2">
                   <div className="text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                    assistant (streaming)
+                    {run.status === "streaming" ? "assistant (streaming)" : "assistant (interrupted)"}
                   </div>
                   <ChatMarkdown content={assistantDraft} />
                 </div>
