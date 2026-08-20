@@ -39,7 +39,10 @@ SKIP = {
     SKILLS / "design" / "visual-single-page-html" / "SKILL.md",
     SKILLS / "design" / "figma-handoff" / "SKILL.md",
     SKILLS / "granola-daily-summary" / "SKILL.md",
-    SKILLS / "plugin" / "create-plugin-pr" / "SKILL.md",
+    # Flattened (2026-08): `create-plugin-pr` was the router's only child with no second one
+    # planned, so its content was merged straight into `skills/plugin/SKILL.md` and the child
+    # directory removed. `plugin` is no longer in ORCHESTRATORS/ORCH_CHILDREN below.
+    SKILLS / "plugin" / "SKILL.md",
     SKILLS / "routines" / "morning-kickoff" / "SKILL.md",
     SKILLS / "knowledge" / "skill-finder" / "SKILL.md",
     SKILLS / "knowledge" / "ingest-all" / "SKILL.md",
@@ -52,6 +55,18 @@ SKIP = {
     # judgment call, standing "stay concise" rule across follow-ups) — no generic generator
     # template covers this; pinned to avoid a content-free overwrite.
     SKILLS / "self" / "tldr" / "SKILL.md",
+    # Hand-authored (2026-08): added a real diary-vs-remember distinction (contemporaneous
+    # narrative journal entry vs. an atomic, findable-by-topic fact/decision) — no generic
+    # generator data for this; pinned to avoid a content-free overwrite.
+    SKILLS / "self" / "diary" / "SKILL.md",
+    # Hand-authored (2026-08): added real specific/time-boxed/single-deliverable criteria for a
+    # "good" focus block vs. a vague one — no generic generator data for this; pinned to avoid a
+    # content-free overwrite.
+    SKILLS / "self" / "focus" / "SKILL.md",
+    # Hand-authored (2026-08): added a real Jira-vs-gbrain reconciliation rule (surface
+    # discrepancies, never silently drop a task that exists in only one source) — no generic
+    # generator data for this; pinned to avoid a content-free overwrite.
+    SKILLS / "self" / "tasks" / "SKILL.md",
     SKILLS / "review" / "code-review" / "SKILL.md",
     # Hand-authored (2026-08): six-lens parallel-dispatch orchestrator (security, compliance,
     # performance, code quality, QA, AI-slop) with a bespoke lens-routing table, an AI-slop
@@ -104,6 +119,57 @@ SKIP = {
     # always show the prompt, round-cap disagreement at 3).
     SKILLS / "review" / "codex-bridge" / "SKILL.md",
     SKILLS / "review" / "codex-review" / "SKILL.md",
+    # Hand-authored (2026-08): the third Tier 1 wizard skill named in CLAUDE.md (alongside `adr`
+    # and `advice`, both already pinned above). Step 3 now carries a real AskUserQuestion tone
+    # picker (Executive / Internal-Eng / Formal-External) with per-option preview text. The
+    # generator's path_extras("announcements") has no per-key data for this wizard and would
+    # regenerate the old "ask once if unclear" prose, silently deleting it.
+    SKILLS / "announcements" / "SKILL.md",
+    # Hand-authored (2026-08): the `routines` router's own body now describes a real
+    # unattended/cron fallback (resolve against config and label `[assumption]` instead of
+    # blocking on AskUserQuestion, which this skill disallows) rather than the generic
+    # orchestrator "ask one question to disambiguate" text that `build_body`'s `is_orch` branch
+    # hardcodes for every domain orchestrator. That branch has no per-key override, so
+    # regenerating would silently restore the blocking prose.
+    SKILLS / "routines" / "SKILL.md",
+    # Hand-authored (2026-08): Step 3 corrected to say routine definitions live in the
+    # `routines` block of `config/defaults.json` plus `config/schedules/<id>.json` — the
+    # generator's path_extras("update-config"-style) text previously said the nonexistent
+    # "config/routines JSON". No per-key generator data exists for this correction.
+    SKILLS / "routines" / "custom" / "SKILL.md",
+    # Hand-authored (2026-08): the "Domain rules — eval-report" section (Absolute rules,
+    # Thresholds, Named anti-patterns, worked example — EEOC/SBI-grounded) has no matching
+    # CATEGORY_DEEP/MISSIONS entry in apply_detailed_skills_data.py; regenerating would silently
+    # replace this, the most performance-adjacent report kind in the set, with generic reports
+    # boilerplate. Also carries hand-added `data_class: people_performance`,
+    # `gbrain_destination: personal`, and `disable-model-invocation: true` frontmatter.
+    SKILLS / "reports" / "eval-report" / "SKILL.md",
+    # Hand-authored (2026-08): Step 3 now carries a worked PII/secret-redaction example (secret
+    # value + phone number stripped, user told what was removed and why, no persist before
+    # confirmation) — the generator's generic `knowledge` domain-rules text has no per-key
+    # worked-example data for this. Regenerating would silently wipe it back to the bare
+    # "flag PII/secret before storage" one-liner.
+    SKILLS / "knowledge" / "intake" / "SKILL.md",
+    # Hand-authored (2026-08): Step 3 now carries a worked merge/dedupe example demonstrating the
+    # "keep the oldest decision link as canonical" rule (date-based tiebreak, link-don't-delete
+    # the superseded entry) — no generic generator data exists for this worked example.
+    # Regenerating would silently wipe it back to the one-line assertion with no demonstration.
+    SKILLS / "knowledge" / "process" / "SKILL.md",
+    # Hand-authored (2026-08): added a real "Domain rules — metrics" section (Absolute rules,
+    # percentile-based review-latency threshold, a raw-ticket-count/unnormalized-PR-size
+    # anti-pattern, worked example) proportionate to team-metrics' treatment. The generator has no
+    # per-key data for this and would flatten it back to the 3-bullet generic form.
+    SKILLS / "metrics" / "my-metrics" / "SKILL.md",
+    # Hand-authored (2026-08): replaced the router's generic "Domain rules — SOPs" boilerplate
+    # with skill-specific content (a concrete autonomy-boundary/escalation-path criterion plus an
+    # anti-pattern). No per-key generator data exists for this; regenerating would silently
+    # restore the shared parent-router text.
+    SKILLS / "sop" / "expectations" / "SKILL.md",
+    # Hand-authored (2026-08): replaced the router's generic "Domain rules — SOPs" boilerplate
+    # with a real staleness anti-pattern (linking vs. copying live on-call/tooling sources). No
+    # per-key generator data exists for this; regenerating would silently restore the shared
+    # parent-router text.
+    SKILLS / "sop" / "resources" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -170,7 +236,7 @@ def skill_key(p: Path) -> str:
 ORCHESTRATORS = {
     "jira", "notion", "meetings", "research", "reports", "self",
     "knowledge", "review", "session", "metrics", "routines", "workflows", "incident",
-    "sop", "sprint", "computer-use", "design", "pe", "plugin", "shortcuts",
+    "sop", "sprint", "computer-use", "design", "pe", "shortcuts",
 }
 ORCH_CHILDREN = {
     "jira": "get, create, update, intake, transition, notify, append",
@@ -190,7 +256,6 @@ ORCH_CHILDREN = {
     "computer-use": "cua",
     "design": "figma-handoff, visual-single-page-html",
     "pe": "report-context, pe-recon",
-    "plugin": "create-plugin-pr",
     "shortcuts": "ceo-brainstorm, executive-research-brief",
     "sprint": "prep, refinement, planning",
 }

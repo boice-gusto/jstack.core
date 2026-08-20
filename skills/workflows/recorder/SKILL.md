@@ -2,8 +2,10 @@
 name: jstack-workflow-recorder
 description: Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.
 category: workflows
+data_class: internal
 disable-model-invocation: true
 effort: medium
+gbrain_destination: none
 ---
 
 <!-- Chain Contract -->

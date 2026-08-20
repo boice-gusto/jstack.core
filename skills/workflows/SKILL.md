@@ -1,7 +1,7 @@
 ---
 name: jstack-workflows
 description: Route workflow requests to builder, recorder, execute, or viewer.
-when_to_use: Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, running jstack workflow, or comparing two runs.
+when_to_use: Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, or running jstack workflow.
 category: workflows
 effort: low
 ---

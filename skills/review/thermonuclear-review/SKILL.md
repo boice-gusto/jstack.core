@@ -20,7 +20,7 @@ effort: high
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config, diff_or_artifact -->
 <!-- outputs: structured_result -->
-<!-- chains-to: jstack:plugin/create-plugin-pr, jstack:jira -->
+<!-- chains-to: jstack:plugin, jstack:jira -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -196,7 +196,7 @@ real run reports all six, including any that found nothing.)
   remains the lighter-weight, single-lens tool for a routine PR.
 - Does not reconcile stakeholder viewpoints (CEO/PM/design) — that is `jstack:counsel-review`'s
   job; this skill's six lenses are all review-technical, not cross-functional.
-- Does not merge, approve, or push to a default branch — hands off to `jstack:plugin/create-plugin-pr`
+- Does not merge, approve, or push to a default branch — hands off to `jstack:plugin`
   once findings are resolved and a PR is wanted.
 - Does not grant final sign-off on a policy-gated change (security, compliance, migration) without
   the human approval `prompts/policies/review-policy.md` requires.
@@ -227,7 +227,7 @@ Dispatch all six lenses in parallel, isolated from each other's output: `securit
 Confirm every finding is attributed to its lens, cites concrete evidence, and respects the per-lens cap. Confirm the combined ranking is genuinely cross-lens, not lens-by-lens. Confirm no AI-slop finding rests on simplicity alone. State explicitly which lenses were silent and any artifact size/coverage limitation.
 
 ### Step 5 — Summarize and hand off
-State the top-ranked findings, what changed, and what to verify. Suggest `jstack:plugin/create-plugin-pr` once findings are resolved and a PR is wanted, or `jstack:jira` for tracking remediation after approval.
+State the top-ranked findings, what changed, and what to verify. Suggest `jstack:plugin` once findings are resolved and a PR is wanted, or `jstack:jira` for tracking remediation after approval.
 
 ## Output shape
 - **Summary** (2–4 sentences: artifact reviewed, size, overall risk read)
@@ -254,7 +254,7 @@ Use `jstack:review-code-review` instead when the change is a routine PR with no 
 surface — this skill is deliberately heavier and should not become the default for every diff. Use
 `jstack:counsel-review` instead when the actual ask is reconciling stakeholder viewpoints
 (CEO/PM/design), not review-technical depth. Once findings are resolved, `suggested_next:
-jstack:plugin/create-plugin-pr` to open the PR, or `suggested_next: jstack:jira` to track
+jstack:plugin` to open the PR, or `suggested_next: jstack:jira` to track
 remediation after approval. Do not auto-invoke either without user intent.
 
 ## User request

@@ -2,7 +2,7 @@
 name: jstack-workflow-viewer
 description: "Summarize what a workflow run log contains: steps taken and artifacts produced. Never reconstruct a result for a run with no report."
 category: workflows
-argument-hint: "[run-id-1] [run-id-2]"
+argument-hint: "[run-id]"
 effort: medium
 ---
 

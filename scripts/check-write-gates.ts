@@ -83,7 +83,8 @@ const WRITES = new Set<string>([
   "notion/team-report",
   "notion/update",
   // Repo / config / artifact writes.
-  "plugin/create-plugin-pr",
+  "plugin",
+  "reports/eval-report",
   "reports/report-design",
   "reports/share-html-publish",
   "routines/sprint-close",

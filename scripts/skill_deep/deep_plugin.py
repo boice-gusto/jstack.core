@@ -2,11 +2,16 @@
 
 `plugin` has no `CATEGORY_DEEP` category entry, so this module supplies the per-key
 content directly. See `scripts/skill_deep/__init__.py` for the merge mechanism.
+
+Note (2026-08): `plugin` was flattened — its one child, `create-plugin-pr`, was merged
+into `skills/plugin/SKILL.md` and the child directory removed, so the key below is
+`"plugin"` rather than `"plugin/create-plugin-pr"`. `skills/plugin/SKILL.md` is pinned
+in `SKIP`, so this entry is currently inert (kept in sync for if it's ever un-pinned).
 """
 from __future__ import annotations
 
 DEEP: dict[str, str] = {
-    "plugin/create-plugin-pr": """## Domain rules — plugin PR
+    "plugin": """## Domain rules — plugin PR
 
 A plugin PR changes what every future session loads, so a defect here is not one bad run —
 it is every run until someone notices. Review accordingly.

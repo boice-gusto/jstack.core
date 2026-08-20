@@ -1,6 +1,6 @@
 ---
 name: jstack-hygiene-claude-code-hygiene
-description: Audit a user's actual Claude Code setup — skills, agents, hooks, slash commands, and settings.json permissions — for what is broken, stale, unused, or duplicated, then walk through a numbered fix plan before touching anything. Use for "audit my claude setup," "clean up unused skills," "is my claude code config stale," "find duplicate skills," "why do I have two agents that do the same thing," "do any of my skills have zero eval coverage," or a periodic hygiene sweep before a skill-authoring push. Two phases, always in this order — Phase 1 is a read-only audit that runs freely and never edits or deletes anything; Phase 2 (actually deleting, editing, or regenerating a skill/agent/hook/permission) only happens after the user has seen Phase 1's findings and confirms each fix item individually. Not for authoring a brand-new skill from scratch (jstack:skill-creator) or opening the PR itself (jstack:plugin/create-plugin-pr) — this skill diagnoses and plans, those two execute.
+description: Audit a user's actual Claude Code setup — skills, agents, hooks, slash commands, and settings.json permissions — for what is broken, stale, unused, or duplicated, then walk through a numbered fix plan before touching anything. Use for "audit my claude setup," "clean up unused skills," "is my claude code config stale," "find duplicate skills," "why do I have two agents that do the same thing," "do any of my skills have zero eval coverage," or a periodic hygiene sweep before a skill-authoring push. Two phases, always in this order — Phase 1 is a read-only audit that runs freely and never edits or deletes anything; Phase 2 (actually deleting, editing, or regenerating a skill/agent/hook/permission) only happens after the user has seen Phase 1's findings and confirms each fix item individually. Not for authoring a brand-new skill from scratch (jstack:skill-creator) or opening the PR itself (jstack:plugin) — this skill diagnoses and plans, those two execute.
 when_to_use: Also trigger for "sweep my skills directory," "find dead agents," "check for orphaned reference files," "why is my settings.json so long," "check for broken chain contracts," "has Claude Code shipped anything new I'm not using," or any request to review/clean up/tidy the Claude Code setup itself (as opposed to reviewing a codebase or a PR).
 category: hygiene
 effort: high
@@ -11,7 +11,7 @@ agent: Explore
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config, repo_root -->
 <!-- outputs: audit_report, numbered_action_plan -->
-<!-- chains-to: jstack:skill-creator, jstack:plugin/create-plugin-pr -->
+<!-- chains-to: jstack:skill-creator, jstack:plugin -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -20,7 +20,7 @@ Read the setup preamble first:
 
 Audit the Claude Code setup itself — every `SKILL.md`, `agents/*.md`, hook, slash command, and `settings.json`/`settings.local.json` permission entry — for what is broken, stale, unused, or duplicated, and turn that into a plan the user approves before anything changes. This is a meta-audit: the subject is the tooling, not the product code.
 
-- **Out of scope:** Reviewing application code, PR diffs, or product architecture — that's `jstack:code-review` or a language-specific review skill. Authoring a brand-new skill from a blank page — that's `jstack:skill-creator`. Opening the PR that lands an approved fix — that's `jstack:plugin/create-plugin-pr`. This skill must not perform any of those three; it hands off to them.
+- **Out of scope:** Reviewing application code, PR diffs, or product architecture — that's `jstack:code-review` or a language-specific review skill. Authoring a brand-new skill from a blank page — that's `jstack:skill-creator`. Opening the PR that lands an approved fix — that's `jstack:plugin`. This skill must not perform any of those three; it hands off to them.
 - **Must not:** touch a file, delete a file, or run a mutating command in Phase 1. Phase 1 is read-only, full stop — every tool call in that phase is `Read`, `Grep`, `Glob`, or a `bun run <check-script>` that itself only inspects and prints (never `apply_detailed_skills.py`, which writes).
 
 ## Two-phase design (read this before running)
@@ -87,7 +87,7 @@ Work through the audit checklist's items 1, 2, 3, 8, 9, 11 by hand (they have no
 Group findings by severity (broken > drifted/duplicated > stale > cosmetic) and category (skills, agents, hooks/commands, settings.json). Every single finding line carries its evidence inline — see the worked example below for the bar.
 
 ### Phase 1 — Step 5: Build the numbered plan and hand back
-Turn findings into a numbered action list, one line each: what changes, which file(s), and which mechanism performs it (direct `Edit`/`rm` after confirmation, or handoff to `jstack:skill-creator` / `jstack:plugin/create-plugin-pr`). End Phase 1 here — do not execute anything, even an item that looks obviously safe.
+Turn findings into a numbered action list, one line each: what changes, which file(s), and which mechanism performs it (direct `Edit`/`rm` after confirmation, or handoff to `jstack:skill-creator` / `jstack:plugin`). End Phase 1 here — do not execute anything, even an item that looks obviously safe.
 
 ### Phase 2 — Step 1: Present and wait
 In the main session, restate the numbered plan. Ask which item(s) to act on — never assume "all of them" from a general "go ahead."
@@ -96,7 +96,7 @@ In the main session, restate the numbered plan. Ask which item(s) to act on — 
 For each item the user selects, confirm the specific mutation (file, exact change) immediately before performing it — use `AskUserQuestion` with `Confirm and continue | Edit before continuing | Skip this item | Cancel` when the host supports it, otherwise ask in plain text and wait for an explicit yes.
 
 ### Phase 2 — Step 3: Execute the smallest safe mechanism
-Trivial, unambiguous fixes (delete a confirmed-orphaned reference file, remove a confirmed-dead settings.json permission entry, add a single missing frontmatter field) may be done directly with `Edit`/`Bash rm`. Anything touching a `SKILL.md` body's mission, rules, or structure — or anything that should land as a reviewable diff — hands off to `jstack:skill-creator` (fix content) and then `jstack:plugin/create-plugin-pr` (open the PR). Never run `python3 scripts/apply_detailed_skills.py` as a "fix" for a `SKIP`-set skill.
+Trivial, unambiguous fixes (delete a confirmed-orphaned reference file, remove a confirmed-dead settings.json permission entry, add a single missing frontmatter field) may be done directly with `Edit`/`Bash rm`. Anything touching a `SKILL.md` body's mission, rules, or structure — or anything that should land as a reviewable diff — hands off to `jstack:skill-creator` (fix content) and then `jstack:plugin` (open the PR). Never run `python3 scripts/apply_detailed_skills.py` as a "fix" for a `SKIP`-set skill.
 
 ### Phase 2 — Step 4: Verify
 After each fix, re-run the specific gate that flagged it (not the full `bun run check`) to confirm the finding is actually resolved before moving to the next item.
@@ -123,7 +123,7 @@ After each fix, re-run the specific gate that flagged it (not the full `bun run 
 **Phase 1 report:**
 - **Summary** (2–4 sentences): scope audited, gates run, total findings by severity.
 - **Findings** grouped by severity (Broken / Drifted or Duplicated / Stale / Cosmetic) then category (Skills / Agents / Hooks & commands / Settings permissions). Each line: evidence (`file:line` or command output) + one-sentence implication.
-- **Numbered action plan**: one line per item — what, where, how (direct edit vs. handoff to `jstack:skill-creator` / `jstack:plugin/create-plugin-pr`).
+- **Numbered action plan**: one line per item — what, where, how (direct edit vs. handoff to `jstack:skill-creator` / `jstack:plugin`).
 - **Limitations**: gates that couldn't run, scope not covered, and whether the Claude Code docs/changelog check (item 11) ran or was skipped.
 
 **Phase 2 response**, per confirmed item: what changed (file + diff summary), which gate was re-run to verify, and the next item awaiting confirmation.
@@ -140,7 +140,7 @@ After each fix, re-run the specific gate that flagged it (not the full `bun run 
 
 ## Chaining
 
-Phase 2 items that touch a skill's mission, rules, or frontmatter structure hand off to `jstack:skill-creator` with the specific finding and file as payload. Once a fix (or a batch of confirmed fixes) is ready, hand off to `jstack:plugin/create-plugin-pr` to open the PR — this skill never pushes or commits itself. Never auto-invoke either; each handoff needs the user's go-ahead per the chaining guide.
+Phase 2 items that touch a skill's mission, rules, or frontmatter structure hand off to `jstack:skill-creator` with the specific finding and file as payload. Once a fix (or a batch of confirmed fixes) is ready, hand off to `jstack:plugin` to open the PR — this skill never pushes or commits itself. Never auto-invoke either; each handoff needs the user's go-ahead per the chaining guide.
 
 ```
 --- handoff ---

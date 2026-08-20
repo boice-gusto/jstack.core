@@ -8,7 +8,7 @@ effort: high
 <!-- Chain Contract -->
 <!-- inputs: diff_or_pr, review_standards -->
 <!-- outputs: dual_perspective_result { claude_view, codex_view, resolution_per_finding } -->
-<!-- chains-to: jstack:create-plugin-pr -->
+<!-- chains-to: jstack:plugin -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -142,7 +142,7 @@ diff was applied and no suggested command was run without the user's explicit go
 
 State what was sent, what codex found, what Claude did with each finding, and what — if anything —
 is still unresolved and needs the user's call. If the change is now ready to land with no
-unresolved findings, name `jstack:create-plugin-pr` as the natural next step.
+unresolved findings, name `jstack:plugin` as the natural next step.
 
 ## Output shape
 
@@ -167,7 +167,7 @@ unresolved findings, name `jstack:create-plugin-pr` as the natural next step.
 ## Chaining
 
 Once a reviewed change has no unresolved findings, the natural next step is opening the PR:
-`jstack:create-plugin-pr`. Do not auto-invoke it — state it as the suggested next skill.
+`jstack:plugin`. Do not auto-invoke it — state it as the suggested next skill.
 
 ## User request
 
