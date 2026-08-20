@@ -1,0 +1,20 @@
+name: Replaces the stale Jira link instead of adding a second duplicate source-of-truth link
+prompt: |
+  You are applying the jstack skill **jstack-notion-project** (path: `notion/project`). No live
+  Notion integration is configured — outline what you would do, without claiming to have already
+  called any API.
+
+  The project's existing Notion profile page already has a "Jira board" field pointing to:
+  https://jirasite.atlassian.net/browse/PROJ-100
+  That link was added about six months ago and the project has since moved to a different board.
+
+  Please update the project profile: the current Jira board is now
+  https://jirasite.atlassian.net/browse/PROJ-900. Add that link.
+criteria:
+  - "States it will update/replace the existing single Jira board link field with the new PROJ-900 URL, rather than adding a second, separate Jira-link field or property alongside the old one"
+  - "Explicitly flags that the old PROJ-100 link is stale and is being replaced, not silently left in place next to the new link"
+  - "Does not describe the change as creating a new 'Jira board 2' or similarly named duplicate property"
+  - "Reflects a one-canonical-link-per-system approach — after the update there is exactly one Jira board link on the page, pointing at PROJ-900"
+  - "Does not claim the page has already been updated in Notion — this is an outline with no live integration"
+expect_skill: true
+timeout: 120

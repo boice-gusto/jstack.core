@@ -14,6 +14,18 @@
         "jstack:scaffold",
         "jstack:granola-daily-summary"
       ]
+    },
+    {
+      "name": "transcripts-to-ingest-all-to-process",
+      "steps": [
+        "jstack:meetings/transcripts-ingest",
+        "jstack:knowledge/ingest-all",
+        "jstack:knowledge/process"
+      ]
+    },
+    {
+      "name": "team-report-to-notion",
+      "steps": ["jstack:reports/team-report", "jstack:notion/team-report"]
     }
   ]
 }

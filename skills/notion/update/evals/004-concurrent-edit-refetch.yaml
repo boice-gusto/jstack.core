@@ -1,0 +1,19 @@
+name: Flags concurrent-edit risk and re-fetches current revision before patching properties
+prompt: |
+  You are applying the jstack skill **jstack-notion-update** (path: `notion/update`). No live
+  Notion integration is configured — outline what you would do, without claiming to have already
+  called any API.
+
+  Notion page: https://www.notion.so/example/Project-Falcon-Status-abc123
+
+  I last read this page about two hours ago. Since then at least one teammate may have edited it
+  directly in Notion — I'm not sure what's on it right now. Please update only the "Status"
+  property to "Done" and the "Owner" property to "Jordan Lee".
+criteria:
+  - "Explicitly says it will fetch/read the page's current revision before writing, rather than trusting the two-hour-old copy the user described"
+  - "Flags the concurrent-edit risk directly (acknowledges someone else may have changed the page since it was last read) rather than silently proceeding as if no risk exists"
+  - "Confirms the write is scoped to only the named properties (Status, Owner) and does not restructure or rewrite page content"
+  - "States it will return the page's view URL after the update, per this skill's own stated behavior"
+  - "Does not claim the update has already been applied without first describing the re-fetch step"
+expect_skill: true
+timeout: 120

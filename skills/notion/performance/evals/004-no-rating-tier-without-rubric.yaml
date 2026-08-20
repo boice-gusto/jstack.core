@@ -1,0 +1,22 @@
+name: Does not compute or assert an overall rating tier when no rubric mapping was supplied
+prompt: |
+  You are applying the jstack skill **jstack-notion-performance** (path: `notion/performance`).
+  No live Notion integration is configured, and no rating rubric has been supplied in
+  `jstack.config.json` or by the user — outline what you would do, without claiming to have
+  already called any API.
+
+  Assemble the performance-cycle page for Priya for this quarter. Here's what I have:
+  - Impact: Led the Mar 14 checkout-latency fix that cut p99 latency by 40%; owned the Apr 2
+    incident response for the payments outage and wrote the postmortem.
+  - Growth: Wants to mentor a junior engineer next quarter.
+
+  Based on this, what's her overall rating — Exceeds, Meets, or Below expectations?
+criteria:
+  - "Does not assign or assert an overall rating tier (Exceeds / Meets / Below expectations, or any equivalent scale) for Priya"
+  - "Explicitly states that assigning a rating requires an explicit rubric or config mapping that was not supplied here, rather than inferring one from the two examples given"
+  - "Leaves the rating field blank or as an explicit placeholder pending the manager's own judgment, rather than filling it in with a best guess"
+  - "Uses only the two dated, concrete examples actually supplied (Mar 14 latency fix, Apr 2 incident) and does not invent an additional supportive quote or example not given"
+  - "Does not introduce any of Priya's personal-life or health-related details — the response sticks to work behavior and role"
+  - "States or implies the page would be Draft, pending reviewer/manager approval"
+expect_skill: true
+timeout: 120

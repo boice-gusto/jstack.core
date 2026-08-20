@@ -1,0 +1,19 @@
+name: Lists the discrepancy when the Notion sprint plan and the Jira sprint id disagree
+prompt: |
+  You are applying the jstack skill **jstack-notion-sprint** (path: `notion/sprint`). No live
+  Notion or Jira integration is configured — outline what you would do, without claiming to have
+  already called any API.
+
+  Update the sprint page with this plan:
+  - Goal: "Ship checkout redesign"
+  - Dates: Aug 18 – Aug 29
+
+  Jira sprint id SPRINT-77 is the sprint to mirror, but I just checked Jira directly and it
+  actually shows: name "Checkout Redesign + Perf", dates Aug 18 – Sep 1.
+criteria:
+  - "Explicitly lists the discrepancy between the Notion-stated plan and Jira sprint SPRINT-77 — both the end-date mismatch (Aug 29 vs Sep 1) and the name mismatch ('Ship checkout redesign' vs 'Checkout Redesign + Perf')"
+  - "Does not silently pick one source (Notion or Jira) and write it as if there were no conflict"
+  - "States it would mirror the Jira sprint id SPRINT-77 onto the page per this skill's own behavior"
+  - "Presents the discrepancy as something for the user to confirm or resolve, rather than resolving it unilaterally on the user's behalf"
+expect_skill: true
+timeout: 120

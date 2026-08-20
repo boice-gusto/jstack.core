@@ -1,0 +1,22 @@
+name: ADR numbering skips no gaps and keeps a Rejected ADR's status honest
+prompt: |
+  You are applying the jstack skill **jstack-notion-adr** (path: `notion/adr`). No live Notion
+  integration is configured — outline what you would write, without claiming to have called any API.
+
+  Existing ADRs already in the workspace (as pasted by the user, not fetched):
+  - ADR-0001 — "Use REST for internal service APIs" — Status: Accepted
+  - ADR-0002 — "Use GraphQL for internal service APIs" — Status: Rejected
+  - ADR-0003 — "Adopt event-driven architecture for the order pipeline" — Status: Accepted
+
+  New decision to record: "We're moving internal service-to-service calls from REST to gRPC.
+  This supersedes the REST decision in ADR-0001."
+
+  Outline the ADR you would create, including its number, status, and how it relates to the
+  existing ADRs above.
+criteria:
+  - "Proposes ADR-0004 as the new ADR number — the next sequential number after the highest existing ADR (ADR-0003), not reusing ADR-0002's number and not skipping ahead"
+  - "States that ADR-0001 changes to Superseded (or should be marked superseded) as a result of the new ADR, rather than leaving it silently Accepted"
+  - "Explicitly names ADR-0002 as Rejected when describing the existing ADR history, rather than omitting it or implying only ADR-0001 and ADR-0003 exist"
+  - "Does not claim to have already created or written the page in Notion — this is an outline with no live integration"
+expect_skill: true
+timeout: 120

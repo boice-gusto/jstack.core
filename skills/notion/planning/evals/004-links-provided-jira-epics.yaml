@@ -1,0 +1,18 @@
+name: Roadmap page actually links the Jira epic ids supplied, not just acknowledges them
+prompt: |
+  You are applying the jstack skill **jstack-notion-planning** (path: `notion/planning`). No
+  live Notion integration is configured — outline what you would produce, without claiming to
+  have already called any API.
+
+  Build the Q3 roadmap planning page. It should cover two epics that already exist in Jira:
+  - PROJ-482 — the billing overhaul
+  - PROJ-510 — the audit-log rewrite
+
+  Both epics already exist in Jira; don't create new ones, just link them from the roadmap page.
+criteria:
+  - "The outline explicitly names both epic ids, PROJ-482 and PROJ-510, as items linked from the roadmap page — not just a generic mention of 'linking to Jira epics'"
+  - "Associates PROJ-482 specifically with the billing overhaul and PROJ-510 specifically with the audit-log rewrite, rather than listing the ids without context"
+  - "Does not offer to create new Jira epics — creating epics is out of scope for this skill, only linking to existing ones"
+  - "Does not claim the roadmap page has already been created in Notion — this is an outline with no live integration"
+expect_skill: true
+timeout: 120
