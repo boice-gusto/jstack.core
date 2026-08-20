@@ -220,7 +220,7 @@ async function runSetupSchemaInner(opts: SetupSchemaOpts): Promise<void> {
   // Run the dependency resolver and surface issues so the user knows what's
   // still missing on disk / in their environment.
   const issues = resolveDependencies({
-    cfg: parsed as Record<string, unknown>,
+    cfg: parsed,
     projectRoot,
     pluginRoot,
   });

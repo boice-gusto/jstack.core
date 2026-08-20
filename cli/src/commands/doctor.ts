@@ -36,6 +36,7 @@ import {
 import { REPAIR_CONSENT_DEFAULT } from "../lib/repair-consent.js";
 import { resolveWithinRoots, setAt } from "../lib/path-utils.js";
 import { JstackConfigSchema } from "../types/config.js";
+import type { JstackConfig } from "../types/config.js";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import {
   serializeRepairs,
@@ -50,6 +51,51 @@ export async function runDoctor(opts: {
   saveRepairs?: string;
   applyRepairs?: string;
 }): Promise<void> {
+  // Validate flag combinations before any branching below. `fix`, `apply`, `json`,
+  // `saveRepairs`, and `applyRepairs` are independently readable from commander, so
+  // nonsensical combinations used to silently drop part of the request instead of
+  // erroring: the `--json` branch returns before fix/apply/saveRepairs/applyRepairs are
+  // ever read; `--apply` and `--save-repairs` were only read inside the `if (opts.fix)`
+  // block, so without `--fix` they silently no-op; and `--apply-repairs` hit its own
+  // `return` before the `--fix` block was ever reached, silently dropping `--fix`.
+  // Reject these loudly instead.
+  const fixFamilyRequested =
+    opts.fix || opts.apply || opts.saveRepairs || opts.applyRepairs;
+  if (opts.json && fixFamilyRequested) {
+    console.log(
+      chalk.red(
+        "--json cannot be combined with --fix/--apply/--save-repairs/--apply-repairs: --json prints a machine-readable report and returns before those run. Re-run `doctor --json` and `doctor --fix` separately.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (opts.apply && !opts.fix && !opts.applyRepairs) {
+    console.log(
+      chalk.red("--apply requires --fix. Re-run with --fix --apply."),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (opts.saveRepairs && !opts.fix) {
+    console.log(
+      chalk.red(
+        "--save-repairs requires --fix. Re-run with --fix --save-repairs <path>.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (opts.applyRepairs && opts.fix) {
+    console.log(
+      chalk.red(
+        "--apply-repairs replays a saved repair file and cannot be combined with --fix, which computes fresh repairs instead. Run them separately.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const root = findProjectRoot();
   const pluginRoot = findPluginRoot();
   let ok = true;
@@ -105,13 +151,17 @@ export async function runDoctor(opts: {
   const aliasDrift = validateSkillAliasDrift();
 
   const defaultsRecord = loadDefaults(pluginRoot);
+  // `config/defaults.json` isn't run through `JstackConfigSchema.parse()` here — it's
+  // read as raw JSON — but `bun run validate-config` already guarantees it conforms to
+  // the schema, so this is a boundary cast at the one place untyped JSON meets typed
+  // code, not a re-erasure of an already-typed config.
+  const defaultsCfg = defaultsRecord as unknown as JstackConfig;
 
   if (opts.json) {
-    const cfgObj = cfg as unknown as Record<string, unknown>;
     const warnings = cfg
       ? [
-          ...collectDoctorConfigWarnings(root, cfgObj, defaultsRecord),
-          ...collectMockMcpDoctorWarnings(root, pluginRoot, cfgObj),
+          ...collectDoctorConfigWarnings(root, cfg, defaultsCfg),
+          ...collectMockMcpDoctorWarnings(root, pluginRoot, cfg),
         ]
       : [];
     const cross =
@@ -125,7 +175,10 @@ export async function runDoctor(opts: {
     const aliasErrFail = aliasDrift.errors.length > 0;
     const aliasWarnFail = strict && aliasDrift.warnings.length > 0;
     const skillsMr = cfg
-      ? resolveMachineReadableSettings(cfgObj, defaultsRecord)
+      ? resolveMachineReadableSettings(
+          cfg as unknown as Record<string, unknown>,
+          defaultsRecord,
+        )
       : { enabled: true, require_schema_ref: false };
     console.log(
       JSON.stringify(
@@ -264,10 +317,9 @@ export async function runDoctor(opts: {
   }
 
   if (cfg) {
-    const cfgObj = cfg as unknown as Record<string, unknown>;
     for (const msg of [
-      ...collectDoctorConfigWarnings(root, cfgObj, defaultsRecord),
-      ...collectMockMcpDoctorWarnings(root, pluginRoot, cfgObj),
+      ...collectDoctorConfigWarnings(root, cfg, defaultsCfg),
+      ...collectMockMcpDoctorWarnings(root, pluginRoot, cfg),
     ]) {
       warn(msg);
     }
@@ -295,7 +347,7 @@ export async function runDoctor(opts: {
       return;
     }
     const issues = resolveDependencies({
-      cfg: cfg as unknown as Record<string, unknown>,
+      cfg,
       projectRoot: root,
       pluginRoot,
     });

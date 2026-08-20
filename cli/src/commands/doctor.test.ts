@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -39,7 +39,7 @@ mock.module("@clack/prompts", () => ({
   select: async () => "done",
 }));
 
-const { applyRepairsInteractive } = await import("./doctor.js");
+const { applyRepairsInteractive, runDoctor } = await import("./doctor.js");
 
 function mkFixture() {
   const projectRoot = mkdtempSync(join(tmpdir(), "jstack-doctor-project-"));
@@ -306,5 +306,94 @@ describe("applyRepairsInteractive — set_config prototype pollution", () => {
       rmSync(pluginRoot, { recursive: true, force: true });
       rmSync(outside, { recursive: true, force: true });
     }
+  });
+});
+
+/**
+ * `runDoctor`'s six flags (fix/apply/strict/json/saveRepairs/applyRepairs) are read
+ * independently, so combinations like `--json --fix` used to silently drop part of the
+ * request instead of erroring (the json branch returns before fix/apply/saveRepairs are
+ * read; apply/saveRepairs were only read inside `if (opts.fix)`; apply-repairs returned
+ * before the fix block). These tests confirm each invalid combination now fails loudly
+ * and exits non-zero, all before `findProjectRoot()`/config are ever touched — so no
+ * fixture directory is needed here.
+ */
+describe("runDoctor — invalid flag combinations", () => {
+  async function captureLog(fn: () => Promise<void>): Promise<string> {
+    const logs: string[] = [];
+    const orig = console.log;
+    console.log = (...args: unknown[]) => {
+      logs.push(args.map(String).join(" "));
+    };
+    try {
+      await fn();
+    } finally {
+      console.log = orig;
+    }
+    return logs.join("\n");
+  }
+
+  afterEach(() => {
+    process.exitCode = 0;
+  });
+
+  test("--json combined with --fix errors instead of dropping --fix", async () => {
+    const out = await captureLog(() => runDoctor({ json: true, fix: true }));
+    expect(out).toContain("--json cannot be combined");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--json combined with --apply errors", async () => {
+    const out = await captureLog(() => runDoctor({ json: true, apply: true }));
+    expect(out).toContain("--json cannot be combined");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--json combined with --save-repairs errors", async () => {
+    const out = await captureLog(() =>
+      runDoctor({ json: true, saveRepairs: "/tmp/repairs.json" }),
+    );
+    expect(out).toContain("--json cannot be combined");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--json combined with --apply-repairs errors", async () => {
+    const out = await captureLog(() =>
+      runDoctor({ json: true, applyRepairs: "/tmp/repairs.json" }),
+    );
+    expect(out).toContain("--json cannot be combined");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--apply without --fix errors instead of silently no-op'ing", async () => {
+    const out = await captureLog(() => runDoctor({ apply: true }));
+    expect(out).toContain("--apply requires --fix");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--save-repairs without --fix errors instead of silently no-op'ing", async () => {
+    const out = await captureLog(() =>
+      runDoctor({ saveRepairs: "/tmp/repairs.json" }),
+    );
+    expect(out).toContain("--save-repairs requires --fix");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--apply-repairs combined with --fix errors instead of silently dropping --fix", async () => {
+    const out = await captureLog(() =>
+      runDoctor({ applyRepairs: "/tmp/repairs.json", fix: true }),
+    );
+    expect(out).toContain("--apply-repairs replays a saved repair file");
+    expect(process.exitCode).toBe(1);
+  });
+
+  test("--apply-repairs with --apply (no --fix) is not rejected by the --apply/--fix check", async () => {
+    // --apply-repairs requires --apply (checked later, once a project root exists) but
+    // is mutually exclusive with --fix — the upfront "--apply requires --fix" guard
+    // must not fire for this otherwise-valid combination.
+    const out = await captureLog(() =>
+      runDoctor({ applyRepairs: "/nonexistent/repairs.json", apply: true }),
+    );
+    expect(out).not.toContain("--apply requires --fix");
   });
 });

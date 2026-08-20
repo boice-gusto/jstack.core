@@ -40,7 +40,11 @@ export function runScheduleList(): void {
   }
 }
 
-export async function runScheduleEnable(idMaybe?: string): Promise<void> {
+async function setRoutineEnabled(
+  idMaybe: string | undefined,
+  enabled: boolean,
+  labels: { verb: string; picker: string; past: string },
+): Promise<void> {
   const root = findProjectRoot();
   const cfg = readConfig(root);
   const rows = listRoutinesFromConfig(cfg);
@@ -49,13 +53,13 @@ export async function runScheduleEnable(idMaybe?: string): Promise<void> {
   if (!id.length) {
     if (!isInteractive()) {
       console.error(
-        chalk.red("Usage: jstack schedule enable <id>. ") +
+        chalk.red(`Usage: jstack schedule ${labels.verb} <id>. `) +
           chalk.dim(nonInteractiveHint("`jstack schedule list`")),
       );
       process.exitCode = 1;
       return;
     }
-    const picked = await pickRoutineId(rows, "Routine to enable");
+    const picked = await pickRoutineId(rows, labels.picker);
     if (picked === null) {
       process.exitCode = 1;
       return;
@@ -71,43 +75,23 @@ export async function runScheduleEnable(idMaybe?: string): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  routines[id] = { ...routines[id], enabled: true };
+  routines[id] = { ...routines[id], enabled };
   writeConfig(root, { ...cfg, routines });
-  console.log(chalk.green(`Enabled ${id}`));
+  console.log(chalk.green(`${labels.past} ${id}`));
+}
+
+export async function runScheduleEnable(idMaybe?: string): Promise<void> {
+  return setRoutineEnabled(idMaybe, true, {
+    verb: "enable",
+    picker: "Routine to enable",
+    past: "Enabled",
+  });
 }
 
 export async function runScheduleDisable(idMaybe?: string): Promise<void> {
-  const root = findProjectRoot();
-  const cfg = readConfig(root);
-  const rows = listRoutinesFromConfig(cfg);
-  let id = idMaybe?.trim() ?? "";
-
-  if (!id.length) {
-    if (!isInteractive()) {
-      console.error(
-        chalk.red("Usage: jstack schedule disable <id>. ") +
-          chalk.dim(nonInteractiveHint("`jstack schedule list`")),
-      );
-      process.exitCode = 1;
-      return;
-    }
-    const picked = await pickRoutineId(rows, "Routine to disable");
-    if (picked === null) {
-      process.exitCode = 1;
-      return;
-    }
-    id = picked;
-  }
-
-  const routines = {
-    ...(cfg.routines as Record<string, Record<string, unknown>>),
-  };
-  if (!routines[id]) {
-    console.error(`Unknown routine: ${id}`);
-    process.exitCode = 1;
-    return;
-  }
-  routines[id] = { ...routines[id], enabled: false };
-  writeConfig(root, { ...cfg, routines });
-  console.log(chalk.green(`Disabled ${id}`));
+  return setRoutineEnabled(idMaybe, false, {
+    verb: "disable",
+    picker: "Routine to disable",
+    past: "Disabled",
+  });
 }
