@@ -1,6 +1,7 @@
 ---
 name: jstack-update-config
-description: Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner.
+description: Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner. Not for first-time setup — use jstack:onboarding.
+when_to_use: Not for a brand-new project with no config yet — that is jstack:onboarding's job.
 category: setup
 disable-model-invocation: true
 effort: low

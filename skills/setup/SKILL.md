@@ -1,7 +1,7 @@
 ---
 name: jstack-setup
-description: "First-time jstack onboarding: run jstack setup wizard, create config, validate with jstack doctor. No secrets in chat."
-when_to_use: Also for first-time install, onboarding, jstack doctor failures, MCP setup, or fixing missing jstack.config.json.
+description: "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that."
+when_to_use: Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config).
 category: setup
 effort: low
 ---

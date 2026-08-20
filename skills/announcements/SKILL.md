@@ -48,10 +48,43 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Draft, get approval, then publish — in that order, always. Resolve the channel from `policies.announcements.channels`; if it is unset, ask rather than picking one. Never send to an external or unfamiliar destination without explicit confirmation of the audience.
 
 ### Step 3 — Execute
-Classify audience (internal vs external) — ask once if unclear.
-- Apply tone from `prompts/tones/` and match channel norms (length, formatting, @here rules).
-- If content touches legal, compliance, or pricing, flag for stakeholder review.
-- Output a draft for user approval; never post directly.
+1. **Classify audience and tone** — internal vs external. If it is clear from `$ARGUMENTS` or config, proceed. If unclear, use **AskUserQuestion** before drafting:
+
+   ```
+   question: "Which tone for this announcement?"
+   header: "Tone"
+   options:
+     - label: "Executive"
+       description: "Outcome-first, no jargon. VP+ / board / skip-level."
+       preview: |
+         ## [Initiative] — Update
+
+         We shipped X. This reduces Y by Z%.
+
+         **Next:** [One sentence on what's coming or who acts.]
+     - label: "Internal / Eng"
+       description: "Bullets, technical context. Team Slack, #eng, wiki."
+       preview: |
+         ## Shipped: [Initiative]
+
+         **What:** [1 sentence]
+         **Why:** [1 sentence]
+         **Impact:** [metric or outcome]
+         **Next:** [owner + ETA]
+     - label: "Formal / External"
+       description: "Polished, policy-safe. Customer email or blog."
+       preview: |
+         We are pleased to announce that [Initiative] is now available.
+
+         [One paragraph: what it is, why it matters to the customer.]
+
+         [CTA or next step.]
+   ```
+
+   The tone choice also implies audience (Executive/Internal → internal; Formal/External → external) — do not ask a second, separate internal-vs-external question.
+2. Apply the chosen tone from `prompts/tones/` and match channel norms (length, formatting, @here rules).
+3. If content touches legal, compliance, or pricing, flag for stakeholder review.
+4. Output a draft for user approval; never post directly.
 
 ### Step 4 — Validate
 Confirm the destination, the audience, and that approval was actually given before send — not assumed. Re-read the text for anything that should not leave the org.

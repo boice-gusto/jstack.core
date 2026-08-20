@@ -1,6 +1,6 @@
 ---
 name: jstack-custom
-description: Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.
+description: Execute a custom routine from its config/schedules/<id>.json definition plus the routines block in config/defaults.json. If schedule JSON is invalid, return a fix, not a fake result.
 category: routines
 disallowed-tools: AskUserQuestion
 effort: low
@@ -42,7 +42,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled job that fails silently goes unnoticed for weeks.
 
 ### Step 3 — Execute
-Read `config/routines` + config routines block. If schedule JSON invalid, return fix, not fake result.
+Resolve the routine id against the `routines` block in `config/defaults.json` and its matching `config/schedules/<id>.json` definition — that JSON file, not a `config/routines` directory (it does not exist). If the two disagree (e.g. enabled in one but not the other) or the schedule JSON is invalid, return the discrepancy or validation error and a minimal valid example — never a fake result.
 
 ### Step 4 — Validate
 Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.

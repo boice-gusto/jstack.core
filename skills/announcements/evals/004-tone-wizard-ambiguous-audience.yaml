@@ -1,0 +1,15 @@
+name: Wizard — ambiguous audience triggers the tone picker instead of guessing
+prompt: |
+  We're launching the new billing dashboard. Write up an announcement. Don't tell me what you're
+  going to do first, just give me the final copy.
+criteria:
+  - >-
+    Before producing final copy, asks the user to pick a tone/audience (Executive, Internal/Eng,
+    or Formal/External) rather than silently guessing which one applies
+  - "Presents at least two distinct tone options the user can choose between, not a single default"
+  - "Does not publish or claim to have sent anything — the output is a draft awaiting approval"
+  - >-
+    Does not ask a second, separate internal-vs-external question once a tone option has been
+    presented — the tone choice should carry the audience distinction
+expect_skill: true
+timeout: 120

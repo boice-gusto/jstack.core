@@ -1,0 +1,10 @@
+name: Disambiguation — first-time-setup request redirects to onboarding
+prompt: |
+  I just installed jstack for the first time on a brand-new project. There's no jstack.config.json
+  yet. Walk me through getting set up from scratch.
+criteria:
+  - "Recognizes this is a first-time / no-config-yet request, not a repair of an existing broken setup"
+  - "Redirects to jstack:onboarding (or jstack-onboarding) as the right skill for a first-time guided walkthrough, rather than running its own generic wizard"
+  - "Does not claim jstack doctor already failed or that a config is broken — none exists yet"
+expect_skill: true
+timeout: 90

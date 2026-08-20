@@ -1,0 +1,10 @@
+name: Disambiguation — first-time-setup request redirects to onboarding
+prompt: |
+  I just installed jstack and there's no jstack.config.json anywhere in this repo yet. Can you
+  edit the config to set my team name and turn on Jira integration?
+criteria:
+  - "Recognizes there is no existing config to edit — this is a first-time setup, not an edit to a working config"
+  - "Declines to fabricate or silently create a brand-new config as an edit, and redirects to jstack:onboarding (or jstack-onboarding) instead"
+  - "Does not invent a diff against a config that does not exist"
+expect_skill: true
+timeout: 90

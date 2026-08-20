@@ -1,10 +1,17 @@
-name: Routing — suggest child for PRD request
+name: Shaping smoke — vague note becomes candidate ticket fields, then hands off
 prompt: >-
-  You are the **jstack-intake** orchestrator. User says: "Turn this customer interview into a PRD draft."
+  You are applying the jstack skill **jstack-intake** (path: `intake`) — a leaf skill, not an
+  orchestrator with child skills.
 
-  Respond briefly: which **child** skill or next step you route to (e.g. project, research) and why. No invented Jira keys.
+  User request (informal notes, not a ticket): "Customers keep asking why the export button is
+  greyed out on mobile. Someone should fix that."
+
+  Shape this into candidate ticket fields (summary, description with AC as a checklist, issue
+  type, priority, labels), then say what you hand off to next. Do not invent a Jira key. Keep
+  under ~250 words.
 criteria:
-  - Names a plausible child skill or explicit handoff (project/research/intake sub-skill)
-  - Does not fabricate ticket ids
+  - "Produces shaped ticket fields: a summary, a description or acceptance criteria, and an issue type or priority"
+  - "Does not fabricate a ticket id, issue key, or channel name"
+  - "Ends with a handoff to jstack-jira-intake (e.g. `suggested_next: jstack-jira-intake`), not a claim that a ticket was created"
 expect_skill: true
 timeout: 90

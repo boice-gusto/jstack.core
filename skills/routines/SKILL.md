@@ -1,8 +1,9 @@
 ---
 name: jstack-routines
-description: Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).
+description: Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff).
 category: routines
 effort: low
+disallowed-tools: AskUserQuestion
 ---
 
 <!-- Chain Contract -->
@@ -24,7 +25,7 @@ Route to the right routine sub-skill (standup, weekly-digest, sprint-close, heal
 ## Sub-skills (pick the most specific)
 **Under `skills/routines/`:** standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff
 
-If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
+This router and every child under `skills/routines/` carry `disallowed-tools: AskUserQuestion` — routines run unattended (cron/schedule invocations) as well as interactively, so blocking on a question is not always possible. If the user's intent is vague in an interactive turn, ask **one** question to disambiguate. If there is no user to ask (a scheduled/unattended run), resolve the routine id against `config/defaults.json` `routines` and the most recently configured/enabled child, state the pick as `[assumption]`, and route rather than stalling the run. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -46,7 +47,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 This runs unattended: never block on an interactive prompt. Every step must be idempotent, because a retry or an overlapping run will happen. Report a partial failure as a partial failure — a scheduled job that fails silently goes unnoticed for weeks.
 
 ### Step 3 — Execute
-Route to the most specific child skill under `skills/routines/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous, ask one question to disambiguate before routing.
+Route to the most specific child skill under `skills/routines/`. If the user's intent is clear, emit `suggested_next: <child-skill>` and stop. If ambiguous and a user is present to ask, ask one question to disambiguate before routing. If this is an unattended/scheduled invocation with no user to ask, resolve against config (`routines` block in `config/defaults.json` plus `config/schedules/<id>.json`), state the resolved routine as `[assumption]`, and route — never block a cron run waiting on input.
 
 ### Step 4 — Validate
 Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.

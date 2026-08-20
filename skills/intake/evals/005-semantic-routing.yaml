@@ -1,15 +1,20 @@
-name: Orchestrator routing — informal feature request
+name: Bundle splitting — three distinct asks become separate labeled candidates
 prompt: >-
-  You are applying the jstack skill **jstack-intake** (path: `intake`) — a **domain orchestrator**.
-  Child skills live under `skills/intake/`.
+  You are applying the jstack skill **jstack-intake** (path: `intake`) — a leaf skill that shapes
+  raw requests into ticket fields; it does not create tickets and it does not route to child
+  skills.
 
-  User request (informal, no skill names): "Someone filed three bugs that are really the same theme.
-  Can you help me turn that into one ticket with acceptance criteria?"
+  User request (bundled, informal): "Someone filed three bugs that are really about different
+  things: the export button is broken on mobile, the CSV export drops the last column, and the
+  PDF export takes forever to render. Can you help me turn that into tickets with acceptance
+  criteria?"
 
-  Respond with: (1) the **single** child skill or handoff you would route to first **or** (2) **one**
-  clarifying question. Do not invent Jira keys. Keep under ~250 words.
+  Split this into separate candidates (one per distinct ask), shape each with a summary and AC,
+  and say what happens next. Do not invent Jira keys. Keep under ~300 words.
 criteria:
-  - Names a concrete child route, handoff to project/research/jira, or one focused clarifying question
-  - Does not fabricate ticket ids or channel names
+  - "Splits the bundled request into distinct, separately labeled candidates rather than merging them into one ticket"
+  - "Each candidate has a summary and acceptance criteria (or an explicit checklist of AC)"
+  - "Does not fabricate ticket ids or channel names"
+  - "Hands off the shaped payload to jstack-jira-intake (or clipboard) rather than claiming tickets were created"
 expect_skill: true
 timeout: 120
