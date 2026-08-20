@@ -28,35 +28,44 @@ function parseJsonScriptById(id) {
   }
 }
 
+/**
+ * @typedef {object} HydrationTarget
+ * @property {string} scriptId
+ * @property {string} globalName
+ * @property {(v: unknown) => boolean} isValid
+ */
+
+/** @type {HydrationTarget[]} */
+const HYDRATION_TARGETS = [
+  {
+    scriptId: ID_SKILLS_PAYLOAD,
+    globalName: "__JSTACK_SKILLS__",
+    // Skills payload is a wrapper object; the meaningful field is the
+    // nested `skills` array.
+    isValid: (v) =>
+      !!v &&
+      typeof v === "object" &&
+      Array.isArray(/** @type {{ skills?: unknown }} */ (v).skills),
+  },
+  {
+    scriptId: ID_SKILL_HTML,
+    globalName: "__JSTACK_SKILL_HTML__",
+    // Skill HTML map is itself the payload: any non-array object.
+    isValid: (v) => !!v && typeof v === "object" && !Array.isArray(v),
+  },
+  {
+    scriptId: ID_MD_BY_RELPATH,
+    globalName: "__JSTACK_MD_BY_RELPATH__",
+    // Same shape requirement as skill HTML: a non-array object.
+    isValid: (v) => !!v && typeof v === "object" && !Array.isArray(v),
+  },
+];
+
 export function hydrateJstackGlobalsFromEmbed() {
-  const skillsPayload = parseJsonScriptById(ID_SKILLS_PAYLOAD);
-  if (
-    skillsPayload &&
-    typeof skillsPayload === "object" &&
-    Array.isArray(skillsPayload.skills) &&
-    (!window.__JSTACK_SKILLS__ ||
-      !Array.isArray(window.__JSTACK_SKILLS__.skills))
-  ) {
-    window.__JSTACK_SKILLS__ = skillsPayload;
-  }
-
-  const skillHtml = parseJsonScriptById(ID_SKILL_HTML);
-  if (
-    skillHtml &&
-    typeof skillHtml === "object" &&
-    !Array.isArray(skillHtml) &&
-    window.__JSTACK_SKILL_HTML__ == null
-  ) {
-    window.__JSTACK_SKILL_HTML__ = skillHtml;
-  }
-
-  const mdMap = parseJsonScriptById(ID_MD_BY_RELPATH);
-  if (
-    mdMap &&
-    typeof mdMap === "object" &&
-    !Array.isArray(mdMap) &&
-    window.__JSTACK_MD_BY_RELPATH__ == null
-  ) {
-    window.__JSTACK_MD_BY_RELPATH__ = mdMap;
+  for (const { scriptId, globalName, isValid } of HYDRATION_TARGETS) {
+    const parsed = parseJsonScriptById(scriptId);
+    if (isValid(parsed) && !isValid(window[globalName])) {
+      window[globalName] = parsed;
+    }
   }
 }
