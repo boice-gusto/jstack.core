@@ -22,6 +22,17 @@ Roll up personal tasks from Jira and gbrain TODOs into one deduplicated list, re
 - Session target must match `session/init` — do not mix team pages into personal or vice versa.
 - Only the user's own PII; never suggest storing others' private data without redaction.
 - If the ask crosses into therapy/HR territory, give a kind refusal + redirect to professional support.
+- **Reconcile Jira and gbrain by surfacing, never by silently merging away a mismatch.** Match
+  items across the two sources on content (same task described differently), not just on exact
+  string equality, and when a task exists in only one source, keep it — flag it as
+  `jira-only` or `gbrain-only` in the output rather than either dropping it or duplicating it
+  under both labels. This skill never writes ticket state (per its own out-of-scope note), so
+  reconciliation is display-only: it changes what the rollup shows the user, never what either
+  source contains.
+  - *Anti-pattern:* Silently dropping a task that appears in gbrain but has no matching Jira
+    ticket (or vice versa) because it "didn't dedupe cleanly" — that hides a real discrepancy
+    (a TODO nobody ticketed, or a ticket nobody logged) instead of surfacing it. Always show the
+    single-source item with its source labeled, even in the parking lot.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.

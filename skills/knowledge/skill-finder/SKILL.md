@@ -56,6 +56,24 @@ Check the CLI skills index and domain routers first for candidates matching the 
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/superpowers-bridge.md
 Name the 1–3 skills that fit and state why each near-miss was rejected; if nothing fits, say so instead of inventing a skill. Never perform the work of the recommended skill yourself.
 
+**Worked example — a genuine near-miss, not a coin flip:**
+User: "Find out if we already documented our on-call rotation somewhere."
+- `jstack:knowledge-search` fits: the user wants an answer retrieved from an already-configured
+  source (`knowledge_base` roots, gbrain, Notion) — this is a lookup, not a request to store
+  anything or to be told which skill to use.
+- `jstack:skill-finder` (this skill) does *not* fit here, even though the user is technically
+  "finding" something: they are not asking "which jstack skill should I use," they are asking a
+  question that should be answered from content. Recommending `skill-finder` for a plain content
+  lookup would send the user one hop further from the answer instead of straight to it.
+- A genuinely vague ask — "help me find stuff" with no object named — *is* `skill-finder`'s job:
+  there's no content query yet, only a request to be pointed at the right tool. Ask one
+  clarifying question ("find stuff *in the knowledge base*, or find *which skill* to use?")
+  rather than guessing.
+- The disambiguating signal is whether the user named a lookup target (content, a fact, a doc) —
+  route to `search` — or is asking about jstack's own capabilities/skill set — route to
+  `skill-finder`. "Which skill handles X" is always `skill-finder`; "what does X say about Y" is
+  always `search`.
+
 ### Step 4 — Validate
 Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
 

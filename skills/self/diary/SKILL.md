@@ -23,6 +23,17 @@ Write a single journal entry to personal gbrain. Never auto-post to team channel
 - Session target must match `session/init` — do not mix team pages into personal or vice versa.
 - Only the user's own PII; never suggest storing others' private data without redaction.
 - If the ask crosses into therapy/HR territory, give a kind refusal + redirect to professional support.
+- **Diary vs. `remember`, by content shape, not by keyword.** `diary` writes a contemporaneous
+  narrative entry — what happened today, in the order it happened, with how it felt attached. It
+  is not meant to be looked up by topic later; it's a stream, not an index. `remember` writes one
+  atomic fact or decision with provenance (`source_skill`, `written_at`, etc.) specifically so it
+  *can* be found later by topic. If the user's ask is "I want to be able to find this again when
+  I search for X," that's `remember`, not `diary`, even if it's phrased as a journal entry.
+  - *Anti-pattern:* Using `diary` to log a decision that needs to be findable later by topic
+    ("decided to switch the team to trunk-based dev") — buried in a narrative entry, it has no
+    provenance and won't surface in a topic search. That decision belongs in `remember`; if both
+    a narrative and a durable fact are wanted, write the diary entry and separately suggest
+    `self/remember` for the decision.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.

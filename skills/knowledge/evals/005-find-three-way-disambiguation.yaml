@@ -1,0 +1,19 @@
+name: Router — "find X" phrasing disambiguates search vs. skill-finder vs. team-knowledge
+prompt: |
+  You are the jstack-knowledge router skill. For each of these three requests, name the single
+  best child skill under skills/knowledge/ to handle it, and give one line of reasoning per
+  request. Do not send all three to the same child skill.
+
+  1. "Find whether we've documented the on-call rotation anywhere in the team KB paths from
+     config."
+  2. "Find me the right jstack skill for turning a pasted Slack decision into a saved note."
+  3. "Find and link any ADRs and runbooks that reference the payments service into one team hub
+     page."
+criteria:
+  - "Routes request 1 to knowledge-search (or equivalent 'search' child) as a content lookup from configured sources — not to skill-finder or team-knowledge"
+  - "Routes request 2 to skill-finder as a request for which jstack skill to use — not to knowledge-search or team-knowledge"
+  - "Routes request 3 to team-knowledge as a graph-building/linking task (ADRs + runbooks into a hub) — not to knowledge-search or skill-finder"
+  - "Gives three distinct child-skill answers rather than collapsing two or more of them into the same skill"
+  - "Does not fabricate specific page IDs, ADR numbers, or URLs for any of the three"
+expect_skill: true
+timeout: 120

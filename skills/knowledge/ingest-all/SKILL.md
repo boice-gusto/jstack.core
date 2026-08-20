@@ -6,7 +6,7 @@ category: knowledge
 data_class: internal
 disable-model-invocation: true
 effort: low
-gbrain_destination: team
+gbrain_destination: inherit
 ---
 
 <!-- Chain Contract -->
@@ -32,6 +32,7 @@ Run the configured bulk ingest across `ingest_all` sources, reporting per-source
 - Discrete choices (when the host supports AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
 - Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
 - Chaining: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/chaining-guide.md`
+- `jstack:meetings/transcripts-ingest` is the common predecessor for new transcript files landing in Drive — it classifies and routes them before this skill's ordered `ingest_all` walk picks the resulting artifacts up as one of its configured sources. `ingest-all` does not itself watch Drive; a source entry in config still has to name the skill+prompt chain to run.
 
 ## Intake
 1. Parse `$ARGUMENTS` — note whether the user **pasted** data or is asking you to **query** a system.
@@ -73,6 +74,7 @@ Use a domain-appropriate heading, then:
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-knowledge-intake` then `jstack-knowledge-process`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+- Common predecessor: `jstack:meetings/transcripts-ingest` for new transcript files — it typically hands off into this skill's `ingest_all` walk rather than the other way around. Do not invoke `transcripts-ingest` from here; it is the entry point, not a step this skill triggers.
 
 ## User request
 

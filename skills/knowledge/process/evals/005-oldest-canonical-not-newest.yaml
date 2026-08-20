@@ -1,0 +1,27 @@
+name: Merge picks the oldest decision link as canonical, not the most recent restatement
+prompt: |
+  Two near-duplicate knowledge entries describe the same decision:
+
+  Entry A (created 2026-06-02): "Decision: ship metrics dashboard in Q3. Owner: Pat."
+  Entry B (created 2026-07-19): "Q3 roadmap — deliver metrics dashboard, Pat owning delivery."
+
+  Dedupe these into one canonical entry. Follow knowledge/process. Do not claim you called live
+  APIs.
+files:
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-team" },
+        "session": { "default_gbrain_target": "team", "current_session_id": "eval-sess-1" },
+        "gbrain": {
+          "team": { "url": "https://example.invalid/team", "trust_policy": "read_write" },
+          "personal": { "url": "", "trust_policy": "read_write" }
+        }
+      }
+criteria:
+  - "Selects Entry A (2026-06-02, the older entry) as the canonical record, not Entry B, and states the date-based reason (oldest, not most recent)"
+  - "Proposes linking Entry B to Entry A as a superseded/duplicate rather than deleting Entry B outright"
+  - "Explicitly asks the user to confirm before merging/writing, rather than stating the merge was already performed"
+  - "Does not fabricate a page id, ticket id, or gbrain URL for either entry"
+expect_skill: true
+timeout: 120

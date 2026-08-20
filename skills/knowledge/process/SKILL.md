@@ -46,6 +46,18 @@ Search for near-duplicates before writing anything new — unresolved duplicates
 Dedupe, merge near-duplicates, set canonical link.
 - If Notion + gbrain, pick one canonical per topic (user can override).
 
+**Worked example — keep the oldest decision link as canonical:**
+Two near-duplicate entries about the same decision:
+- Entry A (written 2026-06-02): "Decision: ship metrics dashboard in Q3. Owner: Pat."
+- Entry B (written 2026-07-19): "Q3 roadmap — deliver metrics dashboard, Pat owning delivery."
+- *Wrong:* Treating whichever entry surfaced the search first (or the most recently edited one,
+  Entry B) as canonical and superseding the other — recency is not the merge rule here.
+- *Right:* Entry A is canonical because it is older — it is the original record of the decision,
+  and Entry B is a later restatement of the same thing. Merge: keep Entry A's id and dated origin
+  as canonical, fold in any detail from Entry B not already present (e.g. "delivery" framing if
+  useful), and add a superseded/duplicate link from Entry B to Entry A so a future reader who
+  finds B is pointed at the canonical one. Never delete B outright — link it, don't erase it.
+
 ### Step 4 — Validate
 Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
 

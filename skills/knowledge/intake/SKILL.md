@@ -1,6 +1,7 @@
 ---
 name: jstack-knowledge-intake
 description: Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage.
+when_to_use: User says "save this," "capture this," "log this decision," "note this down," or pastes raw text/a decision and wants it turned into a structured, storable record — not when they're asking a question that should be answered from existing knowledge (that's knowledge/search).
 category: knowledge
 disable-model-invocation: true
 effort: medium
@@ -46,6 +47,18 @@ Search for near-duplicates before writing anything new — unresolved duplicates
 ### Step 3 — Execute
 Raw text → title + body + tags. Flag PII/secret before storage.
 - gbrain target: team vs personal from session; see `gbrain-patterns.md`.
+
+**Worked example — PII/secret flag:**
+Pasted text: "Decision: rotate the payments webhook secret. New value is `whsec_8f2K...`. Contact
+Priya (priya@example.com, cell 555-0142) if it breaks."
+- *Wrong:* Storing the record as-is with the secret and phone number inline because "it's context
+  for the decision."
+- *Right:* Store the decision ("rotate the payments webhook secret") and the contact channel
+  ("owner: Priya, via Slack") as the record; strip the literal secret value and the personal phone
+  number before persisting, and tell the user: "I removed the secret value and the phone number
+  before saving — the secret should be rotated (not reused) since it was pasted in plaintext, and
+  Priya's number should be reached through a directory lookup instead of stored verbatim." Do not
+  persist until the user confirms the redacted version is what they want stored.
 
 ### Step 4 — Validate
 Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.

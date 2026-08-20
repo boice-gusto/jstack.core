@@ -1,0 +1,30 @@
+name: Ordered multi-source walk honours the session gbrain target, not a hardcoded team default
+prompt: |
+  Apply jstack-ingest-all (knowledge/ingest-all). The session's gbrain target is **personal**
+  (not team). Config has two configured `ingest_all` sources, in this order:
+
+  1. "slack-exports" — runs jstack:meetings/transcripts-ingest style chain
+  2. "drive-notes" — runs jstack:knowledge/intake style chain
+
+  Walk both sources in order and say where the resulting entries would be written.
+
+  Follow knowledge/ingest-all. Do not claim you called live APIs.
+files:
+  - path: jstack.config.json
+    content: |
+      {
+        "team": { "name": "eval-team" },
+        "session": { "default_gbrain_target": "personal", "current_session_id": "eval-sess-1" },
+        "gbrain": {
+          "team": { "url": "https://example.invalid/team", "trust_policy": "read_write" },
+          "personal": { "url": "https://example.invalid/personal", "trust_policy": "read_write" }
+        },
+        "ingest_all": ["slack-exports", "drive-notes"]
+      }
+criteria:
+  - "Processes the two configured sources in the stated order (slack-exports before drive-notes), not in parallel or reversed"
+  - "States entries would be written to the personal gbrain target, honouring the session default — does not default to team/shared"
+  - "Reports a per-source count of items ingested vs. skipped, or explicitly says it would if it had real data, rather than inventing specific counts as fact"
+  - "Does not claim the GBrain write already happened without a confirmation step"
+expect_skill: true
+timeout: 120

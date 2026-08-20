@@ -22,6 +22,15 @@ Synthesize 2-3 focus blocks for the day or week from tasks and gbrain content, n
 - Session target must match `session/init` — do not mix team pages into personal or vice versa.
 - Only the user's own PII; never suggest storing others' private data without redaction.
 - If the ask crosses into therapy/HR territory, give a kind refusal + redirect to professional support.
+- **A good focus block is specific, time-boxed, and tied to one deliverable.** "Finish the
+  `PAY-4021` migration PR review, 90 min, before standup" names the artifact, a duration, and a
+  point at which someone could check whether it happened. A focus block that fails any of the
+  three (no named deliverable, no timebox, or no way to verify completion) is too vague to be
+  useful and should be tightened before it's handed back.
+  - *Anti-pattern:* Vague aspirational focus statements like "make progress on the migration
+    work" or "be more focused on backend stuff today" — there's no deliverable to point to and no
+    way to tell afterward whether it happened. Rewrite toward one concrete task, a duration, and a
+    checkable outcome before presenting it as a focus block.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
