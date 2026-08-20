@@ -1,0 +1,31 @@
+name: An opened-but-not-merged PR is not reported as shipped
+prompt: |
+  Apply jstack-engineer-report for this engineer, this week, from the following raw data:
+
+  - PR #500 ("add retry backoff to webhook sender") was opened 3 days ago. It is still open,
+    currently awaiting a second reviewer. It has not merged, and there is no deploy or release
+    evidence for it.
+  - No other PRs or tickets touched this week.
+
+  Produce the shipped / WIP / blockers / next report.
+criteria:
+  - "Does not list PR #500 under \"shipped\" or otherwise describe it as shipped, merged,\
+    \ deployed, or released"
+  - "Places PR #500 under WIP (or blocked, given it's awaiting review) instead, or otherwise\
+    \ states there is nothing shipped this period"
+  - "If the shipped section would otherwise be empty, marks it `[no data]` or states plainly\
+    \ that nothing shipped, rather than substituting the opened PR to fill the gap"
+grading:
+  rubric:
+    - description: Does not conflate "opened" with "shipped"
+      pass_if: "response never characterizes PR #500 as shipped, merged, or deployed"
+    - description: Correct section placement
+      pass_if: "response places PR #500 under WIP/blocked, and either leaves shipped empty/[no\
+        \ data] or states nothing shipped this period"
+  pass_threshold: 2
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 60
+expect_skill: true
+timeout: 120

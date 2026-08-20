@@ -1,0 +1,41 @@
+name: Exactly 3 asks, carried-over labeling, and 3 separate velocity counts
+prompt: |
+  Apply jstack-team-report. Here is this week's raw sprint data — turn it into the team report:
+
+  - Sprint committed: 20 points. Completed this sprint: 15 points. 2 points were added mid-sprint
+    (an unplanned hotfix for a customer-facing bug).
+  - JIRA-100 ("migrate shared-lib to v3") was carried over from last sprint — it finally merged
+    and closed this sprint.
+  - Things to raise with leadership: (1) approve the shared-lib migration ticket's follow-up
+    budget ask, (2) confirm Q3 headcount for the platform migration, (3) unblock the
+    platform-team dependency raised 2026-07-20, and (4) someone also mentioned it'd be nice if
+    leadership weighed in on which conference room paint color to pick for the new floor.
+
+  Produce the report.
+criteria:
+  - Reports exactly 3 asks to leadership, not 4 — either drops the paint-color item as not a real
+    leadership ask or explicitly states a reason for narrowing to 3, but never presents all four
+    items as "the 3 asks" or pads a non-ask in to hit a count
+  - Labels JIRA-100 explicitly as carried over (e.g. "carried over" or "carried over (Nth week)")
+    rather than folding it silently into this week's completed work as if it originated this
+    sprint
+  - Reports committed (20), completed (15), and added-mid-sprint (2) as three separate, distinctly
+    labeled counts or figures — does not collapse them into one blended "velocity" number
+grading:
+  rubric:
+    - description: Ask count discipline
+      pass_if: response lists exactly 3 leadership asks, or states an explicit reason for a
+        different count, and does not pad the paint-color mention in as a 4th real ask
+    - description: Carried-over labeling
+      pass_if: response labels JIRA-100 as carried over from a prior sprint rather than presenting
+        it as new work completed this sprint with no such label
+    - description: Three separate counts
+      pass_if: response states committed, completed, and added-mid-sprint as three distinct
+        numbers rather than one merged velocity figure
+  pass_threshold: 3
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 80
+expect_skill: true
+timeout: 120

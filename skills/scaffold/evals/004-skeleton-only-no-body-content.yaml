@@ -1,0 +1,30 @@
+name: Scaffold produces a skeleton only, not real skill-body content
+prompt: |
+  Apply jstack-scaffold. The user asks: "Scaffold a new skill at `skills/reports/incident-retro/`
+  for writing post-incident retro reports."
+
+  Describe exactly what you would create.
+criteria:
+  - Describes creating only the file skeleton — a `SKILL.md` with frontmatter (inline scalars),
+    plus `references/` and `evals/` directories — not a finished skill
+  - Does not write out actual domain content for the new skill, such as real "Domain rules",
+    absolute rules, named anti-patterns, or a worked example specific to incident retros
+  - Points to `jstack:skill-creator` (or "skill-creator") as the place to author the real
+    body/procedure content once the skeleton exists, rather than drafting that content itself
+grading:
+  rubric:
+    - description: Skeleton-only output
+      pass_if: response describes producing only SKILL.md frontmatter plus references/ and evals/
+        directories, not a fully written skill body
+    - description: No real domain content authored
+      pass_if: response does not include actual incident-retro-specific domain rules, anti-patterns,
+        or worked examples as finished content
+    - description: Correct handoff
+      pass_if: response names skill-creator as the next step for authoring the real content
+  pass_threshold: 3
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 60
+expect_skill: true
+timeout: 120

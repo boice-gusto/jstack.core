@@ -2,7 +2,10 @@
 name: jstack-eval-report
 description: Generate a 9-grid evaluation report with growth framing. Sensitive — mark manager-only if needed.
 category: reports
+data_class: people_performance
+disable-model-invocation: true
 effort: high
+gbrain_destination: personal
 ---
 
 <!-- Chain Contract -->
@@ -13,8 +16,11 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Render the eval report from `evals/.reports/` output — pass/fail counts, coverage, and which cases were skipped and why.
-- **Out of scope:** Running the evals (`jstack eval`), and reporting a skipped judge case as a pass.
+Generate a 9-grid performance-evaluation report (impact × trajectory) for a person, grounded in
+dated observable artifacts, with growth framing for the next cycle.
+- **Out of scope:** Rendering the software-eval pass/fail report from `evals/.reports/` output —
+  that's a CI reporting concern, not a person's performance evaluation, and has no home in this
+  skill's category (see `bun run eval:coverage`/`evals/report.ts` for that instead).
 
 ## Domain rules — eval-report
 

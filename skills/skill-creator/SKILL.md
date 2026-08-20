@@ -20,6 +20,7 @@ Read the setup preamble first:
 
 - **In scope:** Naming, frontmatter, chain contract, procedure shape, failure modes, splitting long content into `references/`, and reminding authors about `apply_detailed_skills.py` and the `SKIP` set.
 - **Out of scope:** Executing the domain workflow the skill describes (e.g. “run sprint planning” → use `jstack:sprint-planning`); pasting secrets; generating skills outside `skills/`.
+- **Out of scope:** Generating the initial directory skeleton (`SKILL.md` stub, `references/`, `evals/`) for a brand-new skill or plugin — see `jstack:scaffold` for that; this skill authors or revises the actual body content once the skeleton exists.
 
 ## Domain rules — authoring
 

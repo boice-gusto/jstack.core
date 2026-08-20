@@ -19,6 +19,7 @@ Read the setup preamble first:
 ## What this skill is for
 Create the file skeleton for a new skill or plugin that satisfies this repo's conventions and passes its gates.
 - **Out of scope:** Writing the skill's domain content, and hand-editing a generated skill body — most bodies come from the generator, so a hand edit to a non-`SKIP` skill is lost on the next run.
+- **Out of scope:** SKILL.md content authoring — see `jstack:skill-creator` for drafting the actual body (procedure, domain rules, worked example) once this skeleton exists.
 
 ## Domain rules — skill and plugin scaffolding
 - Generate the directory shape only: `SKILL.md`, `references/`, `evals/`. Never write skill *content* the author has not decided on — a plausible-looking body is harder to fix than an empty one.

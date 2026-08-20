@@ -24,6 +24,8 @@ Read the setup preamble first:
 
 If **native vs web** is unclear, route via **`jstack-computer-use`** first.
 
+- **Out of scope:** Acting as a debugger for stack/variable inspection (lldb, IDE debugger own that — Cua Driver only drives and observes UI); running destroy/teardown verbs (uninstall, `docker rm`, cloud sandbox delete) without explicit user confirmation; guessing an unverified CLI subcommand the upstream docs haven't confirmed.
+
 Upstream ships a bundled skill inside the app at `/Applications/CuaDriver.app/Contents/Resources/Skills/cua-driver/`. **This file** is the **jstack.core** canonical body under `skills/computer-use/cua/`. Register **Cua Driver** as **MCP** when the host supports it (`cua-driver mcp-config --client cursor` per upstream).
 
 **Cursor / IDE:** optional thin copy under `.cursor/skills/` should **point here** — do not maintain two full bodies (see **`jstack-computer-use`** router).

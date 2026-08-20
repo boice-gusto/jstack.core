@@ -16,10 +16,24 @@ Read the setup preamble first:
 Maintain the resources document: on-call rotation, tools, how to get unblocked, and SLA references.
 - **Out of scope:** Changing on-call schedules or tool access — this only documents them.
 
-## Domain rules — SOPs
+## Domain rules — resources
+
 - Single source of truth: link to canonical Notion/Confluence home.
 - SOP changes often need a stakeholder list; include rationale and comms snippet.
 - If SOP and reality differ, call out the tension and suggest an experiment, not fake compliance.
+- **Anti-pattern — copying a live schedule or config into the doc instead of linking to it.**
+  Pasting today's on-call rotation, the current escalation roster, or a tool's access list as
+  static text (e.g. "on-call this week: Alex") goes stale the moment the rotation advances — the
+  next reader trusts an outdated name with no way to tell it's wrong. Link to the live source
+  (PagerDuty/Opsgenie schedule, the actual admin console) instead of transcribing its current
+  state; if a snapshot is genuinely needed, date-stamp it and label it as a point-in-time capture,
+  not the resource itself.
+
+### Worked example
+- *Weak:* "On-call this week: Priya (backend), Sam (infra). Ping them directly in Slack."
+- *Sharp:* "On-call: see the live [PagerDuty schedule](https://…) — do not rely on a name pasted
+  here, it will be stale within a week. To page: use the `#platform-oncall` Slack alias or trigger
+  via PagerDuty directly."
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.

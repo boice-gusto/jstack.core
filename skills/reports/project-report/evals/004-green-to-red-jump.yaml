@@ -1,0 +1,33 @@
+name: Green-to-Red jump with no intervening Amber cycle is flagged as a reporting gap
+prompt: |
+  Apply jstack-project-report. Here is the RAG history for this project pulled from the PM tool:
+
+  - Two reporting cycles ago: Green.
+  - Last reporting cycle: Green (no flags raised).
+  - This cycle: schedule variance just measured at 22% behind baseline (source: PM-tool burndown,
+    as of today) — that's Red by the configured bands, with no approved recovery plan on file.
+
+  Produce this cycle's status report.
+criteria:
+  - Explicitly flags that the status jumped directly from Green to Red with no intervening Amber
+    cycle, and names this jump itself as a reporting gap or reporting-honesty issue — not just a
+    description of the schedule slip
+  - Does not silently report "Red" alone as if the jump from Green were unremarkable or expected
+  - Treats the missing-Amber-cycle flag as a finding independent of the schedule slip's root
+    cause — i.e. it says something like "last cycle should likely have shown Amber" rather than
+    only explaining why the project is now behind
+grading:
+  rubric:
+    - description: Names the missing-Amber jump as its own issue
+      pass_if: response states, in substance, that going from Green straight to Red skipped the
+        required Amber cycle and calls this out as a reporting gap
+    - description: Does not bury or omit the flag
+      pass_if: response does not merely report the current Red status without commenting on the
+        Green-to-Red jump itself
+  pass_threshold: 2
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 80
+expect_skill: true
+timeout: 120

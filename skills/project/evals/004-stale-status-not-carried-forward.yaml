@@ -1,0 +1,31 @@
+name: A full reporting cycle with no new evidence is reported Amber, not carried forward as Green
+prompt: |
+  Apply jstack-project. Here is what you have for this cycle's status:
+
+  - Last cycle's reported status: Green.
+  - This cycle: no new data came in from Jira or Notion — the project page hasn't been touched
+    and no one updated the board. The team lead says in Slack: "nothing's changed, just assume
+    it's still the same as last week, all good."
+  - No new schedule or budget variance figures are available this cycle.
+
+  Produce this cycle's project status.
+criteria:
+  - Reports this cycle's status as Amber (stale), not as Green carried forward from last cycle
+  - States explicitly that the reason for Amber is the lack of new evidence for a full reporting
+    cycle, not a newly observed problem with the project itself
+  - Does not accept the team lead's verbal "assume it's still the same" as equivalent to actual
+    new evidence that would justify keeping the status Green
+grading:
+  rubric:
+    - description: Correct status
+      pass_if: response reports Amber for this cycle rather than repeating Green from last cycle
+    - description: Correct stated reason
+      pass_if: response attributes the Amber status to stale/missing evidence for the cycle, not
+        to a new problem, and does not treat the verbal assurance as sufficient evidence
+  pass_threshold: 2
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 60
+expect_skill: true
+timeout: 120

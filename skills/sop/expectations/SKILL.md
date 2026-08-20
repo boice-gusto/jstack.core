@@ -16,10 +16,27 @@ Read the setup preamble first:
 Maintain the role-expectations document: what success looks like, autonomy boundaries, and escalation paths.
 - **Out of scope:** Enforcing the expectations — surface gaps between policy and reality for the user to resolve.
 
-## Domain rules — SOPs
+## Domain rules — expectations
+
 - Single source of truth: link to canonical Notion/Confluence home.
 - SOP changes often need a stakeholder list; include rationale and comms snippet.
 - If SOP and reality differ, call out the tension and suggest an experiment, not fake compliance.
+- **A good autonomy-boundary/escalation-path entry names a specific on-call rotation or role plus
+  a stated SLA** (e.g. "page the on-call SRE via PagerDuty; ack within 15 minutes" or "P1 outside
+  business hours escalates to the EM within 30 minutes"), not "ask your manager" or "use your
+  judgment." An unnamed escalation path can't be followed under pressure — the person reading it
+  at 2am needs a name/role and a time bound, not a vibe.
+- **Anti-pattern — the vague-authority escalation line.** Writing "check with your manager if
+  unsure" as the entire autonomy boundary looks like guidance but gives the reader nothing to act
+  on: no channel, no named role, no time bound. Replace it with the actual rotation/role, the tool
+  used to reach them (PagerDuty, Slack channel, on-call alias), and the response-time expectation.
+
+### Worked example
+- *Weak:* "If something goes wrong outside your area, escalate to your manager."
+- *Sharp:* "Autonomy boundary: you can deploy without review for docs-only changes; anything
+  touching billing code requires a second approval. Escalation: page `#platform-oncall` via
+  PagerDuty for P1/P2; the on-call SRE acks within 15 minutes per the team's SLA. For anything
+  below P2, post in `#platform-help` and expect a response within one business day."
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.

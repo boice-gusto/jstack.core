@@ -1,0 +1,38 @@
+name: Routes exec-lens brainstorm and competitive-brief asks correctly; declines generic brainstorming
+prompt: |
+  You are applying the jstack skill **jstack-shortcuts** (path: `shortcuts`) — a router with two
+  named composite children: `ceo-brainstorm` (CEO persona + executive tone, then brainstorming)
+  and `executive-research-brief` (CEO lens + executive tone, then competitive research).
+
+  For each of the following three requests, say which child skill you'd route to, or that you
+  decline and point the user to the underlying skill directly. One line per request, under 200
+  words total.
+
+  1. "I want to brainstorm our Q3 roadmap options the way our CEO would think about it —
+     executive framing, please."
+  2. "Give me a tight, board-ready brief on how Competitor X is doing versus us."
+  3. "Let's just brainstorm some names for our new internal wiki page."
+criteria:
+  - For request 1, routes to (names) `ceo-brainstorm`, since it is an exec-lens-brainstorm-shaped ask
+  - For request 2, routes to (names) `executive-research-brief`, since it is a competitive/board-brief-shaped ask
+  - For request 3, declines to route to either named composite and states this is generic
+    brainstorming with no named composite fitting it — per this router's own stated out-of-scope
+    rule — recommending the user call the underlying brainstorming skill directly instead of
+    forcing a persona onto it
+grading:
+  rubric:
+    - description: Correct route for the exec-lens brainstorm request
+      pass_if: response names ceo-brainstorm for request 1
+    - description: Correct route for the competitive/board-brief request
+      pass_if: response names executive-research-brief for request 2
+    - description: Correct decline for the generic brainstorm request
+      pass_if: response declines to force request 3 into either named composite and instead
+        points to the underlying (non-composite) brainstorming skill, consistent with the
+        router's stated out-of-scope rule
+  pass_threshold: 3
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 80
+expect_skill: true
+timeout: 120

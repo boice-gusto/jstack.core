@@ -80,12 +80,12 @@ DESCRIPTIONS: dict[str, str] = {
     "review/announcement-review": "Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.",
     "review/counsel-review": "Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",
     # --- routines ---
-    "routines": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).",
+    "routines": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff).",
     "routines/standup": "Generate standup content: yesterday/today/blocked from Jira+Slack. 3 bullets max per person. Draft only.",
     "routines/weekly-digest": "Generate a weekly digest: exec summary + links. Separate customer-facing section if two audiences.",
     "routines/sprint-close": "Sprint close routine: velocity, spill, carry, retro hook. Do not fabricate demo links.",
     "routines/health-check": "Run jstack doctor + integration smoke test. Classify: P1 broken, P2 degraded. Output one Slack summary line.",
-    "routines/custom": "Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.",
+    "routines/custom": "Execute a custom routine from its config/schedules/<id>.json definition plus the routines block in config/defaults.json. If schedule JSON is invalid, return a fix, not a fake result.",
     # --- workflows ---
     "workflows": "Route workflow requests to builder, recorder, execute, or viewer.",
     "workflows/builder": "Build a BROWSER workflow definition as JSON at `config/workflows/<id>.json`: start URL and ordered steps drawn from the six kinds the schema allows (goto, click, fill, wait, screenshot, ai). No credentials in the file. Not for skill-chain, routine, or policy design — that is `jstack-workflow-builder` (singular), a different skill one letter away.",
@@ -101,8 +101,8 @@ DESCRIPTIONS: dict[str, str] = {
     "announcements": "Draft channel-ready or email-ready announcements from rough notes, respecting tone policies and internal/external distinction.",
     "engineering": "Summarize engineering health: CI status, PR queue, flaky tests, revert risk from configured repos.",
     "sdlc": "Map SDLC stages to evidence (tests, sign-offs, flags, migrations). Produce gate checklists, not Jira state changes.",
-    "setup": "First-time jstack onboarding: run jstack setup wizard, create config, validate with jstack doctor. No secrets in chat.",
-    "update-config": "Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner.",
+    "setup": "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that.",
+    "update-config": "Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner. Not for first-time setup — use jstack:onboarding.",
     "project": "Cross-surface project status (Notion/Jira): RAG health, 3 risks, 3 asks, milestone table.",
     "team": "Team snapshot: roster, on-call, sprint goal, dependencies. No individual performance color.",
     "sprint": "Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira.",
@@ -120,10 +120,11 @@ WHEN_TO_USE: dict[str, str] = {
     "jira": "Also when the user mentions tickets, issues, JQL, triage, filing bugs, sprint backlog, status transitions, or commenting on an issue.",
     "knowledge": "Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
     "session": "Also when starting or ending a jstack session, choosing personal vs team gbrain target, or wrapping up with a session summary.",
-    "setup": "Also for first-time install, onboarding, jstack doctor failures, MCP setup, or fixing missing jstack.config.json.",
+    "setup": "Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config).",
+    "update-config": "Not for a brand-new project with no config yet — that is jstack:onboarding's job.",
     "adr": "Also when the user mentions docs/decisions, RFC-lite, supersede ADR-NNN, or recording architecture or org decisions in git markdown.",
     "intake": "Also when shaping a feature idea, PRD snippet, messy notes, or Slack thread into ticket-ready fields (before Jira create).",
-    "workflows": "Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, running jstack workflow, or comparing two runs.",
+    "workflows": "Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, or running jstack workflow.",
 }
 
 # ---------------------------------------------------------------------------
@@ -133,7 +134,6 @@ MISSIONS: dict[str, str] = {
     'knowledge/intake': 'Turn raw pasted or captured text into one structured record — title, body, tags, source, and as-of time — flagging PII or secrets before anything is stored.\n- **Out of scope:** Judging whether the knowledge is correct, and merging it against existing entries — dedupe and merge belong to `jstack:knowledge-process`. Never persist without confirmation.',
     'knowledge/process': 'Reconcile a new record against what is already stored: find near-duplicates, then merge, supersede, or link — and ask before writing. The written output can also be a Notion knowledge-base entry directly, when that is the configured canonical store, rather than only a gbrain record.\n- **Out of scope:** Extracting the record from raw text (`jstack:knowledge-intake`) and answering questions from the store (`jstack:knowledge-search`). Never silently overwrite an existing entry.',
     'knowledge/skill-finder': 'Given a described need, name the skill that fits and say why the near-misses do not.\n- **Out of scope:** Doing the work of the skill it recommends, and inventing a skill that does not exist — if nothing fits, say so plainly.',
-    'plugin/create-plugin-pr': 'Prepare a plugin change as a reviewable pull request: scoped diff, rationale, and the verification command a reviewer can run.\n- **Out of scope:** Merging, pushing to a default branch, or committing unless asked. Never bundle unrelated changes into one PR.',
     'reports/report-design': "Choose the report's shape before its content: audience, sections, and which figures earn a place.\n- **Out of scope:** Producing the finished report (`jstack:reports`) and inventing figures to fill a section — an empty section is a finding, not a gap to paper over.",
     'reports/share-html-publish': 'Publish an already-reviewed HTML artifact and return the resulting link.\n- **Out of scope:** Authoring or editing the report content, and publishing anything the user has not seen. Never publish to a public or unfamiliar destination without explicit confirmation of the audience.',
     'scaffold': "Create the file skeleton for a new skill or plugin that satisfies this repo's conventions and passes its gates.\n- **Out of scope:** Writing the skill's domain content, and hand-editing a generated skill body — most bodies come from the generator, so a hand edit to a non-`SKIP` skill is lost on the next run.",
@@ -1103,7 +1103,7 @@ MISSIONS.update({
     "reports/engineer-report": "Assemble an individual engineer report for a named period, from configured sources only, with per-figure provenance.\n- **Out of scope:** Performance ratings or promotion recommendations, and comparing engineers against each other.",
     "reports/manager-report": "Assemble a manager-facing roll-up: delivery, risk, and people-signal sections at the altitude a manager acts on.\n- **Out of scope:** Individual performance verdicts, and IC-identifying detail where the report redacts names by config.",
     "reports/project-report": "Assemble a project status report: scope, schedule, risk, and the decision the reader needs to make.\n- **Out of scope:** Re-planning the project, and stating a confidence level the underlying data cannot support.",
-    "reports/eval-report": "Render the eval report from `evals/.reports/` output — pass/fail counts, coverage, and which cases were skipped and why.\n- **Out of scope:** Running the evals (`jstack eval`), and reporting a skipped judge case as a pass.",
+    "reports/eval-report": "Generate a 9-grid performance-evaluation report (impact x trajectory) for a person, grounded in dated observable artifacts, with growth framing for the next cycle.\n- **Out of scope:** Rendering the software-eval pass/fail report from `evals/.reports/` output — that's a CI reporting concern, not a person's performance evaluation.",
 
     # ── Leaves: review ──
     "review/code-review": "Review a diff for correctness, security, and maintainability, separating blocking defects from taste, and naming a specific required edit for each blocker.\n- **Out of scope:** Merging or approving, and rewriting the change wholesale instead of reviewing it.",
@@ -1166,7 +1166,7 @@ CATEGORY_DEEP["scaffold"] = (
 )
 
 
-# Router missions for the four container directories that had NO top-level SKILL.md.
+# Router missions for the container directories that had NO top-level SKILL.md.
 #
 # Measured against a live install (`claude plugin details jstack`): the platform surfaces only
 # top-level `skills/<name>/SKILL.md` — 36 of the 137 files on disk. The other 101 are reachable ONLY
@@ -1174,17 +1174,24 @@ CATEGORY_DEEP["scaffold"] = (
 # six skills had no discovery path at all: design/figma-handoff, design/visual-single-page-html,
 # pe/report-context, plugin/create-plugin-pr, shortcuts/ceo-brainstorm,
 # shortcuts/executive-research-brief.
+#
+# `plugin` was later flattened (2026-08): its one child, `create-plugin-pr`, was merged directly
+# into `skills/plugin/SKILL.md` and the child directory deleted, since a single-child router with
+# no second child planned just adds an extra hop with nothing to route between. `skills/plugin/SKILL.md`
+# is hand-authored and pinned in `SKIP` — see that file. `design` and `pe` keep their router shape:
+# `design` has two real children and `pe` grew a second (`pe-recon`), so both routers earn their keep.
 MISSIONS.update({
     "design": "Route a design request to the right sub-skill: `figma-handoff` for a design-to-implementation contract (tokens, variants, state coverage, accessibility), or `visual-single-page-html` for a self-contained artifact a reader opens directly.\n- **Out of scope:** Writing the component code, and editing the Figma file itself.",
     "pe": "Route a people/performance-engineering request to the right sub-skill. `report-context` assembles the validated reporting window, teams, and projects from `pe.*` config before any narrative is written.\n- **Out of scope:** Writing performance narrative or a rating about a named individual, and reporting on a team absent from `pe.teams`.",
-    "plugin": "Route a plugin-distribution request to the right sub-skill. `create-plugin-pr` opens a PR against jstack.core or an overlay using `distribution.github`, respecting `plugin_pr.path_deny_globs`.\n- **Out of scope:** Authoring the skill being shipped (`jstack:skill-creator`), and merging the PR.",
     "shortcuts": "Route a named composite shortcut to its sub-skill. Each composite pins one persona plus one tone — `ceo-brainstorm` (CEO persona + executive tone), `executive-research-brief` (research then executive compression).\n- **Out of scope:** Generic brainstorming or research with no named composite — call the underlying skill directly rather than forcing a persona onto it.",
 })
 
 
-# Domain rules for the four routers added to reach previously-unreachable children.
-# 16 of 20 routers carry a domain-rules block; these four had no CATEGORY_DEEP entry, so they rendered
-# without one and `pe`/`plugin` failed the depth gate.
+# Domain rules for the routers added to reach previously-unreachable children.
+# 16 of 20 routers carried a domain-rules block at the time; these four had no CATEGORY_DEEP entry, so
+# they rendered without one and `pe`/`plugin` failed the depth gate. `plugin` was later flattened
+# (see the MISSIONS.update comment above) and no longer needs an entry here — its domain rules live
+# directly in the hand-authored `skills/plugin/SKILL.md` instead.
 CATEGORY_DEEP.update({
     "design": (
         "## Domain rules — design\n"
@@ -1209,16 +1216,6 @@ CATEGORY_DEEP.update({
         "- Separate observation from evaluation. Describe what happened with a date and a source; do not "
         "attach a rating, a level, or a promotion opinion about a named person.\n"
         "- Single incidents are not patterns. One data point gets labelled as one data point."
-    ),
-    "plugin": (
-        "## Domain rules — plugin distribution\n"
-        "- Read the target from `distribution.github` — owner, repo, default branch. Unset means stop "
-        "and say which key is missing; never guess a repository.\n"
-        "- Honour `distribution.plugin_pr.path_deny_globs`. A PR that touches a denied path is a "
-        "packaging mistake, not a review question.\n"
-        "- Open the PR; do not merge it. Merging is a human decision with CI attached.\n"
-        "- Never vendor an upstream marketplace tree into this repo — reference it, or take an "
-        "allowlisted `plugins/<id>/` subtree only."
     ),
     "shortcuts": (
         "## Domain rules — named composites\n"

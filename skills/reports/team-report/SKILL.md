@@ -1,6 +1,7 @@
 ---
 name: jstack-team-report
 description: "Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership."
+when_to_use: Weekly update to leadership; sprint report; team status update; velocity and risk rollup for a manager or skip-level; 'what should I send my manager this week'.
 category: reports
 effort: high
 ---
