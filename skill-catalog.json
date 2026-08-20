@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-20T13:41:01.405Z",
-  "count": 134,
+  "generatedAt": "2026-08-20T14:13:01.059Z",
+  "count": 143,
   "skills": [
     {
       "id": "adr",
@@ -111,6 +111,17 @@
       "whenToUse": "",
       "category": "Crew",
       "categoryKey": "crew"
+    },
+    {
+      "id": "setup-crew-onboarding",
+      "name": "jstack-crew-onboarding",
+      "path": "skills/setup/crew-onboarding/SKILL.md",
+      "relPath": "skills/setup/crew-onboarding/SKILL.md",
+      "gateId": "jstack:setup/crew-onboarding",
+      "description": "Conversational wizard for standing up a NEW crew (background Slack) agent — names it, shapes its persona through a few characterizing questions instead of a blank system-prompt, sets its workspace, confirms the owner-only default, then drafts the exact `jstackc crew agents add …` invocation and persona file for the user to review. Never runs it. Use for \"add another crew agent\", \"set up a new background agent\", \"I want a second Ralph\". Do NOT use to edit an existing agent, view status, enable/go-live, or diagnose why one didn't respond — that's all `jstack:crew`. Do NOT use for the general first-run jstack setup wizard — that's `jstack:onboarding`.",
+      "whenToUse": "",
+      "category": "Setup",
+      "categoryKey": "setup"
     },
     {
       "id": "routines-custom",
@@ -254,6 +265,17 @@
       "whenToUse": "",
       "category": "Routines",
       "categoryKey": "routines"
+    },
+    {
+      "id": "hygiene-claude-code-hygiene",
+      "name": "jstack-hygiene-claude-code-hygiene",
+      "path": "skills/hygiene/claude-code-hygiene/SKILL.md",
+      "relPath": "skills/hygiene/claude-code-hygiene/SKILL.md",
+      "gateId": "jstack:hygiene/claude-code-hygiene",
+      "description": "Audit a user's actual Claude Code setup — skills, agents, hooks, slash commands, and settings.json permissions — for what is broken, stale, unused, or duplicated, then walk through a numbered fix plan before touching anything. Use for \"audit my claude setup,\" \"clean up unused skills,\" \"is my claude code config stale,\" \"find duplicate skills,\" \"why do I have two agents that do the same thing,\" \"do any of my skills have zero eval coverage,\" or a periodic hygiene sweep before a skill-authoring push. Two phases, always in this order — Phase 1 is a read-only audit that runs freely and never edits or deletes anything; Phase 2 (actually deleting, editing, or regenerating a skill/agent/hook/permission) only happens after the user has seen Phase 1's findings and confirms each fix item individually. Not for authoring a brand-new skill from scratch (jstack:skill-creator) or opening the PR itself (jstack:plugin/create-plugin-pr) — this skill diagnoses and plans, those two execute.",
+      "whenToUse": "Also trigger for \"sweep my skills directory,\" \"find dead agents,\" \"check for orphaned reference files,\" \"why is my settings.json so long,\" \"check for broken chain contracts,\" \"has Claude Code shipped anything new I'm not using,\" or any request to review/clean up/tidy the Claude Code setup itself (as opposed to reviewing a codebase or a PR).",
+      "category": "Hygiene",
+      "categoryKey": "hygiene"
     },
     {
       "id": "skill-creator-improve-claude-md",
@@ -800,7 +822,18 @@
       "path": "skills/pe/SKILL.md",
       "relPath": "skills/pe/SKILL.md",
       "gateId": "jstack:pe",
-      "description": "Route a people/performance-engineering request to the right sub-skill. Currently report-context, which assembles the validated reporting window and team scope. Not for writing performance narrative about a named individual.",
+      "description": "Route a people/performance-engineering request to the right sub-skill — report-context to assemble/validate a reporting window and team scope against pe.* config, or pe-recon for a proactive team-scoped digest sweep. Not for writing performance narrative about a named individual.",
+      "whenToUse": "",
+      "category": "Pe",
+      "categoryKey": "pe"
+    },
+    {
+      "id": "pe-pe-recon",
+      "name": "jstack-pe-pe-recon",
+      "path": "skills/pe/pe-recon/SKILL.md",
+      "relPath": "skills/pe/pe-recon/SKILL.md",
+      "gateId": "jstack:pe/pe-recon",
+      "description": "Proactive multi-source recon sweep — Notion, Slack, and whatever else is configured, routed exactly the way jstack:recon routes them — scoped to the Platform Engineer team/group set in pe.teams, synthesized into a skimmable local HTML digest (exec summary first, then categorized findings with links) that opens in the browser for async review. Use for \"PE weekly digest,\" \"what's going on for my team,\" \"platform engineering recon,\" or a scheduled PE catch-up. Do NOT use for a one-off narrow question (\"what's the status of PROJ-123\", \"any P1s in #eng-alerts right now\") — that's a single lookup, not a team-scoped digest; call `jstack:recon` directly instead.",
       "whenToUse": "",
       "category": "Pe",
       "categoryKey": "pe"
@@ -998,7 +1031,29 @@
       "path": "skills/review/code-review/SKILL.md",
       "relPath": "skills/review/code-review/SKILL.md",
       "gateId": "jstack:review/code-review",
-      "description": "PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch).",
+      "description": "PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch). Not to be confused with `jstack-review-codex-review` (one letter away), which gets a second opinion from the external codex CLI instead of Claude's own review.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
+      "id": "review-codex-bridge",
+      "name": "jstack-review-codex-bridge",
+      "path": "skills/review/codex-bridge/SKILL.md",
+      "relPath": "skills/review/codex-bridge/SKILL.md",
+      "gateId": "jstack:review/codex-bridge",
+      "description": "Low-level utility for invoking the external `codex` CLI (OpenAI Codex) as a second, independent AI collaborator and carrying a real multi-turn exchange with it via `codex exec` and `codex exec resume`/`codex exec fork`. Use only when a task specifically needs a second, independent model's opinion or output — not as a general shell-out mechanism for arbitrary tools, and not when Claude's own analysis already answers the question. Other skills (for example `jstack:review-codex-review`) build on this one instead of invoking `codex` directly.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
+      "id": "review-codex-review",
+      "name": "jstack-review-codex-review",
+      "path": "skills/review/codex-review/SKILL.md",
+      "relPath": "skills/review/codex-review/SKILL.md",
+      "gateId": "jstack:review/codex-review",
+      "description": "Get a genuinely independent second opinion on a diff or PR from the external `codex` CLI, built on `jstack:review-codex-bridge` — send the diff with explicit grounding/citation standards, work through any pushback with codex for a bounded number of rounds, and surface real, unresolved disagreement to the user instead of collapsing it into a fake consensus. Use when a change is genuinely worth a second, independent model's scrutiny and codex is installed. Do NOT use on trivial one-line/rename-only changes — say so and decline rather than manufacturing findings. Complements, not replaces, `jstack-review-code-review` (one letter away — Claude's own internal review persona); this skill's whole value is being a separate, external check.",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"
@@ -1065,6 +1120,17 @@
       "relPath": "skills/self/diary/SKILL.md",
       "gateId": "jstack:self/diary",
       "description": "Write a single journal entry to personal gbrain. Never auto-post to team channels.",
+      "whenToUse": "",
+      "category": "Self",
+      "categoryKey": "self"
+    },
+    {
+      "id": "self-draft-messages",
+      "name": "jstack-self-draft-messages",
+      "path": "skills/self/draft-messages/SKILL.md",
+      "relPath": "skills/self/draft-messages/SKILL.md",
+      "gateId": "jstack:self/draft-messages",
+      "description": "Draft multiple tone/intent variants of a message the user wants to send to one specific person or small group — a Slack DM, an email, difficult feedback, an apology, a decline, an escalation — for a chosen venue and audience, each with an honest note on how the recipient might receive it. Use for \"help me write this message,\" \"draft a Slack DM,\" \"how should I phrase this,\" \"I need to tell someone X,\" or \"help me push back on this without it landing badly.\" Do NOT use for formal org-wide announcements, product launches, or policy communications — those go through `jstack:announcements`, which applies tone policy and legal/compliance review this skill does not have. Never sends or posts anything; drafts only.",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"
@@ -1153,6 +1219,17 @@
       "relPath": "skills/self/tasks/SKILL.md",
       "gateId": "jstack:self/tasks",
       "description": "Roll up personal tasks from Jira + gbrain TODOs. Deduplicate and return top 5 with a parking lot.",
+      "whenToUse": "",
+      "category": "Self",
+      "categoryKey": "self"
+    },
+    {
+      "id": "self-tldr",
+      "name": "jstack-self-tldr",
+      "path": "skills/self/tldr/SKILL.md",
+      "relPath": "skills/self/tldr/SKILL.md",
+      "gateId": "jstack:self/tldr",
+      "description": "Compress a prior Claude response or a long pasted passage in this conversation into a short, ranked bullet summary that ends with an explicit next-step offer, then keep every follow-up in the exchange concise instead of ballooning back into a wall of text. Use for \"tl;dr\", \"summarize that\", \"give me the short version\", \"too long, summarize\", or any ask to shorten output already produced here. Do not use on content that's already short (a sentence or two) — say so instead of manufacturing a summary of nothing — and do not use when the user asks for the FULL detail after already receiving a summary from this skill; that is a deeper-dive request this skill answers directly, not a new tl;dr to run.",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"
@@ -1367,6 +1444,17 @@
       "categoryKey": "reports"
     },
     {
+      "id": "review-thermonuclear-review",
+      "name": "jstack-thermonuclear-review",
+      "path": "skills/review/thermonuclear-review/SKILL.md",
+      "relPath": "skills/review/thermonuclear-review/SKILL.md",
+      "gateId": "jstack:review/thermonuclear-review",
+      "description": "Dispatches a diff/PR/file set to six independent lenses in parallel — security, compliance, performance, code quality, QA/testability, and AI-slop detection — then combines them into one severity-ranked list, never a blended verdict. Every finding is attributed to the lens that raised it and cites concrete evidence. Use for a high-stakes change, a security-sensitive surface, or a pre-launch review — not a routine PR. For a routine PR, use `jstack:review-code-review` (single lens, lighter weight). For a cross-role ship/no-ship call without this skill's security/compliance/AI-slop depth, use `jstack:counsel-review`. This skill complements both; it replaces neither.",
+      "whenToUse": "\"thermonuclear review,\" \"exhaustive review,\" \"audit this before we ship,\" \"give me every lens on this,\" \"security and compliance and everything review,\" \"tear this diff apart,\" \"pre-launch review,\" \"review this like the launch depends on it.\"",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
       "id": "meetings-transcripts-ingest",
       "name": "jstack-transcripts-ingest",
       "path": "skills/meetings/transcripts-ingest/SKILL.md",
@@ -1475,6 +1563,17 @@
       "whenToUse": "",
       "category": "Workflows",
       "categoryKey": "workflows"
+    },
+    {
+      "id": "writing-humanizer",
+      "name": "jstack-writing-humanizer",
+      "path": "skills/writing/humanizer/SKILL.md",
+      "relPath": "skills/writing/humanizer/SKILL.md",
+      "gateId": "jstack:writing/humanizer",
+      "description": "Rewrites AI-sounding text into natural human professional prose by stripping a concrete, categorized list of banned patterns — em-dashes used as comma/period substitutes, triadic \"X, Y, and Z\" rhythm, \"It's not just X — it's Y\" and \"Whether you're X or Y\" constructions, hedge/filler words (\"leverage\", \"delve into\", \"seamless\", \"cutting-edge\", \"at the end of the day\"), empty transitions (\"Let's dive in\"), and hollow closers (\"Let me know if you have any questions!\") — while preserving the source's exact meaning and facts. Use when asked to \"make this sound less like AI,\" \"remove AI writing patterns,\" \"humanize this text,\" \"this sounds robotic,\" or to edit the tone/style of an email, doc, Slack message, comment, or post. Do NOT use on source code, code comments, or config files — never touch those. Do NOT use on legal, medical, compliance, or other precision-critical text where an exact technical or legal term matters more than sounding conversational; flag that instead of rewriting it (see Out of scope).",
+      "whenToUse": "",
+      "category": "Writing",
+      "categoryKey": "writing"
     }
   ]
 }

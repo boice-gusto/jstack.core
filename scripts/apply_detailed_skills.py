@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Regenerate jstack **/SKILL.md bodies with longform operational detail.
-Skips hand-maintained skills: advice, adr, recon, skill-creator, skill-creator/improve-claude-md, computer-use/cua, workflow-builder, knowledge/search, shortcuts/ceo-brainstorm, shortcuts/executive-research-brief.
+Skips hand-maintained skills: advice, adr, recon, skill-creator, skill-creator/improve-claude-md, computer-use/cua, workflow-builder, knowledge/search, shortcuts/ceo-brainstorm, shortcuts/executive-research-brief, writing/humanizer.
 
 Run (pick one):
 - From the **repository root** (jstack/):  python3 scripts/apply_detailed_skills.py
@@ -26,6 +26,7 @@ SKIP = {
     SKILLS / "workflow-builder" / "SKILL.md",
     SKILLS / "knowledge" / "search" / "SKILL.md",
     SKILLS / "setup" / "onboarding" / "SKILL.md",
+    SKILLS / "setup" / "crew-onboarding" / "SKILL.md",  # drafts a crew agents add command
     SKILLS / "shortcuts" / "ceo-brainstorm" / "SKILL.md",
     SKILLS / "shortcuts" / "executive-research-brief" / "SKILL.md",
     SKILLS / "notion" / "setup" / "SKILL.md",
@@ -44,7 +45,19 @@ SKIP = {
     SKILLS / "knowledge" / "ingest-all" / "SKILL.md",
     SKILLS / "self" / "impact-prep" / "SKILL.md",
     SKILLS / "self" / "brag" / "SKILL.md",
+    # Needs a real AskUserQuestion wizard (venue/relationship/intent) and real domain rules
+    # (evidence-based impact flags, distinct-variant requirement) — not generic scaffold.
+    SKILLS / "self" / "draft-messages" / "SKILL.md",
+    # Hand-authored (2026-08): needs real per-rule content (length ceiling, caveat-preservation
+    # judgment call, standing "stay concise" rule across follow-ups) — no generic generator
+    # template covers this; pinned to avoid a content-free overwrite.
+    SKILLS / "self" / "tldr" / "SKILL.md",
     SKILLS / "review" / "code-review" / "SKILL.md",
+    # Hand-authored (2026-08): six-lens parallel-dispatch orchestrator (security, compliance,
+    # performance, code quality, QA, AI-slop) with a bespoke lens-routing table, an AI-slop
+    # checklist, and a worked example — no generic generator template has per-key data for any
+    # of this. Regenerating would silently overwrite it with the generic review-category fallback.
+    SKILLS / "review" / "thermonuclear-review" / "SKILL.md",
     SKILLS / "incident" / "oncall-summary" / "SKILL.md",
     SKILLS / "incident" / "find-sme" / "SKILL.md",
     SKILLS / "scaffold" / "SKILL.md",
@@ -63,6 +76,34 @@ SKIP = {
     SKILLS / "jira" / "get" / "SKILL.md",
     SKILLS / "jira" / "intake" / "SKILL.md",
     SKILLS / "jira" / "notify" / "SKILL.md",
+    # Hand-authored (2026-08): a real, opinionated banned-pattern list (punctuation, structure
+    # tells, filler words, empty transitions, hollow closers) with a worked weak-vs-sharp example.
+    # The generator has no per-key data for this and would flatten it to generic "be clear" prose.
+    SKILLS / "writing" / "humanizer" / "SKILL.md",
+    # Hand-authored (2026-08): new `hygiene` category. Two-phase audit/fix design (forked
+    # read-only Phase 1, main-session confirmation-gated Phase 2), a hand-tuned mechanical-gate
+    # checklist naming this repo's actual `bun run` commands, and a worked weak-vs-sharp finding.
+    # The generator has no per-key data for this category and would flatten it to generic prose.
+    SKILLS / "hygiene" / "claude-code-hygiene" / "SKILL.md",
+    # Hand-authored (2026-08): new `pe` sibling skill. Config-driven team/group scope, a
+    # documented `PeSchema` gap (no group-level field yet), delegation-not-reimplementation of
+    # recon's source routing, and a hand-tuned exec-summary-first HTML digest procedure. The
+    # generator has no per-key data for any of this and would flatten it to generic write-skill
+    # boilerplate.
+    SKILLS / "pe" / "pe-recon" / "SKILL.md",
+    # Hand-authored (2026-08): `pe` router updated with a real two-child disambiguation rule
+    # (report-context vs pe-recon) now that it has a second real destination. The generator has
+    # no per-key data for this routing distinction and would regenerate the old single-child text.
+    SKILLS / "pe" / "SKILL.md",
+    # Hand-authored (2026-08): new `review` siblings that shell out to the external `codex` CLI.
+    # Real, tested command syntax (`codex exec` / `codex exec resume` / `codex exec fork` vs. the
+    # interactive-only top-level `codex resume`/`fork`), a documented CLI limitation (resume can't
+    # override --sandbox), and a scoped correction that `codex apply` targets Codex Cloud tasks
+    # only. The generator has no per-key data for any of this and would flatten it to generic
+    # write-skill boilerplate, silently erasing the safety discipline (never auto-apply a diff,
+    # always show the prompt, round-cap disagreement at 3).
+    SKILLS / "review" / "codex-bridge" / "SKILL.md",
+    SKILLS / "review" / "codex-review" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -137,9 +178,9 @@ ORCH_CHILDREN = {
     "meetings": "prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note (team / personal), one-on-one-transcript, transcripts-ingest",
     "research": "technical, competitive, user, explain-codebase, spike",
     "reports": "team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish",
-    "self": "diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep",
+    "self": "diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr",
     "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder",
-    "review": "code-review, project-review, announcement-review, counsel-review",
+    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review",
     "session": "init, end",
     "metrics": "my-metrics, team-metrics",
     "routines": "standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff",
@@ -148,7 +189,7 @@ ORCH_CHILDREN = {
     "sop": "expectations, resources",
     "computer-use": "cua",
     "design": "figma-handoff, visual-single-page-html",
-    "pe": "report-context",
+    "pe": "report-context, pe-recon",
     "plugin": "create-plugin-pr",
     "shortcuts": "ceo-brainstorm, executive-research-brief",
     "sprint": "prep, refinement, planning",

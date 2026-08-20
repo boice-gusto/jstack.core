@@ -515,7 +515,6 @@ const skills: SkillDef[] = [
   },
   ...[
     "team-note",
-    "knowledge-base",
     "article",
     "adr",
     "report",
@@ -633,7 +632,7 @@ const skills: SkillDef[] = [
     description: "Browser workflow orchestrator.",
     when: "Automation flows.",
   },
-  ...["builder", "recorder", "runner", "viewer"].map((op) => ({
+  ...["builder", "recorder", "viewer"].map((op) => ({
     path: `workflows/${op}`,
     name: `jstack-workflow-${op}`,
     category: "workflows",
