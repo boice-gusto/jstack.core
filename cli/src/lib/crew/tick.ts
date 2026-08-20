@@ -27,7 +27,18 @@ import {
   stripServerSuffix,
   runClaude,
 } from "./slack.js";
-import type { AgentConfig, CrewConfig, InboundMessage } from "./types.js";
+import {
+  defaultRunTurn,
+  getWatermark,
+  runProactiveCheck,
+  writeWatermark,
+} from "./proactive.js";
+import type {
+  AgentConfig,
+  CrewConfig,
+  InboundMessage,
+  ProactiveCheckConfig,
+} from "./types.js";
 
 /**
  * One poll cycle, then exit. There is no resident daemon: launchd (or you) re-runs
@@ -66,6 +77,20 @@ export interface TickSummary {
     costUsd: number;
     ms: number;
     isFollowUp: boolean;
+  }>;
+  /**
+   * Every proactive check that was DUE this tick (not the ones that were skipped as not-yet-
+   * due), whether or not it ended up posting. Populated even in `dry_run` and even when a
+   * check declines to post -- silence-on-nothing-found is a normal, logged outcome here, not
+   * an absence of one. Never populated under `simulate`, which must leave no trace.
+   */
+  proactive: Array<{
+    agentId: string;
+    checkId: string;
+    posted: boolean;
+    reason: string;
+    channelId?: string;
+    costUsd: number;
   }>;
 }
 
@@ -169,6 +194,20 @@ function acquireLock(stateDir: string): (() => void) | null {
       /* already gone */
     }
   };
+}
+
+/**
+ * A proactive finding's rendered form. Carries the same `identityPrefix()` every other
+ * outbound message opens with -- partly for the human reading it (this is unmistakably an
+ * unprompted post, not a reply to something they said), partly so G2a still recognises it as
+ * ours if it is ever read back (e.g. the proactive channel is also an ingress channel).
+ */
+function renderProactive(
+  agent: AgentConfig,
+  check: ProactiveCheckConfig,
+  message: string,
+): string {
+  return `${identityPrefix(agent)} · proactive check \`${check.id}\`\n${message}`;
 }
 
 function renderAck(
@@ -300,6 +339,7 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
     dropped: [],
     costUsd: 0,
     replies: [],
+    proactive: [],
   };
 
   if (!cfg.enabled) {
@@ -427,7 +467,7 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       threadTs: string | undefined,
       taskIdFor: string,
       step: string,
-    ): Promise<void> => {
+    ): Promise<{ ok: boolean }> => {
       const r = await sendMessage(channelId, text, threadTs);
       summary.costUsd += r.costUsd;
       // Unconditional: this runs only when mode is live, and `simulate` forces dry_run, so a
@@ -435,7 +475,7 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       store.addSpend(r.costUsd);
       if (r.ok && r.ts) {
         store.recordOutbox({ channelId, ts: r.ts, taskId: taskIdFor, step });
-        return;
+        return { ok: true };
       }
       log(`  send returned no ts (${step}); recovering by read-back`);
       const rec = await recoverSentTs(channelId, threadTs, text, (ts) =>
@@ -444,19 +484,20 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       if (rec) {
         store.recordOutbox({ channelId, ts: rec, taskId: taskIdFor, step });
         log(`  recovered ts ${rec}`);
-      } else {
-        // Unrecorded post: say so loudly. This is the one state where a self-reply is
-        // possible, and it must never be silent.
-        store.logEvent({
-          tickId: kid,
-          kind: "unrecorded_post",
-          channelId,
-          detail: `${taskIdFor}/${step}`,
-        });
-        log(
-          `  ! could not record the post; G1 is blind to it. Check with: jstackc crew status`,
-        );
+        return { ok: true };
       }
+      // Unrecorded post: say so loudly. This is the one state where a self-reply is
+      // possible, and it must never be silent.
+      store.logEvent({
+        tickId: kid,
+        kind: "unrecorded_post",
+        channelId,
+        detail: `${taskIdFor}/${step}`,
+      });
+      log(
+        `  ! could not record the post; G1 is blind to it. Check with: jstackc crew status`,
+      );
+      return { ok: false };
     };
 
     /** Handle one eligible message. Shared by the channel poll and the thread polls. */
@@ -879,6 +920,85 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
             await handle(rm, agentId, owner);
           }
           store.setThreadWatermark(channel, t.threadTs, rm.ts);
+        }
+      }
+    }
+
+    // ---- proactive checks: scheduled, unprompted investigations ------------
+    //
+    // The OTHER half of "crew": rather than only answering an inbound message, each enabled
+    // agent's `proactive_checks` get evaluated against crew's own real recurring trigger --
+    // this tick loop, driven by `crew watch` or the launchd-installed `crewd`. That is
+    // deliberately reused rather than teaching `routines`/`scheduler.ts` (a separate,
+    // currently-inert "cron-backed stub" with no local executor in this repo) to shell out to
+    // a new command -- crew already has a working, budgeted, halt-aware recurring loop, so
+    // piggybacking on it is the least invasive path. `crew agents run-check <agent> <check>`
+    // (see commands/crew.ts) exercises the exact same `runProactiveCheck` for one-off/manual
+    // runs and would let an OPERATOR wire a check to an external cron too, if they wanted a
+    // cadence independent of the tick interval.
+    //
+    // Never runs under `simulate`, which must leave no trace (no watermark writes, no posts,
+    // no cost) -- same rule the task-row skip above already applies.
+    if (opts.simulate === undefined) {
+      for (const [agentId, agent] of Object.entries(cfg.agents)) {
+        if (!agent.enabled) continue;
+        for (const check of agent.proactive_checks) {
+          const lastEvaluatedThroughMs = getWatermark(
+            cfg.state_dir,
+            agentId,
+            check.id,
+          );
+          const result = await runProactiveCheck(agent, check, {
+            cfg,
+            nowMs: Date.now(),
+            lastEvaluatedThroughMs,
+            runTurn: (a, instruction) => defaultRunTurn(cfg, a, instruction),
+            // `runProactiveCheck` only calls this when `cfg.mode === "live"` -- in `dry_run`
+            // it reports "would post" from the verdict alone and never reaches here, same
+            // split tick.ts's own message handling makes between the ack/result renderers
+            // and their `dry_run` log-only branches above.
+            post: async (channelId, text) => {
+              const rendered = renderProactive(agent, check, text);
+              const r = await postAndRecord(
+                channelId,
+                rendered,
+                undefined, // proactive posts start a new root message, never a thread
+                taskId(agentId),
+                `proactive:${check.id}`,
+              );
+              return { ok: r.ok };
+            },
+          });
+
+          if (!result.due) continue; // not scheduled to run yet; nothing to log or persist
+
+          if (result.evaluatedThroughMs !== undefined) {
+            writeWatermark(
+              cfg.state_dir,
+              agentId,
+              check.id,
+              result.evaluatedThroughMs,
+            );
+          }
+          summary.costUsd += result.costUsd;
+          if (result.costUsd) store.addSpend(result.costUsd);
+          store.logEvent({
+            tickId: kid,
+            kind: result.posted ? "proactive_posted" : "proactive_silent",
+            channelId: result.channelId,
+            detail: `${agentId}/${check.id}: ${result.reason}`,
+          });
+          log(
+            `  proactive ${agentId}/${check.id}: ${result.posted ? "POSTED" : "silent"} -- ${result.reason}`,
+          );
+          summary.proactive.push({
+            agentId,
+            checkId: check.id,
+            posted: result.posted,
+            reason: result.reason,
+            channelId: result.channelId,
+            costUsd: result.costUsd,
+          });
         }
       }
     }

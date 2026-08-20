@@ -62,8 +62,12 @@ const clockTime = z
  * Empty is allowed because it is the shipped convention for a routine that exists but has no
  * schedule yet (`routines.sprint_close.cron` is `""` in `defaults.json`, and `scheduler.ts` falls
  * back to `""`). Rejecting it would fail the repo's own default config.
+ *
+ * Exported so other schemas needing a cron string (e.g. `crew`'s `proactive_checks[].schedule`
+ * in `cli/src/lib/crew/types.ts`) reuse this validator instead of inventing a second one that
+ * could silently drift from it.
  */
-const cronExpr = z.union([
+export const cronExpr = z.union([
   z.literal(""),
   z
     .string()
@@ -566,6 +570,21 @@ const OnboardingSchema = section({
 // never written back into a user's config. crew-schema-drift.test.ts keeps the field sets
 // in step.
 
+/**
+ * A scheduled, unprompted investigation the agent runs on its own -- distinct from answering
+ * an inbound Slack message. `schedule` reuses `cronExpr` above rather than a second validator.
+ * `require_explicit_finding` defaults true in the enforced schema (`ProactiveCheckSchema` in
+ * `cli/src/lib/crew/types.ts`); this documented copy leaves it optional like every other field
+ * here, per the file's own convention.
+ */
+const CrewProactiveCheckSchema = section({
+  id: z.string().optional(),
+  schedule: cronExpr.optional(),
+  prompt: z.string().optional(),
+  channel: z.string().optional(),
+  require_explicit_finding: z.boolean().optional(),
+});
+
 const CrewAgentSchema = section({
   enabled: z.boolean().optional(),
   name: z.string().optional(),
@@ -579,6 +598,7 @@ const CrewAgentSchema = section({
   task_timeout_ms: posInt.optional(),
   persona: z.string().optional(),
   persona_file: z.string().optional(),
+  proactive_checks: z.array(CrewProactiveCheckSchema).optional(),
 });
 
 const CrewSchema = section({

@@ -1027,6 +1027,39 @@
               },
               "persona_file": {
                 "type": "string"
+              },
+              "proactive_checks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "schedule": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": ""
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^\\s*(?:[0-9*,\\-/]+|\\*)\\s+(?:[0-9*,\\-/]+|\\*)\\s+(?:[0-9*,\\-/?LW]+|\\*)\\s+(?:[0-9A-Za-z*,\\-/]+|\\*)\\s+(?:[0-9A-Za-z*,\\-/?#L]+|\\*)\\s*$"
+                        }
+                      ]
+                    },
+                    "prompt": {
+                      "type": "string"
+                    },
+                    "channel": {
+                      "type": "string"
+                    },
+                    "require_explicit_finding": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": true
+                }
               }
             },
             "additionalProperties": true

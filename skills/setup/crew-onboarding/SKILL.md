@@ -26,6 +26,11 @@ disable, remove, explain, doctor, panic).
   non-response. All of those are `jstack:crew`.
 - This skill never writes `jstack.config.json` and never shells out `crew agents add` itself.
   It produces text — a command and a file — for the user to run or save by hand.
+- Also out of scope: scheduled, unprompted checks (`--proactive-check`, e.g. "check open
+  incidents every morning and tell me if something needs attention"). Mention that these exist
+  and can be set up later with `jstackc crew agents edit <id> --proactive-check "id:cron:prompt"`
+  — this skill's job is naming/persona/workspace, not walking through every advanced config
+  option; hand off to `jstack:crew` for the details.
 
 ## Absolute rules
 

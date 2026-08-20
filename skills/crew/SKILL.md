@@ -47,6 +47,7 @@ This skill is the operator surface for them. It reads and edits
    | Is it running, what has it spent? | `jstackc crew status` |
    | Is anything misconfigured? | `jstackc crew doctor` |
    | I want to see it all at once | `jstackc crew ui` |
+   | What proactive checks does agent X have, and where do they post? | `jstackc crew agents list-checks <id>` |
 
    `explain` prints the decision trace with a `rule_id` per drop. Report the rule rather
    than speculating. Common ones: `G3_no_sigil` (no trigger in the message),
@@ -129,6 +130,48 @@ This skill is the operator surface for them. It reads and edits
     - A run that aborts with "crew could not run" is a blocker (contended lock, HALTED, auth),
       not an agent failure. Fix the blocker and re-run; do not report it as a quality result.
     - `judge_incomplete` on a criterion is a harness fault for the same reason.
+
+12. **Proactive checks: the other half of crew.** Everything above is REACTIVE -- an agent
+    answers because someone said something with a sigil in it. A `proactive_check` is the
+    opposite: a scheduled, unprompted investigation the agent runs on its own, and posts about
+    only if it decides there is something the operator should know.
+
+    ```bash
+    jstackc crew agents edit ralph \
+      --proactive-check "morning-incidents:0 9 * * *:Check open incidents; report only if one needs attention"
+    ```
+
+    The compact spec is `id:cron-schedule:prompt` — the schedule is a normal 5-field cron
+    string (same validator `routines.<id>.cron` uses), and the prompt is everything after the
+    second colon, so it may itself contain colons. `--proactive-check` passed to `edit`
+    **replaces the whole list**, the same convention `--sigil` and `--tool` already use — pass
+    every check you want kept, not just the new one. List what is configured with
+    `jstackc crew agents list-checks <id>`, and fire one right now (bypassing its schedule)
+    with `jstackc crew agents run-check <id> <check-id> --force` to see what it would actually
+    post without waiting for 9am.
+
+    **Silence on "found nothing" is the correct outcome, not a failure.** Every check carries
+    `require_explicit_finding` (default `true`): the model is asked to reply either `NO_FINDING`
+    or `FINDING: <message>`, and only a well-formed `FINDING:` reply ever posts — anything else,
+    including a reply that ignores the contract, is treated as silence. This is the concrete
+    defence against the classic "cron job that posts something every single day whether or not
+    anything happened" anti-pattern. Setting `require_explicit_finding: false` is available but
+    means "post the model's raw reply every time it fires, finding or not" — that is a
+    deliberate, named opt-in, never something to suggest as a default.
+
+    **Channel resolution never guesses at a shared channel.** An unset `channel` on a check
+    always resolves to the agent's own configured DM (`policy.egress.channels[0]`); an explicit
+    `channel` must already be in `policy.egress.channels` or the check refuses to run rather
+    than posting somewhere egress config never allowed. Override one check's channel with
+    `--proactive-channel "<check-id>=<channel>"` alongside `--proactive-check`.
+
+    **What actually fires these:** the SAME tick loop that already polls Slack (`crew watch` or
+    the launchd-installed `crewd`) — not a second, separate cron mechanism. `routines.*.cron`
+    (`jstack schedule`) has no local executor in this repo today, so proactive checks piggyback
+    on the one recurring trigger crew already has, budget cap, halt sentinel and all. Manually
+    firing one with `crew agents run-check` is also safe to wire to an external cron if an
+    operator wants a cadence independent of the tick interval — it re-runs the same due-check
+    logic, so calling it when nothing is due is a no-op, not a duplicate post.
 
 ## Report back
 

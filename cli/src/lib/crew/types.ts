@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cronExpr } from "../../types/config.js";
 
 /**
  * Crew config, M1 scope: one agent, one self-DM, nothing else.
@@ -55,6 +56,51 @@ export const PolicySchema = z
   .object({ ingress: IngressPolicySchema, egress: EgressPolicySchema })
   .strict();
 
+/**
+ * A scheduled, UNPROMPTED investigation -- the other half of "proactive" crew, next to the
+ * inbound `ingress` flow above. Nothing here decides on its own whether to post: that
+ * judgment is made by an actual model turn (see `runProactiveCheck()` in `proactive.ts`),
+ * which this schema only describes the shape and cadence of.
+ *
+ * `schedule` reuses `cronExpr` from `cli/src/types/config.ts` -- the same validator
+ * `routines.<id>.cron` uses -- rather than inventing a second cron regex that could drift
+ * from it. `""` is accepted for the same reason it is there: a check that exists but has no
+ * schedule yet never fires, rather than failing to load.
+ */
+export const ProactiveCheckSchema = z
+  .object({
+    /** Unique within the OWNING agent (checked by the CLI; see findDuplicateCheckIds()). */
+    id: z
+      .string()
+      .regex(
+        /^[a-z][a-z0-9-]{1,39}$/,
+        "id must be kebab-case, 2-40 chars, starting with a letter",
+      ),
+    schedule: cronExpr,
+    /** What the agent should investigate/decide when this check fires. */
+    prompt: z.string().min(1),
+    /**
+     * Where to post IF the check decides something is worth surfacing. Unset resolves to
+     * this agent's own configured egress channel (its DM) at runtime -- see
+     * `resolveProactiveChannel()` -- rather than ever guessing at a shared channel nobody
+     * configured this check for.
+     */
+    channel: CHANNEL_ID.optional(),
+    /**
+     * The default (`true`) is the structurally safer path: the check fires on schedule, but
+     * only POSTS when the model turn explicitly reports a finding -- silence on "found
+     * nothing" is the correct, expected outcome, not a failure. This is what prevents the
+     * classic cron-job-that-posts-every-day-regardless anti-pattern.
+     *
+     * Setting this `false` opts into posting the model's raw output on every fire, finding or
+     * not -- understand that before turning it off.
+     */
+    require_explicit_finding: z.boolean().default(true),
+  })
+  .strict();
+
+export type ProactiveCheckConfig = z.infer<typeof ProactiveCheckSchema>;
+
 export const AgentSchema = z
   .object({
     enabled: z.boolean().default(true),
@@ -83,6 +129,11 @@ export const AgentSchema = z
      * See `resolvePersona()` in `persona.ts`, the sole runtime consumer.
      */
     persona_file: z.string().optional(),
+    /**
+     * Scheduled unprompted checks. Additive and empty by default, so every existing agent
+     * config keeps working unchanged. See `ProactiveCheckSchema` above and `proactive.ts`.
+     */
+    proactive_checks: z.array(ProactiveCheckSchema).default([]),
   })
   .strict();
 

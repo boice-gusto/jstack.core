@@ -8,10 +8,25 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import type { Command } from "commander";
-import { CrewConfigSchema, type CrewConfig } from "../lib/crew/types.js";
-import { findSigilCollisions } from "../lib/crew/guards.js";
+import {
+  CrewConfigSchema,
+  type CrewConfig,
+  type ProactiveCheckConfig,
+} from "../lib/crew/types.js";
+import { findSigilCollisions, identityPrefix } from "../lib/crew/guards.js";
 import { CrewStore, expandHome, snapshotPath } from "../lib/crew/store.js";
 import { tick } from "../lib/crew/tick.js";
+import { sendMessage } from "../lib/crew/slack.js";
+import {
+  defaultRunTurn,
+  findDuplicateCheckIds,
+  getWatermark,
+  parseProactiveCheckSpec,
+  parseProactiveChannelSpec,
+  resolveProactiveChannel,
+  runProactiveCheck,
+  writeWatermark,
+} from "../lib/crew/proactive.js";
 import {
   ACTIONS,
   BLOCKED_FROM_UI,
@@ -191,7 +206,18 @@ export async function runCrewTick(simulate?: string): Promise<void> {
       `$${s.costUsd.toFixed(4)}`,
     ];
     if (s.backlogSkipped) bits.push(chalk.yellow("backlog skipped"));
+    if (s.proactive.length) {
+      const posted = s.proactive.filter((p) => p.posted).length;
+      bits.push(`proactive ${posted}/${s.proactive.length} posted`);
+    }
     console.log(chalk.dim(`\n${bits.join(" · ")}`));
+    for (const p of s.proactive) {
+      console.log(
+        chalk.dim(
+          `  proactive ${p.agentId}/${p.checkId}: ${p.posted ? chalk.green("posted") : "silent"} -- ${p.reason}`,
+        ),
+      );
+    }
     if (s.halted) {
       console.error(chalk.red(`HALTED: ${s.halted}`));
       process.exitCode = 1;
@@ -755,6 +781,41 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
     dupes.length ? dupes.join("; ") : "no collisions",
   );
 
+  // Duplicate proactive check ids within one agent -- same "which one fires" ambiguity as a
+  // sigil collision, just scoped to one agent's array instead of across agents' allowlists.
+  const checkDupes: string[] = [];
+  for (const [id, a] of Object.entries(cfg.agents)) {
+    for (const d of findDuplicateCheckIds(a.proactive_checks)) {
+      checkDupes.push(`${id}/${d.id} (×${d.count})`);
+    }
+  }
+  add(
+    "proactive check ids are unique per agent",
+    checkDupes.length === 0,
+    checkDupes.length ? checkDupes.join("; ") : "no collisions",
+  );
+
+  // A proactive check's channel must resolve -- either an explicit egress-allowlisted
+  // channel, or the default DM. An unresolved one would mean a finding is discovered and then
+  // has nowhere safe to go, discovered only when the check actually fires.
+  const badChannels: string[] = [];
+  for (const [id, a] of Object.entries(cfg.agents)) {
+    for (const c of a.proactive_checks) {
+      const r = resolveProactiveChannel(c, cfg);
+      if (!r.ok) badChannels.push(`${id}/${c.id}: ${r.reason}`);
+    }
+  }
+  add(
+    "proactive check channels resolve",
+    badChannels.length === 0,
+    badChannels.length
+      ? badChannels.join("; ")
+      : Object.values(cfg.agents).some((a) => a.proactive_checks.length)
+        ? "every configured check resolves to an allowlisted channel"
+        : "no proactive checks configured",
+    "jstackc crew agents edit <id> --proactive-channel <checkId>=<channel>, or add the channel to policy.egress.channels",
+  );
+
   /**
    * This setting is a loop-guard dependency, not cosmetics, so it is checked rather than
    * assumed. G2a recognises our own output by its `<emoji> **<Name>**` opening line, and
@@ -1153,6 +1214,7 @@ export function runAgentsList(json: boolean): void {
     tools: a.tools,
     workspace: a.workspace,
     description: a.description,
+    proactive_checks: a.proactive_checks.map((c) => c.id),
   }));
   if (json) {
     console.log(JSON.stringify(rows, null, 2));
@@ -1168,6 +1230,12 @@ export function runAgentsList(json: boolean): void {
       `     ${chalk.dim(`${r.model} · ${r.tools.join(", ")} · ${r.workspace}`)}`,
     );
     if (r.description) console.log(`     ${chalk.dim(r.description)}`);
+    if (r.proactive_checks.length)
+      console.log(
+        chalk.dim(
+          `     proactive: ${r.proactive_checks.join(", ")}  (jstackc crew agents list-checks ${r.id})`,
+        ),
+      );
   }
   const off = rows.filter((r) => !r.enabled).length;
   if (off)
@@ -1192,10 +1260,129 @@ export function runAgentsShow(id: string, json: boolean): void {
   }
   console.log(chalk.bold(`${id}\n`));
   for (const [k, v] of Object.entries(a)) {
+    // proactive_checks is an array of objects; `.join(", ")` on it would print
+    // "[object Object]" per entry, so it gets its own rendering below instead.
+    if (k === "proactive_checks") continue;
     console.log(
       `  ${k.padEnd(16)} ${chalk.cyan(Array.isArray(v) ? v.join(", ") : String(v) || chalk.dim("(empty)"))}`,
     );
   }
+  console.log(
+    `  ${"proactive_checks".padEnd(16)} ${a.proactive_checks.length}`,
+  );
+  for (const c of a.proactive_checks) {
+    const ch = resolveProactiveChannel(c, cfg);
+    console.log(
+      `    - ${chalk.bold(c.id)}  ${chalk.cyan(c.schedule || "(no schedule)")}  ` +
+        `-> ${ch.ok ? ch.channelId : chalk.red(`unresolved: ${ch.reason}`)}${ch.defaulted ? " (defaulted)" : ""}` +
+        `  require_explicit_finding=${c.require_explicit_finding}`,
+    );
+  }
+}
+
+/** Just the proactive checks, for when that is the whole question. */
+export function runAgentsListChecks(id: string, json: boolean): void {
+  const cfg = loadCrewConfig();
+  const a = cfg.agents[id];
+  if (!a) {
+    console.error(
+      chalk.red(
+        `no such agent: ${id}. Known: ${Object.keys(cfg.agents).join(", ")}`,
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const rows = a.proactive_checks.map((c) => {
+    const ch = resolveProactiveChannel(c, cfg);
+    return {
+      id: c.id,
+      schedule: c.schedule,
+      channel: ch.ok ? ch.channelId : undefined,
+      channel_defaulted: ch.defaulted,
+      channel_error: ch.ok ? undefined : ch.reason,
+      require_explicit_finding: c.require_explicit_finding,
+      prompt: c.prompt,
+    };
+  });
+  if (json) {
+    console.log(JSON.stringify(rows, null, 2));
+    return;
+  }
+  console.log(chalk.bold(`Proactive checks for "${id}" (${rows.length})\n`));
+  if (!rows.length) {
+    console.log(
+      chalk.dim(
+        "  none configured. Add one with: jstackc crew agents edit " +
+          `${id} --proactive-check "id:0 9 * * *:what to investigate"`,
+      ),
+    );
+    return;
+  }
+  for (const r of rows) {
+    console.log(
+      `  ${chalk.bold(r.id)}  ${chalk.cyan(r.schedule || "(no schedule)")}`,
+    );
+    console.log(
+      `    -> ${r.channel ?? chalk.red(`unresolved: ${r.channel_error}`)}` +
+        `${r.channel_defaulted ? " (defaulted to this agent's own DM)" : ""}`,
+    );
+    console.log(`    require_explicit_finding: ${r.require_explicit_finding}`);
+    console.log(
+      chalk.dim(
+        `    ${r.prompt.length > 140 ? `${r.prompt.slice(0, 140)}…` : r.prompt}`,
+      ),
+    );
+  }
+}
+
+/**
+ * Turn `--proactive-check <spec>` / `--proactive-channel <spec>` CLI flags into
+ * `proactive_checks` entries, or print the error and return `null` for the caller to bail on.
+ * Shared by `add` and `edit` so the two commands cannot drift on how they parse the same flags.
+ */
+function buildProactiveChecks(
+  proactiveCheck?: string[],
+  proactiveChannel?: string[],
+): ProactiveCheckConfig[] | null {
+  if (!proactiveCheck?.length) return [];
+  const checks: ProactiveCheckConfig[] = [];
+  for (const spec of proactiveCheck) {
+    const parsed = parseProactiveCheckSpec(spec);
+    if (!parsed.ok) {
+      console.error(chalk.red(parsed.error));
+      return null;
+    }
+    checks.push({ ...parsed.value, require_explicit_finding: true });
+  }
+  const dupes = findDuplicateCheckIds(checks);
+  if (dupes.length) {
+    console.error(
+      chalk.red(
+        `duplicate --proactive-check id(s): ${dupes.map((d) => d.id).join(", ")}`,
+      ),
+    );
+    return null;
+  }
+  for (const spec of proactiveChannel ?? []) {
+    const parsed = parseProactiveChannelSpec(spec);
+    if (!parsed.ok) {
+      console.error(chalk.red(parsed.error));
+      return null;
+    }
+    const target = checks.find((c) => c.id === parsed.value.id);
+    if (!target) {
+      console.error(
+        chalk.red(
+          `--proactive-channel refers to unknown check id "${parsed.value.id}" ` +
+            `(not one of: ${checks.map((c) => c.id).join(", ") || "(none)"})`,
+        ),
+      );
+      return null;
+    }
+    target.channel = parsed.value.channel;
+  }
+  return checks;
 }
 
 export function runAgentsAdd(o: {
@@ -1208,6 +1395,8 @@ export function runAgentsAdd(o: {
   description?: string;
   persona?: string;
   personaFile?: string;
+  proactiveCheck?: string[];
+  proactiveChannel?: string[];
 }): void {
   const id = o.id.trim();
   if (!/^[a-z][a-z0-9-]{1,23}$/.test(id)) {
@@ -1219,6 +1408,14 @@ export function runAgentsAdd(o: {
   }
   const name = o.name ?? id.charAt(0).toUpperCase() + id.slice(1);
   const sigils = o.sigil?.length ? o.sigil : [`!${id}`, `@agent-${id}`];
+  const proactiveChecks = buildProactiveChecks(
+    o.proactiveCheck,
+    o.proactiveChannel,
+  );
+  if (proactiveChecks === null) {
+    process.exitCode = 1;
+    return;
+  }
 
   try {
     mutateAgents((agents) => {
@@ -1248,6 +1445,7 @@ export function runAgentsAdd(o: {
         task_timeout_ms: 600000,
         persona: o.persona ?? "",
         ...(o.personaFile ? { persona_file: o.personaFile } : {}),
+        proactive_checks: proactiveChecks,
       };
     });
   } catch (e) {
@@ -1257,18 +1455,41 @@ export function runAgentsAdd(o: {
   }
   console.log(chalk.green(`Added "${id}" (disabled).`));
   console.log(`  sigils ${sigils.join(", ")}`);
+  if (proactiveChecks.length) {
+    console.log(
+      `  proactive checks ${proactiveChecks.map((c) => c.id).join(", ")}`,
+    );
+  }
   console.log(chalk.dim(`\n  Enable with: jstackc crew agents enable ${id}`));
 }
 
 export function runAgentsEdit(
   id: string,
-  patch: Record<string, unknown>,
+  patch: Record<string, unknown> & {
+    proactiveCheck?: string[];
+    proactiveChannel?: string[];
+  },
 ): void {
-  const keys = Object.keys(patch).filter((k) => patch[k] !== undefined);
+  // `--proactive-check` / `--proactive-channel` are parsed here rather than at the call site
+  // so `add` and `edit` share one parser (`buildProactiveChecks`) and cannot drift on syntax.
+  // Like `--sigil` and `--tool`, passing this REPLACES the agent's whole `proactive_checks`
+  // list rather than merging into it.
+  const { proactiveCheck, proactiveChannel, ...rest } = patch;
+  if (proactiveCheck !== undefined) {
+    const parsed = buildProactiveChecks(proactiveCheck, proactiveChannel);
+    if (parsed === null) {
+      process.exitCode = 1;
+      return;
+    }
+    rest.proactive_checks = parsed;
+  }
+
+  const keys = Object.keys(rest).filter((k) => rest[k] !== undefined);
   if (!keys.length) {
     console.error(
       chalk.red(
-        "nothing to change. Pass at least one of --name --model --workspace --sigil --tool --description --persona --persona-file",
+        "nothing to change. Pass at least one of --name --model --workspace --sigil --tool " +
+          "--description --persona --persona-file --proactive-check",
       ),
     );
     process.exitCode = 1;
@@ -1278,13 +1499,15 @@ export function runAgentsEdit(
     mutateAgents((agents) => {
       const a = agents[id];
       if (!a) throw new Error(`no such agent: ${id}`);
+      // (Duplicate proactive check ids are already refused by `buildProactiveChecks` above,
+      // before `mutateAgents` is even called -- not re-checked here.)
       // A shared sigil would make routing depend on object key order, which is not a
       // contract anyone should rely on. Refuse rather than pick a winner.
-      if (patch.sigils !== undefined) {
+      if (rest.sigils !== undefined) {
         const collisions = findSigilCollisions(
           agents,
           id,
-          patch.sigils as string[],
+          rest.sigils as string[],
         );
         if (collisions.length) {
           const c = collisions[0]!;
@@ -1293,7 +1516,7 @@ export function runAgentsEdit(
           );
         }
       }
-      for (const k of keys) a[k] = patch[k];
+      for (const k of keys) a[k] = rest[k];
     });
   } catch (e) {
     console.error(chalk.red((e as Error).message));
@@ -1367,6 +1590,100 @@ export function runAgentsRemove(id: string, confirmed: boolean): void {
   console.log(
     chalk.green(`Removed "${id}". Its task history is kept in the ledger.`),
   );
+}
+
+/**
+ * Manually fire one agent's one proactive check -- the same `runProactiveCheck` the tick loop
+ * calls automatically for every enabled agent on every tick (see `tick.ts`), invoked here for
+ * one specific (agent, check) pair on demand. Two uses: testing a check without waiting for
+ * its schedule, and giving an operator who wants a cadence independent of the tick interval a
+ * real command to point an external cron (or `crew schedule`, launchd, anything that can shell
+ * out) at -- see the design note in `tick.ts` for why the tick loop, not a new cron mechanism,
+ * is what fires these automatically by default.
+ *
+ * Respects `cfg.mode`: `dry_run` reports what WOULD post; `live` actually posts and records
+ * the outbox entry, same as everything else crew sends.
+ */
+export async function runAgentsRunCheck(
+  agentId: string,
+  checkId: string,
+  o: { json: boolean; force: boolean },
+): Promise<void> {
+  const cfg = loadCrewConfig();
+  const agent = cfg.agents[agentId];
+  if (!agent) {
+    console.error(chalk.red(`no such agent: ${agentId}`));
+    process.exitCode = 1;
+    return;
+  }
+  const check = agent.proactive_checks.find((c) => c.id === checkId);
+  if (!check) {
+    console.error(
+      chalk.red(
+        `agent "${agentId}" has no proactive check "${checkId}". ` +
+          `Known: ${agent.proactive_checks.map((c) => c.id).join(", ") || "(none)"}`,
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const store = new CrewStore(cfg.state_dir);
+  const lastEvaluatedThroughMs = o.force
+    ? null
+    : getWatermark(cfg.state_dir, agentId, checkId);
+
+  let result;
+  try {
+    result = await runProactiveCheck(agent, check, {
+      cfg,
+      // `--force` makes it evaluate as though nothing had run in the last minute, so a
+      // schedule that already fired today still fires again right now on request.
+      nowMs: Date.now(),
+      lastEvaluatedThroughMs,
+      runTurn: (a, instruction) => defaultRunTurn(cfg, a, instruction),
+      post: async (channelId, text) => {
+        const rendered = `${identityPrefix(agent)} · proactive check \`${checkId}\`\n${text}`;
+        const r = await sendMessage(channelId, rendered);
+        store.addSpend(r.costUsd);
+        if (r.ok && r.ts) {
+          store.recordOutbox({
+            channelId,
+            ts: r.ts,
+            taskId: `manual-${checkId}`,
+            step: `proactive:${checkId}`,
+          });
+          return { ok: true };
+        }
+        return { ok: false, error: r.error };
+      },
+    });
+  } finally {
+    // closed even on throw, so a failed model turn cannot leak a lock-free but still-open db
+    store.close();
+  }
+
+  if (result.evaluatedThroughMs !== undefined) {
+    writeWatermark(cfg.state_dir, agentId, checkId, result.evaluatedThroughMs);
+  }
+
+  if (o.json) {
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.due && !o.force) process.exitCode = 0; // "not due yet" is not a failure
+    return;
+  }
+
+  if (!result.due) {
+    console.log(chalk.dim(`not due: ${result.reason}`));
+    console.log(chalk.dim("  (pass --force to evaluate it right now anyway)"));
+    return;
+  }
+  console.log(
+    result.posted
+      ? chalk.green(`posted to ${result.channelId}`)
+      : chalk.dim(`silent: ${result.reason}`),
+  );
+  console.log(chalk.dim(`  $${result.costUsd.toFixed(4)}`));
 }
 
 function loadCrewConfigRaw(): { mode?: string } | null {
@@ -1539,6 +1856,18 @@ export function registerCrewCommand(program: Command): void {
       "--persona-file <p>",
       "markdown persona file, resolved against --workspace (e.g. SOUL.md); wins over --persona",
     )
+    .option(
+      "--proactive-check <spec>",
+      "id:schedule:prompt, e.g. 'incidents:0 9 * * *:Check open incidents; report only if one needs attention' (repeatable)",
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[],
+    )
+    .option(
+      "--proactive-channel <spec>",
+      "id=channel override for one --proactive-check (repeatable; unset checks default to this agent's own DM)",
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[],
+    )
     .action((id: string, o: Record<string, unknown>) =>
       runAgentsAdd({
         id,
@@ -1550,6 +1879,8 @@ export function registerCrewCommand(program: Command): void {
         description: o.description as string | undefined,
         persona: o.persona as string | undefined,
         personaFile: o.personaFile as string | undefined,
+        proactiveCheck: o.proactiveCheck as string[] | undefined,
+        proactiveChannel: o.proactiveChannel as string[] | undefined,
       }),
     );
 
@@ -1567,6 +1898,18 @@ export function registerCrewCommand(program: Command): void {
       "markdown persona file, resolved against workspace; wins over --persona",
     )
     .option("--emoji <e>")
+    .option(
+      "--proactive-check <spec>",
+      "id:schedule:prompt (repeatable); passing this REPLACES the whole proactive_checks list, like --sigil",
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[],
+    )
+    .option(
+      "--proactive-channel <spec>",
+      "id=channel override for one --proactive-check (repeatable)",
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[],
+    )
     .action((id: string, o: Record<string, unknown>) =>
       runAgentsEdit(id, {
         name: o.name,
@@ -1578,6 +1921,13 @@ export function registerCrewCommand(program: Command): void {
         persona: o.persona,
         persona_file: o.personaFile,
         emoji: o.emoji,
+        // Commander always gives this its `[]` default, so an untouched flag would otherwise
+        // look identical to "replace with zero checks" -- only forward it when the user
+        // actually passed at least one --proactive-check.
+        proactiveCheck: (o.proactiveCheck as string[]).length
+          ? (o.proactiveCheck as string[])
+          : undefined,
+        proactiveChannel: o.proactiveChannel as string[] | undefined,
       }),
     );
 
@@ -1591,6 +1941,31 @@ export function registerCrewCommand(program: Command): void {
     .description("Delete an agent definition (prefer disable)")
     .option("--yes", "skip the confirmation", false)
     .action((id: string, o: { yes: boolean }) => runAgentsRemove(id, o.yes));
+
+  ag.command("list-checks <id>")
+    .description("List one agent's proactive (scheduled, unprompted) checks")
+    .option("--json", "machine-readable", false)
+    .action((id: string, o: { json: boolean }) =>
+      runAgentsListChecks(id, o.json),
+    );
+
+  ag.command("run-check <agentId> <checkId>")
+    .description(
+      "Fire one proactive check now: due-check, model turn, post-if-warranted. Same path the tick loop runs automatically.",
+    )
+    .option("--json", "machine-readable", false)
+    .option(
+      "--force",
+      "skip the schedule due-check and evaluate right now regardless",
+      false,
+    )
+    .action(
+      async (
+        agentId: string,
+        checkId: string,
+        o: { json: boolean; force: boolean },
+      ) => runAgentsRunCheck(agentId, checkId, o),
+    );
 
   crew
     .command("ui")
