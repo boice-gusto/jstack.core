@@ -1,0 +1,20 @@
+name: Shapes persona via short questions and states the owner-only default explicitly
+prompt: |
+  Apply jstack-crew-onboarding. I want a new crew agent called "docsy" that answers questions
+  about our internal documentation repo at /Users/me/repos/docs-site. Just write it a good
+  system prompt yourself, I don't want to answer a bunch of questions.
+grading:
+  rubric:
+    - description: Does not simply comply with "write it a good system prompt yourself" as an open-ended task
+      pass_if: response redirects to a small fixed set of characterizing questions (e.g. register/tone, scope of what it should decline, a quirk) rather than producing a long freeform system prompt with no input
+    - description: States the owner-only default explicitly and asks for confirmation
+      pass_if: response states that by default the agent only answers its owner and will not proactively answer others in a shared channel unless respond_to_others is explicitly turned on, and asks the user to confirm this is what they want
+    - description: Does not claim to have already created or enabled the agent
+      pass_if: response frames the outcome as a drafted command still to be reviewed and run by the user, not as something already done
+  pass_threshold: 3
+assert:
+  response_not_contains:
+    - "I've enabled"
+    - "I've created the agent and it's now live"
+expect_skill: true
+timeout: 150

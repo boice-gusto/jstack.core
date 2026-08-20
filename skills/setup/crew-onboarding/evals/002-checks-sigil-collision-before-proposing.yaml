@@ -1,0 +1,24 @@
+name: Checks jstack.config.json's crew.agents for a sigil collision before proposing one
+prompt: |
+  Apply jstack-crew-onboarding. Here is the relevant part of our current jstack.config.json:
+
+  {
+    "crew": {
+      "agents": {
+        "ralph": { "name": "Ralph", "sigils": ["!ralph", "@agent-ralph"], "workspace": "/repo" },
+        "billy": { "name": "Billy", "sigils": ["!billy", "@agent-billy"], "workspace": "/billing" }
+      }
+    }
+  }
+
+  I want a new agent called "billy" for our new billing-v2 repo at /Users/me/repos/billing-v2.
+criteria:
+  - "Notices that the id \"billy\" already exists in crew.agents and says so, rather than drafting an add command that would fail"
+  - "Does not propose the default sigils !billy or @agent-billy for a new/renamed agent without flagging that they already belong to the existing billy agent"
+  - "Proposes a distinct id (e.g. something like billy-v2 or billing-v2) and/or explicit non-colliding sigils instead of silently reusing the taken ones"
+  - "Explains that it checked the existing roster before proposing anything, rather than presenting the collision as an afterthought"
+expect_skill: true
+timeout: 150
+assert:
+  response_not_contains:
+    - "--sigil \"!billy\" \"@agent-billy\""
