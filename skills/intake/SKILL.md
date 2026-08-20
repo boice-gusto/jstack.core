@@ -13,6 +13,8 @@ effort: medium
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
+Load the policy this domain is governed by (do not restate it from memory):
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/chains/intake-to-sprint-chain.md
 
 ## What this skill is for
 Shape raw feature requests, bug reports, or tasks into structured ticket fields. Split bundled asks into separate candidates.

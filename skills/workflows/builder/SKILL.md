@@ -14,7 +14,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Author a browser workflow definition — start URL and ordered steps — as JSON at `config/workflows/<id>.json`, so a runner can execute it unattended. The schema has no assertion kind, so a check is a `wait` on a selector that only appears in the desired state.
+Author a browser workflow definition — start URL and ordered steps — as JSON at `config/workflows/<id>.json`, so it can be executed unattended via `jstack:workflow-execute`. The schema has no assertion kind, so a check is a `wait` on a selector that only appears in the desired state.
 - **Out of scope:** Running the workflow (`jstack:workflows-execute`) and recording one from live interaction (`jstack:workflows-recorder`). Never place a credential in the definition file.
 
 ## Domain rules — browser workflows
@@ -79,7 +79,7 @@ Use a domain-appropriate heading, then:
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-runner`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-execute`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

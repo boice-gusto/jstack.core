@@ -12,9 +12,7 @@
       "name": "workflow-core-skills-present",
       "steps": [
         "jstack:scaffold",
-        "jstack:granola-daily-summary",
-        "jstack:granola-daily-summary-6pm",
-        "jstack:task-intake"
+        "jstack:granola-daily-summary"
       ]
     }
   ]

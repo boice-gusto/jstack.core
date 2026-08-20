@@ -4,6 +4,8 @@ description: IC impact prep — Growth Check-in (quick) or Quarterly sweep with 
 category: self
 disable-model-invocation: true
 effort: high
+gbrain_destination: personal
+data_class: people_performance
 ---
 
 <!-- Chain Contract -->
@@ -112,6 +114,11 @@ Use a domain-appropriate heading, then:
 - **Next steps** with owner + timeline if known
 - **Limitations** (partial data, no write access, etc.)
 - For eval-gated skills, end with `result_ok: true` or `result_ok: false` + reason
+
+When the user just wants a lighter-weight accomplishments narrative — not a full rubric-scored
+Growth Check-in or Quarterly sweep — this skill can render that too: skip the rubric-dimension
+walk and gap questions, and produce a shorter self-report-style summary of recent artifacts
+straight from the gathered evidence.
 
 ## Failure modes
 

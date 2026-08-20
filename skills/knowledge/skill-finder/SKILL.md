@@ -43,11 +43,18 @@ Given a described need, name the skill that fits and say why the near-misses do 
 ### Step 1 — Load config
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
+For the portable discovery flow (restate intent, propose 1-3 candidates, prefer routers, CLI fallback, org-overlay handoff), read:
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/skill-discovery.md
+
 ### Step 2 — Plan the safe path
 Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
-Check the CLI skills index and domain routers first for candidates matching the described need, then narrow against each candidate's `when_to_use`/description in the catalog. Name the 1–3 skills that fit and state why each near-miss was rejected; if nothing fits, say so instead of inventing a skill. Never perform the work of the recommended skill yourself.
+Check the CLI skills index and domain routers first for candidates matching the described need, then narrow against each candidate's `when_to_use`/description in the catalog. Also check whether the need matches a named composite alias (persona + tone + target skill, e.g. `jstack:ceo-brainstorm`, `jstack:executive-research-brief`) — those are the canonical list of aliases and external-pack bridges:
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/composites.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/gstack-bridge.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/superpowers-bridge.md
+Name the 1–3 skills that fit and state why each near-miss was rejected; if nothing fits, say so instead of inventing a skill. Never perform the work of the recommended skill yourself.
 
 ### Step 4 — Validate
 Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.

@@ -159,8 +159,9 @@ from the rendered output.
 1. `jstack:reports` — router when the report type is ambiguous; otherwise route straight to the leaf that
    matches the template.
 2. `jstack:team-report`, `jstack:engineer-report`, `jstack:manager-report`, `jstack:eval-report`,
-   `jstack:self-report`, `jstack:project-report` — the report-kind leaves, each backed by its own
-   `templates/reports/*.md` outline.
+   `jstack:project-report` — the report-kind leaves, each backed by its own
+   `templates/reports/*.md` outline. For a lighter-weight self-authored accomplishments narrative,
+   use `jstack:self-impact-prep`, which can render that shape too.
 3. `jstack:report-design` — brand-token mapping (`reports.branding`) when the deliverable needs to match an
    org's visual identity; content is unaffected.
 4. `jstack:share-html-publish` — publish/download the rendered HTML once content is final; only after

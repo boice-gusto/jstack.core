@@ -272,14 +272,6 @@ const skills: SkillDef[] = [
     when: "Clean up knowledge, taxonomy.",
   },
   {
-    path: "knowledge/shortcuts",
-    name: "jstack-knowledge-shortcuts",
-    category: "knowledge",
-    description: "Bridge to gstack/superpowers skills for planning and QA.",
-    when: "Delegate to external plugin skills.",
-    extra: `Read \`${PREAMBLE.replace("setup/preamble.md", "shortcuts/gstack-bridge.md")}\` and superpowers-bridge.md`,
-  },
-  {
     path: "knowledge/team-knowledge",
     name: "jstack-team-knowledge",
     category: "knowledge",
@@ -480,13 +472,6 @@ const skills: SkillDef[] = [
     category: "reports",
     description: "Project status for stakeholders.",
     when: "Project health report.",
-  },
-  {
-    path: "reports/self-report",
-    name: "jstack-self-report",
-    category: "reports",
-    description: "Personal accomplishments report.",
-    when: "Self summary for perf cycle.",
   },
   {
     path: "reports/eval-report",

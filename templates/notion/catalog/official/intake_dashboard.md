@@ -77,8 +77,7 @@ flowchart LR
 
 ## Skills that write here
 
-- `/jstack:intake` — convert unstructured asks into Intake DB rows
-- `/jstack:task-intake` — full intake → triage → ticket pipeline
+- `/jstack:intake` — convert unstructured asks into Intake DB rows, then hand off to `jstack:jira-intake`
 - `atlassian:triage-issue`* — Jira-side triage with dup-check
 
 <sub>* Optional third-party skill, not bundled with jstack. Install separately if your workspace has it available.</sub>

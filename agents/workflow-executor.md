@@ -77,11 +77,11 @@ incident reviewer never has to take the run's outcome on faith.
 ## Evidence chain (internal)
 
 - `jstack:workflows` — [`skills/workflows/SKILL.md`](../skills/workflows/SKILL.md); router to `builder`,
-  `runner`, `recorder`, `viewer`.
+  `recorder`, `execute`, `viewer`.
 - `jstack:workflow-execute` — [`skills/workflows/execute/SKILL.md`](../skills/workflows/execute/SKILL.md);
-  `disable-model-invocation: true` — this is a write-shaped skill, never auto-triggered.
-- `jstack:workflow-runner` — [`skills/workflows/runner/SKILL.md`](../skills/workflows/runner/SKILL.md);
-  "abort on first assertion failure with a screenshot ref" is this skill's own stated contract.
+  `disable-model-invocation: true` — this is a write-shaped skill, never auto-triggered. Preview, confirm,
+  execute, capture an artifact per step — the schema has no assertion kind, so a check is a `wait` on a
+  selector that only appears in the desired state, not an "abort on assertion failure" behavior.
 - [`cli/src/lib/workflow-engine.ts`](../cli/src/lib/workflow-engine.ts) — `runWorkflowStub` is a **stub**
   executor today ("real impl wires Playwright / browser_use" per its own comment); state plainly when a run
   used the stub rather than a real browser, don't imply Playwright ran when it didn't.
@@ -159,19 +159,18 @@ fix — a retry that doesn't address the cause will keep flaking at the same rat
 
 ## Primary skills (ordered)
 
-1. `jstack:workflow-execute` — the direct "run this saved workflow" path once an id is known
+1. `jstack:workflow-execute` — the direct "run this saved workflow" path once an id is known: preview,
+   confirm, execute, with log/screenshot capture per step
    ([`skills/workflows/execute/SKILL.md`](../skills/workflows/execute/SKILL.md)).
-2. `jstack:workflow-runner` — execution with log/screenshot capture and abort-on-first-assertion-failure
-   semantics ([`skills/workflows/runner/SKILL.md`](../skills/workflows/runner/SKILL.md)).
-3. `jstack:workflow-viewer` — diff two prior runs (timing, flakiness, visual diff) when the ask is comparing
+2. `jstack:workflow-viewer` — diff two prior runs (timing, flakiness, visual diff) when the ask is comparing
    runs rather than executing a new one; never asserts pixel equality as pass/fail on its own.
-4. `jstack:workflows` — router to `builder`/`recorder`/`wizard` when it turns out no saved definition exists
+3. `jstack:workflows` — router to `builder`/`recorder`/`execute` when it turns out no saved definition exists
    yet; hand off to workflows-coach rather than improvising steps inline.
 
 ## What this agent does NOT own
 
-- **Authoring, recording, or editing the workflow's steps** — `jstack:workflows-builder`, `jstack:workflow-recorder`,
-  `jstack:workflow-wizard` — is the **workflows-coach** agent's job. This agent runs a definition that already
+- **Authoring, recording, or editing the workflow's steps** — `jstack:workflows-builder`, `jstack:workflow-recorder`
+  — is the **workflows-coach** agent's job. This agent runs a definition that already
   exists; if the steps are wrong or missing, hand off the fix rather than inventing steps mid-run.
 - **Scheduling the flow to run unattended** — wiring a browser workflow into `routines.*` /
   `config/schedules/*.json` so it fires on a cron without a human present is the **routine-runner** agent's

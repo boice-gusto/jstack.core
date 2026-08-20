@@ -14,7 +14,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Reconcile a new record against what is already stored: find near-duplicates, then merge, supersede, or link — and ask before writing.
+Reconcile a new record against what is already stored: find near-duplicates, then merge, supersede, or link — and ask before writing. The written output can also be a Notion knowledge-base entry directly, when that is the configured canonical store, rather than only a gbrain record.
 - **Out of scope:** Extracting the record from raw text (`jstack:knowledge-intake`) and answering questions from the store (`jstack:knowledge-search`). Never silently overwrite an existing entry.
 
 ## Domain rules — knowledge

@@ -1,6 +1,6 @@
 ---
 name: jstack-reports
-description: Route report requests to the right sub-skill (team, engineer, manager, project, self, eval).
+description: Route report requests to the right sub-skill (team, engineer, manager, project, eval).
 category: reports
 effort: low
 ---
@@ -13,7 +13,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route a report request to the sub-skill for that audience and artifact (team, engineer, manager, project, self, eval, share-html-publish, report-design). Audience determines the shape, not the data.
+Route a report request to the sub-skill for that audience and artifact (team, engineer, manager, project, eval, share-html-publish, report-design). Audience determines the shape, not the data.
 - **Out of scope:** Publishing or sharing the rendered artifact, and inventing figures for a section whose source is unavailable.
 
 ## Domain rules — reports
@@ -22,7 +22,7 @@ Route a report request to the sub-skill for that audience and artifact (team, en
 - For rollups, strip IC names when policy requires. Eval reports are sensitive — growth framing, not performance-review legal claims.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/reports/`:** team-report, engineer-report, manager-report, project-report, self-report, eval-report, report-design, share-html-publish
+**Under `skills/reports/`:** team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

@@ -37,10 +37,8 @@ SKIP = {
     # overwrite that fix, so they're pinned here until the generator has real data for them.
     SKILLS / "design" / "visual-single-page-html" / "SKILL.md",
     SKILLS / "design" / "figma-handoff" / "SKILL.md",
-    SKILLS / "granola-daily-summary-6pm" / "SKILL.md",
     SKILLS / "granola-daily-summary" / "SKILL.md",
     SKILLS / "plugin" / "create-plugin-pr" / "SKILL.md",
-    SKILLS / "task-intake" / "SKILL.md",
     SKILLS / "routines" / "morning-kickoff" / "SKILL.md",
     SKILLS / "knowledge" / "skill-finder" / "SKILL.md",
     SKILLS / "knowledge" / "ingest-all" / "SKILL.md",
@@ -54,6 +52,17 @@ SKIP = {
     SKILLS / "sprint" / "refinement" / "SKILL.md",
     SKILLS / "engineering" / "health" / "SKILL.md",
     SKILLS / "engineering" / "silo-scan" / "SKILL.md",
+    # Discovered during the 2026-08 skill-value audit follow-through: these 4 have hand-tuned,
+    # skill-specific Domain rules / Step 2 / Step 4 text (e.g. jira/get correctly says read-only, no
+    # confirmation gate; jira/intake and jira/notify correctly say they hand off rather than write)
+    # that the generator has no per-key SAFE_PATH/VALIDATION/domain-rules data for — it falls back to
+    # the generic `jira` category text, which is write/create-oriented and wrong for these three.
+    # Pinned here to stop that silent downgrade until someone adds the matching per-key generator
+    # data (mirroring the fix already made for `meetings/store-note`) and can safely unpin them.
+    SKILLS / "jira" / "SKILL.md",
+    SKILLS / "jira" / "get" / "SKILL.md",
+    SKILLS / "jira" / "intake" / "SKILL.md",
+    SKILLS / "jira" / "notify" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -124,17 +133,17 @@ ORCHESTRATORS = {
 }
 ORCH_CHILDREN = {
     "jira": "get, create, update, intake, transition, notify, append",
-    "notion": "update, planning, sprint, project, report, adr, article, knowledge-base, team-note, standup, team-report, performance, one-on-one, setup",
+    "notion": "update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup",
     "meetings": "prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note (team / personal), one-on-one-transcript, transcripts-ingest",
     "research": "technical, competitive, user, explain-codebase, spike",
-    "reports": "team-report, engineer-report, manager-report, project-report, self-report, eval-report, report-design, share-html-publish",
+    "reports": "team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish",
     "self": "diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep",
-    "knowledge": "intake, process, search, self-knowledge, team-knowledge, shortcuts, ingest-all, skill-finder",
+    "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder",
     "review": "code-review, project-review, announcement-review, counsel-review",
     "session": "init, end",
     "metrics": "my-metrics, team-metrics",
     "routines": "standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff",
-    "workflows": "builder, runner, recorder, viewer, execute, workflow-wizard",
+    "workflows": "builder, recorder, viewer, execute",
     "incident": "retro, find-sme, oncall-summary",
     "sop": "expectations, resources",
     "computer-use": "cua",
@@ -317,12 +326,6 @@ def build_body(key: str, fm: dict) -> str:
     if orch_idx:
         parts.append(orch_idx)
     parts.append(cfg)
-    if key == "knowledge/shortcuts":
-        parts.append(
-            "## Composites\n"
-            "Named aliases (`jstack:ceo-brainstorm`, `jstack:executive-research-brief`, …) combine `!cat` of persona + tone with gstack or superpowers targets. Read "
-            "`${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/composites.md`. Thin wrappers: `skills/shortcuts/*`."
-        )
     parts.extend([intake, procedure, output, fail_table, chaining, user_req])
     return "\n\n".join(p.strip() for p in parts if p.strip())
 
@@ -384,13 +387,7 @@ POLICY_LOADS = {
     # the skill that was supposed to follow it.
     "routines/sprint-close": ["prompts/chains/sprint-close-chain.md"],
     "incident/retro": ["prompts/policies/incident-policy.md", "prompts/chains/incident-response-chain.md"],
-    "task-intake": ["prompts/chains/intake-to-sprint-chain.md"],
-    # Bridge docs for allowlisted external packs — this is the skill that documents them.
-    "knowledge/shortcuts": [
-        "prompts/shortcuts/composites.md",
-        "prompts/shortcuts/gstack-bridge.md",
-        "prompts/shortcuts/superpowers-bridge.md",
-    ],
+    "intake": ["prompts/chains/intake-to-sprint-chain.md"],
     "team": ["prompts/setup/team-context.md"],
     # All three tones, because the skill's intake picks one — loading a single tone here would
     # hard-code the choice the AskUserQuestion selector is supposed to make.

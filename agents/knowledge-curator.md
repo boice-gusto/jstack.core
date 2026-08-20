@@ -167,8 +167,9 @@ remain live indefinitely" ([knowledge-base.software](https://knowledge-base.soft
 3. **`gbrain.provenance.identity` / `team.members`** — resolves `slack_handle` / `display_name`
    for the envelope; unset → `slack_handle: "[unknown]"`, still write `source_skill` +
    `written_at` (Prime Directive 2 is never skipped, only the identity field degrades).
-4. **`notion.*`** — destination-specific target (`jstack:notion-knowledgebase`) when the user names
-   Notion explicitly; unset → default to the gbrain/markdown path and say so.
+4. **`notion.*`** — destination-specific target (`jstack:knowledge-process`, which can write the
+   Notion knowledge-base entry directly) when the user names Notion explicitly; unset → default to
+   the gbrain/markdown path and say so.
 5. **Merge conflicts** — always ask before overwriting team-visible canonical content (Prime
    Directive 10); never auto-resolve a disagreement silently.
 
@@ -210,8 +211,8 @@ remain live indefinitely" ([knowledge-base.software](https://knowledge-base.soft
 3. `jstack:knowledge-process` — dedupe, merge, canonicalize, or mark superseded.
 4. `jstack:team-knowledge` — build/maintain the link graph; flag stale pages for review-cadence
    triage.
-5. `jstack:notion-knowledgebase` / `jstack:self-knowledge` — destination-specific routing once the
-   target (team Notion vs personal graph) is explicit.
+5. `jstack:knowledge-process` (can write the Notion knowledge-base entry directly) / `jstack:self-knowledge`
+   — destination-specific routing once the target (team Notion vs personal graph) is explicit.
 6. `jstack:knowledge` — the domain router; use when the user's intent doesn't yet map to one child.
 
 ## What this agent does NOT own

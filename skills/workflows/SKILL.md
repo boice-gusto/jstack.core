@@ -1,6 +1,6 @@
 ---
 name: jstack-workflows
-description: Route workflow requests to builder, runner, recorder, or viewer.
+description: Route workflow requests to builder, recorder, execute, or viewer.
 when_to_use: Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, running jstack workflow, or comparing two runs.
 category: workflows
 effort: low
@@ -14,7 +14,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route a browser-workflow request to the right sub-skill (builder, recorder, runner, viewer, execute, workflow-wizard). Authoring a definition and running one are separate sub-skills — do not run as a side effect of building.
+Route a browser-workflow request to the right sub-skill (builder, recorder, viewer, execute). Authoring a definition and running one are separate sub-skills — do not run as a side effect of building.
 - **Out of scope:** Production mutations without an explicit preview-then-confirm, and storing credentials in a workflow definition — form fills read from env.
 
 ## Domain rules — browser workflows
@@ -23,7 +23,7 @@ Route a browser-workflow request to the right sub-skill (builder, recorder, runn
 - Same flow definition for CI and local — call out which base URL the user is targeting.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/workflows/`:** builder, runner, recorder, viewer, execute, workflow-wizard
+**Under `skills/workflows/`:** builder, recorder, viewer, execute
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

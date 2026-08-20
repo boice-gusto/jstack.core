@@ -45,7 +45,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Confirm attribution before recording a decision as someone's — misattributing a commitment is the costly error here. Keep personal notes out of team stores. Distinguish what was decided from what was merely discussed.
 
 ### Step 3 — Execute
-Parse the provided notes or Granola export into Decisions (with who decided), Open Questions, and Action Items (each with owner + due; use `unassigned` plus a suggested ping when the owner isn't stated). Do not promote something merely discussed into a Decision, and do not infer a decision the notes don't record. Mark any sensitive or HR-adjacent segment so a redacted version can be offered for public channels, and if next steps involve scheduling, draft the invite text only — do not send it.
+Parse the provided notes or Granola export into Decisions (with who decided), Open Questions, and Action Items (each with owner + due; use `unassigned` plus a suggested ping when the owner isn't stated). Do not promote something merely discussed into a Decision, and do not infer a decision the notes don't record. Mark any sensitive or HR-adjacent segment so a redacted version can be offered for public channels, and if next steps involve scheduling, draft the invite text only — do not send it. If this is a scheduled/unattended run (no human present to disambiguate), resolve any ambiguity with the most conservative reading and stop at producing the digest — do not post it anywhere.
 
 ### Step 4 — Validate
 Confirm each decision has an owner, each action has a date, and attribution matches what was actually said. Confirm personal content did not land in a shared store.

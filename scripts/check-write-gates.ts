@@ -59,6 +59,7 @@ const WRITES = new Set<string>([
   "knowledge/self-knowledge",
   "knowledge/team-knowledge",
   "meetings/notion-highlights",
+  "meetings/one-on-one-transcript",
   "meetings/store-note/personal",
   "meetings/store-note/team",
   "meetings/transcripts-ingest",
@@ -70,7 +71,6 @@ const WRITES = new Set<string>([
   // Notion page writes.
   "notion/adr",
   "notion/article",
-  "notion/knowledge-base",
   "notion/one-on-one",
   "notion/performance",
   "notion/planning",
@@ -84,6 +84,7 @@ const WRITES = new Set<string>([
   "notion/update",
   // Repo / config / artifact writes.
   "plugin/create-plugin-pr",
+  "reports/report-design",
   "reports/share-html-publish",
   "routines/sprint-close",
   "scaffold",
@@ -97,7 +98,6 @@ const WRITES = new Set<string>([
   "workflows/builder",
   "workflows/execute",
   "workflows/recorder",
-  "workflows/runner",
   // Background Slack agents — can post as the user when switched to live mode.
   "crew",
 ]);

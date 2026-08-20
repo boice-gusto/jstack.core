@@ -38,7 +38,7 @@ This document maps how prose and machine-facing instructions are organized in th
 
 7. **External PM skill libraries (link + license)**: See [`docs/SKILL_SOURCES.md`](SKILL_SOURCES.md) for curated links to [Product-Manager-Skills](https://github.com/deanpeters/Product-Manager-Skills) and [ar-claude-skills `product-team`](https://github.com/natea/ar-claude-skills/tree/main/product-team), mapping to jstack skills, and license notes. Prefer original jstack text or **link-out**; do not copy CC BY-NC-SA source verbatim into this repo without a legal decision.
 
-8. **Composite shortcuts**: `prompts/shortcuts/composites.md` names recipes (`jstack:…` aliases) that combine persona/tone with external skills (`gstack`, `superpowers`). See also `skills/knowledge/shortcuts/`.
+8. **Composite shortcuts**: `prompts/shortcuts/composites.md` names recipes (`jstack:…` aliases) that combine persona/tone with external skills (`gstack`, `superpowers`). See also `skills/knowledge/skill-finder/`, which is aware of these named aliases.
 
 ## Related files
 

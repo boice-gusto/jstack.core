@@ -1,10 +1,10 @@
 {
   "evals": [
     {
-      "skill": "advice"
+      "skill": "adr"
     },
     {
-      "skill": "adr"
+      "skill": "advice"
     },
     {
       "skill": "announcements"
@@ -16,7 +16,16 @@
       "skill": "computer-use/cua"
     },
     {
+      "skill": "crew"
+    },
+    {
+      "skill": "design"
+    },
+    {
       "skill": "design/figma-handoff"
+    },
+    {
+      "skill": "design/visual-single-page-html"
     },
     {
       "skill": "engineering"
@@ -26,6 +35,12 @@
     },
     {
       "skill": "engineering/silo-scan"
+    },
+    {
+      "skill": "federated-search"
+    },
+    {
+      "skill": "granola-daily-summary"
     },
     {
       "skill": "incident"
@@ -83,9 +98,6 @@
     },
     {
       "skill": "knowledge/self-knowledge"
-    },
-    {
-      "skill": "knowledge/shortcuts"
     },
     {
       "skill": "knowledge/skill-finder"
@@ -148,9 +160,6 @@
       "skill": "notion/article"
     },
     {
-      "skill": "notion/knowledge-base"
-    },
-    {
       "skill": "notion/one-on-one"
     },
     {
@@ -184,7 +193,13 @@
       "skill": "notion/update"
     },
     {
+      "skill": "pe"
+    },
+    {
       "skill": "pe/report-context"
+    },
+    {
+      "skill": "plugin"
     },
     {
       "skill": "plugin/create-plugin-pr"
@@ -215,9 +230,6 @@
     },
     {
       "skill": "reports/report-design"
-    },
-    {
-      "skill": "reports/self-report"
     },
     {
       "skill": "reports/share-html-publish"
@@ -280,6 +292,9 @@
       "skill": "routines/weekly-digest"
     },
     {
+      "skill": "scaffold"
+    },
+    {
       "skill": "sdlc"
     },
     {
@@ -325,6 +340,12 @@
       "skill": "setup"
     },
     {
+      "skill": "setup/onboarding"
+    },
+    {
+      "skill": "shortcuts"
+    },
+    {
       "skill": "shortcuts/ceo-brainstorm"
     },
     {
@@ -332,6 +353,9 @@
     },
     {
       "skill": "skill-creator"
+    },
+    {
+      "skill": "skill-creator/improve-claude-md"
     },
     {
       "skill": "sop"
@@ -376,13 +400,7 @@
       "skill": "workflows/recorder"
     },
     {
-      "skill": "workflows/runner"
-    },
-    {
       "skill": "workflows/viewer"
-    },
-    {
-      "skill": "workflows/workflow-wizard"
     }
   ]
 }

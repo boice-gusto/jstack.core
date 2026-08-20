@@ -111,7 +111,7 @@ step runs, not after the first failure.
    `meeting-to-jira`).
 3. `jstack:jira-intake` — the declared `chains-to` target after `jstack:intake` when the next step is a
    single ticket rather than a scored batch.
-4. `jstack:scaffold`, `jstack:granola-daily-summary`, `jstack:granola-daily-summary-6pm`, `jstack:task-intake`
+4. `jstack:scaffold`, `jstack:granola-daily-summary`
    — standalone building blocks (`evals/chain-evals.json` `workflow-core-skills-present`); chain these only
    when the goal genuinely needs more than one.
 
@@ -245,7 +245,7 @@ one having succeeded (unstated dependency).
   confirming destructive UI actions, or capturing Playwright traces is the **workflow-executor** agent's job.
   This agent may *decide* that a step in its plan is "run workflow X," but it hands that step's execution
   to workflow-executor rather than driving the browser itself.
-- **Workflow YAML authoring** — writing or editing `kickoff_workflows` YAML, task-intake templates, or the
+- **Workflow YAML authoring** — writing or editing `kickoff_workflows` YAML, intake step templates, or the
   `jstack:workflows` builder/recorder config is the **workflows-coach** agent's job. This agent *consumes* an
   existing kickoff workflow's declared step order when one matches the goal; it does not author new ones.
 - **Domain execution itself** — filing the actual ticket, writing the actual doc, running the actual

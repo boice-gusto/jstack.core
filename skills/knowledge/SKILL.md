@@ -1,6 +1,6 @@
 ---
 name: jstack-knowledge
-description: Route knowledge requests to intake, process, search, self-knowledge, team-knowledge, or shortcuts.
+description: Route knowledge requests to intake, process, search, self-knowledge, or team-knowledge.
 when_to_use: Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.
 category: knowledge
 effort: low
@@ -24,7 +24,7 @@ Route a knowledge request to the right sub-skill: capture (`intake`), reconcile 
 - Deduplication: merge duplicates; keep the oldest decision link as canonical.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, shortcuts, ingest-all, skill-finder
+**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 
