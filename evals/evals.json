@@ -43,6 +43,9 @@
       "skill": "granola-daily-summary"
     },
     {
+      "skill": "hygiene/claude-code-hygiene"
+    },
+    {
       "skill": "incident"
     },
     {
@@ -196,13 +199,13 @@
       "skill": "pe"
     },
     {
+      "skill": "pe/pe-recon"
+    },
+    {
       "skill": "pe/report-context"
     },
     {
       "skill": "plugin"
-    },
-    {
-      "skill": "plugin/create-plugin-pr"
     },
     {
       "skill": "prioritize"
@@ -265,10 +268,19 @@
       "skill": "review/code-review"
     },
     {
+      "skill": "review/codex-bridge"
+    },
+    {
+      "skill": "review/codex-review"
+    },
+    {
       "skill": "review/counsel-review"
     },
     {
       "skill": "review/project-review"
+    },
+    {
+      "skill": "review/thermonuclear-review"
     },
     {
       "skill": "routines"
@@ -307,6 +319,9 @@
       "skill": "self/diary"
     },
     {
+      "skill": "self/draft-messages"
+    },
+    {
       "skill": "self/eval"
     },
     {
@@ -328,6 +343,9 @@
       "skill": "self/tasks"
     },
     {
+      "skill": "self/tldr"
+    },
+    {
       "skill": "session"
     },
     {
@@ -338,6 +356,9 @@
     },
     {
       "skill": "setup"
+    },
+    {
+      "skill": "setup/crew-onboarding"
     },
     {
       "skill": "setup/onboarding"
@@ -401,6 +422,9 @@
     },
     {
       "skill": "workflows/viewer"
+    },
+    {
+      "skill": "writing/humanizer"
     }
   ]
 }

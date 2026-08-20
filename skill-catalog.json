@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-20T14:13:01.059Z",
-  "count": 143,
+  "generatedAt": "2026-08-20T20:35:05.413Z",
+  "count": 142,
   "skills": [
     {
       "id": "adr",
@@ -91,17 +91,6 @@
       "categoryKey": "review"
     },
     {
-      "id": "plugin-create-plugin-pr",
-      "name": "jstack-create-plugin-pr",
-      "path": "skills/plugin/create-plugin-pr/SKILL.md",
-      "relPath": "skills/plugin/create-plugin-pr/SKILL.md",
-      "gateId": "jstack:plugin/create-plugin-pr",
-      "description": "Open a PR to jstack.core or jstack.gusto using distribution.github from config; block secrets via path_deny_globs.",
-      "whenToUse": "Contributor has local changes and wants a PR against the configured core or gusto distribution repo.",
-      "category": "Plugin",
-      "categoryKey": "plugin"
-    },
-    {
       "id": "crew",
       "name": "jstack-crew",
       "path": "skills/crew/SKILL.md",
@@ -129,7 +118,7 @@
       "path": "skills/routines/custom/SKILL.md",
       "relPath": "skills/routines/custom/SKILL.md",
       "gateId": "jstack:routines/custom",
-      "description": "Execute a custom routine from config/routines JSON. If schedule JSON is invalid, return a fix, not a fake result.",
+      "description": "Execute a custom routine from its config/schedules/<id>.json definition plus the routines block in config/defaults.json. If schedule JSON is invalid, return a fix, not a fake result.",
       "whenToUse": "",
       "category": "Routines",
       "categoryKey": "routines"
@@ -272,7 +261,7 @@
       "path": "skills/hygiene/claude-code-hygiene/SKILL.md",
       "relPath": "skills/hygiene/claude-code-hygiene/SKILL.md",
       "gateId": "jstack:hygiene/claude-code-hygiene",
-      "description": "Audit a user's actual Claude Code setup — skills, agents, hooks, slash commands, and settings.json permissions — for what is broken, stale, unused, or duplicated, then walk through a numbered fix plan before touching anything. Use for \"audit my claude setup,\" \"clean up unused skills,\" \"is my claude code config stale,\" \"find duplicate skills,\" \"why do I have two agents that do the same thing,\" \"do any of my skills have zero eval coverage,\" or a periodic hygiene sweep before a skill-authoring push. Two phases, always in this order — Phase 1 is a read-only audit that runs freely and never edits or deletes anything; Phase 2 (actually deleting, editing, or regenerating a skill/agent/hook/permission) only happens after the user has seen Phase 1's findings and confirms each fix item individually. Not for authoring a brand-new skill from scratch (jstack:skill-creator) or opening the PR itself (jstack:plugin/create-plugin-pr) — this skill diagnoses and plans, those two execute.",
+      "description": "Audit a user's actual Claude Code setup — skills, agents, hooks, slash commands, and settings.json permissions — for what is broken, stale, unused, or duplicated, then walk through a numbered fix plan before touching anything. Use for \"audit my claude setup,\" \"clean up unused skills,\" \"is my claude code config stale,\" \"find duplicate skills,\" \"why do I have two agents that do the same thing,\" \"do any of my skills have zero eval coverage,\" or a periodic hygiene sweep before a skill-authoring push. Two phases, always in this order — Phase 1 is a read-only audit that runs freely and never edits or deletes anything; Phase 2 (actually deleting, editing, or regenerating a skill/agent/hook/permission) only happens after the user has seen Phase 1's findings and confirms each fix item individually. Not for authoring a brand-new skill from scratch (jstack:skill-creator) or opening the PR itself (jstack:plugin) — this skill diagnoses and plans, those two execute.",
       "whenToUse": "Also trigger for \"sweep my skills directory,\" \"find dead agents,\" \"check for orphaned reference files,\" \"why is my settings.json so long,\" \"check for broken chain contracts,\" \"has Claude Code shipped anything new I'm not using,\" or any request to review/clean up/tidy the Claude Code setup itself (as opposed to reviewing a codebase or a PR).",
       "category": "Hygiene",
       "categoryKey": "hygiene"
@@ -460,7 +449,7 @@
       "relPath": "skills/knowledge/intake/SKILL.md",
       "gateId": "jstack:knowledge/intake",
       "description": "Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage.",
-      "whenToUse": "",
+      "whenToUse": "User says \"save this,\" \"capture this,\" \"log this decision,\" \"note this down,\" or pastes raw text/a decision and wants it turned into a structured, storable record — not when they're asking a question that should be answered from existing knowledge (that's knowledge/search).",
       "category": "Knowledge",
       "categoryKey": "knowledge"
     },
@@ -855,8 +844,8 @@
       "path": "skills/plugin/SKILL.md",
       "relPath": "skills/plugin/SKILL.md",
       "gateId": "jstack:plugin",
-      "description": "Route a plugin-distribution request to the right sub-skill. Currently create-plugin-pr, which opens a PR against jstack.core or an overlay using distribution.github config. Not for authoring the skill itself — that is jstack-skill-creator.",
-      "whenToUse": "",
+      "description": "Open a PR to jstack.core or jstack.gusto using distribution.github from config; block secrets via path_deny_globs.",
+      "whenToUse": "Contributor has local changes and wants a PR against the configured core or gusto distribution repo.",
       "category": "Plugin",
       "categoryKey": "plugin"
     },
@@ -1064,7 +1053,7 @@
       "path": "skills/routines/SKILL.md",
       "relPath": "skills/routines/SKILL.md",
       "gateId": "jstack:routines",
-      "description": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom).",
+      "description": "Route to the right routine sub-skill (standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff).",
       "whenToUse": "",
       "category": "Routines",
       "categoryKey": "routines"
@@ -1251,8 +1240,8 @@
       "path": "skills/setup/SKILL.md",
       "relPath": "skills/setup/SKILL.md",
       "gateId": "jstack:setup",
-      "description": "\"First-time jstack onboarding: run jstack setup wizard, create config, validate with jstack doctor. No secrets in chat.\"",
-      "whenToUse": "Also for first-time install, onboarding, jstack doctor failures, MCP setup, or fixing missing jstack.config.json.",
+      "description": "\"Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that.\"",
+      "whenToUse": "Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config).",
       "category": "Setup",
       "categoryKey": "setup"
     },
@@ -1439,7 +1428,7 @@
       "relPath": "skills/reports/team-report/SKILL.md",
       "gateId": "jstack:reports/team-report",
       "description": "\"Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.\"",
-      "whenToUse": "",
+      "whenToUse": "Weekly update to leadership; sprint report; team status update; velocity and risk rollup for a manager or skip-level; 'what should I send my manager this week'.",
       "category": "Reports",
       "categoryKey": "reports"
     },
@@ -1471,8 +1460,8 @@
       "path": "skills/update-config/SKILL.md",
       "relPath": "skills/update-config/SKILL.md",
       "gateId": "jstack:update-config",
-      "description": "Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner.",
-      "whenToUse": "",
+      "description": "Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner. Not for first-time setup — use jstack:onboarding.",
+      "whenToUse": "Not for a brand-new project with no config yet — that is jstack:onboarding's job.",
       "category": "Setup",
       "categoryKey": "setup"
     },
@@ -1549,7 +1538,7 @@
       "relPath": "skills/workflows/SKILL.md",
       "gateId": "jstack:workflows",
       "description": "Route workflow requests to builder, recorder, execute, or viewer.",
-      "whenToUse": "Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, running jstack workflow, or comparing two runs.",
+      "whenToUse": "Also for Playwright-style flows, browser automation JSON definitions under `config/workflows/`, recording steps, or running jstack workflow.",
       "category": "Workflows",
       "categoryKey": "workflows"
     },
