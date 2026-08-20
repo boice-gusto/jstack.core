@@ -252,6 +252,44 @@ export function allSigils(
   return Object.values(agents).flatMap((a) => (a.enabled ? a.sigils : []));
 }
 
+export interface SigilCollision {
+  sigil: string;
+  /** The other agent's id that already owns this sigil. */
+  ownerId: string;
+}
+
+/**
+ * Which of `candidateSigils` already belongs to a DIFFERENT agent in `agents`
+ * (case-insensitive)? `excludeId` is left out of the scan -- pass the id of the agent
+ * being edited so its own current sigils cannot collide with themselves, or `null` for
+ * a brand-new agent that owns nothing yet.
+ *
+ * Scans every agent regardless of `enabled`, unlike `allSigils`: a collision against a
+ * currently-disabled agent still makes routing depend on object key order the moment
+ * someone enables it, so it must be refused too.
+ *
+ * Returned in the order `candidateSigils` were given, so a caller that wants "the first
+ * collision" (as `crew agents add` does) can just take the first element.
+ */
+export function findSigilCollisions(
+  agents: Record<string, { sigils?: unknown }>,
+  excludeId: string | null,
+  candidateSigils: string[],
+): SigilCollision[] {
+  const taken = new Map<string, string>();
+  for (const [id, a] of Object.entries(agents)) {
+    if (id === excludeId) continue;
+    for (const sg of (a.sigils as string[] | undefined) ?? [])
+      taken.set(sg.toLowerCase(), id);
+  }
+  const collisions: SigilCollision[] = [];
+  for (const sg of candidateSigils) {
+    const ownerId = taken.get(sg.toLowerCase());
+    if (ownerId) collisions.push({ sigil: sg, ownerId });
+  }
+  return collisions;
+}
+
 /** Strip sigils from text destined for an outbound message, so the ack cannot re-trigger. */
 export function stripSigils(text: string, sigils: string[]): string {
   let out = text;

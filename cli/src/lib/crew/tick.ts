@@ -324,6 +324,12 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
   try {
     const channel = cfg.policy.ingress.channels[0]!;
     let messages: InboundMessage[];
+    /**
+     * Set when the read failed, so the channel-poll loop below can still process any
+     * messages fetched before the failure -- a mid-paging error must not discard real
+     * data that already came back. Checked (and acted on) after that loop runs.
+     */
+    let readFailure: { authLost?: boolean; error?: string } | null = null;
 
     if (opts.simulate !== undefined) {
       messages = [
@@ -371,28 +377,12 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       summary.costUsd += res.costUsd;
       // The money is gone whether the read succeeded or not, so record it either way.
       store.addSpend(res.costUsd);
-      if (!res.ok) {
-        // A permanent error must halt, not back off forever. Backing off on auth loss
-        // IS the silent-death mode.
-        if (res.authLost) {
-          writeFileSync(
-            join(stateDir, "HALTED"),
-            `auth_lost at ${new Date().toISOString()}\n${res.error ?? ""}`,
-          );
-          summary.halted = "auth_lost";
-          store.logEvent({ tickId: kid, kind: "auth_lost", detail: res.error });
-          log(`AUTH LOST: ${res.error}. Wrote HALTED. Run: claude mcp login`);
-        } else {
-          store.logEvent({
-            tickId: kid,
-            kind: "read_error",
-            detail: res.error,
-          });
-          log(`read failed: ${res.error}`);
-        }
-        return summary;
-      }
+      // Messages fetched before a mid-paging failure are still real and must not be
+      // discarded -- process them below, then halt on the error afterwards.
       messages = res.messages;
+      if (!res.ok) {
+        readFailure = { authLost: res.authLost, error: res.error };
+      }
 
       if (res.truncated) {
         /**
@@ -775,6 +765,35 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         }
       }
       if (opts.simulate === undefined) store.setWatermark(m.channelId, m.ts);
+    }
+
+    // Now that any messages fetched before the failure have been processed and their
+    // watermark advanced, halt on the read error. A permanent error must halt, not back
+    // off forever -- backing off on auth loss IS the silent-death mode.
+    if (readFailure) {
+      if (readFailure.authLost) {
+        writeFileSync(
+          join(stateDir, "HALTED"),
+          `auth_lost at ${new Date().toISOString()}\n${readFailure.error ?? ""}`,
+        );
+        summary.halted = "auth_lost";
+        store.logEvent({
+          tickId: kid,
+          kind: "auth_lost",
+          detail: readFailure.error,
+        });
+        log(
+          `AUTH LOST: ${readFailure.error}. Wrote HALTED. Run: claude mcp login`,
+        );
+      } else {
+        store.logEvent({
+          tickId: kid,
+          kind: "read_error",
+          detail: readFailure.error,
+        });
+        log(`read failed: ${readFailure.error}`);
+      }
+      return summary;
     }
 
     // ---- thread polls: follow-ups ------------------------------------------

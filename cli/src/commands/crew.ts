@@ -9,6 +9,7 @@ import {
 import { join } from "node:path";
 import type { Command } from "commander";
 import { CrewConfigSchema, type CrewConfig } from "../lib/crew/types.js";
+import { findSigilCollisions } from "../lib/crew/guards.js";
 import { CrewStore, expandHome, snapshotPath } from "../lib/crew/store.js";
 import { tick } from "../lib/crew/tick.js";
 import {
@@ -737,13 +738,15 @@ export async function runCrewDoctor(json: boolean): Promise<void> {
   );
 
   // Duplicate sigils would make routing depend on object key order.
-  const seen = new Map<string, string>();
+  const dupSeen = new Set<string>();
   const dupes: string[] = [];
   for (const [id, a] of Object.entries(cfg.agents)) {
-    for (const sg of a.sigils) {
-      const k = sg.toLowerCase();
-      if (seen.has(k)) dupes.push(`${sg} (${seen.get(k)} and ${id})`);
-      else seen.set(k, id);
+    for (const c of findSigilCollisions(cfg.agents, id, a.sigils)) {
+      const key =
+        [id, c.ownerId].sort().join("|") + "::" + c.sigil.toLowerCase();
+      if (dupSeen.has(key)) continue;
+      dupSeen.add(key);
+      dupes.push(`${c.sigil} (${c.ownerId} and ${id})`);
     }
   }
   add(
@@ -1224,15 +1227,10 @@ export function runAgentsAdd(o: {
         );
       // A shared sigil would make routing depend on object key order, which is not a
       // contract anyone should rely on. Refuse rather than pick a winner.
-      const taken = new Map<string, string>();
-      for (const [other, a] of Object.entries(agents)) {
-        for (const sg of (a.sigils as string[] | undefined) ?? [])
-          taken.set(sg.toLowerCase(), other);
-      }
-      for (const sg of sigils) {
-        const owner = taken.get(sg.toLowerCase());
-        if (owner)
-          throw new Error(`sigil "${sg}" already belongs to "${owner}"`);
+      const collisions = findSigilCollisions(agents, null, sigils);
+      if (collisions.length) {
+        const c = collisions[0]!;
+        throw new Error(`sigil "${c.sigil}" already belongs to "${c.ownerId}"`);
       }
       agents[id] = {
         // New agents start DISABLED: adding one should never silently change what
@@ -1278,6 +1276,21 @@ export function runAgentsEdit(
     mutateAgents((agents) => {
       const a = agents[id];
       if (!a) throw new Error(`no such agent: ${id}`);
+      // A shared sigil would make routing depend on object key order, which is not a
+      // contract anyone should rely on. Refuse rather than pick a winner.
+      if (patch.sigils !== undefined) {
+        const collisions = findSigilCollisions(
+          agents,
+          id,
+          patch.sigils as string[],
+        );
+        if (collisions.length) {
+          const c = collisions[0]!;
+          throw new Error(
+            `sigil "${c.sigil}" already belongs to "${c.ownerId}"`,
+          );
+        }
+      }
       for (const k of keys) a[k] = patch[k];
     });
   } catch (e) {
