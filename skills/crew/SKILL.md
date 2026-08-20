@@ -52,7 +52,9 @@ This skill is the operator surface for them. It reads and edits
    than speculating. Common ones: `G3_no_sigil` (no trigger in the message),
    `too_old` (older than the cold-start window, root messages only),
    `G1_outbox` (the agent's own post), `ingress_author` / `ingress_channel` (policy),
-   `no_agent` (matched no *enabled* agent), `blocked_budget`, `backlog_skipped`.
+   `owner_only` (a shared-channel message from someone other than the owner, with
+   `respond_to_others` false), `no_agent` (matched no *enabled* agent), `blocked_budget`,
+   `backlog_skipped`.
 
 3. **Creating an agent.** Needs an id and a workspace:
 
@@ -66,22 +68,34 @@ This skill is the operator surface for them. It reads and edits
    operator the enable command; do not run it unprompted.
 
 4. **Changing an agent.** `jstackc crew agents edit <id>` with any of `--name --model
-   --workspace --sigil --tool --description --persona --emoji`. `--sigil` and `--tool`
-   **replace** the list rather than appending. The config is validated before it is written,
-   so an edit that would not load fails without touching the file.
+   --workspace --sigil --tool --description --persona --persona-file --emoji`. `--sigil` and
+   `--tool` **replace** the list rather than appending. The config is validated before it is
+   written, so an edit that would not load fails without touching the file.
 
-5. **Turning an agent off.** Prefer `disable` over `remove`:
+   `--persona-file` is the soul-file convention: point it at a markdown file resolved against
+   the agent's own `--workspace` (convention: `SOUL.md`), and its content becomes the persona
+   at runtime, overriding the inline `--persona` string. A `persona_file` that does not
+   resolve to a readable file fails the task loudly rather than answering with no persona.
+
+5. **Who gets answered.** By default an agent answers only its owner (`crew.slack.
+   self_user_id`) in a shared, non-DM channel; the self-DM is unaffected because it never
+   contains anyone else. This is enforced in code (`isOwnerOnlyViolation` in `guards.ts`),
+   separately from the `policy.ingress.authors` allowlist, so adding a teammate to `authors`
+   for a future shared channel does not by itself make the agent answer them. Set
+   `policy.ingress.respond_to_others: true` to lift that, deliberately, per-agent-policy.
+
+6. **Turning an agent off.** Prefer `disable` over `remove`:
 
    - `jstackc crew agents disable <id>` — out of routing, definition kept. Reversible.
    - `jstackc crew agents remove <id> --yes` — deletes the definition. Refused for the last
      remaining agent, because crew cannot load with none. Task history survives in the ledger.
 
-6. **Stopping everything.** `jstackc crew panic --reason "<why>"` writes a `HALTED` sentinel;
+7. **Stopping everything.** `jstackc crew panic --reason "<why>"` writes a `HALTED` sentinel;
    the tick refuses to run or post until `jstackc crew resume`. Use this rather than editing
    config when something is going wrong. Note that `panic` cannot recall a message already
    posted, and cannot cancel a scheduled one.
 
-7. **The orchestration page.** `jstackc crew ui` starts an **ephemeral** server on 127.0.0.1
+8. **The orchestration page.** `jstackc crew ui` starts an **ephemeral** server on 127.0.0.1
    with a per-run token and opens a page covering agents, tasks, logs, scheduler and doctor.
    It dies on Ctrl-C and the token is never written to disk.
 
@@ -92,7 +106,7 @@ This skill is the operator surface for them. It reads and edits
    that can post as them is the shape of a known RCE, and loopback binding alone is not a
    defence.
 
-8. **Running without a terminal.** `jstackc crew install` compiles `crewd` and installs a
+9. **Running without a terminal.** `jstackc crew install` compiles `crewd` and installs a
    LaunchAgent. Compiling is not cosmetic: TCC attributes file access to the executable
    launchd runs, so a shell script is attributed to `/bin/bash` and denied `~/Documents`,
    while a compiled binary was measured reading it fine. `jstackc crew doctor` reports the
@@ -100,11 +114,11 @@ This skill is the operator surface for them. It reads and edits
    than probing from a terminal that has different grants. Only send someone to System
    Settings if doctor actually says denied.
 
-9. **Verifying a change without posting.** `jstackc crew simulate '<text>'` pushes a synthetic
+10. **Verifying a change without posting.** `jstackc crew simulate '<text>'` pushes a synthetic
    message through the real poller, guards, router and renderer and stops at the Slack
    boundary. It forces `dry_run` even when `mode` is `live`, so it is always safe.
 
-10. **Checking answer quality, not just plumbing.** `jstackc crew eval` grades the agent's real
+11. **Checking answer quality, not just plumbing.** `jstackc crew eval` grades the agent's real
     answers on hard tasks — multi-file tracing, a refusal, an unknown symbol, a prompt
     injection. Every case runs through `simulate`, so it never posts and never moves a
     watermark. Two kinds of check: deterministic ones (every cited `file.ts:42` is resolved

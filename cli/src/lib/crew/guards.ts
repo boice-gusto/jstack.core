@@ -14,6 +14,8 @@ import type { CrewConfig, Decision, InboundMessage } from "./types.js";
  *   G2b server suffix    heuristic only. The read surface exposes no app_id/bot_id, so
  *                        `*Sent using* <@…|…>` is ordinary body text anyone can type.
  *   G3  sigil            routing rule, not a guard.
+ *   G_owner owner-only   in a shared (non-DM) channel, refuse anyone but the owner unless
+ *                        `respond_to_others` says otherwise. See isOwnerOnlyViolation().
  *
  * G1 is never overridden. A sigil overrides G2b only: Ralph legitimately quotes sigils
  * when answering questions about its own config, and an operator quoting Ralph back
@@ -103,6 +105,33 @@ export function findSigil(text: string, sigils: string[]): string | null {
   return null;
 }
 
+/** A Slack DM channel id (`D…`), as opposed to a shared/multi-person channel (`C…`). */
+export function isDirectMessage(channelId: string): boolean {
+  return channelId.startsWith("D");
+}
+
+/**
+ * Owner-only guardrail (G0, evaluated first): in a shared channel, refuse anyone who is not
+ * `slack.self_user_id` unless `policy.ingress.respond_to_others` explicitly allows it.
+ *
+ * This is deliberately separate from the `ingress.authors` allowlist check just below it.
+ * `authors` is a list an operator curates by hand and could grow to include teammates for a
+ * future shared-channel use case; this guard is what keeps "only the owner gets an answer"
+ * true BY DEFAULT even then, rather than depending on `authors` never growing past one id.
+ * A self-DM is exempt because it cannot contain any author but the owner in the first place.
+ */
+export function isOwnerOnlyViolation(
+  msg: { channelId: string; author: string },
+  cfg: {
+    slack: { self_user_id: string };
+    policy: { ingress: { respond_to_others: boolean } };
+  },
+): boolean {
+  if (isDirectMessage(msg.channelId)) return false;
+  if (msg.author === cfg.slack.self_user_id) return false;
+  return !cfg.policy.ingress.respond_to_others;
+}
+
 export interface GuardContext {
   config: CrewConfig;
   /** (channel, ts) pairs we have posted. G1's authority. */
@@ -144,6 +173,22 @@ export function decide(msg: InboundMessage, ctx: GuardContext): Decision {
       allow: false,
       ruleId: "ingress_author",
       reason: `author ${msg.author} not allowlisted`,
+    };
+  }
+
+  /**
+   * G_owner -- distinct from the `authors` check above. `authors` says who is ELIGIBLE at
+   * all; this says who gets a PROACTIVE answer in a channel that is not the owner's own
+   * self-DM, by default. See isOwnerOnlyViolation() for why the two must not be collapsed
+   * into one list.
+   */
+  if (isOwnerOnlyViolation(msg, config)) {
+    return {
+      allow: false,
+      ruleId: "owner_only",
+      reason:
+        `author ${msg.author} is not the owner (${config.slack.self_user_id}) in a shared ` +
+        `channel, and policy.ingress.respond_to_others is false`,
     };
   }
 

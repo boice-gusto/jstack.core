@@ -1207,6 +1207,7 @@ export function runAgentsAdd(o: {
   tools?: string[];
   description?: string;
   persona?: string;
+  personaFile?: string;
 }): void {
   const id = o.id.trim();
   if (!/^[a-z][a-z0-9-]{1,23}$/.test(id)) {
@@ -1246,6 +1247,7 @@ export function runAgentsAdd(o: {
         max_turns: 30,
         task_timeout_ms: 600000,
         persona: o.persona ?? "",
+        ...(o.personaFile ? { persona_file: o.personaFile } : {}),
       };
     });
   } catch (e) {
@@ -1266,7 +1268,7 @@ export function runAgentsEdit(
   if (!keys.length) {
     console.error(
       chalk.red(
-        "nothing to change. Pass at least one of --name --model --workspace --sigil --tool --description --persona",
+        "nothing to change. Pass at least one of --name --model --workspace --sigil --tool --description --persona --persona-file",
       ),
     );
     process.exitCode = 1;
@@ -1533,6 +1535,10 @@ export function registerCrewCommand(program: Command): void {
     .option("--tool <t...>", "tools (defaults Read Grep Glob)")
     .option("--description <d>", "what it is for")
     .option("--persona <p>", "extra system-prompt guidance")
+    .option(
+      "--persona-file <p>",
+      "markdown persona file, resolved against --workspace (e.g. SOUL.md); wins over --persona",
+    )
     .action((id: string, o: Record<string, unknown>) =>
       runAgentsAdd({
         id,
@@ -1543,6 +1549,7 @@ export function registerCrewCommand(program: Command): void {
         tools: o.tool as string[] | undefined,
         description: o.description as string | undefined,
         persona: o.persona as string | undefined,
+        personaFile: o.personaFile as string | undefined,
       }),
     );
 
@@ -1555,6 +1562,10 @@ export function registerCrewCommand(program: Command): void {
     .option("--tool <t...>", "replaces the tool list")
     .option("--description <d>")
     .option("--persona <p>")
+    .option(
+      "--persona-file <p>",
+      "markdown persona file, resolved against workspace; wins over --persona",
+    )
     .option("--emoji <e>")
     .action((id: string, o: Record<string, unknown>) =>
       runAgentsEdit(id, {
@@ -1565,6 +1576,7 @@ export function registerCrewCommand(program: Command): void {
         tools: o.tool,
         description: o.description,
         persona: o.persona,
+        persona_file: o.personaFile,
         emoji: o.emoji,
       }),
     );

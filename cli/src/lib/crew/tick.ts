@@ -17,6 +17,7 @@ import {
 } from "./guards.js";
 import { randomUUID } from "node:crypto";
 import { CrewStore, expandHome } from "./store.js";
+import { resolvePersona } from "./persona.js";
 import {
   readChannelPaged,
   readThread,
@@ -219,9 +220,10 @@ async function runWorker(
   const mcpNone = join(expandHome(cfg.state_dir), "no-mcp.json");
   writeFileSync(mcpNone, JSON.stringify({ mcpServers: {} }));
 
+  const persona = resolvePersona(agent);
   const system =
     `You are ${agent.name}, answering on behalf of the operator in their own Slack DM. ` +
-    (agent.persona ? `${agent.persona} ` : "") +
+    (persona ? `${persona} ` : "") +
     `You have no Slack connection, no shell and no network; a deterministic daemon posts your answer. ` +
     /**
      * Without this sentence the agent treats questions about itself as unanswerable.

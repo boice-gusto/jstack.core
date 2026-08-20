@@ -578,6 +578,7 @@ const CrewAgentSchema = section({
   max_turns: posInt.optional(),
   task_timeout_ms: posInt.optional(),
   persona: z.string().optional(),
+  persona_file: z.string().optional(),
 });
 
 const CrewSchema = section({
@@ -608,6 +609,7 @@ const CrewSchema = section({
       authors: z.array(z.string()).optional(),
       require_sigil: z.boolean().optional(),
       ignore_older_than_ms: posInt.optional(),
+      respond_to_others: z.boolean().optional(),
     }).optional(),
     egress: section({
       channels: z.array(z.string()).optional(),

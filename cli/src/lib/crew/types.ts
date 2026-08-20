@@ -25,6 +25,20 @@ export const IngressPolicySchema = z
     require_sigil: z.boolean().default(true),
     /** Cold-start guard: never answer a message older than this. */
     ignore_older_than_ms: z.number().int().positive().default(900_000),
+    /**
+     * Owner-only guardrail. `channels` and `authors` above are allowlists the operator
+     * curates by hand -- they say WHERE crew reads and WHO is even eligible, but nothing
+     * stops `authors` from someday holding more than one id (a future shared channel with
+     * teammates) while the default expectation stays "only the owner gets an answer".
+     *
+     * `false` (default): in a shared channel (a `C…` id, not the owner's own `D…` self-DM),
+     * a message from anyone other than `slack.self_user_id` is refused even if that author
+     * is on the `authors` allowlist. A self-DM is unaffected either way, because the owner
+     * is the only author a self-DM can ever contain.
+     *
+     * Set `true` to let crew proactively answer other senders in a shared channel too.
+     */
+    respond_to_others: z.boolean().default(false),
   })
   .strict();
 
@@ -55,8 +69,20 @@ export const AgentSchema = z
     tools: z.array(z.string()).default(["Read", "Grep", "Glob"]),
     max_turns: z.number().int().positive().default(30),
     task_timeout_ms: z.number().int().positive().default(600_000),
-    /** Extra guidance appended to this agent's system prompt. */
+    /** Extra guidance appended to this agent's system prompt. Ignored when `persona_file`
+     * is set and resolves successfully; otherwise this is what gets used. */
     persona: z.string().default(""),
+    /**
+     * Soul-file convention: a markdown file holding this agent's persona, instead of the
+     * inline `persona` string above. Resolved relative to this agent's own `workspace`
+     * unless given as an absolute path -- e.g. `"SOUL.md"` resolves to
+     * `<workspace>/SOUL.md`. When set, its content IS the persona; `persona` is only the
+     * fallback used while this is unset. A path that does not resolve to a readable file
+     * is a configuration error (thrown), never a silent empty persona.
+     *
+     * See `resolvePersona()` in `persona.ts`, the sole runtime consumer.
+     */
+    persona_file: z.string().optional(),
   })
   .strict();
 

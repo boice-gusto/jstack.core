@@ -6,6 +6,8 @@ import {
   findSigil,
   hasServerSuffix,
   identityPrefix,
+  isDirectMessage,
+  isOwnerOnlyViolation,
   routeToAgent,
   stripSigils,
   SERVER_SUFFIX_RE,
@@ -212,6 +214,129 @@ describe("ingress policy", () => {
     const d = decide(msg(), ctx());
     expect(d.allow).toBe(true);
     if (d.allow) expect(d.sigil).toBe("!ralph");
+  });
+});
+
+describe("owner-only guardrail (isDirectMessage / isOwnerOnlyViolation)", () => {
+  test("D… channel ids are direct messages, C… are not", () => {
+    expect(isDirectMessage("D0TESTDM001")).toBe(true);
+    expect(isDirectMessage("C0ABCDEFGHI")).toBe(false);
+  });
+
+  const cfg = (respondToOthers: boolean) => ({
+    slack: { self_user_id: "U0TESTUSER1" },
+    policy: { ingress: { respond_to_others: respondToOthers } },
+  });
+
+  test("the owner in a shared channel is never a violation", () => {
+    expect(
+      isOwnerOnlyViolation(
+        { channelId: "C0ABCDEFGHI", author: "U0TESTUSER1" },
+        cfg(false),
+      ),
+    ).toBe(false);
+  });
+
+  test("someone else in a shared channel is a violation by default", () => {
+    expect(
+      isOwnerOnlyViolation(
+        { channelId: "C0ABCDEFGHI", author: "U0OTHERUSER" },
+        cfg(false),
+      ),
+    ).toBe(true);
+  });
+
+  test("respond_to_others: true lifts the violation for the same message", () => {
+    expect(
+      isOwnerOnlyViolation(
+        { channelId: "C0ABCDEFGHI", author: "U0OTHERUSER" },
+        cfg(true),
+      ),
+    ).toBe(false);
+  });
+
+  test("someone else in the owner's own self-DM is never a violation of THIS guard -- a", () => {
+    // self-DM cannot contain a second author in practice; the ingress_author allowlist is
+    // what actually refuses them, checked separately and earlier in decide().
+    expect(
+      isOwnerOnlyViolation(
+        { channelId: "D0TESTDM001", author: "U0OTHERUSER" },
+        cfg(false),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("owner-only guardrail wired into decide()", () => {
+  const sharedChannelConfig: CrewConfig = CrewConfigSchema.parse({
+    enabled: true,
+    mode: "dry_run",
+    slack: { self_user_id: "U0TESTUSER1" },
+    agents: {
+      ralph: {
+        name: "Ralph",
+        sigils: ["!ralph", "@agent-ralph"],
+        workspace: "/tmp/ws",
+      },
+    },
+    policy: {
+      ingress: {
+        channels: ["C0SHAREDCH1"],
+        authors: ["U0TESTUSER1", "U0TEAMMATE1"],
+      },
+      egress: { channels: ["C0SHAREDCH1"] },
+    },
+  });
+
+  test("a teammate on the authors allowlist is still refused in a shared channel by default", () => {
+    const d = decide(
+      msg({
+        channelId: "C0SHAREDCH1",
+        author: "U0TEAMMATE1",
+        text: "!ralph what's the status?",
+      }),
+      { config: sharedChannelConfig, outboxHas: noOutbox, nowMs: NOW },
+    );
+    expect(d.allow).toBe(false);
+    if (!d.allow) expect(d.ruleId).toBe("owner_only");
+  });
+
+  test("the owner is still answered in that same shared channel", () => {
+    const d = decide(
+      msg({
+        channelId: "C0SHAREDCH1",
+        author: "U0TESTUSER1",
+        text: "!ralph what's the status?",
+      }),
+      { config: sharedChannelConfig, outboxHas: noOutbox, nowMs: NOW },
+    );
+    expect(d.allow).toBe(true);
+  });
+
+  test("respond_to_others: true lets the same teammate through", () => {
+    const opened: CrewConfig = CrewConfigSchema.parse({
+      ...sharedChannelConfig,
+      policy: {
+        ingress: {
+          ...sharedChannelConfig.policy.ingress,
+          respond_to_others: true,
+        },
+        egress: sharedChannelConfig.policy.egress,
+      },
+    });
+    const d = decide(
+      msg({
+        channelId: "C0SHAREDCH1",
+        author: "U0TEAMMATE1",
+        text: "!ralph what's the status?",
+      }),
+      { config: opened, outboxHas: noOutbox, nowMs: NOW },
+    );
+    expect(d.allow).toBe(true);
+  });
+
+  test("the default config's respond_to_others is false", () => {
+    expect(config.policy.ingress.respond_to_others).toBe(false);
   });
 });
 
