@@ -1,0 +1,39 @@
+name: Per-lens attribution — six lenses reported separately, never blended
+prompt: >-
+  You are applying **jstack-thermonuclear-review** (`review/thermonuclear-review`) to the following
+  synthetic diff. This is a security-sensitive, pre-launch change (a payment refund path), so the
+  full six-lens dispatch applies: security, compliance, performance, code quality, QA/testability,
+  and AI-slop detection.
+
+
+  ```diff
+  + async function refundPayment(orderId, amountCents) {
+  +   const order = await db.query(`SELECT * FROM orders WHERE id = ${orderId}`);
+  +   try {
+  +     await paymentProvider.refund(order.payment_token, amountCents);
+  +   } catch (e) {
+  +     console.log("something went wrong");
+  +   }
+  +   return { ok: true };
+  + }
+  ```
+
+
+  Produce the full review. Do not claim to have called any live scanner, ticketing system, or PR
+  API — this is a synthetic paste, not a real repository. Keep the response under ~700 words.
+criteria:
+  - >-
+    Each of the six lenses (security, compliance, performance, code quality, QA/testability,
+    AI-slop) appears as its own separately labeled section or row, not folded into one narrative
+    paragraph
+  - >-
+    At least the security lens and the code quality lens produce a finding, and each finding is
+    explicitly attributed to the lens name that raised it (e.g. "Security lens:" or a table column
+    naming the lens), not presented as an unattributed general observation
+  - >-
+    The response does not present a single blended verdict with no per-lens breakdown (e.g. it does
+    not just say "there are several issues" with no lens names attached)
+  - Includes a combined, severity-ranked summary that is distinct from the per-lens findings, not just a repeat of the per-lens list in original order
+  - Does not claim to have run a live security scanner, called a real ticketing/PR API, or reviewed a real repository
+expect_skill: true
+timeout: 180

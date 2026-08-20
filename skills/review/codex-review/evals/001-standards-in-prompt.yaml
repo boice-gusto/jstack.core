@@ -1,0 +1,35 @@
+name: Standards prompt — grounding and citation requirements are named explicitly
+prompt: >-
+  You are applying the jstack skill **jstack-review-codex-review** (path: `review/codex-review`).
+
+  Skill description: Get a genuinely independent second opinion on a diff or PR from the external
+  `codex` CLI, built on `jstack:review-codex-bridge` — send the diff with explicit
+  grounding/citation standards, work through any pushback with codex for a bounded number of
+  rounds, and surface real, unresolved disagreement to the user instead of collapsing it into a
+  fake consensus.
+
+
+  User request: Get codex's take on this diff:
+
+  ```diff
+  --- a/api/orders.ts
+  +++ b/api/orders.ts
+  @@ -39,6 +39,9 @@ export function getUserOrders(req, res) {
+  +  const status = req.query.status;
+  +  const rows = db.query(`SELECT * FROM orders WHERE status = '${status}'`);
+     ...
+  ```
+
+  Show exactly what prompt you would send to codex, in full.
+criteria:
+  - >-
+    The shown prompt explicitly requires findings to cite a `file:line` or an exact quote, not a
+    vague impression
+  - >-
+    The shown prompt explicitly instructs codex to read surrounding code/context before opining,
+    rather than just pattern-matching the diff in isolation
+  - >-
+    The shown prompt explicitly states that no assumptions are allowed — every claim needs a
+    cited basis
+expect_skill: true
+timeout: 120

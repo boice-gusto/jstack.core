@@ -1,6 +1,6 @@
 ---
 name: jstack-review-code-review
-description: PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch).
+description: PR workflow — seek (find review queue), appraise (file-by-file review with draft comments), polish (pre-push self-review vs default branch). Not to be confused with `jstack-review-codex-review` (one letter away), which gets a second opinion from the external codex CLI instead of Claude's own review.
 category: review
 effort: high
 ---

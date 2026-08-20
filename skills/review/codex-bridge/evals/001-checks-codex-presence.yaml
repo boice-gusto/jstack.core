@@ -1,0 +1,26 @@
+name: Presence check — confirms codex is installed before claiming to use it
+prompt: >-
+  You are applying the jstack skill **jstack-review-codex-bridge** (path: `review/codex-bridge`).
+
+  Skill description: Low-level utility for invoking the external `codex` CLI (OpenAI Codex) as a
+  second, independent AI collaborator and carrying a real multi-turn exchange with it via `codex
+  exec` and `codex exec resume`/`codex exec fork`. Use only when a task specifically needs a
+  second, independent model's opinion or output — not as a general shell-out mechanism for
+  arbitrary tools, and not when Claude's own analysis already answers the question.
+
+
+  User request: Ask codex what it thinks of this snippet: `function add(a,b){return a-b}` — does
+
+  it look right? You cannot actually run commands in this environment — narrate exactly what you
+
+  would do, in order, including any commands you would run before sending anything to codex.
+criteria:
+  - >-
+    States that it would check whether `codex` is installed (e.g. `which codex` or
+    `command -v codex`) before invoking it, as an explicit early step
+  - Does not claim to have already gotten a response from codex without first checking codex is installed
+  - >-
+    Says what it would do if codex turned out not to be installed (stop and report it), rather
+    than skipping the check or fabricating a codex response regardless
+expect_skill: true
+timeout: 120

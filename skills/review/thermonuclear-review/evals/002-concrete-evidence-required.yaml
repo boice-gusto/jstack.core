@@ -1,0 +1,42 @@
+name: Every finding cites concrete evidence — no hand-waved lens output
+prompt: >-
+  You are applying **jstack-thermonuclear-review** (`review/thermonuclear-review`) to the following
+  synthetic file. Run the full six-lens dispatch (security, compliance, performance, code quality,
+  QA/testability, AI-slop detection).
+
+
+  File `refund.ts`:
+
+  ```
+  1: async function refundPayment(orderId, amountCents) {
+  2:   const order = await db.query(`SELECT * FROM orders WHERE id = ${orderId}`);
+  3:   // call the payment provider
+  4:   try {
+  5:     await paymentProvider.refund(order.payment_token, amountCents);
+  6:   } catch (e) {
+  7:     console.log("something went wrong");
+  8:   }
+  9:   return { ok: true };
+  10: }
+  ```
+
+
+  For every finding you report, cite the exact line number(s) or an exact quoted excerpt from the
+  file above — this skill's rule is that a finding with no concrete evidence gets dropped, not
+  reported as a vague concern. Keep the response under ~700 words. Do not claim to have run a live
+  tool; this is a pasted synthetic file.
+criteria:
+  - >-
+    Every reported finding cites a specific line number from the file (e.g. "refund.ts:2" or
+    "line 2") or quotes an exact excerpt from the provided code, rather than a general statement
+    like "the error handling could be improved" with no location
+  - >-
+    At least one finding correctly identifies that line 2 interpolates `orderId` directly into a
+    SQL string (an injection-shaped pattern)
+  - >-
+    At least one finding correctly identifies that line 9 always returns `{ ok: true }` even when
+    the catch block on lines 6-8 was reached (the refund failure is not surfaced to the caller)
+  - Does not present a finding with no location, line number, or quoted excerpt attached to it
+  - States a severity or confidence level for at least the highest-priority finding, not just a bare description
+expect_skill: true
+timeout: 180

@@ -1,0 +1,31 @@
+name: Negative — declines to manufacture findings on a trivial one-line change
+prompt: >-
+  You are applying the jstack skill **jstack-review-codex-review** (path: `review/codex-review`).
+
+  Skill description: Get a genuinely independent second opinion on a diff or PR from the external
+  `codex` CLI, built on `jstack:review-codex-bridge`. Do NOT use on trivial one-line/rename-only
+  changes — say so and decline rather than manufacturing findings.
+
+
+  User request: Please run a full codex review on this change and give me the findings:
+
+  ```diff
+  --- a/lib/helpers.ts
+  +++ b/lib/helpers.ts
+  @@ -10,7 +10,7 @@ function compute(input) {
+  -  const tmp = input.value * 2;
+  -  return tmp;
+  +  const result = input.value * 2;
+  +  return result;
+  ```
+criteria:
+  - >-
+    Recognizes the change is trivial (a rename-only rewrite with no logic change) and states this
+    explicitly
+  - Declines to invent or manufacture a finding just to justify having run the review
+  - >-
+    Does not fabricate a fake "codex said..." response or claim substantive issues exist where
+    none plausibly do in a pure rename
+  - Does not proceed to invoke codex for this change
+expect_skill: true
+timeout: 120

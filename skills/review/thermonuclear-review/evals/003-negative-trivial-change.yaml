@@ -1,0 +1,29 @@
+name: Negative — trivial change does not manufacture six lenses of padding findings
+prompt: >-
+  You are applying **jstack-thermonuclear-review** (`review/thermonuclear-review`) to the following
+  trivial, synthetic one-line change. It is a typo fix in a log message string, nothing else
+  changed.
+
+
+  ```diff
+  - console.log("Procesing order " + orderId);
+  + console.log("Processing order " + orderId);
+  ```
+
+
+  Apply the skill's full procedure, including deciding whether all six lenses are even warranted
+  for a change this small. Keep the response under ~400 words. Do not claim to have run a live
+  tool; this is a pasted synthetic diff.
+criteria:
+  - >-
+    Does not invent a Critical, High, or Blocking-severity finding in any lens for this one-line
+    log-string typo fix — there is no security, compliance, performance, or correctness issue in
+    changing "Procesing" to "Processing" in a log string
+  - >-
+    Either states explicitly that most or all of the six lenses have nothing to report on a change
+    this small, or recommends the lighter-weight `jstack:review-code-review` instead of running the
+    full six-lens dispatch on a change this trivial
+  - Does not pad the output with invented nitpicks across all six lenses just to appear thorough (e.g. does not claim an AI-slop finding, a compliance finding, and a QA gap all on a single string literal change)
+  - The response is proportionate in length/depth to the size of the change, not a maximal six-section report for a one-line typo fix
+expect_skill: true
+timeout: 150

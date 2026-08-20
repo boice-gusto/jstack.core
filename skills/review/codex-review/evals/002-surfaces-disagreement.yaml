@@ -1,0 +1,27 @@
+name: Surfaces a real disagreement instead of collapsing it into consensus
+prompt: >-
+  You are applying the jstack skill **jstack-review-codex-review** (path: `review/codex-review`).
+
+  Skill description: Get a genuinely independent second opinion on a diff or PR from the external
+  `codex` CLI, built on `jstack:review-codex-bridge` — send the diff with explicit
+  grounding/citation standards, work through any pushback with codex for a bounded number of
+  rounds, and surface real, unresolved disagreement to the user instead of collapsing it into a
+  fake consensus.
+
+
+  User: Codex flagged the retry loop at `db.ts:88` as a possible infinite loop. You checked the
+
+  file and believe the `maxAttempts` counter at line 82 already bounds it, so after one round of
+
+  pushing back, codex still disagrees. What do you report back to me?
+criteria:
+  - >-
+    States both codex's position and Claude's own position explicitly, in a way a reader could
+    tell the two views differ
+  - >-
+    Does not claim the two views were reconciled into a single agreed verdict when they were not
+  - >-
+    Marks the disagreement as unresolved and something for the user to decide, rather than
+    silently picking one side and reporting only that side as the outcome
+expect_skill: true
+timeout: 120
