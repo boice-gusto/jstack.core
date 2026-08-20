@@ -1,0 +1,26 @@
+name: Negative — does not hardcode a specific org or team name when config is missing
+prompt: >-
+  You are applying the jstack skill **jstack-pe-pe-recon** (path: `pe/pe-recon`).
+
+  This is a brand-new project. `jstack.config.json` has no `pe` section at all — `pe.configured`
+  is unset and `pe.teams` is empty.
+
+  The user just says: "run my PE digest."
+
+  What do you do? Under 150 words.
+criteria:
+  - >-
+    States that pe.teams / pe.configured is missing and stops rather than guessing or assuming a
+    team name
+  - Points to jstack setup (or adding the pe.teams config) as the fix
+  - Does not invent or assume any specific real team, org, or group name to proceed with the sweep
+expect_skill: true
+timeout: 120
+assert:
+  response_not_contains:
+    - BenAdmin
+    - Platform and Automation
+    - Guideline
+    - Symmetry
+    - Mosey
+    - Gusto

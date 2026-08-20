@@ -1,0 +1,24 @@
+name: Executive-summary-first structure, not a raw findings dump
+prompt: >-
+  You are applying the jstack skill **jstack-pe-pe-recon** (path: `pe/pe-recon`).
+
+  Config: pe.configured=true, pe.teams=["platform-infra"].
+
+  The delegated recon sweep returned 14 items across Slack and Jira: 9 routine PR-review threads,
+  3 stale tickets, 1 blocked ticket, and 1 on-call handoff note.
+
+  Describe the structure and content of the HTML digest you would render for this team, including
+  what appears first, in what order, and roughly how many bullets are in each part. Do not claim to
+  have written or opened the file — describe the plan.
+criteria:
+  - >-
+    Describes a short (roughly 3-5 bullet) "what changed / what needs your attention" executive
+    summary as the first section of the digest, appearing before any per-source or per-category
+    detail
+  - >-
+    Does not describe simply listing all 14 raw items in original order as the first or only
+    content of the digest
+  - Describes categorizing or grouping the remaining findings (e.g. by urgency or type) rather than one flat undifferentiated list
+  - Mentions a coverage or "sources swept" section distinct from the executive summary
+expect_skill: true
+timeout: 120

@@ -1,6 +1,6 @@
 ---
 name: jstack-pe
-description: Route a people/performance-engineering request to the right sub-skill. Currently report-context, which assembles the validated reporting window and team scope. Not for writing performance narrative about a named individual.
+description: Route a people/performance-engineering request to the right sub-skill — report-context to assemble/validate a reporting window and team scope against pe.* config, or pe-recon for a proactive team-scoped digest sweep. Not for writing performance narrative about a named individual.
 category: pe
 effort: low
 ---
@@ -13,8 +13,20 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route a people/performance-engineering request to the right sub-skill. `report-context` assembles the validated reporting window, teams, and projects from `pe.*` config before any narrative is written.
+Route a people/performance-engineering request to the right sub-skill.
 - **Out of scope:** Writing performance narrative or a rating about a named individual, and reporting on a team absent from `pe.teams`.
+
+## Disambiguation — report-context vs pe-recon
+
+Both sub-skills read `pe.*` config and never write narrative about a named person. They differ in **what triggers them** and **what they produce**:
+
+| Signal in the request | Route to | Why |
+|---|---|---|
+| "Validate/build the reporting context," "assemble the window/teams/projects," anything that gates a **downstream report** on `pe.configured` | `report-context` | It assembles and validates structured JSON context for a report someone else will write — no artifact of its own beyond that context. |
+| "Weekly digest," "what's going on for my team," "PE recon," "catch me up," a recurring/scheduled PE catch-up | `pe-recon` | It's a **proactive sweep** across configured sources (Slack, Notion, etc. — same routing as `jstack:recon`), synthesized into a skimmable local HTML digest that opens in the browser. |
+| A one-off narrow question about a single ticket, thread, or person's status | Neither — route to `jstack:recon` directly | Both `pe` sub-skills are team/report-scoped; a single-item lookup doesn't need report-context's validation step or pe-recon's full sweep-and-render. |
+
+If the request names a report kind, a schema, or "validate," prefer `report-context`. If it asks for a status sweep, a digest, or "what's new," prefer `pe-recon`. Ask **one** disambiguating question only when the request is genuinely ambiguous between the two (e.g. "give me the PE report" without saying whether they want the assembled context or a rendered digest).
 
 ## Domain rules — people and performance engineering
 - Assemble the reporting CONTEXT before any narrative: which teams, which projects, and the exact window, all validated against `pe.*` in config. A narrative written before the window is fixed cannot be checked later.
@@ -23,7 +35,7 @@ Route a people/performance-engineering request to the right sub-skill. `report-c
 - Single incidents are not patterns. One data point gets labelled as one data point.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/pe/`:** report-context
+**Under `skills/pe/`:** report-context, pe-recon — see Disambiguation above.
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

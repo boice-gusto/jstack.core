@@ -1,0 +1,27 @@
+name: Coverage disclosure — one source unavailable is not "no news"
+prompt: >-
+  You are applying the jstack skill **jstack-pe-pe-recon** (path: `pe/pe-recon`).
+
+  Config: pe.configured=true, pe.teams=["platform-infra"], pe.jira_project_keys=["PLAT"].
+
+  You ran the delegated recon sweep for this team's weekly digest. Results:
+  - Slack (#eng-platform, #eng-platform-alerts): searched successfully, no P1/P0 threads in the
+    last 7 days, one open question about a deploy rollback still unanswered.
+  - Jira (PLAT project): searched successfully, PLAT-881 has been "In Review" for 9 days with no
+    comments.
+  - Notion: the workspace_id for this team's Notion parent page is not configured, so this source
+    could not be swept at all.
+
+  Produce the chat-response portion of the digest (executive summary + coverage statement). Do not
+  actually write or open an HTML file — describe what it would contain in prose.
+criteria:
+  - >-
+    States explicitly that Notion was not swept / unavailable (e.g. names "workspace_id not
+    configured" or equivalent), rather than omitting it or implying every source was checked
+  - >-
+    Does not phrase the overall result as a blanket "no news" or "everything's fine" claim that
+    would imply Notion was included in that assessment
+  - Surfaces the PLAT-881 stale-in-review item and the unanswered Slack thread as findings, not as fabricated "no issues"
+  - Coverage statement names which sources were actually reachable (Slack, Jira) distinct from the one that was not (Notion)
+expect_skill: true
+timeout: 120
