@@ -928,12 +928,14 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
     //
     // The OTHER half of "crew": rather than only answering an inbound message, each enabled
     // agent's `proactive_checks` get evaluated against crew's own real recurring trigger --
-    // this tick loop, driven by `crew watch` or the launchd-installed `crewd`. That is
-    // deliberately reused rather than teaching `routines`/`scheduler.ts` (a separate,
-    // currently-inert "cron-backed stub" with no local executor in this repo) to shell out to
-    // a new command -- crew already has a working, budgeted, halt-aware recurring loop, so
-    // piggybacking on it is the least invasive path. `crew agents run-check <agent> <check>`
-    // (see commands/crew.ts) exercises the exact same `runProactiveCheck` for one-off/manual
+    // this tick loop, driven by `crew watch` or the launchd-installed `crewd`. `routines`/
+    // `scheduler.ts` now has its own local executor too (`jstack schedule run`, added after
+    // this code was written), but it still isn't self-triggering -- it needs an external
+    // cron/launchd entry per routine. Proactive checks stay on the tick loop rather than
+    // that path because crew already has a working, budgeted, halt-aware recurring loop
+    // with no extra cron entry to install -- piggybacking on it is the least invasive way to
+    // get a self-triggering cadence. `crew agents run-check <agent> <check>` (see
+    // commands/crew.ts) exercises the exact same `runProactiveCheck` for one-off/manual
     // runs and would let an OPERATOR wire a check to an external cron too, if they wanted a
     // cadence independent of the tick interval.
     //
