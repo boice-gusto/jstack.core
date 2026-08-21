@@ -44,6 +44,13 @@ This runs unattended: never block on an interactive prompt. Every step must be i
 ### Step 3 — Execute
 Resolve the routine id against the `routines` block in `config/defaults.json` and its matching `config/schedules/<id>.json` definition — that JSON file, not a `config/routines` directory (it does not exist). If the two disagree (e.g. enabled in one but not the other) or the schedule JSON is invalid, return the discrepancy or validation error and a minimal valid example — never a fake result.
 
+`jstack schedule` now has a full CLI surface for this, not just `list`/`enable`/`disable`:
+- `jstack schedule setup [id]` — wizard: prefill a well-known routine's cadence/enabled state, or create a brand-new custom routine (id, cadence, chain of skill slugs — each validated against `skill-catalog.json`).
+- `jstack schedule config [id]` — view a routine's full config, or edit `--set-cron`/`--set-chain` non-interactively.
+- `jstack schedule start <id>` / `stop <id>` — primary verbs for `enable`/`disable` (kept as aliases).
+- `jstack schedule run <id>` — the actual executor: shells out to an unattended `claude -p` turn that works through the routine's chain, records a run-history entry (`.jstack/schedule-history/<id>.json`, last ~20 runs), and reports only the process exit outcome — never a semantic "the routine succeeded". Supports `--dry-run`.
+- `jstack schedule report [id]` — honest status: next scheduled fire (computed from the cron, not a claim that anything is actually running) and, only if `jstack schedule run` has ever been invoked for this routine, the last-run outcome. If it has never been run this way, `report` says so plainly rather than implying background execution.
+
 ### Step 4 — Validate
 Confirm the run completed without needing interactive input, that a re-run would be safe, and that any partial failure is reported as such with the failing step named.
 

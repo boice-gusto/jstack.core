@@ -477,7 +477,9 @@ export const CLI_COMMANDS: CliCommand[] = [
   },
   {
     name: "jstack schedule",
-    description: "List / enable / disable routines (cron-backed stubs)",
+    description:
+      "Create, view, edit, start/stop, run, and report on scheduled routines. " +
+      "`config`, `run`, and `report` accept --json for machine-readable output.",
     tags: ["routines", "schedule"],
     arguments: [
       {
@@ -485,18 +487,72 @@ export const CLI_COMMANDS: CliCommand[] = [
         type: "string",
         required: true,
         description:
+          "setup [id] [--cron] [--chain] [--enable|--disable] [--yes] | " +
+          "config [id] [--set-cron <expr>] [--set-chain <slugs>] [--json] | " +
+          "start [id] | stop [id] | run [id] [--dry-run] [--json] | report [id] [--json] | " +
           "list | enable [id] | disable [id] (interactive picker when id omitted, TTY)",
       },
     ],
     examples: [
+      {
+        command: "jstack schedule setup standup",
+        description:
+          "Wizard: prefill a well-known routine's cadence and enabled state",
+      },
+      {
+        command:
+          "jstack schedule setup my-routine --chain recon,announcements --cron '0 10 * * *' --enable",
+        description: "Non-interactively create a new custom routine",
+      },
       { command: "jstack schedule list", description: "Show routines" },
+      {
+        command: "jstack schedule config",
+        description:
+          "Detailed view of every routine (cron, chain, enabled, last run)",
+      },
+      {
+        command: "jstack schedule config standup --json",
+        description: "One routine's full config as JSON",
+      },
+      {
+        command:
+          "jstack schedule config standup --set-cron '0 10 * * *' --set-chain recon,announcements",
+        description: "Non-interactively edit a routine's cron/chain",
+      },
+      {
+        command: "jstack schedule start standup",
+        description: "Enable a routine (primary verb; alias: enable)",
+      },
+      {
+        command: "jstack schedule stop standup",
+        description: "Disable a routine (primary verb; alias: disable)",
+      },
+      {
+        command: "jstack schedule run standup --dry-run",
+        description:
+          "Show the claude -p prompt that would run, as JSON with --json, without invoking it",
+      },
+      {
+        command: "jstack schedule run standup",
+        description:
+          "Execute the routine's chain now via an unattended claude -p turn; records run history",
+      },
+      {
+        command: "jstack schedule report",
+        description:
+          "Honest summary: enabled/never-run counts and next scheduled fire per routine",
+      },
+      {
+        command: "jstack schedule report standup --json",
+        description: "Next fire time and run history for one routine, as JSON",
+      },
       {
         command: "jstack schedule enable",
         description: "Interactive routine picker when id omitted (TTY)",
       },
       {
         command: "jstack schedule enable standup",
-        description: "Turn on a routine",
+        description: "Turn on a routine (backward-compatible alias of start)",
       },
       {
         command: "jstack schedule disable",
@@ -504,10 +560,10 @@ export const CLI_COMMANDS: CliCommand[] = [
       },
       {
         command: "jstack schedule disable standup",
-        description: "Turn off a routine",
+        description: "Turn off a routine (backward-compatible alias of stop)",
       },
     ],
-    returns: "Console confirmation",
+    returns: "Console confirmation, or JSON with --json on config/run/report",
   },
   {
     name: "jstack workflow",

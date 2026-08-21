@@ -167,11 +167,16 @@ This skill is the operator surface for them. It reads and edits
 
     **What actually fires these:** the SAME tick loop that already polls Slack (`crew watch` or
     the launchd-installed `crewd`) — not a second, separate cron mechanism. `routines.*.cron`
-    (`jstack schedule`) has no local executor in this repo today, so proactive checks piggyback
-    on the one recurring trigger crew already has, budget cap, halt sentinel and all. Manually
-    firing one with `crew agents run-check` is also safe to wire to an external cron if an
-    operator wants a cadence independent of the tick interval — it re-runs the same due-check
-    logic, so calling it when nothing is due is a no-op, not a duplicate post.
+    (`jstack schedule`) now has an executor (`jstack schedule run <id>`, an unattended `claude -p`
+    turn through the routine's chain, with `--dry-run` and a run-history record) but, unlike
+    crew's tick loop, nothing in this repo calls it on its own schedule — an operator still has
+    to point an external cron/launchd entry at `jstack schedule run <id>` for it to actually fire
+    unattended; `jstack schedule report` says so plainly if it never has been. So proactive
+    checks still piggyback on the one recurring trigger crew already has, budget cap, halt
+    sentinel and all, rather than on `routines.*.cron`. Manually firing one with `crew
+    agents run-check` is also safe to wire to an external cron if an operator wants a cadence
+    independent of the tick interval — it re-runs the same due-check logic, so calling it when
+    nothing is due is a no-op, not a duplicate post.
 
 ## Report back
 

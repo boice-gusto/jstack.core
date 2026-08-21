@@ -7,9 +7,15 @@ import { runConfigShow } from "./commands/config.js";
 import { runStatus } from "./commands/status.js";
 import { runDoctor, runDoctorSkills } from "./commands/doctor.js";
 import {
+  runScheduleConfig,
   runScheduleDisable,
   runScheduleEnable,
   runScheduleList,
+  runScheduleReport,
+  runScheduleRun,
+  runScheduleSetup,
+  runScheduleStart,
+  runScheduleStop,
 } from "./commands/schedule.js";
 import {
   runWorkflowCreate,
@@ -225,16 +231,115 @@ doctorCmd
     });
   });
 
-const sched = program.command("schedule").description("Manage routines");
+const sched = program
+  .command("schedule")
+  .description(
+    "Create, view, edit, start/stop, run, and report on scheduled routines",
+  );
+sched
+  .command("setup")
+  .description(
+    "Interactive wizard: prefill a well-known routine (standup, weekly_digest, sprint_close, " +
+      "health_check) or create a new custom one",
+  )
+  .argument("[id]", "routine id (well-known id to prefill, or a new custom id)")
+  .option("--cron <expr>", "custom cron expression (skips the cadence prompt)")
+  .option(
+    "--chain <slugs>",
+    "comma/space-separated skill slugs for a NEW custom routine (skips the chain prompt)",
+  )
+  .option("--enable", "enable the routine now (skips the enable prompt)")
+  .option("--disable", "leave the routine disabled (skips the enable prompt)")
+  .option(
+    "--yes",
+    "accept a well-known routine's default cadence without prompting",
+  )
+  .action(
+    async (
+      id: string | undefined,
+      o: {
+        cron?: string;
+        chain?: string;
+        enable?: boolean;
+        disable?: boolean;
+        yes?: boolean;
+      },
+    ) => {
+      await runScheduleSetup(id, o);
+    },
+  );
+sched
+  .command("config")
+  .description(
+    "View a routine's full config, or edit it (--set-cron/--set-chain, or interactively)",
+  )
+  .argument("[id]", "routine id (omit to list all with detail)")
+  .option("--set-cron <expr>", "update the cron expression non-interactively")
+  .option(
+    "--set-chain <slugs>",
+    "update the chain (comma/space-separated skill slugs) non-interactively",
+  )
+  .option("--json", "machine-readable output", false)
+  .action(
+    async (
+      id: string | undefined,
+      o: { setCron?: string; setChain?: string; json?: boolean },
+    ) => {
+      await runScheduleConfig(id, o);
+    },
+  );
+sched
+  .command("start")
+  .description("Enable a routine (primary verb; see also: enable)")
+  .argument("[id]", "routine id (omit for picker when interactive)")
+  .action(async (id?: string) => {
+    await runScheduleStart(id);
+  });
+sched
+  .command("stop")
+  .description("Disable a routine (primary verb; see also: disable)")
+  .argument("[id]", "routine id (omit for picker when interactive)")
+  .action(async (id?: string) => {
+    await runScheduleStop(id);
+  });
+sched
+  .command("run")
+  .description(
+    "Execute a routine's chain right now via an unattended `claude -p` turn, recording a run-history entry",
+  )
+  .argument("[id]", "routine id (omit for picker when interactive)")
+  .option(
+    "--dry-run",
+    "show what would be sent to claude -p without invoking it",
+    false,
+  )
+  .option("--json", "machine-readable output", false)
+  .action(
+    async (id: string | undefined, o: { dryRun?: boolean; json?: boolean }) => {
+      await runScheduleRun(id, o);
+    },
+  );
+sched
+  .command("report")
+  .description(
+    "Honest status/history: next scheduled fire and, if ever run via `jstack schedule run`, last-run outcome",
+  )
+  .argument("[id]", "routine id (omit to summarize all)")
+  .option("--json", "machine-readable output", false)
+  .action((id: string | undefined, o: { json?: boolean }) => {
+    runScheduleReport(id, o);
+  });
 sched.command("list").action(() => runScheduleList());
 sched
   .command("enable")
+  .description("Backward-compatible alias of `start`")
   .argument("[id]", "routine id (omit for picker when interactive)")
   .action(async (id?: string) => {
     await runScheduleEnable(id);
   });
 sched
   .command("disable")
+  .description("Backward-compatible alias of `stop`")
   .argument("[id]", "routine id (omit for picker when interactive)")
   .action(async (id?: string) => {
     await runScheduleDisable(id);

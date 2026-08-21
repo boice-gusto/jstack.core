@@ -34,7 +34,7 @@ import type { AgentConfig, CrewConfig, ProactiveCheckConfig } from "./types.js";
 
 /* -------------------------------------------------------------- cron matching ---- */
 
-interface CronFields {
+export interface CronFields {
   minute: Set<number>;
   hour: Set<number>;
   dom: Set<number>;
@@ -88,8 +88,15 @@ function expandCronField(field: string, min: number, max: number): Set<number> {
   return out;
 }
 
-/** Parse a validated 5-field cron string. Assumes `cronExpr` already accepted it. */
-function parseCron(schedule: string): CronFields | null {
+/**
+ * Parse a validated 5-field cron string. Assumes `cronExpr` already accepted it.
+ *
+ * Exported so other callers needing the exact same field-expansion semantics (e.g.
+ * `jstack schedule report`'s "next fire" computation in `cli/src/lib/scheduler.ts`) reuse this
+ * parser instead of writing a second one that could silently answer a different question for
+ * the same cron string.
+ */
+export function parseCron(schedule: string): CronFields | null {
   const fields = schedule.trim().split(/\s+/);
   if (fields.length !== 5) return null;
   const [minute, hour, dom, month, dow] = fields as [
@@ -110,7 +117,8 @@ function parseCron(schedule: string): CronFields | null {
   };
 }
 
-function cronMatchesMinute(fields: CronFields, d: Date): boolean {
+/** Exported alongside `parseCron` for the same cross-caller reuse reason. */
+export function cronMatchesMinute(fields: CronFields, d: Date): boolean {
   return (
     fields.minute.has(d.getMinutes()) &&
     fields.hour.has(d.getHours()) &&
