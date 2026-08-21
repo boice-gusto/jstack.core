@@ -596,7 +596,7 @@
       "enabled": false,
       "cron": "0 16 * * 5",
       "chain": [
-        "team-report",
+        "reports/team-report",
         "announcements"
       ]
     },
@@ -605,7 +605,7 @@
       "cron": "",
       "chain": [
         "sprint",
-        "project-report",
+        "reports/project-report",
         "announcements"
       ]
     },

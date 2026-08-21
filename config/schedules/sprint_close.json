@@ -3,6 +3,6 @@
   "name": "Sprint close",
   "cron": "",
   "enabled": false,
-  "chain": ["jstack:sprint", "jstack:project-report", "jstack:announcements"],
+  "chain": ["jstack:sprint", "jstack:reports/project-report", "jstack:announcements"],
   "description": "End-of-sprint pipeline"
 }

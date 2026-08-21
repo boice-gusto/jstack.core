@@ -3,6 +3,6 @@
   "name": "Weekly digest",
   "cron": "0 16 * * 5",
   "enabled": false,
-  "chain": ["jstack:team-report", "jstack:announcements"],
+  "chain": ["jstack:reports/team-report", "jstack:announcements"],
   "description": "Friday team rollup and announcement draft"
 }
