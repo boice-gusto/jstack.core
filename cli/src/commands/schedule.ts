@@ -40,7 +40,10 @@ async function pickRoutineId(
   message: string,
 ): Promise<string | null> {
   if (rows.length === 0) {
-    console.error(chalk.yellow("No routines in jstack.config.json."));
+    console.error(
+      chalk.yellow("No routines configured yet. ") +
+        chalk.dim("Add one with: jstack schedule setup <id>"),
+    );
     return null;
   }
   const picked = await p.select<string>({
@@ -744,7 +747,10 @@ export interface ScheduleReportOpts {
 function fmtNextFire(cron: string): string {
   const nf = computeNextFire(cron, Date.now());
   if (nf.nextFireMs === null) return nf.reason;
-  return `${new Date(nf.nextFireMs).toISOString()} (${nf.reason})`;
+  // `reason` is "matched" whenever nextFireMs is set -- an internal detail with no
+  // information for the reader, so it's only surfaced in the null-result branch above,
+  // where it actually explains *why* there's no next fire (no cron / unparseable).
+  return new Date(nf.nextFireMs).toISOString();
 }
 
 export function runScheduleReport(
