@@ -315,13 +315,20 @@ async function runWorker(
   return { ok: r.ok, text: r.text, cost: r.costUsd, sessionId: r.sessionId };
 }
 
-/** Maps a follow-up message ts to the thread parent it belongs to, set during thread polls. */
-const threadParent = new Map<string, string>();
-function threadParentOf(m: InboundMessage): string {
-  return threadParent.get(m.ts) ?? m.ts;
-}
-
 export async function tick(opts: TickOptions): Promise<TickSummary> {
+  /**
+   * Maps a follow-up message ts to the thread parent it belongs to. Set during this tick's
+   * thread polls and read back later in the same tick (never across ticks -- a value is always
+   * written immediately before it's read within one pass), so it lives for one `tick()` call
+   * rather than the process lifetime. Declaring it at module scope previously meant `crew watch`
+   * (the only caller that invokes `tick()` repeatedly in one process) grew this map unboundedly
+   * for as long as the process ran.
+   */
+  const threadParent = new Map<string, string>();
+  function threadParentOf(m: InboundMessage): string {
+    return threadParent.get(m.ts) ?? m.ts;
+  }
+
   /**
    * `simulate` must NEVER post, whatever `mode` says. It exists to exercise the real
    * poller, guards, router and renderer and then stop at the Slack boundary; if it
