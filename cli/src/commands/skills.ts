@@ -15,7 +15,13 @@ export type SkillIndexEntry = {
   rel: string;
   name: string;
   description: string;
+  origin: "core" | "overlay";
 };
+
+/** `rel` is always the clean, unprefixed relative path; this is the one place that labels overlay origin for humans. */
+function displayRel(e: SkillIndexEntry): string {
+  return e.origin === "overlay" ? `[overlay] ${e.rel}` : e.rel;
+}
 
 function walkSkillMd(
   dir: string,
@@ -86,6 +92,7 @@ export function collectSkills(
       rel: f.rel,
       name: fm.name || f.rel,
       description: fm.description,
+      origin: "core",
     });
   }
   if (extraRoot && existsSync(extraRoot)) {
@@ -97,9 +104,10 @@ export function collectSkills(
       const fm = parseFrontmatter(raw);
       entries.push({
         path: f.path,
-        rel: `[overlay] ${f.rel}`,
+        rel: f.rel,
         name: fm.name || f.rel,
         description: fm.description,
+        origin: "overlay",
       });
     }
   }
@@ -107,22 +115,32 @@ export function collectSkills(
   return entries;
 }
 
+/** Resolve `--overlay`/`JSTACK_GUSTO_ROOT` and collect skills -- the same 3 lines were duplicated at all 4 command entry points. */
+function loadEntries(opts: { overlay?: string }): SkillIndexEntry[] {
+  const pluginRoot = findPluginRoot();
+  const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
+  return collectSkills(
+    pluginRoot,
+    overlay && overlay.length > 0 ? overlay : undefined,
+  );
+}
+
+/** The `{ skills: [...] }` JSON envelope shared by index/browse/pick. `show` prints a single entry instead -- not this shape. */
+function printEntriesJson(entries: SkillIndexEntry[]): void {
+  console.log(JSON.stringify({ skills: entries }, null, 2));
+}
+
 export function runSkillsIndex(opts: {
   json?: boolean;
   overlay?: string;
 }): void {
-  const pluginRoot = findPluginRoot();
-  const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(
-    pluginRoot,
-    overlay && overlay.length > 0 ? overlay : undefined,
-  );
+  const entries = loadEntries(opts);
   if (opts.json) {
-    console.log(JSON.stringify({ skills: entries }, null, 2));
+    printEntriesJson(entries);
     return;
   }
   for (const e of entries) {
-    console.log(`${e.name}\t${e.rel}`);
+    console.log(`${e.name}\t${displayRel(e)}`);
   }
 }
 
@@ -131,15 +149,10 @@ export async function runSkillsBrowse(opts: {
   json?: boolean;
   overlay?: string;
 }): Promise<void> {
-  const pluginRoot = findPluginRoot();
-  const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(
-    pluginRoot,
-    overlay && overlay.length > 0 ? overlay : undefined,
-  );
+  const entries = loadEntries(opts);
 
   if (opts.json) {
-    console.log(JSON.stringify({ skills: entries }, null, 2));
+    printEntriesJson(entries);
     return;
   }
 
@@ -156,9 +169,11 @@ export async function runSkillsBrowse(opts: {
 
   const picked = await p.select<string>({
     message: "Select a skill",
+    // Keyed on the absolute path, not `rel`: a core and an overlay skill could in principle
+    // share the same relative path, which would make two options collide on value otherwise.
     options: entries.map((e) => ({
-      value: e.rel,
-      label: e.name.length > 0 ? e.name : e.rel,
+      value: e.path,
+      label: e.name.length > 0 ? e.name : displayRel(e),
       hint:
         e.description.length > 72
           ? `${e.description.slice(0, 72)}…`
@@ -168,7 +183,7 @@ export async function runSkillsBrowse(opts: {
 
   if (handleCancel(picked)) exitCancelled();
 
-  const hit = entries.find((e) => e.rel === picked);
+  const hit = entries.find((e) => e.path === picked);
   if (!hit) {
     console.error(chalk.red("Selection mismatch."));
     process.exitCode = 1;
@@ -176,7 +191,7 @@ export async function runSkillsBrowse(opts: {
   }
 
   console.log(chalk.bold(hit.path));
-  console.log(chalk.dim(`SKILL.md: ${hit.rel}`));
+  console.log(chalk.dim(`SKILL.md: ${displayRel(hit)}`));
   console.log("");
   console.log(chalk.dim("Tip: open the path in your editor or run:"));
   console.log(
@@ -191,15 +206,10 @@ export async function runSkillsPick(opts: {
   json?: boolean;
   overlay?: string;
 }): Promise<void> {
-  const pluginRoot = findPluginRoot();
-  const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(
-    pluginRoot,
-    overlay && overlay.length > 0 ? overlay : undefined,
-  );
+  const entries = loadEntries(opts);
 
   if (opts.json) {
-    console.log(JSON.stringify({ skills: entries }, null, 2));
+    printEntriesJson(entries);
     return;
   }
 
@@ -239,16 +249,17 @@ export async function runSkillsPick(opts: {
 
   const picked = await p.select<string>({
     message: "Pick a skill",
+    // Keyed on the absolute path -- see the identical comment in runSkillsBrowse.
     options: filtered.map((e) => ({
-      value: e.rel,
-      label: e.name.length > 0 ? e.name : e.rel,
-      hint: e.rel,
+      value: e.path,
+      label: e.name.length > 0 ? e.name : displayRel(e),
+      hint: displayRel(e),
     })),
   });
 
   if (handleCancel(picked)) exitCancelled();
 
-  const hit = filtered.find((e) => e.rel === picked);
+  const hit = filtered.find((e) => e.path === picked);
   if (!hit) {
     console.error(chalk.red("Selection mismatch."));
     process.exitCode = 1;
@@ -256,19 +267,14 @@ export async function runSkillsPick(opts: {
   }
 
   console.log(chalk.bold(hit.path));
-  console.log(chalk.dim(`SKILL.md: ${hit.rel}`));
+  console.log(chalk.dim(`SKILL.md: ${displayRel(hit)}`));
 }
 
 export function runSkillsShow(
   id: string,
   opts: { json?: boolean; overlay?: string },
 ): void {
-  const pluginRoot = findPluginRoot();
-  const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
-  const entries = collectSkills(
-    pluginRoot,
-    overlay && overlay.length > 0 ? overlay : undefined,
-  );
+  const entries = loadEntries(opts);
   const needle = id
     .trim()
     .toLowerCase()

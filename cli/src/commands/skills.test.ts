@@ -126,7 +126,7 @@ describe("frontmatter parsing", () => {
 });
 
 describe("overlay merging", () => {
-  test("prefixes overlay entries so their origin is visible", () => {
+  test("origin marks which entries came from the overlay, without mangling rel", () => {
     skill(root, "core-skill", "---\nname: core-one\ndescription: c\n---\n");
     const overlay = mkdtempSync(join(tmpdir(), "jstack-overlay-"));
     try {
@@ -134,9 +134,11 @@ describe("overlay merging", () => {
       const found = collectSkills(root, overlay);
       expect(found).toHaveLength(2);
       const org = found.find((e) => e.name === "org-one");
-      expect(org?.rel).toStartWith("[overlay] ");
+      expect(org?.origin).toBe("overlay");
+      expect(org?.rel).toBe(join("skills", "org-skill", "SKILL.md"));
       const core = found.find((e) => e.name === "core-one");
-      expect(core?.rel).not.toContain("[overlay]");
+      expect(core?.origin).toBe("core");
+      expect(core?.rel).toBe(join("skills", "core-skill", "SKILL.md"));
     } finally {
       rmSync(overlay, { recursive: true, force: true });
     }
@@ -148,7 +150,7 @@ describe("overlay merging", () => {
     expect(found).toHaveLength(1);
   });
 
-  test("an overlay may shadow a core skill name; both are returned for the caller to resolve", () => {
+  test("an overlay may shadow a core skill's relative path; both are returned, distinguished by origin+path", () => {
     skill(root, "dup", "---\nname: same-name\ndescription: from core\n---\n");
     const overlay = mkdtempSync(join(tmpdir(), "jstack-overlay-"));
     try {
@@ -158,10 +160,14 @@ describe("overlay merging", () => {
         "---\nname: same-name\ndescription: from overlay\n---\n",
       );
       const found = collectSkills(root, overlay);
-      // Documented behavior: collectSkills does NOT dedupe. Callers see both, distinguished by rel.
+      // Documented behavior: collectSkills does NOT dedupe. Both entries share the same `rel`
+      // ("dup") in this case -- callers that need a unique key (e.g. an interactive picker)
+      // must key on `path`, not `rel`, for exactly this reason.
       expect(found).toHaveLength(2);
       expect(found.filter((e) => e.name === "same-name")).toHaveLength(2);
-      expect(found.some((e) => e.rel.startsWith("[overlay] "))).toBe(true);
+      expect(new Set(found.map((e) => e.rel)).size).toBe(1);
+      expect(new Set(found.map((e) => e.path)).size).toBe(2);
+      expect(found.map((e) => e.origin).sort()).toEqual(["core", "overlay"]);
     } finally {
       rmSync(overlay, { recursive: true, force: true });
     }
