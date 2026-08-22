@@ -22,6 +22,7 @@ Read the setup preamble first:
 
 **References**
 - Slack MCP behavior and limits: `${CLAUDE_PLUGIN_ROOT}/skills/recon/references/slack-patterns.md` and `_core/best-practices/slack/mcp-patterns.md` if present.
+- Jira JQL scan patterns: `${CLAUDE_PLUGIN_ROOT}/skills/recon/references/jira-scan-patterns.md` and `_core/best-practices/jira/jql-cookbook.md` if present.
 - Question discipline: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/question-patterns.md`
 - Discrete choices (AskUserQuestion or equivalent): `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/ask-user-question-patterns.md`
 - Integrations: `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/integration-guide.md`
