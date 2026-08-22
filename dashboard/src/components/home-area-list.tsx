@@ -5,14 +5,10 @@ import Link from "next/link";
 import { useRouteFilter } from "@/components/route-filter-context";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { RouteEntry } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-export type AreaRow = {
-  href: string;
-  label: string;
-  status: "live" | "stub";
-  detail: string;
-};
+export type AreaRow = RouteEntry;
 
 function normalize(s: string): string {
   return s.toLowerCase().trim();

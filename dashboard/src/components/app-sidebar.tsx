@@ -3,29 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
-
-type NavItem = { href: string; label: string; stub?: boolean };
-
-const nav: NavItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/agent", label: "Agent" },
-  { href: "/wizard", label: "Wizard" },
-  { href: "/workspace", label: "Workspace" },
-  { href: "/reports", label: "Reports" },
-  { href: "/sprint", label: "Sprint", stub: true },
-  { href: "/recon", label: "Recon", stub: true },
-  { href: "/incidents", label: "Incidents", stub: true },
-  { href: "/routines", label: "Routines", stub: true },
-  { href: "/metrics", label: "Metrics", stub: true },
-  { href: "/self", label: "Self", stub: true },
-  { href: "/jira", label: "JIRA", stub: true },
-  { href: "/notion", label: "Notion", stub: true },
-  { href: "/research", label: "Research", stub: true },
-  { href: "/meetings", label: "Meetings", stub: true },
-  { href: "/workflows", label: "Workflows", stub: true },
-  { href: "/settings", label: "Settings", stub: true },
-];
 
 const homeToc: { href: string; label: string }[] = [
   { href: "#overview", label: "Overview" },
@@ -43,7 +22,7 @@ export function AppSidebar() {
         Navigation
       </h2>
       <nav className="flex flex-col gap-0.5" aria-label="Primary">
-        {nav.map(({ href, label, stub }) => {
+        {ROUTES.map(({ href, label, status }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(href));
           return (
             <Link
@@ -56,7 +35,7 @@ export function AppSidebar() {
               )}
             >
               <span>{label}</span>
-              {stub === true ? (
+              {status === "stub" ? (
                 <span className="shrink-0 rounded border border-border bg-muted px-1.5 py-0 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
                   stub
                 </span>
