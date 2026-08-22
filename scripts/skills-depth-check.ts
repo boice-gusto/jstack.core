@@ -18,10 +18,11 @@
  * `scripts/skill_deep/` (merged into `CATEGORY_DEEP`), not to hand-edit the SKILL.md —
  * a hand edit to a non-SKIP skill is lost on the next regeneration.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, dirname, relative } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
+import { discoverAllSkillRelativePaths } from "../evals/discover.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(root, "skills");
@@ -163,31 +164,14 @@ const EXEMPTIONS: Record<string, Record<string, string>> = {
   },
 };
 
-/** Recursively collect skill directories containing a SKILL.md. */
-function findSkills(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir)) {
-    const p = join(dir, entry);
-    if (!statSync(p).isDirectory()) continue;
-    try {
-      statSync(join(p, "SKILL.md"));
-      out.push(p);
-    } catch {
-      // no SKILL.md at this level; keep descending
-    }
-    out.push(...findSkills(p));
-  }
-  return out;
-}
-
 const findings: Finding[] = [];
 const exempted: { skill: string; id: string; reason: string }[] = [];
 const tiers = new Map<string, Tier>();
 const scores = new Map<string, { passed: number; total: number }>();
 
-const skillDirs = findSkills(skillsRoot).sort();
-for (const dir of skillDirs) {
-  const rel = relative(skillsRoot, dir);
+const skillDirs = discoverAllSkillRelativePaths(skillsRoot);
+for (const rel of skillDirs) {
+  const dir = join(skillsRoot, rel);
   const raw = readFileSync(join(dir, "SKILL.md"), "utf8");
   const parsed = parseYamlFrontmatter(raw);
   if (parsed.error && parsed.frontmatterText === undefined) {

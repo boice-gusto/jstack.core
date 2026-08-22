@@ -35,12 +35,20 @@ let sandbox: string;
 function makeSandbox(): string {
   const dir = mkdtempSync(join(tmpdir(), "skills-depth-"));
   mkdirSync(join(dir, "scripts", "lib"), { recursive: true });
+  mkdirSync(join(dir, "evals"), { recursive: true });
   mkdirSync(join(dir, "skills"), { recursive: true });
   cpSync(script, join(dir, "scripts", "skills-depth-check.ts"));
-  // The script now sources frontmatter parsing from the shared module — mirror it too.
+  // The script now sources frontmatter parsing and skill discovery from shared modules —
+  // mirror both. `discover.ts`'s only non-type-only import is `js-yaml` (via node_modules,
+  // symlinked below); its `import type` from `./eval-config.js` is erased at transpile time,
+  // so that file does not need to exist in the sandbox.
   cpSync(
     join(repoRoot, "scripts", "lib", "parse-frontmatter.ts"),
     join(dir, "scripts", "lib", "parse-frontmatter.ts"),
+  );
+  cpSync(
+    join(repoRoot, "evals", "discover.ts"),
+    join(dir, "evals", "discover.ts"),
   );
   const nm = join(repoRoot, "node_modules");
   if (existsSync(nm)) {

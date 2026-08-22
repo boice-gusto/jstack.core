@@ -19,7 +19,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Glob } from "bun";
+import { discoverAllSkillRelativePaths } from "../evals/discover.js";
 
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
@@ -129,13 +129,13 @@ interface Row {
 }
 
 const rows: Row[] = [];
-for (const rel of new Glob("**/SKILL.md").scanSync(skillsRoot)) {
-  const abs = join(skillsRoot, rel);
+for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
+  const abs = join(skillsRoot, rel, "SKILL.md");
   const raw = readFileSync(abs, "utf8");
   if (!raw.startsWith("---\n")) continue;
   const fm = raw.slice(4, raw.indexOf("\n---\n", 4));
   rows.push({
-    rel: dirname(rel),
+    rel,
     gated: /^disable-model-invocation:\s*true\s*$/m.test(fm),
     forked: /^agent:\s*Explore\s*$/m.test(fm),
   });

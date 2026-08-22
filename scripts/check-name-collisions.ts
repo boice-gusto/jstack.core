@@ -17,7 +17,8 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Glob } from "bun";
+import { discoverAllSkillRelativePaths } from "../evals/discover.js";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
@@ -53,15 +54,12 @@ interface S {
   desc: string;
 }
 const skills: S[] = [];
-for (const rel of new Glob("**/SKILL.md").scanSync(skillsRoot)) {
-  const raw = readFileSync(join(skillsRoot, rel), "utf8");
-  const name =
-    raw
-      .match(/^name:\s*(.+)$/m)?.[1]
-      ?.trim()
-      .replace(/^["']|["']$/g, "") ?? "";
-  const desc = raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
-  if (name) skills.push({ rel: dirname(rel), name, desc });
+for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
+  const raw = readFileSync(join(skillsRoot, rel, "SKILL.md"), "utf8");
+  const { meta } = parseYamlFrontmatter(raw);
+  const name = typeof meta.name === "string" ? meta.name : "";
+  const desc = typeof meta.description === "string" ? meta.description : "";
+  if (name) skills.push({ rel, name, desc });
 }
 
 const errors: string[] = [];

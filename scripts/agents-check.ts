@@ -3,14 +3,15 @@
  * Validates agents/*.md: YAML frontmatter (name, description) and every
  * `jstack:<suffix>` token against each SKILL.md `name` field (jstack-prefixed).
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import yaml from "js-yaml";
+import { discoverAllSkillRelativePaths } from "../evals/discover.js";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const NAME_LINE = /^name:\s*["']?jstack-([a-z0-9-]+)["']?\s*$/im;
+const NAME_PREFIX = /^jstack-([a-z0-9-]+)$/;
 const JSTACK_TOKEN = /\bjstack:([a-z0-9-]+)\b/g;
 
 function fail(message: string): never {
@@ -18,31 +19,20 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-function collectSkillMdPaths(dir: string): string[] {
-  const out: string[] = [];
-  if (!existsSync(dir)) return out;
-  const here = join(dir, "SKILL.md");
-  if (existsSync(here)) {
-    out.push(here);
-  }
-  for (const entry of readdirSync(dir)) {
-    const p = join(dir, entry);
-    if (!statSync(p).isDirectory()) continue;
-    out.push(...collectSkillMdPaths(p));
-  }
-  return out;
-}
-
+const skillsRoot = join(root, "skills");
 const skillSuffixes = new Set<string>();
-for (const skillPath of collectSkillMdPaths(join(root, "skills"))) {
-  const raw = readFileSync(skillPath, "utf8");
-  const nameMatch = raw.match(NAME_LINE);
-  if (!nameMatch?.[1]) {
+for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
+  const skillPath = join(skillsRoot, rel, "SKILL.md");
+  const { meta, error } = parseYamlFrontmatter(readFileSync(skillPath, "utf8"));
+  const name = typeof meta.name === "string" ? meta.name : "";
+  const suffixMatch = name.match(NAME_PREFIX);
+  if (error || !suffixMatch) {
     fail(
-      `${skillPath}: missing or invalid frontmatter line name: jstack-<suffix>`,
+      `${skillPath}: missing or invalid frontmatter line name: jstack-<suffix>` +
+        (error ? ` (${error})` : ""),
     );
   }
-  skillSuffixes.add(nameMatch[1]);
+  skillSuffixes.add(suffixMatch[1]);
 }
 
 const agentsDir = join(root, "agents");
@@ -55,24 +45,20 @@ for (const fileName of readdirSync(agentsDir)) {
   const agentPath = join(agentsDir, fileName);
   const full = readFileSync(agentPath, "utf8");
 
-  const fmMatch = full.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!fmMatch) {
+  const { meta, frontmatterText, error } = parseYamlFrontmatter(full);
+  if (frontmatterText === undefined) {
     errors.push(`${fileName}: missing YAML frontmatter (--- ... ---)`);
     continue;
   }
-  let parsed: unknown;
-  try {
-    parsed = yaml.load(fmMatch[1]);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    errors.push(`${fileName}: invalid YAML frontmatter: ${msg}`);
+  if (error) {
+    errors.push(`${fileName}: invalid YAML frontmatter: ${error}`);
     continue;
   }
-  if (!parsed || typeof parsed !== "object") {
+  if (!meta || typeof meta !== "object") {
     errors.push(`${fileName}: frontmatter must be a mapping`);
     continue;
   }
-  const rec = parsed as Record<string, unknown>;
+  const rec = meta;
   if (typeof rec.name !== "string" || rec.name.trim() === "") {
     errors.push(
       `${fileName}: frontmatter must include non-empty string 'name'`,
