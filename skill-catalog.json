@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-22T13:05:51.287Z",
+  "generatedAt": "2026-08-22T13:29:07.853Z",
   "count": 143,
   "skills": [
     {
@@ -129,7 +129,7 @@
       "path": "skills/design/SKILL.md",
       "relPath": "skills/design/SKILL.md",
       "gateId": "jstack:design",
-      "description": "\"Route a design request to the right sub-skill: Figma handoff (design-to-implementation contract) or a self-contained single-page HTML artifact. Not for writing component code.\"",
+      "description": "Route a design request to the right sub-skill (figma-handoff, visual-single-page-html). Not for writing component code.",
       "whenToUse": "",
       "category": "Design",
       "categoryKey": "design"
@@ -228,7 +228,7 @@
       "path": "skills/design/figma-handoff/SKILL.md",
       "relPath": "skills/design/figma-handoff/SKILL.md",
       "gateId": "jstack:design/figma-handoff",
-      "description": "Load jstack Figma workflow guidance before design-to-code or MCP Figma work; chain to figma-use when the host provides it.",
+      "description": "Turn a Figma design into an implementable handoff — named components and variants, token references, state coverage, and the accessibility contract each state must meet. Load before design-to-code or MCP Figma work; chain to figma-use when the host provides it. Not for writing the component code or editing the Figma file itself.",
       "whenToUse": "",
       "category": "Design",
       "categoryKey": "design"
@@ -283,7 +283,7 @@
       "path": "skills/incident/SKILL.md",
       "relPath": "skills/incident/SKILL.md",
       "gateId": "jstack:incident",
-      "description": "Route incident requests to the main commander flow or retro sub-skill.",
+      "description": "Route incident requests to the right sub-skill (retro, find-sme, oncall-summary).",
       "whenToUse": "",
       "category": "Incident",
       "categoryKey": "incident"
@@ -437,7 +437,7 @@
       "path": "skills/knowledge/SKILL.md",
       "relPath": "skills/knowledge/SKILL.md",
       "gateId": "jstack:knowledge",
-      "description": "Route knowledge requests to intake, process, search, self-knowledge, or team-knowledge. Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
+      "description": "Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder). Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
       "whenToUse": "",
       "category": "Knowledge",
       "categoryKey": "knowledge"
@@ -492,7 +492,7 @@
       "path": "skills/meetings/SKILL.md",
       "relPath": "skills/meetings/SKILL.md",
       "gateId": "jstack:meetings",
-      "description": "Route meeting requests to the right sub-skill (prepare, transcribe, action-items, post-slack, etc.).",
+      "description": "Route meeting requests to the right sub-skill (prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note, one-on-one-transcript, transcripts-ingest).",
       "whenToUse": "",
       "category": "Meetings",
       "categoryKey": "meetings"
@@ -646,7 +646,7 @@
       "path": "skills/notion/SKILL.md",
       "relPath": "skills/notion/SKILL.md",
       "gateId": "jstack:notion",
-      "description": "Route Notion requests to the right sub-skill (adr, article, sprint, report, etc.). Ask one question if ambiguous.",
+      "description": "Route Notion requests to the right sub-skill (update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup). Ask one question if ambiguous.",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -921,7 +921,7 @@
       "path": "skills/reports/SKILL.md",
       "relPath": "skills/reports/SKILL.md",
       "gateId": "jstack:reports",
-      "description": "Route report requests to the right sub-skill (team, engineer, manager, project, eval).",
+      "description": "Route report requests to the right sub-skill (team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish).",
       "whenToUse": "",
       "category": "Reports",
       "categoryKey": "reports"
@@ -1009,7 +1009,7 @@
       "path": "skills/review/SKILL.md",
       "relPath": "skills/review/SKILL.md",
       "gateId": "jstack:review",
-      "description": "Route review requests to project-review, announcement-review, or counsel-review.",
+      "description": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review).",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"
@@ -1086,7 +1086,7 @@
       "path": "skills/self/SKILL.md",
       "relPath": "skills/self/SKILL.md",
       "gateId": "jstack:self",
-      "description": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain).",
+      "description": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr).",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"
@@ -1339,7 +1339,7 @@
       "path": "skills/sprint/SKILL.md",
       "relPath": "skills/sprint/SKILL.md",
       "gateId": "jstack:sprint",
-      "description": "\"Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira.\"",
+      "description": "Route sprint requests to the right sub-skill (prep, refinement, planning) -- capacity/goal planning, mid-sprint re-plan, or backlog refinement from Jira.",
       "whenToUse": "",
       "category": "Sprint",
       "categoryKey": "sprint"

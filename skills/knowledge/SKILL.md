@@ -1,6 +1,6 @@
 ---
 name: jstack-knowledge
-description: Route knowledge requests to intake, process, search, self-knowledge, or team-knowledge. Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.
+description: Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder). Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.
 category: knowledge
 effort: low
 ---

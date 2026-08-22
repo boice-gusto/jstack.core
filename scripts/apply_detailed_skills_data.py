@@ -15,7 +15,7 @@ DESCRIPTIONS: dict[str, str] = {
     "jira/notify": "Draft a Slack or email notification about a Jira event (status change, assignment, comment) for user approval.",
     "jira/append": "Append structured content (meeting notes, checklist, update block) to an existing Jira issue description or comment.",
     # --- notion ---
-    "notion": "Route Notion requests to the right sub-skill (adr, article, sprint, report, etc.). Ask one question if ambiguous.",
+    "notion": "Route Notion requests to the right sub-skill (update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup). Ask one question if ambiguous.",
     "notion/update": "Patch named properties on an existing Notion page. Return the view URL after update.",
     "notion/planning": "Create or update a roadmap / OKR planning page in Notion, linking to Jira epics when ids are available.",
     "notion/sprint": "Create or update a sprint page in Notion with goal, scope, and Jira sprint id when provided.",
@@ -26,7 +26,7 @@ DESCRIPTIONS: dict[str, str] = {
     "notion/team-note": "Create a lightweight team note in Notion. Suggest ADR for binding decisions instead.",
     "notion/team-report": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack-team-report.",
     # --- meetings ---
-    "meetings": "Route meeting requests to the right sub-skill (prepare, transcribe, action-items, post-slack, etc.).",
+    "meetings": "Route meeting requests to the right sub-skill (prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note, one-on-one-transcript, transcripts-ingest).",
     "meetings/prepare": "Build a 1-page meeting prep brief from calendar context, Jira in-progress items, and blockers for attendees.",
     "meetings/transcribe": "Convert meeting audio/video to text via approved transcription patterns. Mark [inaudible] and redact PII for public summaries.",
     "meetings/granola-highlights": "Import Granola AI highlights and map bullets to Decisions, Open Questions, and Action Items.",
@@ -44,8 +44,8 @@ DESCRIPTIONS: dict[str, str] = {
     "research/spike": "Time-boxed technical spike: hypothesis, method, go/no-go criteria up front. Report findings even if spike fails.",
     "research/explain-codebase": "Map a codebase top-down: entry file, packages, main flows, then one deep dive the user requested.",
     # --- reports ---
-    "reports": "Route report requests to the right sub-skill (team, engineer, manager, project, eval).",
-    "reports/team-report": "Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership.",
+    "reports": "Route report requests to the right sub-skill (team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish).",
+    "reports/team-report": "Generate a weekly team report: velocity, risks, dependencies, and 3 asks to leadership. Weekly update to leadership; sprint report; team status update; velocity and risk rollup for a manager or skip-level; 'what should I send my manager this week'.",
     "reports/engineer-report": "Generate an individual engineer report: shipped, WIP, blockers, next. No invented metrics.",
     "reports/manager-report": "Generate a manager rollup across teams without stack-ranking individuals.",
     "reports/project-report": "Generate a stakeholder 1-pager: RAG status, milestones, risk register snapshot.",
@@ -55,7 +55,7 @@ DESCRIPTIONS: dict[str, str] = {
     "metrics/my-metrics": "Personal throughput and review latency from GitHub/Jira. No peer comparison unless user is a people manager.",
     "metrics/team-metrics": "Team DORA-style signals with caveats for sample size. Separate unplanned work % when labels exist.",
     # --- self ---
-    "self": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain).",
+    "self": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr).",
     "self/diary": "Write a single journal entry to personal gbrain. Never auto-post to team channels.",
     "self/lookback": "Review last N days of personal gbrain + calendar and surface patterns. Gentle, not therapeutic.",
     "self/focus": "Synthesize 2-3 focus blocks from tasks + gbrain, one explicit non-goal, and a timebox suggestion.",
@@ -68,14 +68,16 @@ DESCRIPTIONS: dict[str, str] = {
     "session/init": "Start a jstack session: set gbrain target (personal vs team), load sprint/timezone context, confirm integrations.",
     "session/end": "End the current session: summarize, flush carryover items, optionally run eval hooks.",
     # --- knowledge ---
-    "knowledge": "Route knowledge requests to intake, process, search, self-knowledge, or team-knowledge.",
+    "knowledge": "Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder).",
     "knowledge/intake": "Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage.",
     "knowledge/search": "Answer questions using configured doc roots, URLs, and GitHub scope from jstack.config.json (knowledge_base) — not free-form web guesswork.",
     "knowledge/process": "Deduplicate, merge near-duplicates, and set canonical links across gbrain/Notion entries.",
     "knowledge/self-knowledge": "Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.",
     "knowledge/team-knowledge": "Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages.",
+    # --- design ---
+    "design": "Route a design request to the right sub-skill (figma-handoff, visual-single-page-html). Not for writing component code.",
     # --- review ---
-    "review": "Route review requests to project-review, announcement-review, or counsel-review.",
+    "review": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review).",
     "review/project-review": "Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.",
     "review/announcement-review": "Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.",
     "review/counsel-review": "Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",
@@ -91,9 +93,9 @@ DESCRIPTIONS: dict[str, str] = {
     "workflows/builder": "Build a BROWSER workflow definition as JSON at `config/workflows/<id>.json`: start URL and ordered steps drawn from the six kinds the schema allows (goto, click, fill, wait, screenshot, ai). No credentials in the file. Not for skill-chain, routine, or policy design — that is `jstack-workflow-builder` (singular), a different skill one letter away.",
     "workflows/recorder": "Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.",
     "workflows/viewer": "Summarize what a workflow run log contains: steps taken and artifacts produced. Never reconstruct a result for a run with no report.",
-    "workflows/execute": "Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP).",
+    "workflows/execute": "Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP). After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior.",
     # --- incident ---
-    "incident": "Route incident requests to the main commander flow or retro sub-skill.",
+    "incident": "Route incident requests to the right sub-skill (retro, find-sme, oncall-summary).",
     "incident/retro": "Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.",
     # --- standalone ---
     "prioritize": "Rank a list using RICE, WSJF, value/effort, or a user-provided rubric. Show scores and cutline.",
@@ -106,7 +108,7 @@ DESCRIPTIONS: dict[str, str] = {
     "update-config": "Edit jstack.config.json with validation against config/schema.json. Show diff and rollback one-liner. Not for first-time setup — use jstack:onboarding.",
     "project": "Cross-surface project status (Notion/Jira): RAG health, 3 risks, 3 asks, milestone table.",
     "team": "Team snapshot: roster, on-call, sprint goal, dependencies. No individual performance color.",
-    "sprint": "Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira.",
+    "sprint": "Route sprint requests to the right sub-skill (prep, refinement, planning) -- capacity/goal planning, mid-sprint re-plan, or backlog refinement from Jira.",
     "sprint/planning": "Sprint planning: capacity, commit vs goal, spill from last sprint with root causes.",
     "sop": "Route SOP requests to expectations or resources sub-skill.",
     "sop/expectations": "Maintain role expectations docs: what success looks like, autonomy boundaries, escalation paths.",

@@ -1,6 +1,6 @@
 ---
 name: jstack-sprint
-description: "Sprint-level orchestrator: planning and mid-sprint re-plan from capacity, goals, and Jira."
+description: Route sprint requests to the right sub-skill (prep, refinement, planning) -- capacity/goal planning, mid-sprint re-plan, or backlog refinement from Jira.
 category: sprint
 effort: low
 ---

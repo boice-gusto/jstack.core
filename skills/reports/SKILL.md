@@ -1,6 +1,6 @@
 ---
 name: jstack-reports
-description: Route report requests to the right sub-skill (team, engineer, manager, project, eval).
+description: Route report requests to the right sub-skill (team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish).
 category: reports
 effort: low
 ---

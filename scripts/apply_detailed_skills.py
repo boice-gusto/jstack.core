@@ -280,8 +280,29 @@ ORCH_CHILDREN = {
 
 def build_description(key: str, fm: dict) -> str:
     if key in DESCRIPTIONS:
-        return DESCRIPTIONS[key]
-    return fm.get("description", "")
+        desc = DESCRIPTIONS[key]
+    else:
+        desc = fm.get("description", "")
+    if key in ORCH_CHILDREN:
+        # 2026-08 audit finding: several orchestrators' `description` (the only field the
+        # platform reads for auto-discovery) listed fewer children than the "## Sub-skills"
+        # section actually routes to -- e.g. review's description named 3 of 7 children, self
+        # named 7 of 11. Fail loud at generation time instead of letting a future new child
+        # skill silently drift the two lists apart again.
+        desc_lower = desc.lower()
+        missing = [
+            child
+            for child in (c.strip().split(" (")[0] for c in ORCH_CHILDREN[key].split(","))
+            if child.lower() not in desc_lower
+        ]
+        if missing:
+            raise ValueError(
+                f"DESCRIPTIONS['{key}'] is missing sub-skill(s) {missing} that ORCH_CHILDREN "
+                f"lists for '{key}'. Update DESCRIPTIONS['{key}'] in "
+                f"apply_detailed_skills_data.py to name every child, so the auto-discovery "
+                f"description stays in sync with the '## Sub-skills' section."
+            )
+    return desc
 
 
 def build_body(key: str, fm: dict) -> str:
