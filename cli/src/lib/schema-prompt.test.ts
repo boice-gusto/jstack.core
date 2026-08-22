@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { runSchemaWizard } from "./schema-prompt.js";
+import { resolveAnswerValue, runSchemaWizard } from "./schema-prompt.js";
 import type { QuestionSpec } from "./schema-questions.js";
 import { SKIP_SENTINEL, mergeDeep, pruneSkipped } from "./config.js";
 
@@ -146,5 +146,44 @@ describe("skip semantics end-to-end (pruneSkipped + mergeDeep)", () => {
     expect(() => noSymbols(cleaned)).not.toThrow();
     // And the JSON round-trip must succeed without errors:
     expect(() => JSON.stringify(cleaned)).not.toThrow();
+  });
+});
+
+/**
+ * `resolveAnswerValue` is the one fallback chain shared by `askOneQuestion`, the non-interactive
+ * wizard, and the interactive per-section "Take Default on every question" branch -- previously
+ * three independent copies of this exact expression, with only the non-interactive path under
+ * test. Testing the shared function once now covers all three call sites structurally: they can
+ * no longer drift from each other because they call the same function.
+ */
+describe("resolveAnswerValue", () => {
+  const baseQuestion: QuestionSpec = {
+    id: "x.y",
+    path: ["x", "y"],
+    section: "X",
+    question: "Y?",
+    describe: "d",
+    type: "string",
+  };
+
+  test("a question's own default() function wins over existing/shipped values", () => {
+    const q: QuestionSpec = { ...baseQuestion, default: () => "from-fn" };
+    expect(resolveAnswerValue(q, {}, { x: { y: "existing" } })).toBe("from-fn");
+  });
+
+  test("existing value wins over the shipped default when there's no default() fn", () => {
+    expect(
+      resolveAnswerValue(
+        baseQuestion,
+        { x: { y: "shipped" } },
+        { x: { y: "existing" } },
+      ),
+    ).toBe("existing");
+  });
+
+  test("falls back to the shipped default when nothing exists yet", () => {
+    expect(resolveAnswerValue(baseQuestion, { x: { y: "shipped" } }, {})).toBe(
+      "shipped",
+    );
   });
 });

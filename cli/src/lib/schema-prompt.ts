@@ -9,6 +9,17 @@ import {
   getExistingAt,
 } from "./schema-questions.js";
 
+/** A question's own `default(defaults, existing)` fn wins; otherwise existing beats the shipped default. */
+export function resolveAnswerValue(
+  q: QuestionSpec,
+  defaults: Record<string, unknown>,
+  existing: Record<string, unknown>,
+): unknown {
+  return q.default
+    ? q.default(defaults, existing)
+    : (getExistingAt(existing, q.path) ?? getDefaultsAt(defaults, q.path));
+}
+
 /**
  * Schema-driven prompt engine. For each question, presents the user with five
  * actions: Default, Custom, Skip, Example, Discuss. Returns a sparse patch
@@ -116,9 +127,7 @@ async function askOneQuestion(
   | { kind: "answer"; decision: "default" | "custom" | "skip"; value: unknown }
   | PromptCancelled
 > {
-  const defaultValue = q.default
-    ? q.default(defaults, existing)
-    : (getExistingAt(existing, q.path) ?? getDefaultsAt(defaults, q.path));
+  const defaultValue = resolveAnswerValue(q, defaults, existing);
   const pct =
     position.total > 0
       ? Math.floor(((position.index + 1) / position.total) * 100)
@@ -194,10 +203,7 @@ export async function runSchemaWizard(
 
   if (opts.nonInteractive) {
     for (const q of filtered) {
-      const v = q.default
-        ? q.default(opts.defaults, opts.existing)
-        : (getExistingAt(opts.existing, q.path) ??
-          getDefaultsAt(opts.defaults, q.path));
+      const v = resolveAnswerValue(q, opts.defaults, opts.existing);
       if (v !== undefined) setAt(patch, q.path, v);
       decisions[q.id] = "default";
     }
@@ -240,10 +246,7 @@ export async function runSchemaWizard(
         continue;
       }
       if (sectionAction === "defaults") {
-        const v = q.default
-          ? q.default(opts.defaults, opts.existing)
-          : (getExistingAt(opts.existing, q.path) ??
-            getDefaultsAt(opts.defaults, q.path));
+        const v = resolveAnswerValue(q, opts.defaults, opts.existing);
         if (v !== undefined) setAt(patch, q.path, v);
         decisions[q.id] = "default";
         position++;
