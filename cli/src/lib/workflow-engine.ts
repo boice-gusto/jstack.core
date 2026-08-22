@@ -8,9 +8,11 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { resolveWithinRoots } from "./path-utils.js";
+import { runClaude } from "./crew/slack.js";
 import {
   WorkflowDefinitionSchema,
   type WorkflowDefinition,
+  type WorkflowStep,
 } from "../types/workflow.js";
 
 export function workflowsDir(projectRoot: string): string {
@@ -87,14 +89,65 @@ export function importWorkflowFromFile(
   return def;
 }
 
-/** Stub executor — real impl wires Playwright / browser_use */
-export async function runWorkflowStub(
+function describeStep(step: WorkflowStep, index: number): string {
+  const parts = [`${index + 1}. ${step.kind}`];
+  if (step.url) parts.push(`url=${step.url}`);
+  if (step.selector) parts.push(`selector=${step.selector}`);
+  if (step.value !== undefined) {
+    parts.push(
+      step.value.startsWith("env:")
+        ? `value=<secret, resolve ${step.value.slice(4)} from env, never print it>`
+        : `value=${step.value}`,
+    );
+  }
+  if (step.notes) parts.push(`notes=${step.notes}`);
+  return `  ${parts.join(" ")}`;
+}
+
+/**
+ * Builds the prompt for the spawned `claude -p` that actually drives the workflow. There is
+ * no npm browser-automation dependency in this repo by design (see
+ * `skills/computer-use/references/tool-matrix.md`) -- web automation goes through whatever
+ * browser-automation MCP (e.g. Playwright MCP) the host has configured, the same way
+ * `jstack schedule run` delegates skill chains to a spawned agent rather than reimplementing
+ * skill execution locally.
+ */
+export function buildWorkflowRunPrompt(def: WorkflowDefinition): string {
+  const steps = def.steps.map(describeStep).join("\n");
+  return (
+    `Run the browser workflow "${def.name}" (id "${def.id}"), triggered by ` +
+    `\`jstack workflow run ${def.id} --yes\`.\n\n` +
+    `Start at: ${def.start_url}\n\n` +
+    `Steps, in order:\n${steps || "  (no steps defined)"}\n\n` +
+    `Discipline:\n` +
+    `- Drive a real browser via whichever browser-automation tool you have available (e.g. ` +
+    `Playwright MCP). If none is configured, stop immediately and say so plainly -- never ` +
+    `claim a step ran if it didn't.\n` +
+    `- A "fill" step whose value is "env:VAR_NAME" is a secret: read VAR_NAME from the ` +
+    `environment and type it directly into the field. Never print its value, write it to a ` +
+    `file, or include it in your final report.\n` +
+    `- Capture a screenshot per step when your tool supports it, saved under ` +
+    `\`artifacts/workflows/${def.id}/\`.\n` +
+    `- If a step fails, stop there and report which step failed and why; never report ` +
+    `overall success if any step failed.\n` +
+    `- Finish with a short summary naming what ran and what you verified.`
+  );
+}
+
+/** `claude -p` is not expected to finish a multi-step browser flow instantly; generous but bounded. */
+export const WORKFLOW_RUN_TIMEOUT_MS = 10 * 60 * 1000;
+
+export async function runWorkflowViaClaude(
   def: WorkflowDefinition,
+  timeoutMs: number = WORKFLOW_RUN_TIMEOUT_MS,
 ): Promise<{ ok: boolean; log: string[] }> {
+  const result = await runClaude([], buildWorkflowRunPrompt(def), timeoutMs);
   return {
-    ok: true,
+    ok: result.ok,
     log: [
-      `Would run workflow ${def.name} starting at ${def.start_url} (${def.steps.length} steps)`,
+      result.ok
+        ? result.text || "(agent reported no output)"
+        : `Run failed: ${result.text}`,
     ],
   };
 }

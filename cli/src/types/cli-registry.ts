@@ -568,7 +568,7 @@ export const CLI_COMMANDS: CliCommand[] = [
   {
     name: "jstack workflow",
     description:
-      "Browser workflows: CRUD on config/workflows/*.json; create prompts for URL when interactive; run previews unless --yes; delete confirms unless --force",
+      "Browser workflows: CRUD on config/workflows/*.json; create prompts for URL when interactive; run previews unless --yes and drives a real browser via a spawned agent's browser-automation MCP; delete confirms unless --force",
     tags: ["workflow", "browser"],
     arguments: [
       {
@@ -576,7 +576,7 @@ export const CLI_COMMANDS: CliCommand[] = [
         type: "string",
         required: true,
         description:
-          "list [--json] | show <id> [--json] | create <id> [--url] | run <id> [--yes] | delete <id> [--force] | export <id> --out | import --file | edit <id> [--url] [--name]",
+          "list [--json] | show <id> [--json] | create <id> [--url] | run <id> [--yes] [--dry-run] [--json] | delete <id> [--force] | export <id> --out | import --file | edit <id> [--url] [--name]",
       },
     ],
     examples: [
@@ -593,6 +593,10 @@ export const CLI_COMMANDS: CliCommand[] = [
         description: "Preview + confirm when TTY (omit --yes)",
       },
       {
+        command: "jstack workflow run my-flow --dry-run --json",
+        description: "Print the agent prompt without running anything",
+      },
+      {
         command: "jstack workflow export my-flow --out /tmp/wf.json",
         description: "Copy definition",
       },
@@ -601,7 +605,8 @@ export const CLI_COMMANDS: CliCommand[] = [
         description: "Install from file",
       },
     ],
-    returns: "Workflow JSON on disk; stub runner log",
+    returns:
+      "Workflow JSON on disk; run drives a spawned agent and reports its real ok/fail result (JSON with --json)",
   },
   {
     name: "jstack transcripts",

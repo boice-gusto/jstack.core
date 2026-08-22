@@ -10,12 +10,13 @@ import {
   nonInteractiveHint,
 } from "../lib/cliUi.js";
 import {
+  buildWorkflowRunPrompt,
   deleteWorkflow,
   exportWorkflow,
   importWorkflowFromFile,
   listWorkflows,
   loadWorkflow,
-  runWorkflowStub,
+  runWorkflowViaClaude,
   saveWorkflow,
   workflowsDir,
 } from "../lib/workflow-engine.js";
@@ -65,7 +66,16 @@ export async function runWorkflowShow(
   console.log(JSON.stringify(def, null, 2));
 }
 
-export async function runWorkflowRun(id: string, yes: boolean): Promise<void> {
+export interface WorkflowRunOpts {
+  yes?: boolean;
+  dryRun?: boolean;
+  json?: boolean;
+}
+
+export async function runWorkflowRun(
+  id: string,
+  opts: WorkflowRunOpts,
+): Promise<void> {
   const root = findProjectRoot();
   const def = loadWorkflow(root, id);
   if (!def) {
@@ -73,12 +83,37 @@ export async function runWorkflowRun(id: string, yes: boolean): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  if (!yes) {
+
+  if (opts.dryRun) {
+    const prompt = buildWorkflowRunPrompt(def);
+    if (opts.json) {
+      console.log(
+        JSON.stringify(
+          { id, dryRun: true, steps: def.steps.length, prompt },
+          null,
+          2,
+        ),
+      );
+      return;
+    }
+    console.log(
+      chalk.bold(
+        `Would run workflow "${id}" via a spawned agent driving a real browser. No process was started.`,
+      ),
+    );
+    console.log("");
+    console.log(chalk.dim("--- prompt ---"));
+    console.log(prompt);
+    return;
+  }
+
+  if (!opts.yes) {
     console.log(chalk.bold("Preview"));
     console.log(JSON.stringify(def, null, 2));
     if (isInteractive()) {
       const go = await p.confirm({
-        message: "Run stub executor now?",
+        message:
+          "Run this workflow now? This drives a real browser via whatever browser-automation tool the agent has (e.g. Playwright MCP).",
         initialValue: false,
       });
       if (handleCancel(go)) exitCancelled();
@@ -87,16 +122,31 @@ export async function runWorkflowRun(id: string, yes: boolean): Promise<void> {
         return;
       }
     } else {
-      console.log(chalk.dim("Re-run with --yes to execute stub"));
+      console.error(
+        chalk.red(
+          "Non-interactive: pass --yes to run, or --dry-run to preview. ",
+        ) + chalk.dim(nonInteractiveHint("--yes / --dry-run")),
+      );
+      process.exitCode = 1;
       return;
     }
   }
-  const res = await runWorkflowStub(def);
-  console.log(res.log.join("\n"));
-  console.log("");
-  console.log("## Links");
-  console.log("");
-  console.log(`- Workflow definition: \`config/workflows/${id}.json\` (local)`);
+
+  const res = await runWorkflowViaClaude(def);
+  if (opts.json) {
+    console.log(JSON.stringify({ id, ok: res.ok, log: res.log }, null, 2));
+  } else {
+    console.log(
+      res.ok ? chalk.green(res.log.join("\n")) : chalk.red(res.log.join("\n")),
+    );
+    console.log("");
+    console.log("## Links");
+    console.log("");
+    console.log(
+      `- Workflow definition: \`config/workflows/${id}.json\` (local)`,
+    );
+  }
+  if (!res.ok) process.exitCode = 1;
 }
 
 export async function runWorkflowCreate(

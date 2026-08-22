@@ -347,7 +347,9 @@ sched
 
 const wf = program
   .command("workflow")
-  .description("Browser workflows (JSON on disk; stub runner)");
+  .description(
+    "Browser workflows (JSON on disk; executes via a spawned agent driving a browser-automation MCP)",
+  );
 wf.command("list")
   .option("--json", "machine-readable list", false)
   .action(async (o: { json?: boolean }) => runWorkflowList({ json: o.json }));
@@ -365,10 +367,14 @@ wf.command("create")
   });
 wf.command("run")
   .argument("<id>", "workflow id")
-  .option("--yes", "execute", false)
-  .action(async (id: string, o: { yes: boolean }) => {
-    await runWorkflowRun(id, o.yes);
-  });
+  .option("--yes", "execute without an interactive confirm prompt", false)
+  .option("--dry-run", "print the agent prompt without running anything", false)
+  .option("--json", "machine-readable result", false)
+  .action(
+    async (id: string, o: { yes: boolean; dryRun: boolean; json: boolean }) => {
+      await runWorkflowRun(id, { yes: o.yes, dryRun: o.dryRun, json: o.json });
+    },
+  );
 wf.command("delete")
   .argument("<id>", "workflow id")
   .option("--force", "confirm delete", false)
