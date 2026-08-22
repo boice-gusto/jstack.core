@@ -83,7 +83,7 @@ export function getExistingAt(
   return deepGet(existing, path);
 }
 
-function deepGet(obj: unknown, path: string[]): unknown {
+export function deepGet(obj: unknown, path: string[]): unknown {
   let cur: unknown = obj;
   for (const seg of path) {
     if (cur == null || typeof cur !== "object") return undefined;

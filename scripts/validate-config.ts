@@ -11,6 +11,10 @@ import {
   JstackConfigSchema,
   formatConfigIssues,
 } from "../cli/src/types/config.js";
+import {
+  INTEGRATION_CHECK_PATHS,
+  isIntegrationConfigured,
+} from "./lib/integration-checks.js";
 
 const root = process.cwd();
 const cfgPath = join(root, JSTACK_CONFIG_FILE);
@@ -124,63 +128,6 @@ if (schemaErrors > 0) {
 
 const strictIntegrations = process.env.JSTACK_STRICT_INTEGRATIONS === "1";
 
-const integrationChecks: Record<string, () => boolean> = {
-  jira: () => {
-    const j = (merged.integrations as Record<string, unknown> | undefined)
-      ?.jira as Record<string, unknown> | undefined;
-    return Boolean(j?.base_url && String(j.base_url).trim() !== "");
-  },
-  slack: () => {
-    const s = (merged.integrations as Record<string, unknown> | undefined)
-      ?.slack as Record<string, unknown> | undefined;
-    const pub =
-      s?.public_channel != null && String(s.public_channel).trim() !== "";
-    const priv =
-      s?.private_channel != null && String(s.private_channel).trim() !== "";
-    const hook = s?.webhook_url != null && String(s.webhook_url).trim() !== "";
-    return pub || priv || hook;
-  },
-  notion: () => {
-    const n = (merged.integrations as Record<string, unknown> | undefined)
-      ?.notion as Record<string, unknown> | undefined;
-    return Boolean(n?.workspace_id && String(n.workspace_id).trim() !== "");
-  },
-  github: () => {
-    const g = (merged.integrations as Record<string, unknown> | undefined)
-      ?.github as Record<string, unknown> | undefined;
-    const org = g?.org != null && String(g.org).trim() !== "";
-    const repo =
-      g?.default_repo != null && String(g.default_repo).trim() !== "";
-    return org || repo;
-  },
-  gcal: () => {
-    const c = (merged.integrations as Record<string, unknown> | undefined)
-      ?.gcal as Record<string, unknown> | undefined;
-    return Boolean(
-      c?.primary_calendar_id && String(c.primary_calendar_id).trim() !== "",
-    );
-  },
-  sheets: () => {
-    const sh = (merged.integrations as Record<string, unknown> | undefined)
-      ?.sheets as Record<string, unknown> | undefined;
-    return Boolean(
-      sh?.default_spreadsheet_id &&
-        String(sh.default_spreadsheet_id).trim() !== "",
-    );
-  },
-  gbrain_team: () => {
-    const t = (merged.gbrain as Record<string, unknown> | undefined)?.team as
-      | Record<string, unknown>
-      | undefined;
-    return Boolean(t?.url && String(t.url).trim() !== "");
-  },
-  gbrain_personal: () => {
-    const p = (merged.gbrain as Record<string, unknown> | undefined)
-      ?.personal as Record<string, unknown> | undefined;
-    return Boolean(p?.url && String(p.url).trim() !== "");
-  },
-};
-
 const onboarding = merged.onboarding as Record<string, unknown> | undefined;
 const required = onboarding?.required_integrations;
 if (Array.isArray(required) && required.length > 0) {
@@ -191,18 +138,18 @@ if (Array.isArray(required) && required.length > 0) {
       continue;
     }
     const id = raw.trim();
-    const check = integrationChecks[id];
-    if (check === undefined) {
+    const paths = INTEGRATION_CHECK_PATHS[id];
+    if (paths === undefined) {
       unknown.push(id);
       continue;
     }
-    if (!check()) {
+    if (!isIntegrationConfigured(merged, paths)) {
       missing.push(id);
     }
   }
   for (const id of unknown) {
     console.warn(
-      `onboarding.required_integrations: unknown id "${id}" — supported: ${Object.keys(integrationChecks).join(", ")}`,
+      `onboarding.required_integrations: unknown id "${id}" — supported: ${Object.keys(INTEGRATION_CHECK_PATHS).join(", ")}`,
     );
   }
   for (const id of missing) {
