@@ -42,7 +42,13 @@ export function loadWorkflow(
 ): WorkflowDefinition | null {
   const p = resolveWorkflowPath(projectRoot, id);
   if (!p || !existsSync(p)) return null;
-  return WorkflowDefinitionSchema.parse(JSON.parse(readFileSync(p, "utf8")));
+  try {
+    return WorkflowDefinitionSchema.parse(JSON.parse(readFileSync(p, "utf8")));
+  } catch {
+    // Malformed JSON or a schema-invalid shape (e.g. a hand-edited or shared file) is a "not
+    // found/usable" outcome for every caller, exactly like a missing file -- not a crash.
+    return null;
+  }
 }
 
 export function saveWorkflow(
@@ -79,8 +85,14 @@ export function importWorkflowFromFile(
   filePath: string,
 ): WorkflowDefinition | null {
   if (!existsSync(filePath)) return null;
-  const raw = JSON.parse(readFileSync(filePath, "utf8"));
-  const def = WorkflowDefinitionSchema.parse(raw);
+  let def: WorkflowDefinition;
+  try {
+    def = WorkflowDefinitionSchema.parse(
+      JSON.parse(readFileSync(filePath, "utf8")),
+    );
+  } catch {
+    return null;
+  }
   try {
     saveWorkflow(projectRoot, def);
   } catch {

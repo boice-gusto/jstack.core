@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -88,6 +94,64 @@ describe("workflow-engine — path containment", () => {
       saveWorkflow(projectRoot, def("my-workflow"));
       expect(loadWorkflow(projectRoot, "my-workflow")?.id).toBe("my-workflow");
       expect(deleteWorkflow(projectRoot, "my-workflow")).toBe(true);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * A hand-edited or shared/imported file can be syntactically valid JSON but schema-invalid (a
+ * `kind` outside the six the schema allows, a missing required field). Both `loadWorkflow` and
+ * `importWorkflowFromFile` used to let `.parse()` throw uncaught in that case, crashing the CLI
+ * with a raw stack trace instead of the clean "Unknown workflow"/"Import failed" message every
+ * other invalid-input path already produces.
+ */
+describe("workflow-engine — malformed/schema-invalid files fail closed, not crash", () => {
+  test("loadWorkflow returns null for schema-invalid JSON instead of throwing", () => {
+    const { projectRoot, outside } = mkFixture();
+    try {
+      const dir = join(projectRoot, "config", "workflows");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "broken.json"),
+        JSON.stringify({ id: "broken", name: "t" }), // missing start_url/steps
+        "utf8",
+      );
+      expect(loadWorkflow(projectRoot, "broken")).toBeNull();
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("loadWorkflow returns null for non-JSON content instead of throwing", () => {
+    const { projectRoot, outside } = mkFixture();
+    try {
+      const dir = join(projectRoot, "config", "workflows");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "notjson.json"), "not valid json {{{", "utf8");
+      expect(loadWorkflow(projectRoot, "notjson")).toBeNull();
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("importWorkflowFromFile returns null for schema-invalid JSON instead of throwing", () => {
+    const { projectRoot, outside } = mkFixture();
+    try {
+      const importFile = join(outside, "broken-import.json");
+      writeFileSync(
+        importFile,
+        JSON.stringify({
+          id: "x",
+          steps: [{ id: "s1", kind: "not-a-real-kind" }],
+        }),
+        "utf8",
+      );
+      expect(importWorkflowFromFile(projectRoot, importFile)).toBeNull();
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
       rmSync(outside, { recursive: true, force: true });
