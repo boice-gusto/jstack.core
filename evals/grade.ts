@@ -54,6 +54,38 @@ function runGrader(
   return { ok: false, text: "" };
 }
 
+/** Every criterion FAILs with the same explanatory evidence -- used when the grader never returned usable output. */
+function fallbackGrading(criteria: string[], evidence: string): GradingResult {
+  return {
+    expectations: criteria.map((c) => ({
+      text: c,
+      passed: false,
+      evidence,
+    })),
+    summary: {
+      passed: 0,
+      failed: criteria.length,
+      total: criteria.length,
+      pass_rate: 0,
+    },
+  };
+}
+
+/** Merges asserts, persists `grading.json`, and returns the merged result -- the one place `gradeCase` decides how a grading result is stored, previously duplicated in all three of its branches. */
+function finalizeGrading(
+  caseDef: EvalCase,
+  execResult: ExecuteResult,
+  result: GradingResult,
+  caseDir: string,
+): GradingResult {
+  const merged = mergeAssertsIntoGrading(caseDef, execResult, result);
+  writeFileSync(
+    join(caseDir, "grading.json"),
+    JSON.stringify(merged, null, 2) + "\n",
+  );
+  return merged;
+}
+
 export function gradeCase(
   env: GlobalEvalEnv,
   caseDef: EvalCase,
@@ -96,55 +128,24 @@ Output ONLY valid JSON in this exact format (no markdown, no explanation):
 
   const { ok, text } = runGrader(env, graderPrompt);
   if (!ok) {
-    const fallback: GradingResult = {
-      expectations: criteria.map((c) => ({
-        text: c,
-        passed: false,
-        evidence: "Grading failed after retries",
-      })),
-      summary: {
-        passed: 0,
-        failed: criteria.length,
-        total: criteria.length,
-        pass_rate: 0,
-      },
-    };
-    const merged = mergeAssertsIntoGrading(caseDef, execResult, fallback);
-    writeFileSync(
-      join(caseDir, "grading.json"),
-      JSON.stringify(merged, null, 2) + "\n",
+    return finalizeGrading(
+      caseDef,
+      execResult,
+      fallbackGrading(criteria, "Grading failed after retries"),
+      caseDir,
     );
-    return merged;
   }
 
   try {
     const parsed = JSON.parse(stripJsonFence(text)) as GradingResult;
-    const merged = mergeAssertsIntoGrading(caseDef, execResult, parsed);
-    writeFileSync(
-      join(caseDir, "grading.json"),
-      JSON.stringify(merged, null, 2) + "\n",
-    );
-    return merged;
+    return finalizeGrading(caseDef, execResult, parsed, caseDir);
   } catch {
-    const fallback: GradingResult = {
-      expectations: criteria.map((c) => ({
-        text: c,
-        passed: false,
-        evidence: "Grading JSON parse failed",
-      })),
-      summary: {
-        passed: 0,
-        failed: criteria.length,
-        total: criteria.length,
-        pass_rate: 0,
-      },
-    };
-    const merged = mergeAssertsIntoGrading(caseDef, execResult, fallback);
-    writeFileSync(
-      join(caseDir, "grading.json"),
-      JSON.stringify(merged, null, 2) + "\n",
+    return finalizeGrading(
+      caseDef,
+      execResult,
+      fallbackGrading(criteria, "Grading JSON parse failed"),
+      caseDir,
     );
-    return merged;
   }
 }
 
