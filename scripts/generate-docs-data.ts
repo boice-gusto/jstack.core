@@ -2,8 +2,15 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSkillsPayload, buildSkillRecords } from "./docs-data-shared.ts";
-import { patchDocsIndexPngBranding } from "./docs-index-png-branding.ts";
+import {
+  buildInlineJsonMarkerBlock,
+  buildSkillsPayload,
+  buildSkillRecords,
+} from "./docs-data-shared.ts";
+import {
+  patchDocsIndexPngBranding,
+  replaceBetweenMarkerPair,
+} from "./docs-index-png-branding.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -44,42 +51,25 @@ window.__JSTACK_SKILLS__ = ${payloadJson};
   );
   console.log(`Wrote ${CATALOG_JSON}`);
 
-  const bootstrapScript = [
-    "(function () {",
-    "  function parseJsonScript(id) {",
-    "    var el = document.getElementById(id);",
-    "    if (!el) return null;",
-    "    try {",
-    '      return JSON.parse(el.textContent || "null");',
-    "    } catch (e) {",
-    "      return null;",
-    "    }",
-    "  }",
-    '  var payload = parseJsonScript("jstack-skills-payload");',
-    "  if (payload) window.__JSTACK_SKILLS__ = payload;",
-    "})();",
-  ].join("\n");
-  const indentedBootstrap = bootstrapScript.split("\n").join("\n      ");
-
   const indexHtml = await readFile(INDEX_FILE, "utf8");
-  const i0 = indexHtml.indexOf(INDEX_SKILLS_BEGIN);
-  const i1 = indexHtml.indexOf(INDEX_SKILLS_END);
-  if (i0 === -1 || i1 === -1 || i1 < i0) {
-    throw new Error(
-      `index.html must contain ${INDEX_SKILLS_BEGIN} and ${INDEX_SKILLS_END} in order (run docs:generate after adding markers).`,
-    );
-  }
-  const i1End = i1 + INDEX_SKILLS_END.length;
-  const newBlock = [
-    INDEX_SKILLS_BEGIN,
-    `    <script type="application/json" id="jstack-skills-payload">${payloadJsonForInlineScript}</script>`,
-    "    <script>",
-    `      ${indentedBootstrap}`,
-    "    </script>",
-    INDEX_SKILLS_END,
-  ].join("\n");
+  const innerBetweenMarkers =
+    "\n" +
+    buildInlineJsonMarkerBlock([
+      {
+        scriptId: "jstack-skills-payload",
+        globalName: "__JSTACK_SKILLS__",
+        varName: "payload",
+        json: payloadJsonForInlineScript,
+      },
+    ]) +
+    "\n";
   const nextHtml = await patchDocsIndexPngBranding(
-    indexHtml.slice(0, i0) + newBlock + indexHtml.slice(i1End),
+    replaceBetweenMarkerPair(
+      indexHtml,
+      INDEX_SKILLS_BEGIN,
+      INDEX_SKILLS_END,
+      innerBetweenMarkers,
+    ),
     REPO_ROOT,
   );
   await writeFile(INDEX_FILE, nextHtml, "utf8");

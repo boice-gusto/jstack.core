@@ -26,7 +26,15 @@ function resolveMarkPath(repoRoot: string): string {
   return existsSync(small) ? small : join(repoRoot, LOGO_FALLBACK_REL);
 }
 
-function replaceBetweenMarkerPair(
+/**
+ * Splices `innerBetweenMarkers` between an existing `begin`/`end` HTML-comment marker pair,
+ * replacing whatever was there before (including the old markers' surrounding content, not the
+ * markers themselves -- `begin`/`end` are re-emitted around the new content). Exported so other
+ * generators with their own marker pairs (e.g. `generate-docs-data.ts`'s
+ * `INDEX_SKILLS_BEGIN`/`_END`) reuse this instead of hand-rolling the same
+ * find-markers-or-throw-and-splice logic.
+ */
+export function replaceBetweenMarkerPair(
   html: string,
   begin: string,
   end: string,

@@ -8,12 +8,16 @@ import * as esbuild from "esbuild";
 import { marked } from "marked";
 import DOMPurify from "isomorphic-dompurify";
 import {
+  buildInlineJsonMarkerBlock,
   buildSkillRecords,
   buildSkillsPayload,
   parseFrontmatter,
   walkAllMarkdownUnderSkills,
 } from "./docs-data-shared.ts";
-import { patchDocsIndexPngBranding } from "./docs-index-png-branding.ts";
+import {
+  patchDocsIndexPngBranding,
+  replaceBetweenMarkerPair,
+} from "./docs-index-png-branding.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..");
@@ -101,59 +105,46 @@ async function main(): Promise<void> {
     `<style>\n${css}\n    </style>`,
   );
 
-  const embedPayload = jsonForInlineScript(payload);
-  const embedSkillHtml = jsonForInlineScript(skillHtml);
-  const embedMdMap = jsonForInlineScript(mdByRelPath);
-
-  const bootstrapScript = [
-    "(function () {",
-    "  function parseJsonScript(id) {",
-    "    var el = document.getElementById(id);",
-    "    if (!el) return null;",
-    "    try {",
-    '      return JSON.parse(el.textContent || "null");',
-    "    } catch (e) {",
-    "      return null;",
-    "    }",
-    "  }",
-    '  var payload = parseJsonScript("jstack-skills-payload");',
-    "  if (payload) window.__JSTACK_SKILLS__ = payload;",
-    '  var skillHtml = parseJsonScript("jstack-skill-html");',
-    "  if (skillHtml) window.__JSTACK_SKILL_HTML__ = skillHtml;",
-    '  var mdMap = parseJsonScript("jstack-md-by-relpath");',
-    "  if (mdMap) window.__JSTACK_MD_BY_RELPATH__ = mdMap;",
-    "})();",
-  ].join("\n");
-  const indentedBootstrap = bootstrapScript.split("\n").join("\n      ");
-
-  const i0 = indexHtml.indexOf(INDEX_SKILLS_BEGIN);
-  const i1 = indexHtml.indexOf(INDEX_SKILLS_END);
-  if (i0 === -1 || i1 === -1 || i1 < i0) {
-    throw new Error(`index.html must contain skills data markers.`);
-  }
-  const i1End = i1 + INDEX_SKILLS_END.length;
-  const afterMarkers = indexHtml.slice(i1End);
-  const moduleScriptsRemoved = afterMarkers
+  const innerBetweenMarkers =
+    "\n" +
+    buildInlineJsonMarkerBlock([
+      {
+        scriptId: "jstack-skills-payload",
+        globalName: "__JSTACK_SKILLS__",
+        varName: "payload",
+        json: jsonForInlineScript(payload),
+      },
+      {
+        scriptId: "jstack-skill-html",
+        globalName: "__JSTACK_SKILL_HTML__",
+        varName: "skillHtml",
+        json: jsonForInlineScript(skillHtml),
+      },
+      {
+        scriptId: "jstack-md-by-relpath",
+        globalName: "__JSTACK_MD_BY_RELPATH__",
+        varName: "mdMap",
+        json: jsonForInlineScript(mdByRelPath),
+      },
+    ]) +
+    "\n";
+  const splicedHtml = replaceBetweenMarkerPair(
+    indexHtml,
+    INDEX_SKILLS_BEGIN,
+    INDEX_SKILLS_END,
+    innerBetweenMarkers,
+  );
+  // The single-file build inlines the bundled JS below instead of fetching docs.js/md-preview.js
+  // as separate module scripts -- both module-script tags live after the marker pair (untouched
+  // by the splice above), so removing them here is independent of it.
+  const moduleScriptsRemoved = splicedHtml
     .replace(/\s*<script type="module" src="\.\/docs\.js"><\/script>\s*/, "\n")
     .replace(
       /\s*<script type="module" src="\.\/md-preview\.js"><\/script>\s*/,
       "\n",
     );
 
-  const newBlock = [
-    INDEX_SKILLS_BEGIN,
-    `    <script type="application/json" id="jstack-skills-payload">${embedPayload}</script>`,
-    `    <script type="application/json" id="jstack-skill-html">${embedSkillHtml}</script>`,
-    `    <script type="application/json" id="jstack-md-by-relpath">${embedMdMap}</script>`,
-    "    <script>",
-    `      ${indentedBootstrap}`,
-    "    </script>",
-    INDEX_SKILLS_END,
-  ].join("\n");
-
-  const beforeMarkers = indexHtml.slice(0, i0);
-  const mergedMiddle = beforeMarkers + newBlock + moduleScriptsRemoved;
-  const finalHtml = mergedMiddle.replace(
+  const finalHtml = moduleScriptsRemoved.replace(
     "</body>",
     `    <script>\n${bundleJs}\n    </script>\n  </body>`,
   );

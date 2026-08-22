@@ -203,3 +203,59 @@ export function buildSkillsPayload(skills: SkillRecord[]): {
     skills,
   };
 }
+
+/**
+ * One `<script type="application/json">` payload plus the bootstrap-IIFE binding that reads it
+ * back onto a `window.*` global at page load.
+ */
+export interface InlineJsonBinding {
+  scriptId: string;
+  /** e.g. "__JSTACK_SKILLS__" (assigned as `window.<globalName>`). */
+  globalName: string;
+  /** JS variable name inside the generated bootstrap closure. */
+  varName: string;
+  json: string;
+}
+
+/**
+ * Builds the `<script type="application/json" id="...">...</script>` tags plus the single
+ * bootstrap `<script>` that reads them back onto `window.*`, indented to match `index.html`'s
+ * existing body indentation. `generate-docs-data.ts` and `build-landing-page.ts` each hand-rolled
+ * this (one binding vs. three) with their own copy of `parseJsonScript` and their own marker
+ * splice logic -- this is the data-driven replacement for both.
+ */
+export function buildInlineJsonMarkerBlock(
+  bindings: InlineJsonBinding[],
+): string {
+  const scriptTags = bindings.map(
+    (b) =>
+      `    <script type="application/json" id="${b.scriptId}">${b.json}</script>`,
+  );
+  const bootstrapLines = [
+    "(function () {",
+    "  function parseJsonScript(id) {",
+    "    var el = document.getElementById(id);",
+    "    if (!el) return null;",
+    "    try {",
+    '      return JSON.parse(el.textContent || "null");',
+    "    } catch (e) {",
+    "      return null;",
+    "    }",
+    "  }",
+    ...bindings.flatMap((b) => [
+      `  var ${b.varName} = parseJsonScript("${b.scriptId}");`,
+      `  if (${b.varName}) window.${b.globalName} = ${b.varName};`,
+    ]),
+    "})();",
+  ];
+  const indentedBootstrap = bootstrapLines
+    .join("\n")
+    .split("\n")
+    .join("\n      ");
+  return [
+    ...scriptTags,
+    "    <script>",
+    `      ${indentedBootstrap}`,
+    "    </script>",
+  ].join("\n");
+}
