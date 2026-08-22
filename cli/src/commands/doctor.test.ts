@@ -388,12 +388,26 @@ describe("runDoctor — invalid flag combinations", () => {
   });
 
   test("--apply-repairs with --apply (no --fix) is not rejected by the --apply/--fix check", async () => {
-    // --apply-repairs requires --apply (checked later, once a project root exists) but
-    // is mutually exclusive with --fix — the upfront "--apply requires --fix" guard
-    // must not fire for this otherwise-valid combination.
+    // --apply-repairs requires --apply and is mutually exclusive with --fix — the upfront
+    // "--apply requires --fix" guard must not fire for this otherwise-valid combination.
     const out = await captureLog(() =>
       runDoctor({ applyRepairs: "/nonexistent/repairs.json", apply: true }),
     );
     expect(out).not.toContain("--apply requires --fix");
+  });
+
+  test("--apply-repairs without --apply errors upfront, before any project root/config/network access", async () => {
+    // This combination used to be checked deep inside the `if (opts.applyRepairs)` handler,
+    // after findProjectRoot()/config-read/an update-check network call had already run —
+    // inconsistent with every other combination in this describe block, which are all
+    // rejected before any of that. Passing a path that doesn't exist proves the check fires
+    // before the file is ever read.
+    const out = await captureLog(() =>
+      runDoctor({ applyRepairs: "/nonexistent/repairs.json" }),
+    );
+    expect(out).toContain(
+      "--apply-repairs requires --apply to prevent accidental replay",
+    );
+    expect(process.exitCode).toBe(1);
   });
 });

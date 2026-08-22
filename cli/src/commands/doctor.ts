@@ -95,6 +95,15 @@ export async function runDoctor(opts: {
     process.exitCode = 1;
     return;
   }
+  if (opts.applyRepairs && !opts.apply) {
+    console.log(
+      chalk.red(
+        "--apply-repairs requires --apply to prevent accidental replay. Re-run with --apply.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
 
   const root = findProjectRoot();
   const pluginRoot = findPluginRoot();
@@ -136,9 +145,8 @@ export async function runDoctor(opts: {
   };
 
   const cfg = readConfigOptional(root);
-  const dist = (cfg?.distribution as Record<string, unknown> | undefined) ?? {};
-  const versionUrl = String(dist.version_url ?? "").trim();
-  const updateCheck = dist.update_check !== false;
+  const versionUrl = (cfg?.distribution?.version_url ?? "").trim();
+  const updateCheck = cfg?.distribution?.update_check !== false;
 
   let update: Awaited<ReturnType<typeof checkDistributionUpdate>> | null = null;
   if (updateCheck) {
@@ -164,9 +172,7 @@ export async function runDoctor(opts: {
           ...collectMockMcpDoctorWarnings(root, pluginRoot, cfg),
         ]
       : [];
-    const cross =
-      (cfg?.cross_plugins as Record<string, unknown> | undefined) ?? {};
-    const gbrainPlugin = cross.gbrain as Record<string, unknown> | undefined;
+    const gbrainPlugin = cfg?.cross_plugins?.gbrain;
     const configOk = existsSync(join(root, JSTACK_CONFIG_FILE));
     const pluginOk = existsSync(join(pluginRoot, CONFIG_DIR, DEFAULTS_FILE));
     const skillsOk = existsSync(join(pluginRoot, SKILLS_DIR));
@@ -223,15 +229,6 @@ export async function runDoctor(opts: {
   }
 
   if (opts.applyRepairs) {
-    if (!opts.apply) {
-      console.log(
-        chalk.red(
-          "--apply-repairs requires --apply to prevent accidental replay. Re-run with --apply.",
-        ),
-      );
-      process.exitCode = 1;
-      return;
-    }
     let savedIssues;
     try {
       savedIssues = deserializeRepairs(readFileSync(opts.applyRepairs, "utf8"));
