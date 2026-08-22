@@ -198,8 +198,6 @@ changed and the exact command; anything the operator must do next (usually `enab
   `jstackc crew install` (LaunchAgent, survives terminal close and reboot) or
   `jstackc crew watch` (foreground). If the operator says "it didn't respond", check this
   before anything else — it is the most common cause.
-- **`backlog_skipped`** — more messages arrived than one tick's page budget. The skipped range
-  is named in the event detail; raise `crew.slack.max_pages` or tick more often.
 
 ## Do not
 
