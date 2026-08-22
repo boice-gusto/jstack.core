@@ -1,6 +1,16 @@
 import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
+import {
+  appendStderrToDraft,
+  extractResultCost,
+  extractResultTokenTotal,
+  extractToolEventName,
+  newRunId,
+  nextRunStateForDraft,
+  pushSeries,
+  type RunState as SharedRunState,
+} from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
 export const WIZARD_STEPS = [
@@ -13,17 +23,8 @@ export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"];
 
 type WizardMessage = { role: "user" | "assistant"; content: string };
 
-/**
- * Streaming lifecycle for a single `nextStep()` call. See `RunState` in
- * `@/stores/chat-store` for the rationale — mirrored here so wizard steps
- * can't end up with a lingering "streaming" draft box next to (or instead
- * of) a surfaced error.
- */
-export type WizardRunState =
-  | { status: "idle" }
-  | { status: "streaming"; draft: string }
-  | { status: "error"; message: string; draft: string }
-  | { status: "done" };
+/** See `RunState` in `@/lib/agent-run-shared` for the rationale. */
+export type WizardRunState = SharedRunState;
 
 type WizardState = {
   stepIndex: number;
@@ -44,10 +45,6 @@ type WizardState = {
   nextStep: () => Promise<void>;
   resetWizard: () => void;
 };
-
-function newId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 export const useWizardStore = create<WizardState>((set, get) => ({
   stepIndex: 0,
@@ -126,9 +123,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     // Same rule as chat-store: keep refreshing the draft without reviving
     // "streaming" once an error event has flipped us to "error".
     const setDraft = (): void => {
-      set((s) => ({
-        run: s.run.status === "error" ? { ...s.run, draft } : { status: "streaming", draft },
-      }));
+      set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
     };
 
     const onEvent = (evt: AgentStreamEvent): void => {
@@ -145,45 +140,30 @@ export const useWizardStore = create<WizardState>((set, get) => ({
         set({ run: { status: "error", message: evt.message, draft } });
       }
       if (type === "stderr" && typeof evt.text === "string") {
-        const piece = evt.text.trimEnd();
-        if (piece.length > 0) {
-          draft += `${draft.length > 0 ? "\n\n" : ""}\`\`\`stderr\n${piece.slice(0, 8000)}\n\`\`\``;
+        const next = appendStderrToDraft(draft, evt.text);
+        if (next !== draft) {
+          draft = next;
           setDraft();
         }
       }
       if (type === "tool_use") {
-        const name =
-          typeof evt.name === "string" ? evt.name : "unknown_tool";
+        const name = extractToolEventName(evt);
         const input = evt.input;
         set((s) => ({
           toolEvents: [
             ...s.toolEvents,
-            { id: newId(), name, input },
+            { id: newRunId(), name, input },
           ],
         }));
       }
       if (type === "result") {
-        const costUsd = evt.total_cost_usd;
-        if (typeof costUsd === "number") {
-          set((s) => ({
-            costSeries: [...s.costSeries, costUsd].slice(-24),
-          }));
+        const cost = extractResultCost(evt);
+        if (cost !== null) {
+          set((s) => ({ costSeries: pushSeries(s.costSeries, cost) }));
         }
-        const usage = evt.usage;
-        if (
-          typeof usage === "object" &&
-          usage !== null &&
-          !Array.isArray(usage)
-        ) {
-          const vals = Object.values(usage as Record<string, unknown>).filter(
-            (v): v is number => typeof v === "number",
-          );
-          const total = vals.reduce((a, b) => a + b, 0);
-          if (total > 0) {
-            set((s) => ({
-              tokenSeries: [...s.tokenSeries, total].slice(-24),
-            }));
-          }
+        const tokenTotal = extractResultTokenTotal(evt);
+        if (tokenTotal !== null) {
+          set((s) => ({ tokenSeries: pushSeries(s.tokenSeries, tokenTotal) }));
         }
       }
     };

@@ -1,9 +1,20 @@
 import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
+import {
+  appendStderrToDraft,
+  extractResultCost,
+  extractResultTokenTotal,
+  extractToolEventName,
+  newRunId,
+  nextRunStateForDraft,
+  pushSeries,
+  type RunState,
+} from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
 export type { AgentStreamEvent } from "@/lib/agent-stream-runner";
+export type { RunState } from "@/lib/agent-run-shared";
 
 export type ChatMessage = {
   id: string;
@@ -22,19 +33,6 @@ export type AgentRunContext = {
   skillId: string | null;
 };
 
-/**
- * Streaming lifecycle for a single `runAgent()` call, collapsed into one
- * union so "streaming" / "error" / "draft text" can't disagree with each
- * other (e.g. a mid-stream read failure used to clear `isStreaming` and set
- * `error` while leaving a stale `assistantDraft` around, rendering an
- * "(streaming)" box next to an error banner).
- */
-export type RunState =
-  | { status: "idle" }
-  | { status: "streaming"; draft: string }
-  | { status: "error"; message: string; draft: string }
-  | { status: "done" };
-
 type ChatState = {
   messages: ChatMessage[];
   run: RunState;
@@ -52,10 +50,6 @@ type ChatState = {
   setExpectStructuredJson: (v: boolean) => void;
   runAgent: () => Promise<void>;
 };
-
-function newId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
@@ -77,7 +71,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((s) => ({
       messages: [
         ...s.messages,
-        { id: newId(), role: "user", content: trimmed },
+        { id: newRunId(), role: "user", content: trimmed },
       ],
     }));
   },
@@ -131,9 +125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // "streaming" status once an error event has already flipped us to
     // "error" (the error stays visible; only the attached draft refreshes).
     const setDraft = (): void => {
-      set((s) => ({
-        run: s.run.status === "error" ? { ...s.run, draft } : { status: "streaming", draft },
-      }));
+      set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
     };
 
     const onEvent = (evt: AgentStreamEvent): void => {
@@ -156,45 +148,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ run: { status: "error", message: evt.message, draft } });
       }
       if (type === "stderr" && typeof evt.text === "string") {
-        const piece = evt.text.trimEnd();
-        if (piece.length > 0) {
-          draft += `${draft.length > 0 ? "\n\n" : ""}\`\`\`stderr\n${piece.slice(0, 8000)}\n\`\`\``;
+        const next = appendStderrToDraft(draft, evt.text);
+        if (next !== draft) {
+          draft = next;
           setDraft();
         }
       }
       if (type === "tool_use") {
-        const name =
-          typeof evt.name === "string" ? evt.name : "unknown_tool";
+        const name = extractToolEventName(evt);
         const input = evt.input;
         set((s) => ({
           toolEvents: [
             ...s.toolEvents,
-            { id: newId(), name, input },
+            { id: newRunId(), name, input },
           ],
         }));
       }
       if (type === "result") {
-        const costUsd = evt.total_cost_usd;
-        if (typeof costUsd === "number") {
-          set((s) => ({
-            costSeries: [...s.costSeries, costUsd].slice(-24),
-          }));
+        const cost = extractResultCost(evt);
+        if (cost !== null) {
+          set((s) => ({ costSeries: pushSeries(s.costSeries, cost) }));
         }
-        const usage = evt.usage;
-        if (
-          typeof usage === "object" &&
-          usage !== null &&
-          !Array.isArray(usage)
-        ) {
-          const vals = Object.values(usage as Record<string, unknown>).filter(
-            (v): v is number => typeof v === "number",
-          );
-          const total = vals.reduce((a, b) => a + b, 0);
-          if (total > 0) {
-            set((s) => ({
-              tokenSeries: [...s.tokenSeries, total].slice(-24),
-            }));
-          }
+        const tokenTotal = extractResultTokenTotal(evt);
+        if (tokenTotal !== null) {
+          set((s) => ({ tokenSeries: pushSeries(s.tokenSeries, tokenTotal) }));
         }
         const resultText =
           typeof evt.result === "string" ? evt.result.trim() : "";
@@ -221,7 +198,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return {
           messages: [
             ...s.messages,
-            { id: newId(), role: "assistant" as const, content: finalContent },
+            { id: newRunId(), role: "assistant" as const, content: finalContent },
           ],
           run: { status: "done" as const },
         };
