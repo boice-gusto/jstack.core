@@ -319,6 +319,80 @@ export const CLI_COMMANDS: CliCommand[] = [
     returns: "Human-readable status",
   },
   {
+    name: "jstack memory log",
+    description:
+      "Append a validated memory entry (kind, key, insight, source) to the local, jsonl-based durable store for self/* skills",
+    tags: ["memory", "self"],
+    arguments: [
+      {
+        name: "json",
+        type: "string",
+        required: true,
+        description:
+          'JSON object: {"kind":"fact|decision|preference|pattern","key":"...","insight":"...","source":"user-stated|observed|inferred","confidence"?:1-10,"skill"?:"..."}',
+      },
+    ],
+    examples: [
+      {
+        command:
+          'jstack memory log \'{"kind":"preference","key":"async-standups","insight":"Prefers async standups","source":"user-stated"}\'',
+        description: "Log a durable personal preference",
+      },
+    ],
+    returns:
+      "Confirmation line, or a validation error (including refusing entries that look like a secret)",
+  },
+  {
+    name: "jstack memory search",
+    description:
+      "Search local memory entries by kind/key/skill; latest wins per (kind, key). --json prints raw JSON",
+    tags: ["memory", "self"],
+    arguments: [
+      {
+        name: "--kind",
+        type: "string",
+        required: false,
+        description: "Filter by kind (fact, decision, preference, pattern)",
+      },
+      {
+        name: "--key",
+        type: "string",
+        required: false,
+        description: "Filter by exact key",
+      },
+      {
+        name: "--skill",
+        type: "string",
+        required: false,
+        description: "Filter by the skill that logged the entry",
+      },
+      {
+        name: "--limit",
+        type: "number",
+        required: false,
+        description: "Max number of results",
+      },
+      {
+        name: "--json",
+        type: "boolean",
+        required: false,
+        default: false,
+        description: "Print raw JSON instead of a human-readable list",
+      },
+    ],
+    examples: [
+      {
+        command: "jstack memory search --kind preference",
+        description: "List all logged preferences",
+      },
+      {
+        command: "jstack memory search --json",
+        description: "Machine-readable output for scripting",
+      },
+    ],
+    returns: "Human-readable list, or raw JSON with --json",
+  },
+  {
     name: "jstack skills index",
     description:
       "List all SKILL.md under skills/ (optional second plugin via --overlay)",

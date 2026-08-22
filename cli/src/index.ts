@@ -5,6 +5,12 @@ import { runSetup, runSetupCi } from "./commands/setup.js";
 import { runSetupSchema } from "./commands/setup-schema.js";
 import { runConfigShow } from "./commands/config.js";
 import { runStatus } from "./commands/status.js";
+import {
+  MEMORY_HELP_KINDS,
+  MEMORY_HELP_SOURCES,
+  runMemoryLog,
+  runMemorySearch,
+} from "./commands/memory.js";
 import { runDoctor, runDoctorSkills } from "./commands/doctor.js";
 import {
   runScheduleConfig,
@@ -154,6 +160,37 @@ program
   .command("status")
   .description("Team + plugin status")
   .action(() => runStatus());
+
+const memcmd = program
+  .command("memory")
+  .description(
+    "Local, jsonl-based durable memory for self/* skills (no external dependency)",
+  );
+
+memcmd
+  .command("log <json>")
+  .description(
+    `Append a validated memory entry. kind: ${MEMORY_HELP_KINDS}. source: ${MEMORY_HELP_SOURCES}.`,
+  )
+  .action((json: string) => runMemoryLog(json));
+
+memcmd
+  .command("search")
+  .description("Search memory entries (latest wins per kind+key)")
+  .option("--kind <kind>", `Filter by kind (${MEMORY_HELP_KINDS})`)
+  .option("--key <key>", "Filter by exact key")
+  .option("--skill <skill>", "Filter by the skill that logged the entry")
+  .option("--limit <n>", "Max number of results")
+  .option("--json", "Print raw JSON instead of a human-readable list")
+  .action(
+    (opts: {
+      kind?: string;
+      key?: string;
+      skill?: string;
+      limit?: string;
+      json?: boolean;
+    }) => runMemorySearch(opts),
+  );
 
 const skcmd = program
   .command("skills")
