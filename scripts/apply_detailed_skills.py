@@ -170,6 +170,17 @@ SKIP = {
     # per-key generator data exists for this; regenerating would silently restore the shared
     # parent-router text.
     SKILLS / "sop" / "resources" / "SKILL.md",
+    # Hand-authored (2026-08): capacity-planning math (focus factor, on-call discount, Little's
+    # Law WIP cap) plus a Goodhart's-law warning against externalizing velocity as a KPI. No
+    # per-key generator data exists for this; regenerating would silently flatten it to the
+    # generic sprint-planning boilerplate its siblings sprint/prep and sprint/refinement were
+    # already pinned to avoid.
+    SKILLS / "sprint" / "planning" / "SKILL.md",
+    # Hand-authored (2026-08): bus-factor-per-critical-area rule (not a team-wide aggregate),
+    # explicit on-call-rotation-membership != ownership distinction, named-owner 100%-coverage
+    # rule, and a "must not do" section barring stack-ranking. No per-key generator data exists
+    # for this; regenerating would silently flatten it to generic team-management boilerplate.
+    SKILLS / "team" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
