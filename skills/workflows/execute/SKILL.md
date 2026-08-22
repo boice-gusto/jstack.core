@@ -1,6 +1,6 @@
 ---
 name: jstack-workflow-execute
-description: Run a saved workflow via CLI; preview then run with --yes. Engine may be stub until Playwright is wired.
+description: "Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP)."
 when_to_use: After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior.
 category: workflows
 argument-hint: "[workflow-name]"
@@ -19,7 +19,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Run a saved `config/workflows/*.json` flow through the `jstack workflow` CLI: preview, confirm, then execute, capturing an artifact per step.
-- **Out of scope:** Editing the flow definition, and claiming a browser ran when the runner is the stub.
+- **Out of scope:** Editing the flow definition, and claiming a browser ran when the agent had no browser-automation tool available.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
@@ -43,10 +43,10 @@ Run a saved `config/workflows/*.json` flow through the `jstack workflow` CLI: pr
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim the run passed — and the shipped runner is a stub that produces none, so `unverified` is the honest ceiling until a real driver is wired.
+Preview before any destructive UI action and require confirmation. Wait on observable state, never on a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, report `unverified` rather than a pass. `jstack workflow run` drives a real browser through a spawned agent's browser-automation tool (e.g. Playwright MCP) — if the host has none configured, the agent must say so and stop rather than fabricate a result.
 
 ### Step 3 — Execute
-Load the saved `config/workflows/<id>.json`, print the step list as a preview, get explicit confirmation, then run it. The shipped executor is `runWorkflowStub` — it produces no artifact, so report `unverified` and name the missing driver instead of claiming the browser ran.
+Load the saved `config/workflows/<id>.json`, print the step list as a preview, get explicit confirmation, then run it via `jstack workflow run <id> --yes`, which spawns an agent to drive the steps through whatever browser-automation tool it has (e.g. Playwright MCP). Report the real `ok`/log the command returns; if no browser-automation tool is configured, that's what the agent will say, so report `unverified` and name the missing driver rather than claiming the browser ran.
 
 ### Step 4 — Validate
 Confirm an artifact exists for every claimed step outcome. Without one, downgrade the result to unverified rather than reporting a pass.
@@ -69,9 +69,9 @@ Use a domain-appropriate heading, then:
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
+| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a run. |
 | Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
-| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| `jstack workflow run` reports `ok: false` | Read the log for which step the agent stopped on; treat it as a real failure, not a stub artifact. |
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining

@@ -131,7 +131,7 @@ If an MCP tool is available but the call fails:
 
 ## CLI helpers (workflows + transcripts)
 
-- **`jstack workflow`** — CRUD on `config/workflows/*.json` (`list --json`, `show`, `create`, `run --yes`, `delete --force`, `export`, `import`, `edit`). Execution is still **stub** until Playwright is wired; skill **`workflows/execute`** documents the flow.
+- **`jstack workflow`** — CRUD on `config/workflows/*.json` (`list --json`, `show`, `create`, `run --yes|--dry-run`, `delete --force`, `export`, `import`, `edit`). `run` spawns an agent that drives the steps through whatever browser-automation MCP the host has configured (e.g. Playwright MCP); with none configured, the agent reports that rather than fabricating a result. Skill **`workflows/execute`** documents the flow.
 - **`jstack transcripts status|ingest`** — prints config snapshot and points to **`jstack-transcripts-ingest`** / **`jstack-ingest-all`** (MCP runs in the agent).
 
 ## Health checking

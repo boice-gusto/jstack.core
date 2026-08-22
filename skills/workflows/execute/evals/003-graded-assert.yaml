@@ -4,8 +4,8 @@ prompt: >-
 
   Category: workflows.
 
-  Skill description: Run a saved workflow via CLI; preview then run with --yes. Engine may be stub
-  until Playwright is wired.
+  Skill description: Run a saved workflow via CLI: preview, then execute with --yes through a
+  spawned agent driving a browser-automation tool (e.g. Playwright MCP).
 
 
   User: In 3–5 short bullet points, say what this skill is for, one thing it explicitly does
@@ -22,7 +22,8 @@ grading:
     - description: Names the boundary this skill actually declares
       pass_if: >-
         response identifies that the skill does not do the following, or says something equivalent:
-        Editing the flow definition, and claiming a browser ran when the runner is the stub
+        Editing the flow definition, and claiming a browser ran when the agent had no
+        browser-automation tool available
     - description: Describes what it does when a declared failure mode occurs
       pass_if: >-
         response explains how it behaves in this situation, or that it stops and asks: Missing

@@ -91,6 +91,7 @@ DESCRIPTIONS: dict[str, str] = {
     "workflows/builder": "Build a BROWSER workflow definition as JSON at `config/workflows/<id>.json`: start URL and ordered steps drawn from the six kinds the schema allows (goto, click, fill, wait, screenshot, ai). No credentials in the file. Not for skill-chain, routine, or policy design — that is `jstack-workflow-builder` (singular), a different skill one letter away.",
     "workflows/recorder": "Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.",
     "workflows/viewer": "Summarize what a workflow run log contains: steps taken and artifacts produced. Never reconstruct a result for a run with no report.",
+    "workflows/execute": "Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP).",
     # --- incident ---
     "incident": "Route incident requests to the main commander flow or retro sub-skill.",
     "incident/retro": "Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.",
@@ -447,7 +448,7 @@ FAILURE_EXTRAS: dict[str, str] = {
     "session": "| Prior session still open | Ask once whether to end it or continue. Do not silently close. |",
     "knowledge": "| Duplicate entry detected | Show the existing canonical and ask: merge, update, or skip. |",
     "routines": "| Schedule JSON invalid | Return the validation error and a minimal valid example. |\n| Routine failed mid-way | Report which steps succeeded and which failed; suggest re-run. |",
-    "workflows": "| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |\n| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |\n| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |\n| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |",
+    "workflows": "| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a run. |\n| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |\n| `jstack workflow run` reports `ok: false` | Read the log for which step the agent stopped on; treat it as a real failure, not a stub artifact. |\n| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |",
     "incident": "| Impact unverified | Do not announce resolved; state current known status only. |",
     "setup": "| User pastes token in chat | Tell them to move to env/secret store and rotate. Never log it. |",
     "metrics": "| GitHub/Jira not linked | Return import instructions and a manual table template. |",
@@ -630,11 +631,12 @@ def _workflows(seg: str) -> str:
             "- `kind` is one of `goto`, `click`, `fill`, `wait`, `screenshot`, `ai`. There is **no assertion "
             "kind** — express a check as a `wait` on a selector that only exists in the desired state, plus a "
             "`screenshot` for evidence.\n"
-            "- No credentials in the file: a `fill` whose value is a secret names an env var, never a literal."
+            "- No credentials in the file: a `fill` whose value is a secret is written as `env:VAR_NAME`, "
+            "never a literal — the executor resolves it from the environment at run time."
         ),
         "recorder": "Record user actions → definition. Scrub captured secrets before saving, add stability notes for generated-looking selectors, and mark the result unvalidated — a recording proves the steps happened once, not that they replay.",
         "viewer": "Summarize what the run log actually contains, step by step. If no report file exists for the run, say so and stop — do not reconstruct a plausible result from the definition.",
-        "execute": "Load the saved `config/workflows/<id>.json`, print the step list as a preview, get explicit confirmation, then run it. The shipped executor is `runWorkflowStub` — it produces no artifact, so report `unverified` and name the missing driver instead of claiming the browser ran.",
+        "execute": "Load the saved `config/workflows/<id>.json`, print the step list as a preview, get explicit confirmation, then run it via `jstack workflow run <id> --yes`, which spawns an agent to drive the steps through whatever browser-automation tool it has (e.g. Playwright MCP). Report the real `ok`/log the command returns; if no browser-automation tool is configured, that's what the agent will say, so report `unverified` and name the missing driver rather than claiming the browser ran.",
     }
     return b.get(seg, "")
 
@@ -895,9 +897,10 @@ SAFE_PATH: dict[str, str] = {
     # can get wrong.
     "workflows": (
         "Preview before any destructive UI action and require confirmation. Wait on observable state, never on "
-        "a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, do not claim "
-        "the run passed — and the shipped runner is a stub that produces none, so `unverified` is the honest "
-        "ceiling until a real driver is wired."
+        "a fixed delay. Capture an artifact (screenshot, trace, or log) as evidence; without one, report "
+        "`unverified` rather than a pass. `jstack workflow run` drives a real browser through a spawned agent's "
+        "browser-automation tool (e.g. Playwright MCP) — if the host has none configured, the agent must say so "
+        "and stop rather than fabricate a result."
     ),
     "workflows/builder": (
         "Nothing executes here, so the safety question is what this file will do when someone else runs it "
@@ -1135,7 +1138,7 @@ MISSIONS.update({
     "routines/custom": "Execute a custom routine from its `config/schedules/<id>.json` definition, resolving every step to a real skill before starting.\n- **Out of scope:** Inventing a step the definition does not contain, and returning a plausible result when the definition is invalid — return the fix instead.",
 
     # ── Leaves: workflows ──
-    "workflows/execute": "Run a saved `config/workflows/*.json` flow through the `jstack workflow` CLI: preview, confirm, then execute, capturing an artifact per step.\n- **Out of scope:** Editing the flow definition, and claiming a browser ran when the runner is the stub.",
+    "workflows/execute": "Run a saved `config/workflows/*.json` flow through the `jstack workflow` CLI: preview, confirm, then execute, capturing an artifact per step.\n- **Out of scope:** Editing the flow definition, and claiming a browser ran when the agent had no browser-automation tool available.",
 
     # ── Leaves: standalone ──
     "federated-search": "Dispatch one query across the configured backends in parallel (Jira, Notion, Slack, GitHub, knowledge_base, gbrain) and fuse the results with per-source attribution.\n- **Out of scope:** Knowledge-base-only lookups — use `jstack:knowledge-search`, which is scoped to the curated `knowledge_base` config. Also out of scope: storing anything it finds.",

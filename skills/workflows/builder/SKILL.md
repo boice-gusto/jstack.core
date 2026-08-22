@@ -50,7 +50,7 @@ Nothing executes here, so the safety question is what this file will do when som
 ### Step 3 — Execute
 Write a JSON definition to `config/workflows/<id>.json` matching `WorkflowDefinitionSchema` (`cli/src/types/workflow.ts`): `id`, `name`, `start_url`, `steps[]`, where each step is `{id, kind, selector?, value?, url?, notes?}`.
 - `kind` is one of `goto`, `click`, `fill`, `wait`, `screenshot`, `ai`. There is **no assertion kind** — express a check as a `wait` on a selector that only exists in the desired state, plus a `screenshot` for evidence.
-- No credentials in the file: a `fill` whose value is a secret names an env var, never a literal.
+- No credentials in the file: a `fill` whose value is a secret is written as `env:VAR_NAME`, never a literal — the executor resolves it from the environment at run time.
 
 ### Step 4 — Validate
 Confirm the definition parses against `WorkflowDefinitionSchema`, that every `kind` is one of the six the schema accepts, that every `click`/`fill` is preceded by a `wait`, and that no value is a credential literal. Do not claim the flow works — nothing was run.
@@ -73,9 +73,9 @@ Use a domain-appropriate heading, then:
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | Document requirements; do not block on GUI if headless was requested. |
+| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a run. |
 | Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
-| Runner is the stub (`runWorkflowStub`) | It returns `ok: true` with no artifact by design. Report `unverified` and say a real driver is not wired; never present it as a pass. |
+| `jstack workflow run` reports `ok: false` | Read the log for which step the agent stopped on; treat it as a real failure, not a stub artifact. |
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 
 ## Chaining
