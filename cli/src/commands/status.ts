@@ -9,7 +9,7 @@ export function runStatus(): void {
     console.log(chalk.yellow("No jstack.config.json — run jstack setup"));
     return;
   }
-  const team = cfg.team as { name?: string; timezone?: string } | undefined;
+  const team = cfg.team;
   console.log(chalk.bold("jstack status"));
   console.log(`  Team:     ${team?.name ?? "(unset)"}`);
   console.log(`  Timezone: ${team?.timezone ?? "UTC"}`);

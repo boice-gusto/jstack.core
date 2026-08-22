@@ -4,7 +4,7 @@ export function runTime(opts: { format: string; sprint: boolean }): void {
   const now = new Date();
   const root = findProjectRoot();
   const cfg = readConfigOptional(root);
-  const team = cfg?.team as { timezone?: string } | undefined;
+  const team = cfg?.team;
   const tz = team?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const payload = {

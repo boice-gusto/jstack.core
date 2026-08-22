@@ -4,12 +4,7 @@ import { findProjectRoot, readConfigOptional } from "../lib/config.js";
 /** Thin CLI entrypoints; Drive/Notion MCP runs in the agent via skills. */
 export function runTranscriptsStatus(): void {
   const root = findProjectRoot();
-  const cfg = readConfigOptional(root) as {
-    integrations?: {
-      google_drive?: { transcripts_folder_id?: string };
-      transcripts?: unknown;
-    };
-  } | null;
+  const cfg = readConfigOptional(root);
   const folder =
     cfg?.integrations?.google_drive?.transcripts_folder_id?.trim() ?? "";
   console.log(chalk.bold("Transcript pipeline (config snapshot)"));
