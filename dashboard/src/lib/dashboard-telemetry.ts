@@ -15,6 +15,15 @@ import { getJstackCoreRoot } from "@/server/env";
 import { readJstackConfig } from "./config-reader";
 
 /**
+ * Every `/api/agent/stream` run spawns a real `claude -p` child with real token/dollar cost, but
+ * nothing recorded that anywhere -- `telemetry/collector.ts`'s `recordEvent()` had zero callers in
+ * this codebase (see `telemetry/cli.ts`'s own `RECORDING_WIRED_UP = false`). The dashboard is the
+ * one long-running process in this repo (unlike the CLI, which is a fresh process per invocation
+ * and so could never usefully hold telemetry/cli.ts's in-memory buffer across calls) -- it's the
+ * natural first real caller.
+ */
+
+/**
  * NOT `@jstack/telemetry/sender`'s `sendBatch`, despite doing the exact same POST -- reached via
  * the `@jstack/*` alias, Turbopack fails to resolve sender.ts's OWN `.js`-suffixed relative
  * imports (`./schema.js`, `./instance-id.js`) with "Module not found," confirmed live against the
@@ -42,15 +51,6 @@ async function sendBatch(
   }).catch(() => null);
   return !!res && res.ok;
 }
-
-/**
- * Every `/api/agent/stream` run spawns a real `claude -p` child with real token/dollar cost, but
- * nothing recorded that anywhere -- `telemetry/collector.ts`'s `recordEvent()` had zero callers in
- * this codebase (see `telemetry/cli.ts`'s own `RECORDING_WIRED_UP = false`). The dashboard is the
- * one long-running process in this repo (unlike the CLI, which is a fresh process per invocation
- * and so could never usefully hold telemetry/cli.ts's in-memory buffer across calls) -- it's the
- * natural first real caller.
- */
 
 let cachedVersion: string | null = null;
 
