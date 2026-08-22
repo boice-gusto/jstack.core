@@ -262,16 +262,33 @@ export interface CoverageRow {
   caseCount: number;
 }
 
+export interface SkillEvalCases {
+  skill: string;
+  cases: EvalCase[];
+}
+
+/**
+ * Walks `skills/` and parses every skill's eval YAML exactly once. `eval:quick` used to do this
+ * up to 3x per run: `runValidate` walked+parsed only skills with evals, `runCoverage` walked+
+ * parsed ALL skills again for the same case lists, and `cmdQuick` called `evalCoverageReport`
+ * (itself a full walk+parse) a second time just to build its JSON report and coverage gate.
+ * `evalCoverageReport`/`runValidate`/`cmdQuick` now all derive from a single call to this.
+ */
+export function discoverAllEvalCases(skillsRoot: string): SkillEvalCases[] {
+  return discoverAllSkillRelativePaths(skillsRoot).map((rel) => ({
+    skill: rel,
+    cases: discoverEvalCases(join(skillsRoot, rel), 120),
+  }));
+}
+
 export function evalCoverageReport(skillsRoot: string): CoverageRow[] {
-  const rows: CoverageRow[] = [];
-  for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
-    const skillPath = join(skillsRoot, rel);
-    const cases = discoverEvalCases(skillPath, 120);
-    rows.push({
-      skill: rel,
-      hasEvals: cases.length > 0,
-      caseCount: cases.length,
-    });
-  }
-  return rows;
+  return coverageRowsFromCases(discoverAllEvalCases(skillsRoot));
+}
+
+export function coverageRowsFromCases(all: SkillEvalCases[]): CoverageRow[] {
+  return all.map(({ skill, cases }) => ({
+    skill,
+    hasEvals: cases.length > 0,
+    caseCount: cases.length,
+  }));
 }

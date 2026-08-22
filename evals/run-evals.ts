@@ -21,12 +21,16 @@ import {
   normalizeGateSkillId,
 } from "./gate-runner.js";
 import {
+  coverageRowsFromCases,
+  discoverAllEvalCases,
   discoverAllSkillRelativePaths,
   discoverEvalCases,
   discoverSkillsWithSemanticEvals,
   evalCoverageReport,
   loadSkillEvalConfig,
   validateCases,
+  type CoverageRow,
+  type SkillEvalCases,
 } from "./discover.js";
 import {
   loadGlobalEvalEnv,
@@ -247,14 +251,20 @@ function loadLatestSemanticSummary(
   return null;
 }
 
-function runValidate(): { errors: string[]; skillsChecked: number } {
+/**
+ * `allCases` defaults to a fresh full walk+parse for standalone callers (`cmdValidate`).
+ * `cmdQuick` passes an already-computed set instead, so the same skill's eval YAML isn't
+ * re-read and re-parsed a second time in the same run.
+ */
+function runValidate(
+  allCases: SkillEvalCases[] = discoverAllEvalCases(skillsRoot),
+): { errors: string[]; skillsChecked: number } {
   const errors: string[] = [];
   let n = 0;
+  const casesBySkill = new Map(allCases.map((c) => [c.skill, c.cases]));
   for (const rel of discoverSkillsWithSemanticEvals(skillsRoot)) {
     n++;
-    const skillPath = join(skillsRoot, ...rel.split("/"));
-    const cases = discoverEvalCases(skillPath, 120);
-    errors.push(...validateCases(cases));
+    errors.push(...validateCases(casesBySkill.get(rel) ?? []));
   }
   if (errors.length) {
     console.error("Eval YAML validation failed:");
@@ -265,8 +275,10 @@ function runValidate(): { errors: string[]; skillsChecked: number } {
   return { errors, skillsChecked: n };
 }
 
-function runCoverage(): void {
-  const rows = evalCoverageReport(skillsRoot);
+/** `rows` defaults to a fresh computation for standalone callers (`cmdCoverage`). */
+function runCoverage(
+  rows: CoverageRow[] = evalCoverageReport(skillsRoot),
+): void {
   const withEvals = rows.filter((r) => r.hasEvals);
   const missing = rows.filter((r) => !r.hasEvals);
   console.log("\nSkill eval coverage (semantic YAML)\n");
@@ -790,11 +802,15 @@ function cmdQuick(args: CliArgs): number {
   console.log("\n=== Chain (chain-evals.json) ===\n");
   const c = runChain();
   console.log("\n=== Validate semantic YAML ===\n");
-  const v = runValidate();
-  runCoverage();
+  // Walk skills/ and parse every eval YAML exactly once for this whole command, instead of
+  // once inside runValidate, again inside runCoverage's evalCoverageReport, and a third time
+  // for this function's own JSON report.
+  const allCases = discoverAllEvalCases(skillsRoot);
+  const cov = coverageRowsFromCases(allCases);
+  const v = runValidate(allCases);
+  runCoverage(cov);
   mkdirSync(reportsDir, { recursive: true });
   const quickPath = join(reportsDir, "quick-latest.json");
-  const cov = evalCoverageReport(skillsRoot);
   writeFileSync(
     quickPath,
     JSON.stringify(
