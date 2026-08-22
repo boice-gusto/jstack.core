@@ -40,23 +40,29 @@ function jsonForInlineScript(obj: unknown): string {
 }
 
 async function main(): Promise<void> {
-  const records = await buildSkillRecords(REPO_ROOT, SKILLS_ROOT);
-  const payload = buildSkillsPayload(records);
-
-  const skillHtml: Record<string, string> = {};
-  for (const s of records) {
-    const abs = join(REPO_ROOT, s.relPath);
-    const raw = await readFile(abs, "utf8");
-    const { rest } = parseFrontmatter(raw);
-    skillHtml[s.relPath] = markdownToSafeHtml(rest);
-  }
-
+  // Read every markdown file under skills/ exactly once, keyed the same way
+  // `buildSkillRecords`/`s.relPath` key it, so nothing downstream re-reads a file already in
+  // memory. Previously each SKILL.md was read up to 3x per run: once here (then, before this
+  // fix, again inside buildSkillRecords, and again in the skillHtml loop below).
   const mdByRelPath: Record<string, string> = {};
   const allMdAbs = await walkAllMarkdownUnderSkills(SKILLS_ROOT);
   for (const abs of allMdAbs.sort()) {
     const rel = relative(REPO_ROOT, abs).split("\\").join("/");
-    const text = await readFile(abs, "utf8");
-    mdByRelPath[rel] = text;
+    mdByRelPath[rel] = await readFile(abs, "utf8");
+  }
+  const readCached = async (abs: string): Promise<string> => {
+    const rel = relative(REPO_ROOT, abs).split("\\").join("/");
+    return mdByRelPath[rel] ?? (await readFile(abs, "utf8"));
+  };
+
+  const records = await buildSkillRecords(REPO_ROOT, SKILLS_ROOT, readCached);
+  const payload = buildSkillsPayload(records);
+
+  const skillHtml: Record<string, string> = {};
+  for (const s of records) {
+    const raw = await readCached(join(REPO_ROOT, s.relPath));
+    const { rest } = parseFrontmatter(raw);
+    skillHtml[s.relPath] = markdownToSafeHtml(rest);
   }
 
   const markdownBundledAbs = join(REPO_ROOT, "markdown-render-bundled.js");

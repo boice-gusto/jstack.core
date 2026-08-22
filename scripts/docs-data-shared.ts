@@ -145,12 +145,19 @@ export function formatCategoryLabel(key: string): string {
 export async function buildSkillRecords(
   repoRoot: string,
   skillsRoot: string,
+  /**
+   * Defaults to a fresh `readFile` per skill. A caller that's already read every SKILL.md into
+   * memory for another purpose (e.g. `build-landing-page.ts`'s `mdByRelPath`) can pass a lookup
+   * into that cache instead, so the same file isn't read from disk twice in one run.
+   */
+  readContent: (absPath: string) => Promise<string> = (p) =>
+    readFile(p, "utf8"),
 ): Promise<SkillRecord[]> {
   const absPaths = await walkSkillMds(skillsRoot);
   const records: SkillRecord[] = [];
 
   for (const abs of absPaths.sort()) {
-    const raw = await readFile(abs, "utf8");
+    const raw = await readContent(abs);
     const { meta } = parseFrontmatter(raw);
     const rel = relative(repoRoot, abs).split("\\").join("/");
     const name =
