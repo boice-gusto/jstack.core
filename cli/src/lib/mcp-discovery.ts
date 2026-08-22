@@ -14,16 +14,19 @@ export interface McpFile {
   >;
 }
 
-/** Best-effort parse of .mcp.json without starting servers */
-export function discoverFromMcpJson(projectRoot: string): McpRegistry {
-  const p = join(projectRoot, ".mcp.json");
-  if (!existsSync(p)) return {};
-  let data: McpFile;
+/** Best-effort parse of a `.mcp.json` file; swallows a missing file or malformed JSON as `{}`. */
+export function readMcpFile(path: string): McpFile {
+  if (!existsSync(path)) return {};
   try {
-    data = JSON.parse(readFileSync(p, "utf8")) as McpFile;
+    return JSON.parse(readFileSync(path, "utf8")) as McpFile;
   } catch {
     return {};
   }
+}
+
+/** Best-effort parse of .mcp.json without starting servers */
+export function discoverFromMcpJson(projectRoot: string): McpRegistry {
+  const data = readMcpFile(join(projectRoot, ".mcp.json"));
   const servers = data.mcpServers ?? {};
   const registry: McpRegistry = {};
   for (const [id, spec] of Object.entries(servers)) {

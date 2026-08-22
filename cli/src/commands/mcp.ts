@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import chalk from "chalk";
 import * as p from "@clack/prompts";
@@ -18,6 +18,7 @@ import {
 import {
   discoverFromMcpJson,
   mergeMcpRegistry,
+  readMcpFile,
   type McpFile,
 } from "../lib/mcp-discovery.js";
 import {
@@ -29,15 +30,6 @@ import type { McpRegistry } from "../types/mcp-registry.js";
 
 function mcpJsonPath(root: string): string {
   return join(root, ".mcp.json");
-}
-
-function readMcpFile(path: string): McpFile {
-  if (!existsSync(path)) return {};
-  try {
-    return JSON.parse(readFileSync(path, "utf8")) as McpFile;
-  } catch {
-    return {};
-  }
 }
 
 function writeMcpFile(path: string, data: McpFile): void {

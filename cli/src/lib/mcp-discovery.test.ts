@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { mergeMcpRegistry, type McpMergeCollision } from "./mcp-discovery.js";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  discoverFromMcpJson,
+  mergeMcpRegistry,
+  readMcpFile,
+  type McpMergeCollision,
+} from "./mcp-discovery.js";
 import type { McpRegistry, McpServer } from "../types/mcp-registry.js";
 
 function makeServer(over: Partial<McpServer> = {}): McpServer {
@@ -129,5 +137,64 @@ describe("mergeMcpRegistry", () => {
     expect(() => mergeMcpRegistry(existing, discovered)).not.toThrow();
     const result = mergeMcpRegistry(existing, discovered);
     expect(result.a!.auto_discovered).toBe(false);
+  });
+});
+
+/**
+ * `readMcpFile` used to be duplicated verbatim between this module and commands/mcp.ts.
+ * Previously untested on either side: a missing file and malformed JSON both fall back to `{}`
+ * rather than throwing.
+ */
+describe("readMcpFile / discoverFromMcpJson — malformed input fails closed", () => {
+  function mkProjectDir(): string {
+    return mkdtempSync(join(tmpdir(), "jstack-mcp-discovery-"));
+  }
+
+  test("readMcpFile returns {} for a missing file", () => {
+    const dir = mkProjectDir();
+    try {
+      expect(readMcpFile(join(dir, ".mcp.json"))).toEqual({});
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("readMcpFile returns {} for malformed JSON instead of throwing", () => {
+    const dir = mkProjectDir();
+    try {
+      const p = join(dir, ".mcp.json");
+      writeFileSync(p, "not valid json {{{", "utf8");
+      expect(() => readMcpFile(p)).not.toThrow();
+      expect(readMcpFile(p)).toEqual({});
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("discoverFromMcpJson returns an empty registry for malformed .mcp.json", () => {
+    const dir = mkProjectDir();
+    try {
+      writeFileSync(join(dir, ".mcp.json"), "{ broken", "utf8");
+      expect(discoverFromMcpJson(dir)).toEqual({});
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("discoverFromMcpJson parses a well-formed .mcp.json", () => {
+    const dir = mkProjectDir();
+    try {
+      writeFileSync(
+        join(dir, ".mcp.json"),
+        JSON.stringify({
+          mcpServers: { demo: { command: "node", args: ["server.js"] } },
+        }),
+        "utf8",
+      );
+      const registry = discoverFromMcpJson(dir);
+      expect(registry.demo?.server_id).toBe("demo");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
