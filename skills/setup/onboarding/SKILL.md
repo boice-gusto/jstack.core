@@ -48,6 +48,22 @@ Both front doors exist and produce the same config. Say so once, in one line:
 If they pick the HTML wizard, tell them the path, note that it ends with a download button,
 and stop. Otherwise continue.
 
+## Front-loaded answers
+
+If the user's message already answers several steps at once (profile, team name, integrations,
+KB urls all in one message), do not fall back to asking Step 1 again one at a time. Extract every
+value given, apply the routing rules that touch it (e.g. the personal-KB-url split in Step 4) and
+say in one line that you did, then continue straight through the remaining steps **in the same
+turn**, ending with a Step-6-style draft.
+
+**Always show the draft, even if something required is still missing.** A rule triggering (routing
+a personal URL out) or a required field being absent (no timezone given) is never a reason to
+withhold the whole proposed config. Print the JSON with every value the user already supplied
+(team name, integrations, etc.) filled in now, mark the still-missing required field inline (e.g.
+`"timezone": null, // still needed — reply with an IANA zone like America/Los_Angeles`), and ask
+only for that one remaining thing. Never respond with just a question and no config content when
+you already have enough to draft most of it.
+
 ## Step 1 — Profile
 
 Parse `$ARGUMENTS` for `ic`, `lead`, or `shared`. If absent, call **AskUserQuestion** with

@@ -23,7 +23,10 @@ The cause was <cause — only if determined; otherwise state "under investigatio
 ```
 
 Every placeholder must be filled from verified fact. If a value is unknown, say it is under
-investigation rather than estimating.
+investigation rather than estimating. This applies to **every** placeholder, not only cause: if data
+impact, scope, or resolution status was not stated by the user, do not fill that slot with the
+reassuring default ("no data loss," "fully resolved") — write "data impact: under confirmation" (or
+omit the line) instead. A confident-sounding placeholder is still an invented fact if nobody confirmed it.
 
 ## Structure
 
@@ -31,6 +34,11 @@ investigation rather than estimating.
 2. **Third person.** "The team completed the migration," not "we shipped it."
 3. **Precision over reassurance.** State what is known. "Under investigation" is acceptable;
    "probably fine" is not.
+3a. **Hedged input never becomes an unhedged sentence.** If the source says "we think," "probably,"
+   "likely," or similar, the cause is **not** determined — write "under investigation," not the
+   hedged guess promoted to a flat declarative sentence with the hedge merely offered as a bracketed
+   alternative. A suspected-but-unconfirmed cause may appear only inside explicit caveat language
+   ("a possible contributing factor, not yet confirmed, is —"), never as the primary sentence.
 4. **External names only.** Refer to products and features by their public names. If you have not
    been given the public name for something internal, do not guess — flag that it needs
    confirmation. Maintain that internal→external mapping in this file for your own product.

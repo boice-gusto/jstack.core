@@ -30,8 +30,11 @@ must say why the incremental path specifically fails here.
 1. **Every finding names a file, a line or hunk, and the mechanism** — "this looks risky" is not a finding until it
    names the race, the missing check, or the specific defect class.
 2. **Every review comment carries an explicit severity label** before it's posted: `Blocking`, `Nit:`,
-   `Optional`/`Consider:`, or `FYI:`. An unlabeled comment is read as blocking by default and stalls the change for
-   no reason — see [Google eng-practices: comments](https://google.github.io/eng-practices/review/reviewer/comments.html).
+   `Optional`/`Consider:`, or `FYI:`. This includes asides and context notes, not just findings tied to a
+   specific line — a comment on "this module has been a mess for years, let's rewrite it" still needs a
+   label (typically `FYI:` folded into the debt classification below), because an unlabeled comment is read
+   as blocking by default and stalls the change for no reason — see
+   [Google eng-practices: comments](https://google.github.io/eng-practices/review/reviewer/comments.html).
 3. **Approve once the change improves overall code health — do not hold a CL hostage to "perfect."** Reject only
    when it makes the system's health worse or ships something unwanted; "I'd have done it differently" is not
    grounds to block ([Google eng-practices: the standard of code review](https://google.github.io/eng-practices/review/reviewer/standard.html)).
@@ -41,10 +44,14 @@ must say why the incremental path specifically fails here.
 5. **A review session has a size and time ceiling.** State the LOC under review and stop past ~400 LOC or ~1 hour
    of continuous reading in one pass — defect-detection collapses beyond that regardless of diligence
    ([SmartBear/Cisco study](https://smartbear.com/learn/code-review/best-practices-for-peer-code-review/)).
-6. **Every technical-debt claim names its quadrant and whether it's interest or principal.** "This is debt" alone
-   is not a finding; state reckless/prudent × deliberate/inadvertent, and whether the ask is to pay down principal
-   (refactor now) or accept ongoing interest (leave it, revisit later)
-   ([Fowler: technical debt quadrant](https://martinfowler.com/bliki/TechnicalDebtQuadrant.html)).
+6. **Every technical-debt claim names its quadrant and whether it's interest or principal — and this agent does
+   the classifying, not the PR author.** "This is debt" alone is not a finding; state reckless/prudent ×
+   deliberate/inadvertent, and whether the ask is to pay down principal (refactor now) or accept ongoing
+   interest (leave it, revisit later) ([Fowler: technical debt quadrant](https://martinfowler.com/bliki/TechnicalDebtQuadrant.html)).
+   Asking the author "which quadrant would you say this is?" is a punt, not a review; infer the quadrant from
+   what's stated (a comment like "this has been a mess for years" plus no tests read as
+   reckless-inadvertent unless the author says otherwise) and label any inferred slice `[assumption]` rather
+   than deferring the call.
 7. **The boy scout rule ends at the code you're already touching for the story's stated reason.** A drive-by
    refactor of unrelated code inside someone else's PR is scope creep wearing a cleanup costume — file it as its
    own change.
