@@ -170,31 +170,29 @@ export function unwrapToolText(raw: string): string {
   return s;
 }
 
-export function parseReadResponse(
-  rawInput: string,
+/**
+ * Shared block-split/author/ts/body extraction behind both `parseReadResponse` (channel reads)
+ * and `parseThreadResponse` (thread reads) -- previously two near-identical copies differing
+ * only in the block-split pattern and which envelope trailers get stripped. Always unwraps
+ * internally (channel reads and thread reads used to be asymmetric here: only the channel path
+ * unwrapped itself, and the thread path's one caller had to remember to do it first).
+ */
+function parseMessageBlocks(
+  raw: string,
   channelId: string,
+  splitRe: RegExp,
+  trailerRes: RegExp[],
 ): InboundMessage[] {
-  const raw = unwrapToolText(rawInput);
+  const unwrapped = unwrapToolText(raw);
   const out: InboundMessage[] = [];
-  const blocks = raw.split(/^=== Message from /m).slice(1);
-  for (const block of blocks) {
+  for (const block of unwrapped.split(splitRe)) {
     const author = block.match(/\((U[A-Z0-9]+)\)/)?.[1];
     const ts = block.match(/Message TS:\s*([0-9]+\.[0-9]+)/)?.[1];
     if (!author || !ts) continue;
     const bodyStart = block.indexOf("\n", block.indexOf("Message TS:"));
     let text = bodyStart >= 0 ? block.slice(bodyStart + 1) : "";
-    // These trailers are envelope metadata, not message body. Leaving them in leaks
-    // "pagination_info: There are no more messages available." into the request text.
-    text = text
-      .replace(/^Thread:.*$/gm, "")
-      .replace(/^pagination_info:.*$/gm, "")
-      // `Reactions: eyes (1)` is the envelope reporting OUR OWN 👀 back to us. Observed live
-      // appended to a real message body, where it becomes part of the request the worker is
-      // asked to answer -- and, since we react before working, it appears on exactly the
-      // messages we are about to handle.
-      .replace(/^Reactions:.*$/gm, "")
-      .replace(/There are no more messages available\.?/g, "")
-      .trim();
+    for (const re of trailerRes) text = text.replace(re, "");
+    text = text.trim();
     out.push({
       channelId,
       ts,
@@ -205,6 +203,31 @@ export function parseReadResponse(
   }
   // Oldest first, so the watermark advances monotonically.
   return out.sort((a, b) => Number(a.ts) - Number(b.ts));
+}
+
+// These trailers are envelope metadata, not message body. Leaving them in leaks
+// "pagination_info: There are no more messages available." into the request text.
+// `Reactions: eyes (1)` is the envelope reporting OUR OWN 👀 back to us. Observed live
+// appended to a real message body, where it becomes part of the request the worker is
+// asked to answer -- and, since we react before working, it appears on exactly the
+// messages we are about to handle.
+const CHANNEL_READ_TRAILER_RES = [
+  /^Thread:.*$/gm,
+  /^pagination_info:.*$/gm,
+  /^Reactions:.*$/gm,
+  /There are no more messages available\.?/g,
+];
+
+export function parseReadResponse(
+  rawInput: string,
+  channelId: string,
+): InboundMessage[] {
+  return parseMessageBlocks(
+    rawInput,
+    channelId,
+    /^=== Message from /m,
+    CHANNEL_READ_TRAILER_RES,
+  );
 }
 
 export interface ReadResult {
@@ -306,6 +329,31 @@ async function callSlackTool(
   return r;
 }
 
+type ToolResultOutcome =
+  | { ok: true }
+  | { ok: false; error: string; authLost?: boolean };
+
+/**
+ * Classifies a `callSlackTool` result into "usable" or "not", shared by `readChannel` and
+ * `readThread` -- previously two byte-identical copies of this exact classification, which had
+ * to be kept in sync by hand (the authLost regex, the no-tool-output sentinel checks).
+ */
+export function interpretToolResult(r: ClaudeResult): ToolResultOutcome {
+  if (!r.ok) {
+    const authLost = /not logged in|please run \/login/i.test(r.text);
+    return { ok: false, error: r.text.slice(0, 300), authLost };
+  }
+  if (
+    /^ERROR:/m.test(r.text) ||
+    toolMissing(r.text) ||
+    looksLikeNoToolOutput(r.text)
+  ) {
+    // NOT an empty channel/thread. Conflating the two is what let a follow-up disappear.
+    return { ok: false, error: `no tool output: ${r.text.slice(0, 200)}` };
+  }
+  return { ok: true };
+}
+
 export async function readChannel(
   channelId: string,
   oldest: string | null,
@@ -320,27 +368,14 @@ export async function readChannel(
     { idempotent: true },
   );
 
-  if (!r.ok) {
-    const authLost = /not logged in|please run \/login/i.test(r.text);
+  const outcome = interpretToolResult(r);
+  if (!outcome.ok) {
     return {
       ok: false,
       messages: [],
       costUsd: r.costUsd,
-      error: r.text.slice(0, 300),
-      authLost,
-    };
-  }
-  if (
-    /^ERROR:/m.test(r.text) ||
-    toolMissing(r.text) ||
-    looksLikeNoToolOutput(r.text)
-  ) {
-    // NOT an empty channel. Conflating the two is what let a follow-up disappear.
-    return {
-      ok: false,
-      messages: [],
-      costUsd: r.costUsd,
-      error: `no tool output: ${r.text.slice(0, 200)}`,
+      error: outcome.error,
+      authLost: outcome.authLost,
     };
   }
   const messages = parseReadResponse(r.text, channelId);
@@ -435,29 +470,17 @@ export async function readThread(
       `limit=${limit}, response_format="detailed".`,
     { idempotent: true },
   );
-  if (!r.ok) {
-    const authLost = /not logged in|please run \/login/i.test(r.text);
+  const outcome = interpretToolResult(r);
+  if (!outcome.ok) {
     return {
       ok: false,
       messages: [],
       costUsd: r.costUsd,
-      error: r.text.slice(0, 300),
-      authLost,
+      error: outcome.error,
+      authLost: outcome.authLost,
     };
   }
-  if (
-    /^ERROR:/m.test(r.text) ||
-    toolMissing(r.text) ||
-    looksLikeNoToolOutput(r.text)
-  ) {
-    return {
-      ok: false,
-      messages: [],
-      costUsd: r.costUsd,
-      error: `no tool output: ${r.text.slice(0, 200)}`,
-    };
-  }
-  const all = parseThreadResponse(unwrapToolText(r.text), channelId);
+  const all = parseThreadResponse(r.text, channelId);
   // Drop the parent: the channel poll owns it.
   const replies = all.filter((m) => m.ts !== parentTs);
   return {
@@ -468,36 +491,24 @@ export async function readThread(
   };
 }
 
+const THREAD_READ_TRAILER_RES = [
+  /^Reactions:.*$/gm,
+  /^=== THREAD REPLIES.*$/gm,
+  /^pagination_info:.*$/gm,
+  /There are no more messages in this thread\.?/g,
+];
+
 /** Thread responses use a different layout from channel reads: `From:` / `Message TS:` blocks. */
 export function parseThreadResponse(
   raw: string,
   channelId: string,
 ): InboundMessage[] {
-  const out: InboundMessage[] = [];
-  const blocks = raw.split(
+  return parseMessageBlocks(
+    raw,
+    channelId,
     /^(?:--- Reply \d+ of \d+ ---|=== THREAD PARENT MESSAGE ===)$/m,
+    THREAD_READ_TRAILER_RES,
   );
-  for (const block of blocks) {
-    const author = block.match(/\((U[A-Z0-9]+)\)/)?.[1];
-    const ts = block.match(/Message TS:\s*([0-9]+\.[0-9]+)/)?.[1];
-    if (!author || !ts) continue;
-    const start = block.indexOf("\n", block.indexOf("Message TS:"));
-    let text = start >= 0 ? block.slice(start + 1) : "";
-    text = text
-      .replace(/^Reactions:.*$/gm, "")
-      .replace(/^=== THREAD REPLIES.*$/gm, "")
-      .replace(/^pagination_info:.*$/gm, "")
-      .replace(/There are no more messages in this thread\.?/g, "")
-      .trim();
-    out.push({
-      channelId,
-      ts,
-      author,
-      text,
-      hasServerSuffix: hasServerSuffix(text),
-    });
-  }
-  return out.sort((a, b) => Number(a.ts) - Number(b.ts));
 }
 
 /** Remove Slack's appended attribution from text we are about to quote or reason over. */

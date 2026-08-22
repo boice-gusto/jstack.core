@@ -1,11 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import {
+  interpretToolResult,
   looksLikeNoToolOutput,
   parseReadResponse,
   parseSendResponse,
+  parseThreadResponse,
   toolMissing,
   unwrapToolText,
 } from "./slack.js";
+import type { ClaudeResult } from "./slack.js";
+
+function claudeResult(over: Partial<ClaudeResult> = {}): ClaudeResult {
+  return { ok: true, text: "", costUsd: 0, isError: false, ...over };
+}
 
 /**
  * Fixtures here are VERBATIM recorded round trips (C13), never hand-written.
@@ -212,5 +219,104 @@ describe("envelope metadata must not leak into the message body", () => {
     );
     const [m] = parseReadResponse(kept, "D0TESTDM001");
     expect(m!.text).toContain("which Reactions: do you support?");
+  });
+});
+
+/**
+ * `interpretToolResult` is the failure-classification logic shared by `readChannel` and
+ * `readThread` -- previously two byte-identical inline copies with no direct test coverage
+ * (both call `runClaude`, which shells to the real `claude` binary, so neither function itself
+ * is unit-testable). Extracting it into a pure function makes it directly testable for the
+ * first time.
+ */
+describe("interpretToolResult", () => {
+  test("a failed call with the auth-lost phrasing is classified as authLost", () => {
+    const r = interpretToolResult(
+      claudeResult({ ok: false, text: "Error: not logged in to Slack" }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.authLost).toBe(true);
+  });
+
+  test("a failed call without the auth-lost phrasing is not classified as authLost", () => {
+    const r = interpretToolResult(
+      claudeResult({ ok: false, text: "Error: timeout" }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.authLost).toBe(false);
+  });
+
+  test("an ok call with no tool envelope is treated as unusable, not an empty read", () => {
+    const r = interpretToolResult(
+      claudeResult({ ok: true, text: "Sure, I'll check that for you." }),
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain("no tool output");
+  });
+
+  test("an ok call with a real tool envelope is usable", () => {
+    const r = interpretToolResult(
+      claudeResult({ ok: true, text: "Channel: DM" }),
+    );
+    expect(r.ok).toBe(true);
+  });
+});
+
+/**
+ * `parseThreadResponse` previously had zero direct test coverage (only exercised indirectly
+ * through `readThread`, which nothing here calls). Unlike the channel-read fixtures above,
+ * there is no verbatim recorded thread round-trip on hand, so these are constructed from the
+ * exact block markers `parseThreadResponse`'s own regexes match (`=== THREAD PARENT MESSAGE ===`,
+ * `--- Reply N of M ---`) -- shaped to spec, not recorded, and labeled as such per this file's
+ * own C13 convention.
+ */
+describe("parseThreadResponse — constructed thread-shaped input", () => {
+  const raw = [
+    "=== THREAD PARENT MESSAGE ===",
+    "From: Test Operator (U0TESTUSER1)",
+    "Message TS: 1785141296.398489",
+    "!ralph kick off the deploy",
+    "",
+    "--- Reply 1 of 2 ---",
+    "From: Ralph (U0APPID0001)",
+    "Message TS: 1785141300.000100",
+    "On it.",
+    "Reactions: eyes (1)",
+    "",
+    "--- Reply 2 of 2 ---",
+    "From: Test Operator (U0TESTUSER1)",
+    "Message TS: 1785141310.000200",
+    "any update?",
+    "pagination_info: There are no more messages in this thread.",
+  ].join("\n");
+
+  const msgs = parseThreadResponse(raw, "D0TESTDM001");
+
+  test("extracts all three blocks (parent + 2 replies)", () => {
+    expect(msgs).toHaveLength(3);
+  });
+
+  test("returns oldest first", () => {
+    expect(msgs.map((m) => m.ts)).toEqual([
+      "1785141296.398489",
+      "1785141300.000100",
+      "1785141310.000200",
+    ]);
+  });
+
+  test("strips the Reactions: trailer from a reply body", () => {
+    const reply1 = msgs.find((m) => m.ts === "1785141300.000100");
+    expect(reply1!.text).toBe("On it.");
+  });
+
+  test("strips the thread pagination_info trailer", () => {
+    const reply2 = msgs.find((m) => m.ts === "1785141310.000200");
+    expect(reply2!.text).toBe("any update?");
+  });
+
+  test("unwraps a JSON-wrapped thread response the same way parseReadResponse does", () => {
+    const wrapped = JSON.stringify({ messages: raw });
+    const fromWrapped = parseThreadResponse(wrapped, "D0TESTDM001");
+    expect(fromWrapped).toHaveLength(3);
   });
 });
