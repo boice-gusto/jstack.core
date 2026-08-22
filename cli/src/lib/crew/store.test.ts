@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CrewStore } from "./store.js";
+import { CrewStore, deriveTaskDisplayStatus } from "./store.js";
 
 function freshStore(): CrewStore {
   return new CrewStore(mkdtempSync(join(tmpdir(), "crew-test-")));
@@ -258,6 +258,105 @@ describe("findTaskById makes the printed handle resolvable", () => {
       "scout",
     );
     expect(s.findTaskById("sco-bbbb")!.agentId).toBe("scout");
+    s.close();
+  });
+});
+
+/**
+ * `task.state` is written 'running' by `createTask` and only ever moved to a terminal value by
+ * `finishTask` -- `bumpTurn` (the follow-up path) never touches it. A task that receives a
+ * follow-up and then goes idle would report "running" forever from the raw column alone.
+ * `recentTasks()`/`deriveTaskDisplayStatus` derive an honest display status instead.
+ */
+describe("deriveTaskDisplayStatus", () => {
+  test("a finished task's real state passes through, regardless of timing", () => {
+    const now = 1_000_000;
+    expect(
+      deriveTaskDisplayStatus(
+        { state: "done", ended_at: now - 999_999, last_at: 0 },
+        now,
+        100,
+      ),
+    ).toBe("done");
+    expect(
+      deriveTaskDisplayStatus(
+        { state: "failed", ended_at: now, last_at: now },
+        now,
+        100,
+      ),
+    ).toBe("failed");
+  });
+
+  test("an unfinished task touched within threadActiveMs reports 'running'", () => {
+    const now = 1_000_000;
+    expect(
+      deriveTaskDisplayStatus(
+        { state: "running", ended_at: null, last_at: now - 50 },
+        now,
+        100,
+      ),
+    ).toBe("running");
+  });
+
+  test("an unfinished task touched longer ago than threadActiveMs reports 'idle', not the stale raw state", () => {
+    const now = 1_000_000;
+    expect(
+      deriveTaskDisplayStatus(
+        { state: "running", ended_at: null, last_at: now - 200 },
+        now,
+        100,
+      ),
+    ).toBe("idle");
+  });
+
+  test("a row with no last_at at all is treated as idle rather than throwing", () => {
+    const now = 1_000_000;
+    expect(
+      deriveTaskDisplayStatus(
+        { state: "running", ended_at: null, last_at: null },
+        now,
+        100,
+      ),
+    ).toBe("idle");
+  });
+});
+
+describe("recentTasks — SQL row shape carries what deriveTaskDisplayStatus needs", () => {
+  test("a task that only ever got bumpTurn (no finishTask) shows raw state 'running' with a stale last_at", () => {
+    const s = freshStore();
+    s.createTask("t1", "D1ABCDEFG", "1.1", "1.1", "sess-1");
+    s.bumpTurn("t1", 0.01); // follow-up turn; never finished
+    const [row] = s.recentTasks() as Array<{
+      state: string;
+      ended_at: number | null;
+      last_at: number;
+    }>;
+    expect(row!.state).toBe("running");
+    expect(row!.ended_at).toBeNull();
+    // Confirms the SQL now selects last_at/ended_at -- deriveTaskDisplayStatus needs both to
+    // tell a genuinely-active task apart from one that's just never been marked finished.
+    const farFuture = row!.last_at + 999_999_999;
+    expect(deriveTaskDisplayStatus(row!, farFuture, 3_600_000)).toBe("idle");
+    expect(deriveTaskDisplayStatus(row!, row!.last_at + 1, 3_600_000)).toBe(
+      "running",
+    );
+    s.close();
+  });
+
+  test("a finished task's row reports its real terminal state via recentTasks regardless of last_at", () => {
+    const s = freshStore();
+    s.createTask("t2", "D1ABCDEFG", "2.2", "2.2", "sess-2");
+    s.finishTask("t2", "done", 0.05);
+    const [row] = s.recentTasks() as Array<{
+      state: string;
+      ended_at: number | null;
+      last_at: number;
+    }>;
+    expect(row!.state).toBe("done");
+    expect(row!.ended_at).not.toBeNull();
+    expect(
+      deriveTaskDisplayStatus(row!, row!.last_at + 999_999_999, 3_600_000),
+    ).toBe("done");
     s.close();
   });
 });

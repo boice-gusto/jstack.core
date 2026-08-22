@@ -14,7 +14,12 @@ import {
   type ProactiveCheckConfig,
 } from "../lib/crew/types.js";
 import { findSigilCollisions, identityPrefix } from "../lib/crew/guards.js";
-import { CrewStore, expandHome, snapshotPath } from "../lib/crew/store.js";
+import {
+  CrewStore,
+  deriveTaskDisplayStatus,
+  expandHome,
+  snapshotPath,
+} from "../lib/crew/store.js";
 import { tick } from "../lib/crew/tick.js";
 import { sendMessage } from "../lib/crew/slack.js";
 import {
@@ -296,7 +301,15 @@ export function runCrewStatus(json: boolean): void {
     const store = new CrewStore(cfg.state_dir);
     const st = store.stats();
     const wm = store.getWatermark(cfg.policy.ingress.channels[0]!);
-    const recentTasks = store.recentTasks();
+    const nowMs = Date.now();
+    const recentTasks = store.recentTasks().map((t) => ({
+      ...t,
+      state: deriveTaskDisplayStatus(
+        t as { state: unknown; ended_at: unknown; last_at: unknown },
+        nowMs,
+        cfg.slack.thread_active_ms,
+      ),
+    }));
     const recentEvents = store.recentEvents();
     const lastTick = store.lastTickAt();
     store.close();

@@ -23,6 +23,27 @@ export interface OutboxRow {
   step: string;
 }
 
+/**
+ * The `task.state` column is written by `createTask` ('running') and `finishTask`
+ * ('done'/'failed') but NOT by `bumpTurn` (the follow-up-message path) -- a task that receives a
+ * follow-up and then goes idle never leaves 'running', since nothing ever moves it off that
+ * value once the initial write happens. `recentTasks()` rows are display data (`crew status`,
+ * the local orchestration UI), so this derives an honest status instead of trusting the raw
+ * column: a row with `ended_at` set really is done/failed (the same write that sets a terminal
+ * `state` also sets `ended_at`); one without `ended_at` is only genuinely "running" if it was
+ * touched more recently than `threadActiveMs` ago, otherwise it's "idle" -- still open, just not
+ * being actively polled.
+ */
+export function deriveTaskDisplayStatus(
+  row: { state: unknown; ended_at: unknown; last_at: unknown },
+  nowMs: number,
+  threadActiveMs: number,
+): string {
+  if (row.ended_at != null) return String(row.state);
+  const lastAt = typeof row.last_at === "number" ? row.last_at : 0;
+  return nowMs - lastAt <= threadActiveMs ? "running" : "idle";
+}
+
 export class CrewStore {
   private db: Database;
 
@@ -385,7 +406,7 @@ export class CrewStore {
   recentTasks(limit = 25): Array<Record<string, unknown>> {
     return this.db
       .query(
-        "SELECT id, agent_id, state, turns, cost_usd, source_ts, started_at FROM task " +
+        "SELECT id, agent_id, state, turns, cost_usd, source_ts, started_at, last_at, ended_at FROM task " +
           "ORDER BY started_at DESC LIMIT ?",
       )
       .all(limit) as Array<Record<string, unknown>>;
