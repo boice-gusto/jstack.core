@@ -1,7 +1,6 @@
 ---
 name: jstack-ingest-all
-description: Run configured ingest_all skill+prompt chain for new artifacts; finish with GBrain when configured.
-when_to_use: User wants batch ingest of new transcripts/exports using the ordered ingest_all array in config.
+description: Run configured ingest_all skill+prompt chain for new artifacts; finish with GBrain when configured. User wants batch ingest of new transcripts/exports using the ordered ingest_all array in config.
 category: knowledge
 data_class: internal
 disable-model-invocation: true

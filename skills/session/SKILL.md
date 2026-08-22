@@ -1,7 +1,6 @@
 ---
 name: jstack-session
-description: Route to session init or end.
-when_to_use: Also when starting or ending a jstack session, choosing personal vs team gbrain target, or wrapping up with a session summary.
+description: Route to session init or end. Also when starting or ending a jstack session, choosing personal vs team gbrain target, or wrapping up with a session summary.
 category: session
 effort: low
 ---

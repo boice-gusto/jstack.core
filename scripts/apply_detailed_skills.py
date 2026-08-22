@@ -535,16 +535,26 @@ def policy_loads_for(key: str, category: str) -> str:
 
 
 def build_frontmatter(key: str, fm: dict, desc: str) -> str:
-    """Emit YAML frontmatter; preserve keys not regenerated (e.g. gbrain_destination)."""
+    """Emit YAML frontmatter; preserve keys not regenerated (e.g. gbrain_destination).
+
+    `when_to_use` is NOT a real Claude Code SKILL.md field (confirmed against Anthropic's own
+    docs and shipped example skills, 2026-08) -- the only field the platform actually reads for
+    auto-discovery is `description`. Rather than emit a separate, inert `when_to_use:` line that
+    never gets read at trigger time, fold its content into `description` here so the trigger
+    phrases it carried actually do something.
+    """
     name = fm.get("name", "jstack-skill")
     category = fm.get("category", "general")
     if key in WHEN_TO_USE:
         when_line = WHEN_TO_USE[key]
     else:
         when_line = fm.get("when_to_use", "")
+    if when_line and when_line.strip() and when_line.strip() not in desc:
+        desc_clean = desc.rstrip()
+        if not desc_clean.endswith((".", "!", "?")):
+            desc_clean += "."
+        desc = f"{desc_clean} {when_line.strip()}"
     lines = ["---", f"name: {yaml_scalar(name)}", f"description: {yaml_scalar(desc)}"]
-    if when_line:
-        lines.append(f"when_to_use: {yaml_scalar(when_line)}")
     lines.append(f"category: {yaml_scalar(category)}")
     reserved = {"name", "description", "category", "when_to_use"}
     for k, v in sorted(fm.items()):

@@ -1,7 +1,6 @@
 ---
 name: jstack-plugin
-description: Open a PR to jstack.core or jstack.gusto using distribution.github from config; block secrets via path_deny_globs.
-when_to_use: Contributor has local changes and wants a PR against the configured core or gusto distribution repo.
+description: Open a PR to jstack.core or jstack.gusto using distribution.github from config; block secrets via path_deny_globs. Contributor has local changes and wants a PR against the configured core or gusto distribution repo.
 category: plugin
 data_class: internal
 disable-model-invocation: true

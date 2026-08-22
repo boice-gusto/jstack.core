@@ -9,10 +9,9 @@ description: >-
   routine PR. For a routine PR, use `jstack:review-code-review` (single lens, lighter weight). For
   a cross-role ship/no-ship call without this skill's security/compliance/AI-slop depth, use
   `jstack:counsel-review`. This skill complements both; it replaces neither.
-when_to_use: >-
-  "thermonuclear review," "exhaustive review," "audit this before we ship," "give me every lens on
-  this," "security and compliance and everything review," "tear this diff apart," "pre-launch
-  review," "review this like the launch depends on it."
+  Trigger phrases: "thermonuclear review," "exhaustive review," "audit this before we ship," "give
+  me every lens on this," "security and compliance and everything review," "tear this diff
+  apart," "pre-launch review," "review this like the launch depends on it."
 category: review
 effort: high
 ---

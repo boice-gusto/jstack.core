@@ -1,7 +1,6 @@
 ---
 name: jstack-skill-finder
-description: Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers.
-when_to_use: User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale.
+description: Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers. User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale.
 category: knowledge
 agent: Explore
 context: fork
@@ -50,7 +49,7 @@ For the portable discovery flow (restate intent, propose 1-3 candidates, prefer 
 Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
 
 ### Step 3 — Execute
-Check the CLI skills index and domain routers first for candidates matching the described need, then narrow against each candidate's `when_to_use`/description in the catalog. Also check whether the need matches a named composite alias (persona + tone + target skill, e.g. `jstack:ceo-brainstorm`, `jstack:executive-research-brief`) — those are the canonical list of aliases and external-pack bridges:
+Check the CLI skills index and domain routers first for candidates matching the described need, then narrow against each candidate's `description` in the catalog. Also check whether the need matches a named composite alias (persona + tone + target skill, e.g. `jstack:ceo-brainstorm`, `jstack:executive-research-brief`) — those are the canonical list of aliases and external-pack bridges:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/composites.md
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/gstack-bridge.md
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/shortcuts/superpowers-bridge.md

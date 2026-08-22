@@ -1,10 +1,9 @@
 ---
 name: jstack-jira-get
-description: Fetch Jira issues by key or JQL filter and return a structured table of status, assignee, priority, and links.
+description: Fetch Jira issues by key or JQL filter and return a structured table of status, assignee, priority, and links. Look up, fetch, or filter Jira issues by key or JQL — read-only, no status changes.
 category: jira
 argument-hint: "[PROJ-123]"
 arguments: "[ticket_id]"
-when_to_use: "Look up, fetch, or filter Jira issues by key or JQL — read-only, no status changes."
 effort: low
 ---
 
