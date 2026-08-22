@@ -173,14 +173,14 @@ describe("buildJudgePrompt", () => {
 describe("runCli: missing vs deliberately-empty command", () => {
   // The guard must reject a case author's omission while still allowing the bare invocation as a
   // legitimate subject. Conflating the two made "bare `jstack` exits 0" inexpressible.
-  test("a missing command: key is refused as malformed", () => {
-    const out = runCli(process.cwd(), { kind: "cli" });
+  test("a missing command: key is refused as malformed", async () => {
+    const out = await runCli(process.cwd(), { kind: "cli" });
     expect(out.error).toBe("cli subject has no command");
     expect(out.exitCode).toBeNull();
   });
 
-  test("an explicitly empty command: [] runs the bare CLI", () => {
-    const out = runCli(process.cwd(), { kind: "cli", command: [] });
+  test("an explicitly empty command: [] runs the bare CLI", async () => {
+    const out = await runCli(process.cwd(), { kind: "cli", command: [] });
     expect(out.error).toBeUndefined();
     expect(out.exitCode).toBe(0);
     expect(out.text).toContain("run with --help");

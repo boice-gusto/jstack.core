@@ -14,6 +14,31 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 /**
+ * Pull `session_id` off a raw NDJSON line from `claude --output-format stream-json`, checked at
+ * both the top level and inside a nested `event` (stream_event lines nest it one level down).
+ * Every line in the stream carries the same session id once the child has actually started, so
+ * the caller only needs the first non-null result.
+ */
+export function extractSessionId(line: string): string | null {
+  const trimmed = line.trim();
+  if (trimmed.length === 0) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+  if (!isRecord(parsed)) return null;
+  const direct = parsed.session_id;
+  if (typeof direct === "string" && direct.length > 0) return direct;
+  const inner = parsed.event;
+  if (isRecord(inner) && typeof inner.session_id === "string" && inner.session_id.length > 0) {
+    return inner.session_id;
+  }
+  return null;
+}
+
+/**
  * Incrementally map one NDJSON line from `claude --output-format stream-json` to UI events.
  */
 export function mapStreamJsonLine(line: string): StreamJsonEvent[] {

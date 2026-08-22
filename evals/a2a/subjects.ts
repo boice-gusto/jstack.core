@@ -16,8 +16,14 @@
  *
  * Deterministic modes exist so the suite is not hostage to model availability: `cli`, `hook`,
  * and `file` cases run in CI with no API key and still prove real behavior.
+ *
+ * Every process-spawning subject runs through `spawnAsync` (below), not `spawnSync`. A sync
+ * spawn blocks the whole event loop for the duration of the child, which is why this file used
+ * to make every case in the suite fully serial — with ~90 cases and each agentic/judge call
+ * costing 20-90s of nested-session overhead, that added up to 30-60+ minutes end to end. Async
+ * spawns let the runner (run.ts) fan multiple cases out concurrently instead.
  */
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -57,6 +63,89 @@ export interface SubjectOutput {
  * latency masquerade as a behavioral finding.
  */
 const TIMEOUT_MS = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
+const MAX_BUFFER = 8 * 1024 * 1024;
+
+interface SpawnAsyncResult {
+  stdout: string;
+  stderr: string;
+  status: number | null;
+  error?: Error;
+}
+
+/**
+ * Async equivalent of `child_process.spawnSync`, matching the fields this file's callers already
+ * read off a `spawnSync` result (`stdout`, `stderr`, `status`, `error`). Using `spawn` instead of
+ * `spawnSync` is the whole point: it lets the event loop run other cases' children concurrently
+ * instead of blocking on this one until it exits.
+ */
+function spawnAsync(
+  cmd: string,
+  args: string[],
+  opts: {
+    cwd?: string;
+    input?: string;
+    env?: NodeJS.ProcessEnv;
+    timeoutMs?: number;
+  },
+): Promise<SpawnAsyncResult> {
+  return new Promise((resolve) => {
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(cmd, args, {
+        cwd: opts.cwd,
+        env: opts.env,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch (e) {
+      resolve({ stdout: "", stderr: "", status: null, error: e as Error });
+      return;
+    }
+
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      child.kill("SIGTERM");
+      settle({
+        stdout,
+        stderr,
+        status: null,
+        error: new Error(`ETIMEDOUT after ${timeoutMs}ms`),
+      });
+    }, timeoutMs);
+
+    function settle(result: SpawnAsyncResult): void {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    }
+
+    child.stdout?.setEncoding("utf8");
+    child.stdout?.on("data", (chunk: string) => {
+      if (stdout.length < MAX_BUFFER) stdout += chunk;
+    });
+    child.stderr?.setEncoding("utf8");
+    child.stderr?.on("data", (chunk: string) => {
+      if (stderr.length < MAX_BUFFER) stderr += chunk;
+    });
+    child.on("error", (err) => {
+      settle({ stdout, stderr, status: null, error: err });
+    });
+    child.on("close", (code) => {
+      settle({ stdout, stderr, status: code });
+    });
+
+    if (opts.input !== undefined && child.stdin) {
+      child.stdin.write(opts.input);
+      child.stdin.end();
+    } else {
+      child.stdin?.end();
+    }
+  });
+}
 
 /**
  * Run a CLI command through bun so TypeScript entrypoints work without a build step.
@@ -66,7 +155,10 @@ const TIMEOUT_MS = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
  * arguments must still exit 0" inexpressible — and that is precisely the case that pins the other
  * half of the unknown-command fix.
  */
-export function runCli(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
+export async function runCli(
+  pluginRoot: string,
+  spec: SubjectSpec,
+): Promise<SubjectOutput> {
   if (spec.command === undefined) {
     return {
       text: "",
@@ -80,14 +172,11 @@ export function runCli(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
   // The entrypoint must be ABSOLUTE. It was relative, which silently broke the documented
   // `cwd:` option: spawning from a fixture directory left bun looking for cli/src/index.ts
   // there, so the CLI never ran and the case failed with no output rather than a real verdict.
-  const r = spawnSync(
+  const r = await spawnAsync(
     "bun",
     ["run", join(pluginRoot, "cli/src/index.ts"), ...argv],
     {
       cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
-      encoding: "utf8",
-      maxBuffer: 8 * 1024 * 1024,
-      timeout: TIMEOUT_MS,
       // JSTACK_INTROSPECT is a test-only flag that makes the CLI register commands WITHOUT parsing
       // argv. It must never reach a child here: the harness spawns real CLIs and would otherwise
       // capture empty output and a 0 exit, which reads as a pass. Stripped explicitly rather than
@@ -114,7 +203,10 @@ export function runCli(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
  * Run a hook the way Claude Code does: the payload arrives on stdin as JSON, not as argv.
  * Getting this wrong is how a hook in this repo silently never fired for its whole life.
  */
-export function runHook(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
+export async function runHook(
+  pluginRoot: string,
+  spec: SubjectSpec,
+): Promise<SubjectOutput> {
   if (!spec.script) {
     return {
       text: "",
@@ -134,12 +226,9 @@ export function runHook(pluginRoot: string, spec: SubjectSpec): SubjectOutput {
       error: `hook script not found: ${spec.script}`,
     };
   }
-  const r = spawnSync("bash", [abs], {
+  const r = await spawnAsync("bash", [abs], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
     input: spec.stdin ?? "",
-    encoding: "utf8",
-    maxBuffer: 4 * 1024 * 1024,
-    timeout: TIMEOUT_MS,
     env: { ...process.env, ...(spec.env ?? {}) },
   });
   const stdout = r.stdout ?? "";
@@ -192,12 +281,12 @@ export function readFiles(
  * The artifacts are injected verbatim, which is the point: a persona or policy file only
  * matters if it actually changes what a model does, and this is the only way to observe that.
  */
-export function runCandidate(
+export async function runCandidate(
   pluginRoot: string,
   spec: SubjectSpec,
   claudeBin: string,
   apiKey: string | undefined,
-): SubjectOutput {
+): Promise<SubjectOutput> {
   const artifacts = readFiles(pluginRoot, spec);
   if (artifacts.error) return artifacts;
   if (!spec.task) {
@@ -221,16 +310,17 @@ export function runCandidate(
     spec.task,
   ].join("\n");
 
-  const r = spawnSync(claudeBin, ["-p", prompt, "--output-format", "text"], {
-    cwd: pluginRoot,
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-    timeout: TIMEOUT_MS,
-    env: {
-      ...process.env,
-      ANTHROPIC_API_KEY: apiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
+  const r = await spawnAsync(
+    claudeBin,
+    ["-p", prompt, "--output-format", "text"],
+    {
+      cwd: pluginRoot,
+      env: {
+        ...process.env,
+        ANTHROPIC_API_KEY: apiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
+      },
     },
-  });
+  );
   const stdout = (r.stdout ?? "").trim();
   const stderr = (r.stderr ?? "").trim();
   return {
@@ -253,10 +343,10 @@ export function runCandidate(
  * its success line tests the real gate, whereas re-checking chain references inside the case
  * would only test a copy of the logic.
  */
-export function runScript(
+export async function runScript(
   pluginRoot: string,
   spec: SubjectSpec,
-): SubjectOutput {
+): Promise<SubjectOutput> {
   const name = spec.script;
   if (!name) {
     return {
@@ -267,11 +357,8 @@ export function runScript(
       error: "script subject has no script name",
     };
   }
-  const r = spawnSync("bun", ["run", name, ...(spec.command ?? [])], {
+  const r = await spawnAsync("bun", ["run", name, ...(spec.command ?? [])], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-    timeout: TIMEOUT_MS,
     env: { ...process.env, ...(spec.env ?? {}) },
   });
   const stdout = r.stdout ?? "";
@@ -285,12 +372,12 @@ export function runScript(
   };
 }
 
-export function exerciseSubject(
+export async function exerciseSubject(
   pluginRoot: string,
   spec: SubjectSpec,
   claudeBin: string,
   apiKey: string | undefined,
-): SubjectOutput {
+): Promise<SubjectOutput> {
   switch (spec.kind) {
     case "cli":
       return runCli(pluginRoot, spec);

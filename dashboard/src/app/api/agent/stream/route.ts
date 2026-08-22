@@ -6,8 +6,9 @@ import { z } from "zod";
 
 import { AgentMessageSchema, AgentStreamBodySchema } from "@/lib/agent-request-schema";
 import { resolveAgentCwd } from "@/lib/agent-cwd";
-import { mapStreamJsonLine } from "@/lib/claude-stream-json";
+import { extractSessionId, mapStreamJsonLine } from "@/lib/claude-stream-json";
 import { loadSkillMarkdownById } from "@/lib/skills-catalog";
+import { recordDashboardAgentRun } from "@/lib/dashboard-telemetry";
 import { getDashboardEnv } from "@/server/env";
 
 export const runtime = "nodejs";
@@ -81,8 +82,16 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
   }
 
+  const resumeSessionId = parsed.data.resumeSessionId?.trim();
+  const isResuming = resumeSessionId !== undefined && resumeSessionId.length > 0;
+  // Resuming: `claude` already holds every prior turn server-side under that session id, so
+  // replaying the full transcript back to it would double up history and grow every request with
+  // the whole conversation. Send only the newest message; the rest is fetched by the session.
+  const messagesForPrompt = isResuming
+    ? parsed.data.messages.slice(-1)
+    : parsed.data.messages;
   const prompt = buildPrompt(
-    parsed.data.messages,
+    messagesForPrompt,
     skill?.content,
     parsed.data.systemAddendum,
     parsed.data.expectStructuredJson === true,
@@ -102,12 +111,18 @@ export async function POST(request: NextRequest): Promise<Response> {
     "--include-partial-messages",
     "--permission-mode",
     env.DASHBOARD_AGENT_PERMISSION_MODE,
+    ...(isResuming ? ["--resume", resumeSessionId] : []),
   ];
   const child = spawn(env.CLAUDE_BIN, args, {
     cwd,
     env: childEnv,
     stdio: ["ignore", "pipe", "pipe"],
   });
+
+  const runStartedAt = Date.now();
+  const surface = parsed.data.surface ?? "agent";
+  let lastUsage: Record<string, number> | null = null;
+  let sawErrorEvent: string | undefined;
 
   let bytesOut = 0;
   const maxBuffer = env.DASHBOARD_STREAM_MAX_BUFFER_BYTES;
@@ -139,6 +154,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         return;
       }
 
+      let sentSessionId = false;
       const rl = createInterface({ input: child.stdout, crlfDelay: Infinity });
       rl.on("line", (line: string) => {
         bytesOut += Buffer.byteLength(line, "utf8") + 1;
@@ -147,6 +163,13 @@ export async function POST(request: NextRequest): Promise<Response> {
           send({ type: "error", message: "Stream exceeded max buffer" });
           return;
         }
+        if (!sentSessionId) {
+          const sid = extractSessionId(line);
+          if (sid !== null) {
+            sentSessionId = true;
+            send({ type: "session", sessionId: sid });
+          }
+        }
         const events = mapStreamJsonLine(line);
         for (const ev of events) {
           if (ev.kind === "assistant_text") {
@@ -154,6 +177,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           } else if (ev.kind === "tool_use") {
             send({ type: "tool_use", name: ev.name, input: ev.input });
           } else if (ev.kind === "result") {
+            lastUsage = ev.usage;
             send({
               type: "result",
               usage: ev.usage,
@@ -167,11 +191,20 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
 
       child.on("error", (err: Error) => {
+        sawErrorEvent = err.message;
         send({ type: "error", message: err.message });
       });
 
       child.on("close", (code: number | null) => {
         clearTimeout(killTimer);
+        recordDashboardAgentRun({
+          surface,
+          skillId: skillId ?? null,
+          startedAt: runStartedAt,
+          success: sawErrorEvent === undefined && code === 0,
+          errorType: sawErrorEvent ?? (code !== 0 ? `exit_${code}` : undefined),
+          usage: lastUsage,
+        });
         send({ type: "done", code });
         controller.close();
       });

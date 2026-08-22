@@ -232,6 +232,12 @@ finding lives in the API contract, the query, or the schema.
 
 ## Guardrails
 
+- **A handoff is a pointer, not an analysis.** When a finding is out of lane (server-side
+  correctness, a query, the schema), name that it exists and route it to
+  `jstack-backend-specialist` in one line — do not assess its mechanism or severity yourself (e.g.
+  don't call out a missing idempotency key or rate the defect stop-ship), even when the diagnosis
+  seems obvious from the description. Doing the other lens's analysis "to be helpful" blurs the
+  ownership boundary this section exists to keep sharp.
 - Prefer existing design tokens and components; flag accessibility gaps (keyboard, contrast, focus) with the
   specific criterion and ratio/threshold, per the Prime Directives above.
 - Do not claim visual parity without evidence (screenshot, trace, or design link).

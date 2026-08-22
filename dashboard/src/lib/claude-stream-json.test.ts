@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mapStreamJsonLine } from "@/lib/claude-stream-json";
+import { extractSessionId, mapStreamJsonLine } from "@/lib/claude-stream-json";
 
 describe("mapStreamJsonLine", () => {
   it("returns empty for blank or invalid JSON", () => {
@@ -95,5 +95,36 @@ describe("mapStreamJsonLine", () => {
         total_cost_usd: 0,
       },
     ]);
+  });
+});
+
+describe("extractSessionId", () => {
+  it("returns null for blank or invalid JSON", () => {
+    expect(extractSessionId("")).toBeNull();
+    expect(extractSessionId("  \n")).toBeNull();
+    expect(extractSessionId("not json")).toBeNull();
+  });
+
+  it("reads a top-level session_id", () => {
+    const line = JSON.stringify({ type: "system", session_id: "abc-123" });
+    expect(extractSessionId(line)).toBe("abc-123");
+  });
+
+  it("reads session_id nested under a stream_event's event object", () => {
+    const line = JSON.stringify({
+      type: "stream_event",
+      event: { type: "message_start", session_id: "nested-456" },
+    });
+    expect(extractSessionId(line)).toBe("nested-456");
+  });
+
+  it("returns null when no session_id is present anywhere", () => {
+    const line = JSON.stringify({ type: "result", usage: {} });
+    expect(extractSessionId(line)).toBeNull();
+  });
+
+  it("ignores a non-string session_id", () => {
+    const line = JSON.stringify({ session_id: 12345 });
+    expect(extractSessionId(line)).toBeNull();
   });
 });

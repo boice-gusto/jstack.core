@@ -21,6 +21,12 @@
  * Judge access: set ANTHROPIC_API_KEY, or set JSTACK_ALLOW_CLI_JUDGE=1 to borrow an authenticated
  * `claude` CLI when running inside Claude Code. The latter is opt-in on purpose — see the comment
  * on `cliJudgeAllowed` below.
+ *
+ * Cases run with bounded concurrency (`JSTACK_EVAL_CONCURRENCY`, default 6), not one at a time.
+ * Each judge-backed case's dominant cost is 1-2 nested `claude` process invocations at 20-90s of
+ * session overhead apiece; at ~90 cases that was 30-60+ minutes fully serial. Cases are
+ * independent (separate subjects, separate judge calls), so `runWithConcurrency` below fans them
+ * out across a small worker pool instead — real wall-clock win, same per-case behavior.
  */
 import {
   readdirSync,
@@ -31,7 +37,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import yaml from "js-yaml";
 import {
   buildJudgePrompt,
@@ -114,18 +120,74 @@ function loadCases(): CaseSpec[] {
 }
 
 /** Ask an independent judge agent. Returns null when no judge is available. */
-function askJudge(prompt: string): string | null {
-  if (!judgeReachable) return null;
-  const r = spawnSync(claudeBin, ["-p", prompt, "--output-format", "text"], {
-    cwd: pluginRoot,
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-    timeout: Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000),
-    env: { ...process.env, ANTHROPIC_API_KEY: apiKey ?? "" },
+function askJudge(prompt: string): Promise<string | null> {
+  if (!judgeReachable) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const timeoutMs = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(claudeBin, ["-p", prompt, "--output-format", "text"], {
+        cwd: pluginRoot,
+        env: { ...process.env, ANTHROPIC_API_KEY: apiKey ?? "" },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch {
+      resolve(null);
+      return;
+    }
+    let stdout = "";
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      child.kill("SIGTERM");
+      settled = true;
+      resolve(null);
+    }, timeoutMs);
+    child.stdout?.setEncoding("utf8");
+    child.stdout?.on("data", (chunk: string) => {
+      if (stdout.length < 8 * 1024 * 1024) stdout += chunk;
+    });
+    child.on("error", () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(null);
+    });
+    child.on("close", () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      const text = stdout.trim();
+      resolve(text === "" ? null : text);
+    });
   });
-  if (r.error) return null;
-  const text = (r.stdout ?? "").trim();
-  return text === "" ? null : text;
+}
+
+/**
+ * Run a bounded number of async workers over `items`, preserving each result at its original
+ * index regardless of completion order. Judge/agentic calls dominate wall-clock (20-90s each of
+ * nested-session overhead) and are fully independent across cases, so this is what turns ~90
+ * sequential cases into a suite that finishes in minutes instead of the better part of an hour.
+ * The limit is intentionally conservative: each slot is a real nested `claude` process (CPU +
+ * real API/session cost), not a free-to-fan-out network call.
+ */
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  async function worker(): Promise<void> {
+    for (;;) {
+      const i = nextIndex++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i] as T, i);
+    }
+  }
+  const workerCount = Math.max(1, Math.min(limit, items.length));
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }
 
 function judgeAvailable(): boolean {
@@ -159,14 +221,13 @@ if (selected.length === 0) {
 }
 
 const canJudge = judgeAvailable();
-const results: CaseResult[] = [];
 
-for (const c of selected) {
+async function runCase(c: CaseSpec): Promise<CaseResult> {
   const started = Date.now();
   const needsJudge = (c.criteria?.length ?? 0) > 0;
 
   if (needsJudge && !canJudge) {
-    results.push({
+    return {
       id: c.id,
       surface: c.surface,
       status: "skipped",
@@ -174,35 +235,32 @@ for (const c of selected) {
       reason:
         "no judge available (needs ANTHROPIC_API_KEY, or JSTACK_ALLOW_CLI_JUDGE=1 with an authenticated `claude` on PATH inside Claude Code)",
       elapsedMs: Date.now() - started,
-    });
-    continue;
+    };
   }
 
-  const out = exerciseSubject(pluginRoot, c.subject, claudeBin, apiKey);
+  const out = await exerciseSubject(pluginRoot, c.subject, claudeBin, apiKey);
   const asserts = runDeterministicAsserts(c.expect, out);
   const factsHold = asserts.every((a) => a.passed);
 
   if (!factsHold) {
-    results.push({
+    return {
       id: c.id,
       surface: c.surface,
       status: "failed",
       asserts,
       reason: "deterministic assertion failed; judge not consulted",
       elapsedMs: Date.now() - started,
-    });
-    continue;
+    };
   }
 
   if (!needsJudge) {
-    results.push({
+    return {
       id: c.id,
       surface: c.surface,
       status: "passed",
       asserts,
       elapsedMs: Date.now() - started,
-    });
-    continue;
+    };
   }
 
   const prompt = buildJudgePrompt({
@@ -211,21 +269,20 @@ for (const c of selected) {
     criteria: c.criteria ?? [],
     output: out.text,
   });
-  const reply = askJudge(prompt);
+  const reply = await askJudge(prompt);
   if (reply === null) {
     // A judge that could not be reached is not a pass.
-    results.push({
+    return {
       id: c.id,
       surface: c.surface,
       status: "failed",
       asserts,
       reason: "judge produced no reply after invocation",
       elapsedMs: Date.now() - started,
-    });
-    continue;
+    };
   }
   const verdict = parseJudgeVerdict(reply);
-  results.push({
+  return {
     id: c.id,
     surface: c.surface,
     status: verdict.passed ? "passed" : "failed",
@@ -236,8 +293,18 @@ for (const c of selected) {
       protocolError: verdict.protocolError,
     },
     elapsedMs: Date.now() - started,
-  });
+  };
 }
+
+const concurrency = Math.max(
+  1,
+  Number(process.env.JSTACK_EVAL_CONCURRENCY ?? 6),
+);
+const results: CaseResult[] = await runWithConcurrency(
+  selected,
+  concurrency,
+  runCase,
+);
 
 const passed = results.filter((r) => r.status === "passed").length;
 const failed = results.filter((r) => r.status === "failed").length;

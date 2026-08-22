@@ -44,6 +44,9 @@ type ChatState = {
   skillId: string;
   expectStructuredJson: boolean;
   structuredJsonText: string | null;
+  /** `claude` session id from the last run's `start` event; lets the next turn `--resume` instead
+   *  of resending the whole transcript. Cleared by `resetConversation`. */
+  claudeSessionId: string | null;
   appendUser: (content: string) => void;
   resetConversation: () => void;
   setSkillId: (id: string) => void;
@@ -62,6 +65,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   skillId: "",
   expectStructuredJson: false,
   structuredJsonText: null,
+  claudeSessionId: null,
 
   appendUser: (content: string) => {
     const trimmed = content.trim();
@@ -86,6 +90,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       costSeries: [],
       tokenSeries: [],
       structuredJsonText: null,
+      claudeSessionId: null,
     });
   },
 
@@ -93,7 +98,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
 
   runAgent: async () => {
-    const { messages, skillId, expectStructuredJson, run } = get();
+    const { messages, skillId, expectStructuredJson, run, claudeSessionId } = get();
     if (run.status === "streaming") {
       return;
     }
@@ -102,13 +107,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
+    // Resuming an existing `claude` session: it already holds every earlier turn, so only the
+    // newest message needs to go over the wire. A fresh run (no session yet) still sends the
+    // full transcript once, which is what establishes that session in the first place.
+    const messagesToSend =
+      claudeSessionId !== null ? messages.slice(-1) : messages;
+
     const body: AgentStreamBody = {
-      messages: messages.map((m) => ({
+      messages: messagesToSend.map((m) => ({
         role: m.role,
         content: m.content,
       })),
       skillId: skillId.trim().length > 0 ? skillId.trim() : undefined,
       expectStructuredJson: expectStructuredJson || undefined,
+      surface: "agent",
+      resumeSessionId: claudeSessionId ?? undefined,
     };
 
     set({
@@ -139,6 +152,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             skillId: typeof sid === "string" && sid.length > 0 ? sid : null,
           },
         });
+      }
+      if (type === "session" && typeof evt.sessionId === "string" && evt.sessionId.length > 0) {
+        set({ claudeSessionId: evt.sessionId });
       }
       if (type === "text" && typeof evt.text === "string") {
         draft += evt.text;

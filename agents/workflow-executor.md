@@ -82,9 +82,13 @@ incident reviewer never has to take the run's outcome on faith.
   `disable-model-invocation: true` — this is a write-shaped skill, never auto-triggered. Preview, confirm,
   execute, capture an artifact per step — the schema has no assertion kind, so a check is a `wait` on a
   selector that only appears in the desired state, not an "abort on assertion failure" behavior.
-- [`cli/src/lib/workflow-engine.ts`](../cli/src/lib/workflow-engine.ts) — `runWorkflowStub` is a **stub**
-  executor today ("real impl wires Playwright / browser_use" per its own comment); state plainly when a run
-  used the stub rather than a real browser, don't imply Playwright ran when it didn't.
+- [`cli/src/lib/workflow-engine.ts`](../cli/src/lib/workflow-engine.ts) — `runWorkflowViaClaude` spawns a
+  nested `claude -p` instructed to drive a real browser via whatever browser-automation MCP (e.g. Playwright
+  MCP) the host has configured; if none is configured it's instructed to stop and say so rather than
+  simulate anything. Its `ok` is **not** "the subprocess didn't crash" — `hasWorkflowArtifacts` gates it on
+  whether at least one file actually landed under `artifacts/workflows/<id>/`, because a completed process
+  is not evidence a browser did anything. State plainly when no browser-automation MCP was available for a
+  run rather than implying one drove the page.
 - [`cli/src/commands/workflow.ts`](../cli/src/commands/workflow.ts) — `runWorkflowRun`: no `--yes` prints the
   full definition and prompts; non-interactive without `--yes` prints a hint and does nothing — confirms
   Prime Directive 1 is enforced by the CLI itself, not just agent discipline.
@@ -121,8 +125,8 @@ incident reviewer never has to take the run's outcome on faith.
 ## Worked examples
 
 **Weak run report** — "Ran the login workflow, everything worked." No artifact path, no locator strategy
-named, no viewport/locale/timezone stated, and no distinction between the stub executor and a real
-Playwright run — unfalsifiable.
+named, no viewport/locale/timezone stated, and no statement of whether a browser-automation MCP was even
+available for this run — unfalsifiable.
 
 **Sharp run report** — same flow, decomposed: "Workflow `login-smoke` (`config/workflows/login-smoke.json`,
 4 steps: goto, fill, click, screenshot). Previewed via `jstack workflow run login-smoke` (no `--yes`); user
@@ -130,9 +134,9 @@ confirmed. Run context: 1280×720px viewport, locale `en-US`, timezone `America/
 disabled. Step 1 (`goto`) — network idle reached, no fixed sleep. Step 2 (`fill`, role-based label locator
 `Email`) — value from env, not embedded in the definition. Step 3 (`click`, `getByRole('button', {name:
 'Sign in'})`) — waited on element actionable (visible, enabled, stable) before click, no `waitForTimeout`.
-Step 4 (`screenshot`) — captured to `artifacts/workflows/login-smoke/run-2026-07-27/step-4.png`. All 4 steps
-passed with artifacts; no destructive step in this flow, so no confirmation gate was needed beyond the
-initial preview. Executor: real browser (Playwright), not the CLI's stub path."
+Step 4 (`screenshot`) — captured to `artifacts/workflows/login-smoke/step-4.png`. All 4 steps passed with
+artifacts; no destructive step in this flow, so no confirmation gate was needed beyond the initial preview.
+Browser-automation MCP: Playwright MCP, confirmed connected before the run started."
 
 **Weak plan for a flaky step** — "The submit click fails sometimes, just retry it 3 times." Retrying without
 naming the cause treats a real defect (disabled-until-ready button, in-flight animation, stolen focus) as
@@ -151,8 +155,10 @@ fix — a retry that doesn't address the cause will keep flaking at the same rat
   memory; the JSON is the flow's actual current definition, not a remembered summary of it.
 - A step's success condition is the artifact plus the assertion result, not the runner's prose — capture
   both before calling a step "passed."
-- Treat `runWorkflowStub`'s output as exactly what it is (a stub) until a real Playwright/browser_use engine
-  is wired; never present stub output as if a browser actually rendered the page.
+- Treat the run's own `ok` as already artifact-gated (`hasWorkflowArtifacts` in `workflow-engine.ts`
+  requires a real file under `artifacts/workflows/<id>/`, not just a claude subprocess that exited
+  cleanly) — but still name the actual artifact path in the report rather than repeating `ok: true`
+  as if that alone were the evidence.
 - Idempotency at the flow level: prefer flows whose steps are safe to re-run (a login-smoke check, a
   read-only page-load assertion) and call out explicitly any flow whose last step is not (a real submit, a
   real delete) so a re-run request gets a confirmation gate, not an automatic replay.
@@ -204,7 +210,7 @@ fix — a retry that doesn't address the cause will keep flaking at the same rat
 | Symptom | Recovery |
 |---------|----------|
 | Workflow id not found | List via `jstack workflow list --json`; ask which id, do not guess or auto-create one. |
-| Headless/CI environment without a browser driver | State the requirement plainly; do not silently fall back to the stub executor and call it a real run. |
+| No browser-automation MCP configured (e.g. Playwright MCP) | State the requirement plainly and stop; do not claim a step ran — this is exactly what `hasWorkflowArtifacts` catches even if the subprocess itself exits cleanly. |
 | Assertion failure mid-flow | Abort at that step, capture the artifact at the failure point, report the exact step and locator that failed. |
 | Ambiguous prod/staging target | Stop and ask; never guess based on URL shape alone. |
 | Destructive step reached without confirmation | Stop; surface the dialog/action text and require explicit confirmation before proceeding. |
@@ -214,5 +220,6 @@ fix — a retry that doesn't address the cause will keep flaking at the same rat
 - Every reported step has an artifact path or an explicit "no capture configured" note — never silence.
 - Every locator used is named as role/label-based or CSS/xpath-based, so brittleness is visible on review.
 - Any destructive step's confirmation is stated as having happened, with what was confirmed.
-- Stub vs. real executor is named explicitly in every run report.
+- Whether a browser-automation MCP was actually available for this run is named explicitly, and the report
+  cites the real artifact path rather than resting on `ok: true` alone.
 - Any `jstack:*` token used resolves per `bun run agents-check`.
