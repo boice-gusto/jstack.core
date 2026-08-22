@@ -23,6 +23,7 @@ import {
   listRoutinesFromConfig,
   loadSkillSlugs,
   loadWellKnownRoutine,
+  patchRoutine,
   readRunHistory,
   splitChainInput,
   validateChain,
@@ -96,16 +97,12 @@ async function setRoutineEnabled(
     id = picked;
   }
 
-  const routines = {
-    ...(cfg.routines as Record<string, Record<string, unknown>>),
-  };
-  if (!routines[id]) {
+  if (!listRoutinesFromConfig(cfg).some((r) => r.id === id)) {
     console.error(`Unknown routine: ${id}`);
     process.exitCode = 1;
     return;
   }
-  routines[id] = { ...routines[id], enabled };
-  writeConfig(root, { ...cfg, routines });
+  writeConfig(root, patchRoutine(cfg, id, { enabled }));
   console.log(chalk.green(`${labels.past} ${id}`));
 }
 
@@ -242,6 +239,37 @@ async function promptChain(
   }
 }
 
+/**
+ * Resolve --enable/--disable/interactive-confirm into a final `enabled` value, shared by both
+ * branches of `runScheduleSetup` (known routine and new custom routine) -- previously two
+ * byte-identical 22-line copies of this exact resolution. Returns `null` after already printing
+ * the error and setting `process.exitCode = 1`; the caller should `return` immediately in that case.
+ */
+async function resolveEnabledFlag(
+  opts: { enable?: boolean; disable?: boolean },
+  interactive: boolean,
+): Promise<boolean | null> {
+  if (opts.enable && opts.disable) {
+    console.error(chalk.red("Pass only one of --enable / --disable."));
+    process.exitCode = 1;
+    return null;
+  }
+  if (opts.enable !== undefined || opts.disable !== undefined) {
+    return !!opts.enable;
+  }
+  if (interactive) {
+    const en = await p.confirm({ message: "Enable now?", initialValue: false });
+    if (handleCancel(en)) exitCancelled();
+    return Boolean(en);
+  }
+  console.error(
+    chalk.red("Non-interactive: pass --enable or --disable. ") +
+      chalk.dim(nonInteractiveHint("--enable/--disable")),
+  );
+  process.exitCode = 1;
+  return null;
+}
+
 function printRoutineConfirmation(row: {
   id: string;
   cron: string;
@@ -336,28 +364,9 @@ export async function runScheduleSetup(
       return;
     }
 
-    if (opts.enable && opts.disable) {
-      console.error(chalk.red("Pass only one of --enable / --disable."));
-      process.exitCode = 1;
-      return;
-    }
-    if (opts.enable !== undefined || opts.disable !== undefined) {
-      enabled = !!opts.enable;
-    } else if (interactive) {
-      const en = await p.confirm({
-        message: "Enable now?",
-        initialValue: false,
-      });
-      if (handleCancel(en)) exitCancelled();
-      enabled = Boolean(en);
-    } else {
-      console.error(
-        chalk.red("Non-interactive: pass --enable or --disable. ") +
-          chalk.dim(nonInteractiveHint("--enable/--disable")),
-      );
-      process.exitCode = 1;
-      return;
-    }
+    const resolvedEnabled = await resolveEnabledFlag(opts, interactive);
+    if (resolvedEnabled === null) return;
+    enabled = resolvedEnabled;
   } else {
     // New custom routine.
     if (requestedId) {
@@ -453,32 +462,15 @@ export async function runScheduleSetup(
       return;
     }
 
-    if (opts.enable && opts.disable) {
-      console.error(chalk.red("Pass only one of --enable / --disable."));
-      process.exitCode = 1;
-      return;
-    }
-    if (opts.enable !== undefined || opts.disable !== undefined) {
-      enabled = !!opts.enable;
-    } else if (interactive) {
-      const en = await p.confirm({
-        message: "Enable now?",
-        initialValue: false,
-      });
-      if (handleCancel(en)) exitCancelled();
-      enabled = Boolean(en);
-    } else {
-      console.error(
-        chalk.red("Non-interactive: pass --enable or --disable. ") +
-          chalk.dim(nonInteractiveHint("--enable/--disable")),
-      );
-      process.exitCode = 1;
-      return;
-    }
+    const resolvedEnabled = await resolveEnabledFlag(opts, interactive);
+    if (resolvedEnabled === null) return;
+    enabled = resolvedEnabled;
   }
 
-  routines[id] = { enabled, cron, chain };
-  writeConfig(root, { ...cfg, routines });
+  writeConfig(
+    root,
+    patchRoutine(cfg, id, { enabled, cron, chain }, "overwrite"),
+  );
   console.log(chalk.green(`Saved routine ${id}`));
   printRoutineConfirmation({ id, cron, chain, enabled });
 }
@@ -569,11 +561,10 @@ export async function runScheduleConfig(
       nextChain = proposed;
     }
 
-    const routines = {
-      ...(cfg.routines as Record<string, Record<string, unknown>>),
-    };
-    routines[id] = { ...routines[id], cron: nextCron, chain: nextChain };
-    writeConfig(root, { ...cfg, routines });
+    writeConfig(
+      root,
+      patchRoutine(cfg, id, { cron: nextCron, chain: nextChain }),
+    );
     console.log(chalk.green(`Updated routine ${id}`));
     printRoutineConfirmation({
       id,
@@ -621,11 +612,10 @@ export async function runScheduleConfig(
     nextChain = await promptChain(pluginRoot, row.chain);
   }
 
-  const routines = {
-    ...(cfg.routines as Record<string, Record<string, unknown>>),
-  };
-  routines[id] = { ...routines[id], cron: nextCron, chain: nextChain };
-  writeConfig(root, { ...cfg, routines });
+  writeConfig(
+    root,
+    patchRoutine(cfg, id, { cron: nextCron, chain: nextChain }),
+  );
   console.log(chalk.green(`Updated routine ${id}`));
   printRoutineConfirmation({
     id,

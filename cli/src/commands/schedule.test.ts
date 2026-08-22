@@ -465,6 +465,37 @@ describe("schedule setup: new custom routine, slug validation, and collisions", 
     });
   });
 
+  test("rejects --enable and --disable together, for a new custom routine", () => {
+    writeConfigRoutines(dir, {});
+    const { code, out } = runScheduleWithRealPlugin(dir, [
+      "setup",
+      "my-new-routine",
+      "--chain",
+      "recon",
+      "--cron",
+      "0 10 * * *",
+      "--enable",
+      "--disable",
+    ]);
+    expect(code).toBe(1);
+    expect(out).toContain("Pass only one of --enable / --disable");
+    expect(readRoutines(dir)).toEqual({});
+  });
+
+  test("rejects --enable and --disable together, for a well-known routine", () => {
+    writeConfigRoutines(dir, {});
+    const { code, out } = runScheduleWithRealPlugin(dir, [
+      "setup",
+      "standup",
+      "--yes",
+      "--enable",
+      "--disable",
+    ]);
+    expect(code).toBe(1);
+    expect(out).toContain("Pass only one of --enable / --disable");
+    expect(readRoutines(dir)).toEqual({});
+  });
+
   test("rejects an id that does not match ^[a-z][a-z0-9_-]*$", () => {
     writeConfigRoutines(dir, {});
     const { code, out } = runScheduleWithRealPlugin(dir, [

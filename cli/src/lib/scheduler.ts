@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { JstackConfig } from "../types/config.js";
-import { cronExpr } from "../types/config.js";
+import { JstackConfigSchema, cronExpr } from "../types/config.js";
 import { loadDefaults } from "./config.js";
 import { cronMatchesMinute, parseCron } from "./crew/proactive.js";
 
@@ -23,6 +23,33 @@ export function listRoutinesFromConfig(cfg: JstackConfig): RoutineRow[] {
     enabled: !!v.enabled,
     chain: v.chain ?? [],
   }));
+}
+
+/**
+ * Read-modify-write a single `routines.<id>` entry, replacing the unchecked
+ * `as Record<string, Record<string, unknown>>` cast-and-spread that used to be copy-pasted at
+ * every schedule.ts call site -- mirroring `commands/crew.ts`'s `mutateAgents`, which validates
+ * via schema before writing rather than trusting the merge blindly.
+ *
+ * `mode: "overwrite"` replaces the whole entry (used when saving a brand-new routine); `"merge"`
+ * (the default) spreads the patch over whatever is already there (used when editing an existing
+ * one). Passing the wrong mode for a pre-existing routine can silently drop fields the routine
+ * already carried via `RoutineSchema`'s `.passthrough()` -- callers creating a new id should use
+ * `"overwrite"`, callers editing one they already loaded via `listRoutinesFromConfig` should use
+ * the default `"merge"`.
+ */
+export function patchRoutine(
+  cfg: JstackConfig,
+  id: string,
+  patch: { cron?: string; chain?: string[]; enabled?: boolean },
+  mode: "merge" | "overwrite" = "merge",
+): JstackConfig {
+  const routines = {
+    ...(cfg.routines as Record<string, Record<string, unknown>> | undefined),
+  };
+  const existing = mode === "merge" ? routines[id] : undefined;
+  routines[id] = { ...existing, ...patch };
+  return JstackConfigSchema.parse({ ...cfg, routines });
 }
 
 /**
