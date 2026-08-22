@@ -25,6 +25,9 @@ default_targets:
   - incident
   - sop
   - sprint
+  - computer-use
+  - design
+  - pe
 
 scenarios:
   - id: jira
@@ -186,3 +189,33 @@ scenarios:
     criteria:
       - "Names a sprint/* route or one clarifying question"
       - "Does not claim Jira sprint IDs without tools"
+
+  - id: computer-use
+    name: "Router — Computer-use domain intake"
+    targets: [computer-use]
+    prompt: |
+      User: "Click through the vendor's signup form and screenshot each step."
+      As **jstack:computer-use**, which **child** under `skills/computer-use/` first (native desktop UI vs. web automation vs. a saved workflow), or one question? Under ~200 words.
+    criteria:
+      - "Names a computer-use/* route (e.g. cua) or one clarifying question"
+      - "Does not claim a UI action or screenshot was actually taken"
+
+  - id: design
+    name: "Router — Design domain intake"
+    targets: [design]
+    prompt: |
+      User: "Turn this Figma frame into a working mockup page."
+      As **jstack:design**, which **child** under `skills/design/` first (figma-handoff vs. visual-single-page-html), or one question? Under ~200 words.
+    criteria:
+      - "Names a design/* route or one clarifying question"
+      - "Does not claim to have fetched a live Figma file without tools"
+
+  - id: pe
+    name: "Router — People/performance-engineering domain intake"
+    targets: [pe]
+    prompt: |
+      User: "Pull together this quarter's reporting window and team scope before I write anything."
+      As **jstack:pe**, which **child** under `skills/pe/` first (report-context vs. pe-recon), or one question? Under ~200 words.
+    criteria:
+      - "Names a pe/* route or one clarifying question"
+      - "Does not write performance narrative about a named individual"

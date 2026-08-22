@@ -39,6 +39,8 @@ type WizardState = {
   skillId: string;
   expectStructuredJson: boolean;
   structuredJsonText: string | null;
+  /** See chat-store's `claudeSessionId` -- same `--resume` mechanism, reset by `resetWizard`. */
+  claudeSessionId: string | null;
   setSkillId: (id: string) => void;
   setExpectStructuredJson: (v: boolean) => void;
   setStepContext: (text: string) => void;
@@ -58,6 +60,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   skillId: "",
   expectStructuredJson: false,
   structuredJsonText: null,
+  claudeSessionId: null,
 
   setSkillId: (id: string) => set({ skillId: id }),
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
@@ -74,6 +77,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       costSeries: [],
       tokenSeries: [],
       structuredJsonText: null,
+      claudeSessionId: null,
     });
   },
 
@@ -85,6 +89,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       skillId,
       expectStructuredJson,
       run,
+      claudeSessionId,
     } = get();
     if (run.status === "streaming") {
       return;
@@ -100,7 +105,12 @@ export const useWizardStore = create<WizardState>((set, get) => ({
         ? `${step.prompt}\n\nAdditional context:\n${extra}`
         : step.prompt;
     const pendingUser: WizardMessage = { role: "user", content: userLine };
-    const messagesForApi = [...transcript, pendingUser].map((m) => ({
+    // Resuming: the session already holds every prior step's transcript, so only this step's
+    // new prompt needs to go out. The first step (no session yet) still sends the (empty)
+    // transcript plus this prompt, which is what establishes the session.
+    const messagesForApi = (
+      claudeSessionId !== null ? [pendingUser] : [...transcript, pendingUser]
+    ).map((m) => ({
       role: m.role,
       content: m.content,
     }));
@@ -109,6 +119,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       messages: messagesForApi,
       skillId: skillId.trim().length > 0 ? skillId.trim() : undefined,
       expectStructuredJson: expectStructuredJson || undefined,
+      surface: "wizard",
+      resumeSessionId: claudeSessionId ?? undefined,
     };
 
     set({
@@ -129,6 +141,9 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     const onEvent = (evt: AgentStreamEvent): void => {
       set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
       const type = evt.type;
+      if (type === "session" && typeof evt.sessionId === "string" && evt.sessionId.length > 0) {
+        set({ claudeSessionId: evt.sessionId });
+      }
       if (type === "text" && typeof evt.text === "string") {
         draft += evt.text;
         setDraft();

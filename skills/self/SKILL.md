@@ -1,6 +1,6 @@
 ---
 name: jstack-self
-description: Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain).
+description: Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr).
 category: self
 effort: low
 ---

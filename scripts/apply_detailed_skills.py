@@ -22,6 +22,11 @@ SKIP = {
     SKILLS / "recon" / "SKILL.md",
     SKILLS / "skill-creator" / "SKILL.md",
     SKILLS / "skill-creator" / "improve-claude-md" / "SKILL.md",
+    # Hand-authored (2026-08): new skill. Reads back the jstack memory store (jstack memory
+    # log/search) plus eval reports and declined-edit history to produce a self-improvement
+    # retro -- recurrence thresholds, named promotion mechanisms, worked example. No generic
+    # generator data exists for this category of content.
+    SKILLS / "skill-creator" / "retro" / "SKILL.md",
     SKILLS / "computer-use" / "cua" / "SKILL.md",
     SKILLS / "workflow-builder" / "SKILL.md",
     SKILLS / "knowledge" / "search" / "SKILL.md",
@@ -39,6 +44,13 @@ SKIP = {
     SKILLS / "design" / "visual-single-page-html" / "SKILL.md",
     SKILLS / "design" / "figma-handoff" / "SKILL.md",
     SKILLS / "granola-daily-summary" / "SKILL.md",
+    # Hand-authored (2026-08): granola-daily-summary and meetings/granola-highlights were found
+    # to be ~95% verbatim-identical boilerplate with no distinguishing description, making
+    # auto-discovery a coin flip between them. Both descriptions were rewritten to state the
+    # cardinality distinction explicitly (single-meeting import vs. multi-meeting daily rollup)
+    # and cross-reference each other. The generator has no per-key data for this distinction and
+    # would silently regenerate `description` back to the generic, colliding version.
+    SKILLS / "meetings" / "granola-highlights" / "SKILL.md",
     # Flattened (2026-08): `create-plugin-pr` was the router's only child with no second one
     # planned, so its content was merged straight into `skills/plugin/SKILL.md` and the child
     # directory removed. `plugin` is no longer in ORCHESTRATORS/ORCH_CHILDREN below.
@@ -67,6 +79,12 @@ SKIP = {
     # discrepancies, never silently drop a task that exists in only one source) — no generic
     # generator data for this; pinned to avoid a content-free overwrite.
     SKILLS / "self" / "tasks" / "SKILL.md",
+    # Hand-authored (2026-08): rewired to write to the new local `jstack memory log` store first
+    # (real, jsonl-based, no external dependency) with gbrain as an optional second write, instead
+    # of the gbrain-only procedure that made this skill's "durable memory" claim entirely
+    # contingent on an external product the repo doesn't actually call. No generic generator data
+    # exists for this; regenerating would silently revert to the gbrain-only version.
+    SKILLS / "self" / "remember" / "SKILL.md",
     SKILLS / "review" / "code-review" / "SKILL.md",
     # Hand-authored (2026-08): six-lens parallel-dispatch orchestrator (security, compliance,
     # performance, code quality, QA, AI-slop) with a bespoke lens-routing table, an AI-slop
@@ -170,6 +188,17 @@ SKIP = {
     # per-key generator data exists for this; regenerating would silently restore the shared
     # parent-router text.
     SKILLS / "sop" / "resources" / "SKILL.md",
+    # Hand-authored (2026-08): capacity-planning math (focus factor, on-call discount, Little's
+    # Law WIP cap) plus a Goodhart's-law warning against externalizing velocity as a KPI. No
+    # per-key generator data exists for this; regenerating would silently flatten it to the
+    # generic sprint-planning boilerplate its siblings sprint/prep and sprint/refinement were
+    # already pinned to avoid.
+    SKILLS / "sprint" / "planning" / "SKILL.md",
+    # Hand-authored (2026-08): bus-factor-per-critical-area rule (not a team-wide aggregate),
+    # explicit on-call-rotation-membership != ownership distinction, named-owner 100%-coverage
+    # rule, and a "must not do" section barring stack-ranking. No per-key generator data exists
+    # for this; regenerating would silently flatten it to generic team-management boilerplate.
+    SKILLS / "team" / "SKILL.md",
 }
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -251,8 +280,29 @@ ORCH_CHILDREN = {
 
 def build_description(key: str, fm: dict) -> str:
     if key in DESCRIPTIONS:
-        return DESCRIPTIONS[key]
-    return fm.get("description", "")
+        desc = DESCRIPTIONS[key]
+    else:
+        desc = fm.get("description", "")
+    if key in ORCH_CHILDREN:
+        # 2026-08 audit finding: several orchestrators' `description` (the only field the
+        # platform reads for auto-discovery) listed fewer children than the "## Sub-skills"
+        # section actually routes to -- e.g. review's description named 3 of 7 children, self
+        # named 7 of 11. Fail loud at generation time instead of letting a future new child
+        # skill silently drift the two lists apart again.
+        desc_lower = desc.lower()
+        missing = [
+            child
+            for child in (c.strip().split(" (")[0] for c in ORCH_CHILDREN[key].split(","))
+            if child.lower() not in desc_lower
+        ]
+        if missing:
+            raise ValueError(
+                f"DESCRIPTIONS['{key}'] is missing sub-skill(s) {missing} that ORCH_CHILDREN "
+                f"lists for '{key}'. Update DESCRIPTIONS['{key}'] in "
+                f"apply_detailed_skills_data.py to name every child, so the auto-discovery "
+                f"description stays in sync with the '## Sub-skills' section."
+            )
+    return desc
 
 
 def build_body(key: str, fm: dict) -> str:
@@ -506,16 +556,26 @@ def policy_loads_for(key: str, category: str) -> str:
 
 
 def build_frontmatter(key: str, fm: dict, desc: str) -> str:
-    """Emit YAML frontmatter; preserve keys not regenerated (e.g. gbrain_destination)."""
+    """Emit YAML frontmatter; preserve keys not regenerated (e.g. gbrain_destination).
+
+    `when_to_use` is NOT a real Claude Code SKILL.md field (confirmed against Anthropic's own
+    docs and shipped example skills, 2026-08) -- the only field the platform actually reads for
+    auto-discovery is `description`. Rather than emit a separate, inert `when_to_use:` line that
+    never gets read at trigger time, fold its content into `description` here so the trigger
+    phrases it carried actually do something.
+    """
     name = fm.get("name", "jstack-skill")
     category = fm.get("category", "general")
     if key in WHEN_TO_USE:
         when_line = WHEN_TO_USE[key]
     else:
         when_line = fm.get("when_to_use", "")
+    if when_line and when_line.strip() and when_line.strip() not in desc:
+        desc_clean = desc.rstrip()
+        if not desc_clean.endswith((".", "!", "?")):
+            desc_clean += "."
+        desc = f"{desc_clean} {when_line.strip()}"
     lines = ["---", f"name: {yaml_scalar(name)}", f"description: {yaml_scalar(desc)}"]
-    if when_line:
-        lines.append(f"when_to_use: {yaml_scalar(when_line)}")
     lines.append(f"category: {yaml_scalar(category)}")
     reserved = {"name", "description", "category", "when_to_use"}
     for k, v in sorted(fm.items()):

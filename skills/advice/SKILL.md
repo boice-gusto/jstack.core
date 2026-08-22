@@ -133,59 +133,6 @@ options:
       **What would change our mind:** [measurable signal or timebox]
 ```
 
-### A — Decision brief (default)
-
-```markdown
-## Context
-<one sentence>
-
-## Options
-1. **<name>** — <one line>  
-   - Upside: …  
-   - Downside: …  
-2. **<name>** — …
-3. **(optional)** <defer / do less>
-
-## Recommendation
-**<option>** because <1–2 sentences>.
-
-## Risks / unknowns
-- …
-
-## Next steps
-- …
-```
-
-### B — Stakeholder script (1:1, exec, difficult conversation)
-
-```markdown
-## Objective (60s)
-<what you want from the meeting>
-
-## Opening (optional, 1–2 lines)
-<neutral framing>
-
-## Points to make (3 bullets max)
-- …
-
-## Questions to ask
-- …
-
-## Landmines to avoid
-- …
-
-## If they say X, respond with Y (short)
-| Pushback | Response |
-|----------|----------|
-| … | … |
-```
-
-### C — Design / product principle tradeoff (when the ask is “how should we think about…”)
-
-- **Principles in tension** (name two)
-- **Heuristic** — When to lean each way; **1 example** of applying it to their case
-- **What would change our mind** — measurable signal or timebox
-
 ## Domain rules — advice
 
 1. **Recommend, don't just enumerate, when you have enough information to have an opinion.** Three options with no pick is a menu, not advice — if the evidence favors one path, say so with the one-sentence why (Step 4 already requires this); reserve "no pick" for genuine toss-ups where the deciding factor is the user's risk tolerance or politics, not a fact you could look up.

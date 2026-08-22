@@ -58,6 +58,32 @@ import { findProjectRoot } from "../lib/config.js";
 const CONFIG_KEY = "crew";
 
 /**
+ * Wrap a commander action so a thrown error (a missing/invalid `crew` config, a bad Slack id,
+ * a locked store, ...) ends in the same red-message-plus-exit-1 every sibling command already
+ * produces, instead of a raw stack trace.
+ *
+ * Most `crew *` subcommands call `loadCrewConfig()` (or `CrewConfigSchema.parse` directly, as
+ * `init` and `go-live` do) with no try/catch of their own -- only `lint`, `tick`, `status`, and
+ * `doctor` happened to wrap themselves. Verified live: `crew agents list` and `crew init` with a
+ * malformed id both crashed with a bare Bun/Zod stack trace and no actionable message, while
+ * `crew lint` on the identical broken config prints `lint failed: ...` and exits 1. One wrapper
+ * at the registration site (rather than touching every `runXxx` body) closes that gap for every
+ * subcommand at once and cannot drift back out of sync with new commands added later.
+ */
+function safeAction<Args extends unknown[]>(
+  fn: (...args: Args) => void | Promise<void>,
+): (...args: Args) => Promise<void> {
+  return async (...args: Args) => {
+    try {
+      await fn(...args);
+    } catch (e) {
+      console.error(chalk.red((e as Error).message));
+      process.exitCode = 1;
+    }
+  };
+}
+
+/**
  * Mirror the crew config to a snapshot outside any TCC-protected folder.
  *
  * This is the half of the no-Full-Disk-Access design that lives on the CLI side. The daemon
@@ -107,7 +133,10 @@ export function runCrewInit(
     enabled: false,
     mode: "dry_run",
     state_dir: "~/.jstack/crew",
-    slack: { self_user_id: selfUserId, read_limit: 25 },
+    // 5, not 25: `read_limit` is capped at 20 by CrewConfigSchema (see types.ts) specifically
+    // because 25 hangs the `claude -p` read (measured in slack.ts) -- writing 25 here made every
+    // `crew init` fail its own schema validation before the config could ever be saved.
+    slack: { self_user_id: selfUserId, read_limit: 5 },
     budget: { daily_usd: 20, per_task_usd: 1 },
     agents: {
       ralph: {
@@ -1793,8 +1822,10 @@ export function registerCrewCommand(program: Command): void {
     .requiredOption("--user <U…>", "your Slack user id")
     .requiredOption("--dm <D…>", "your self-DM channel id")
     .requiredOption("--workspace <path>", "repo Ralph may read")
-    .action((o: { user: string; dm: string; workspace: string }) =>
-      runCrewInit(o.user, o.dm, o.workspace),
+    .action(
+      safeAction((o: { user: string; dm: string; workspace: string }) =>
+        runCrewInit(o.user, o.dm, o.workspace),
+      ),
     );
 
   crew
@@ -1829,12 +1860,14 @@ export function registerCrewCommand(program: Command): void {
     )
     .option("--judge-model <m>", "model for the rubric judge")
     .action(
-      async (o: {
-        json: boolean;
-        only?: string;
-        deterministic: boolean;
-        judgeModel?: string;
-      }) => runCrewEval(o),
+      safeAction(
+        async (o: {
+          json: boolean;
+          only?: string;
+          deterministic: boolean;
+          judgeModel?: string;
+        }) => runCrewEval(o),
+      ),
     );
 
   const ag = crew
@@ -1844,12 +1877,16 @@ export function registerCrewCommand(program: Command): void {
   ag.command("list", { isDefault: true })
     .description("List agents, their sigils and whether they are in routing")
     .option("--json", "machine-readable", false)
-    .action((o: { json: boolean }) => runAgentsList(o.json));
+    .action(safeAction((o: { json: boolean }) => runAgentsList(o.json)));
 
   ag.command("show <id>")
     .description("Full effective config for one agent")
     .option("--json", "machine-readable", false)
-    .action((id: string, o: { json: boolean }) => runAgentsShow(id, o.json));
+    .action(
+      safeAction((id: string, o: { json: boolean }) =>
+        runAgentsShow(id, o.json),
+      ),
+    );
 
   ag.command("add <id>")
     .description(
@@ -1881,20 +1918,22 @@ export function registerCrewCommand(program: Command): void {
       (val: string, prev: string[]) => [...prev, val],
       [] as string[],
     )
-    .action((id: string, o: Record<string, unknown>) =>
-      runAgentsAdd({
-        id,
-        workspace: String(o.workspace),
-        name: o.name as string | undefined,
-        sigil: o.sigil as string[] | undefined,
-        model: o.model as string | undefined,
-        tools: o.tool as string[] | undefined,
-        description: o.description as string | undefined,
-        persona: o.persona as string | undefined,
-        personaFile: o.personaFile as string | undefined,
-        proactiveCheck: o.proactiveCheck as string[] | undefined,
-        proactiveChannel: o.proactiveChannel as string[] | undefined,
-      }),
+    .action(
+      safeAction((id: string, o: Record<string, unknown>) =>
+        runAgentsAdd({
+          id,
+          workspace: String(o.workspace),
+          name: o.name as string | undefined,
+          sigil: o.sigil as string[] | undefined,
+          model: o.model as string | undefined,
+          tools: o.tool as string[] | undefined,
+          description: o.description as string | undefined,
+          persona: o.persona as string | undefined,
+          personaFile: o.personaFile as string | undefined,
+          proactiveCheck: o.proactiveCheck as string[] | undefined,
+          proactiveChannel: o.proactiveChannel as string[] | undefined,
+        }),
+      ),
     );
 
   ag.command("edit <id>")
@@ -1923,43 +1962,51 @@ export function registerCrewCommand(program: Command): void {
       (val: string, prev: string[]) => [...prev, val],
       [] as string[],
     )
-    .action((id: string, o: Record<string, unknown>) =>
-      runAgentsEdit(id, {
-        name: o.name,
-        model: o.model,
-        workspace: o.workspace,
-        sigils: o.sigil,
-        tools: o.tool,
-        description: o.description,
-        persona: o.persona,
-        persona_file: o.personaFile,
-        emoji: o.emoji,
-        // Commander always gives this its `[]` default, so an untouched flag would otherwise
-        // look identical to "replace with zero checks" -- only forward it when the user
-        // actually passed at least one --proactive-check.
-        proactiveCheck: (o.proactiveCheck as string[]).length
-          ? (o.proactiveCheck as string[])
-          : undefined,
-        proactiveChannel: o.proactiveChannel as string[] | undefined,
-      }),
+    .action(
+      safeAction((id: string, o: Record<string, unknown>) =>
+        runAgentsEdit(id, {
+          name: o.name,
+          model: o.model,
+          workspace: o.workspace,
+          sigils: o.sigil,
+          tools: o.tool,
+          description: o.description,
+          persona: o.persona,
+          persona_file: o.personaFile,
+          emoji: o.emoji,
+          // Commander always gives this its `[]` default, so an untouched flag would otherwise
+          // look identical to "replace with zero checks" -- only forward it when the user
+          // actually passed at least one --proactive-check.
+          proactiveCheck: (o.proactiveCheck as string[]).length
+            ? (o.proactiveCheck as string[])
+            : undefined,
+          proactiveChannel: o.proactiveChannel as string[] | undefined,
+        }),
+      ),
     );
 
   ag.command("enable <id>")
     .description("Put an agent into routing")
-    .action((id: string) => runAgentsToggle(id, true));
+    .action(safeAction((id: string) => runAgentsToggle(id, true)));
   ag.command("disable <id>")
     .description("Take an agent out of routing, keeping its definition")
-    .action((id: string) => runAgentsToggle(id, false));
+    .action(safeAction((id: string) => runAgentsToggle(id, false)));
   ag.command("remove <id>")
     .description("Delete an agent definition (prefer disable)")
     .option("--yes", "skip the confirmation", false)
-    .action((id: string, o: { yes: boolean }) => runAgentsRemove(id, o.yes));
+    .action(
+      safeAction((id: string, o: { yes: boolean }) =>
+        runAgentsRemove(id, o.yes),
+      ),
+    );
 
   ag.command("list-checks <id>")
     .description("List one agent's proactive (scheduled, unprompted) checks")
     .option("--json", "machine-readable", false)
-    .action((id: string, o: { json: boolean }) =>
-      runAgentsListChecks(id, o.json),
+    .action(
+      safeAction((id: string, o: { json: boolean }) =>
+        runAgentsListChecks(id, o.json),
+      ),
     );
 
   ag.command("run-check <agentId> <checkId>")
@@ -1973,11 +2020,13 @@ export function registerCrewCommand(program: Command): void {
       false,
     )
     .action(
-      async (
-        agentId: string,
-        checkId: string,
-        o: { json: boolean; force: boolean },
-      ) => runAgentsRunCheck(agentId, checkId, o),
+      safeAction(
+        async (
+          agentId: string,
+          checkId: string,
+          o: { json: boolean; force: boolean },
+        ) => runAgentsRunCheck(agentId, checkId, o),
+      ),
     );
 
   crew
@@ -1987,8 +2036,10 @@ export function registerCrewCommand(program: Command): void {
     )
     .option("--port <p>", "port on 127.0.0.1", "7391")
     .option("--no-open", "do not open a browser")
-    .action(async (o: { port: string; open: boolean }) =>
-      runCrewUi(Number(o.port), o.open),
+    .action(
+      safeAction(async (o: { port: string; open: boolean }) =>
+        runCrewUi(Number(o.port), o.open),
+      ),
     );
 
   crew
@@ -2010,8 +2061,10 @@ export function registerCrewCommand(program: Command): void {
       "300",
     )
     .option("--skip-build", "reuse the existing compiled binary", false)
-    .action(async (o: { interval: string; skipBuild: boolean }) =>
-      runCrewInstall(Number(o.interval), o.skipBuild),
+    .action(
+      safeAction(async (o: { interval: string; skipBuild: boolean }) =>
+        runCrewInstall(Number(o.interval), o.skipBuild),
+      ),
     );
 
   crew
@@ -2019,7 +2072,7 @@ export function registerCrewCommand(program: Command): void {
     .description(
       "Stop and remove the LaunchAgent (keeps the binary and ledger)",
     )
-    .action(() => runCrewUninstall());
+    .action(safeAction(() => runCrewUninstall()));
 
   crew
     .command("doctor")
@@ -2035,8 +2088,10 @@ export function registerCrewCommand(program: Command): void {
       "Poll in the foreground until Ctrl-C (the simple alternative to a daemon)",
     )
     .option("--interval <s>", "seconds between ticks", "60")
-    .action(async (o: { interval: string }) =>
-      runCrewWatch(Number(o.interval)),
+    .action(
+      safeAction(async (o: { interval: string }) =>
+        runCrewWatch(Number(o.interval)),
+      ),
     );
 
   crew
@@ -2048,7 +2103,11 @@ export function registerCrewCommand(program: Command): void {
       "--confirm-channel <D…>",
       "type the DM channel id back to confirm",
     )
-    .action((o: { confirmChannel: string }) => runCrewGoLive(o.confirmChannel));
+    .action(
+      safeAction((o: { confirmChannel: string }) =>
+        runCrewGoLive(o.confirmChannel),
+      ),
+    );
 
   crew
     .command("status")
@@ -2059,18 +2118,18 @@ export function registerCrewCommand(program: Command): void {
   crew
     .command("explain <ts>")
     .description("Why did Ralph not respond to that message")
-    .action((ts: string) => runCrewExplain(ts));
+    .action(safeAction((ts: string) => runCrewExplain(ts)));
 
   crew
     .command("panic")
     .description("Write the HALTED sentinel; Ralph stops posting")
     .option("--reason <r>", "recorded reason", "manual")
-    .action((o: { reason: string }) => runCrewPanic(o.reason));
+    .action(safeAction((o: { reason: string }) => runCrewPanic(o.reason)));
 
   crew
     .command("resume")
     .description("Clear HALTED")
-    .action(() => runCrewResume());
+    .action(safeAction(() => runCrewResume()));
 
   crew
     .command("session <taskId>")
@@ -2078,7 +2137,9 @@ export function registerCrewCommand(program: Command): void {
       "Show the Claude session behind a reply handle, so you can continue it locally",
     )
     .option("--json", "machine-readable", false)
-    .action((taskIdArg: string, o: { json: boolean }) =>
-      runCrewSession(taskIdArg, o.json),
+    .action(
+      safeAction((taskIdArg: string, o: { json: boolean }) =>
+        runCrewSession(taskIdArg, o.json),
+      ),
     );
 }

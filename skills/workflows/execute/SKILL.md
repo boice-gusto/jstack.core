@@ -1,7 +1,6 @@
 ---
 name: jstack-workflow-execute
-description: "Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP)."
-when_to_use: After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior.
+description: "Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP). After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior."
 category: workflows
 argument-hint: "[workflow-name]"
 data_class: internal

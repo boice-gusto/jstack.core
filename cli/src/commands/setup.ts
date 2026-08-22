@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import chalk from "chalk";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ENCODING_UTF8 } from "@jstack/constants/paths";
 import {
@@ -333,7 +333,6 @@ async function runSetupInner(opts: {
   const pluginRoot = findPluginRoot();
   const cfgPath = configPath(projectRoot);
 
-  const { existsSync } = await import("node:fs");
   if (existsSync(cfgPath) && !opts.reconfigure) {
     p.log.warn(
       `Config exists: ${cfgPath}. Use --reconfigure to overwrite sections interactively.`,
@@ -700,7 +699,15 @@ export async function runSetupCi(opts: {
   });
 
   mkdirSync(join(projectRoot, "docs"), { recursive: true });
-  writeFileSync(join(projectRoot, ".mcp.json"), "{}\n", ENCODING_UTF8);
+  // `discoverFromMcpJson` above already read this file's real content into `discovered` --
+  // unconditionally overwriting it with "{}" right after that (as this used to do) silently
+  // destroyed any real MCP server registrations the project already had. Only create it when
+  // it's genuinely missing, which is the actual reason this line exists: guaranteeing the file
+  // exists for a fresh CI/test fixture environment, not resetting one that's already there.
+  const mcpJsonPath = join(projectRoot, ".mcp.json");
+  if (!existsSync(mcpJsonPath)) {
+    writeFileSync(mcpJsonPath, "{}\n", ENCODING_UTF8);
+  }
   const parsed = JstackConfigSchema.parse(draft);
   writeConfig(projectRoot, parsed);
   console.log(

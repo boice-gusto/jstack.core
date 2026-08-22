@@ -1,6 +1,6 @@
 ---
 name: jstack-design
-description: "Route a design request to the right sub-skill: Figma handoff (design-to-implementation contract) or a self-contained single-page HTML artifact. Not for writing component code."
+description: Route a design request to the right sub-skill (figma-handoff, visual-single-page-html). Not for writing component code.
 category: design
 effort: low
 ---

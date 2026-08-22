@@ -1,7 +1,6 @@
 ---
 name: jstack-jira
-description: Route Jira requests to the right sub-skill (get, create, update, intake, transition, notify, append). Ask one question if ambiguous.
-when_to_use: Also when the user mentions tickets, issues, JQL, triage, filing bugs, sprint backlog, status transitions, or commenting on an issue.
+description: Route Jira requests to the right sub-skill (get, create, update, intake, transition, notify, append). Ask one question if ambiguous. Also when the user mentions tickets, issues, JQL, triage, filing bugs, sprint backlog, status transitions, or commenting on an issue.
 category: jira
 effort: low
 ---

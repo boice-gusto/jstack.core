@@ -1,6 +1,6 @@
 ---
 name: jstack-incident
-description: Route incident requests to the main commander flow or retro sub-skill.
+description: Route incident requests to the right sub-skill (retro, find-sme, oncall-summary).
 category: incident
 effort: low
 ---

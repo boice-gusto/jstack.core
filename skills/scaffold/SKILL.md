@@ -1,7 +1,6 @@
 ---
 name: jstack-scaffold
-description: Scaffold a new skill or plugin using org conventions and checklists.
-when_to_use: User wants to create a new skill pack or plugin structure.
+description: Scaffold a new skill or plugin using org conventions and checklists. User wants to create a new skill pack or plugin structure.
 category: skill-creator
 data_class: internal
 disable-model-invocation: true

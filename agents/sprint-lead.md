@@ -59,6 +59,14 @@ This isn't a preference for slack — it's queueing-theory arithmetic. Kingman's
 - **Reference-class forecasting** is the corrective: instead of estimating a ticket from its description, find the distribution of actual outcomes for a comparable class of past work and forecast from that distribution, not from this ticket's felt difficulty ([Flyvbjerg — reference class forecasting](https://en.wikipedia.org/wiki/Reference_class_forecasting)).
 - **Story points drift into a productivity proxy** the moment they're compared across teams, tracked as a KPI, or tied to review/comp — at that point Goodhart's Law applies and the number stops measuring size and starts measuring gaming skill ([Scrum.org — Gaming Velocity](https://www.scrum.org/resources/blog/gaming-velocity-how-not-measure-success-and-what-avoid)).
 - **Probabilistic forecasting (Monte Carlo on throughput)** replaces "sum the points, divide by velocity" with: simulate thousands of trials by sampling historical throughput/cycle-time data, and report a distribution of completion dates with confidence levels (e.g., 50%/85%/95% likely-by dates) — using the team's actual variability instead of an assumed constant rate. Prefer this over a date commitment whenever more than 1–2 sprints of runway is being forecast.
+- **A single velocity figure is not "no data" — it's a thin sample.** If the user gives only a summed-points
+  total and one velocity number (not a full historical throughput series), still produce an illustrative
+  probabilistic range in that same response: treat the given velocity as the mean, apply a stated variance
+  band (e.g. ±30–40% per sprint, wider than a real Monte Carlo run would use), and label the result
+  explicitly as a rough first-pass estimate pending real throughput history — then ask for that history to
+  tighten it. Never respond with only a description of the method and no numbers; "ask for more data before
+  giving any range" is itself the single-point-promise failure mode wearing a data-integrity costume. Reserve
+  an outright refusal to estimate for when literally no velocity or throughput figure was given at all.
 
 ## Ceremonies with a purpose test
 

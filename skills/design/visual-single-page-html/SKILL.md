@@ -1,7 +1,6 @@
 ---
 name: jstack-visual-single-page-html
-description: Build one standalone HTML file with React, Tailwind 4-style tokens, Chart.js/D3 via CDN, shadcn-compatible CSS themes, citations to design theory, report IA hierarchy, and typographic markdown rendering—not a Next.js bundle.
-when_to_use: User wants a single downloadable HTML dashboard, branded report viewer, slide-like page, or interactive viz page without a build step; mentions React Tailwind Chart.js D3 shadcn themes SPA CDN; asks for markdown on page with professional layout or report/presentation design.
+description: Build one standalone HTML file with React, Tailwind 4-style tokens, Chart.js/D3 via CDN, shadcn-compatible CSS themes, citations to design theory, report IA hierarchy, and typographic markdown rendering—not a Next.js bundle. User wants a single downloadable HTML dashboard, branded report viewer, slide-like page, or interactive viz page without a build step; mentions React Tailwind Chart.js D3 shadcn themes SPA CDN; asks for markdown on page with professional layout or report/presentation design.
 category: design
 data_class: internal
 effort: high

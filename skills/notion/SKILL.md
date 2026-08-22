@@ -1,6 +1,6 @@
 ---
 name: jstack-notion
-description: Route Notion requests to the right sub-skill (adr, article, sprint, report, etc.). Ask one question if ambiguous.
+description: Route Notion requests to the right sub-skill (update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup). Ask one question if ambiguous.
 category: notion
 effort: low
 ---

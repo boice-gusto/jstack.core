@@ -1,6 +1,6 @@
 ---
 name: jstack-meetings
-description: Route meeting requests to the right sub-skill (prepare, transcribe, action-items, post-slack, etc.).
+description: Route meeting requests to the right sub-skill (prepare, transcribe, granola-highlights, action-items, post-slack, notion-highlights, store-note, one-on-one-transcript, transcripts-ingest).
 category: meetings
 effort: low
 ---

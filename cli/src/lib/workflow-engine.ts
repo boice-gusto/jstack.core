@@ -149,17 +149,53 @@ export function buildWorkflowRunPrompt(def: WorkflowDefinition): string {
 /** `claude -p` is not expected to finish a multi-step browser flow instantly; generous but bounded. */
 export const WORKFLOW_RUN_TIMEOUT_MS = 10 * 60 * 1000;
 
+export function workflowArtifactsDir(projectRoot: string, id: string): string {
+  return join(projectRoot, "artifacts", "workflows", id);
+}
+
+/**
+ * Whether the spawned agent actually produced any artifact (screenshot, trace, report) under
+ * this workflow's artifacts directory. This is the ONLY thing `runWorkflowViaClaude` trusts to
+ * decide `ok` -- not `runClaude()`'s process-level `ok` (which means "the claude subprocess
+ * didn't crash," not "the browser did anything") and not the agent's own prose claim of success.
+ * A live test run against this exact code (no browser-automation MCP configured) returned
+ * `{"ok": true, "log": ["...no steps...were executed..."]}` -- the nested agent correctly
+ * refused to claim anything ran, in plain English, while the wrapper still reported `ok: true`
+ * because the subprocess itself hadn't errored. That is the fabricated-green-report failure mode
+ * every other doc in `examples/workflows/` and the workflows skills warn about, just moved one
+ * layer down from the old hardcoded stub into this wrapper's own success test.
+ */
+export function hasWorkflowArtifacts(projectRoot: string, id: string): boolean {
+  const dir = workflowArtifactsDir(projectRoot, id);
+  if (!existsSync(dir)) return false;
+  try {
+    return readdirSync(dir).length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function runWorkflowViaClaude(
+  projectRoot: string,
   def: WorkflowDefinition,
   timeoutMs: number = WORKFLOW_RUN_TIMEOUT_MS,
 ): Promise<{ ok: boolean; log: string[] }> {
   const result = await runClaude([], buildWorkflowRunPrompt(def), timeoutMs);
-  return {
-    ok: result.ok,
-    log: [
-      result.ok
-        ? result.text || "(agent reported no output)"
-        : `Run failed: ${result.text}`,
-    ],
-  };
+  if (!result.ok) {
+    return { ok: false, log: [`Run failed: ${result.text}`] };
+  }
+  const gotArtifact = hasWorkflowArtifacts(projectRoot, def.id);
+  const agentText = result.text || "(agent reported no output)";
+  if (!gotArtifact) {
+    return {
+      ok: false,
+      log: [
+        agentText,
+        `unverified: no artifact was written under ${workflowArtifactsDir(projectRoot, def.id)} -- ` +
+          "a completed process is not evidence a browser ran anything; treating this as a non-pass " +
+          "regardless of what the agent's own report claimed.",
+      ],
+    };
+  }
+  return { ok: true, log: [agentText] };
 }

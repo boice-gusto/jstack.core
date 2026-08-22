@@ -7,7 +7,9 @@ import {
   runAgentsEdit,
   runAgentsListChecks,
   runAgentsRunCheck,
+  runCrewInit,
 } from "./crew.js";
+import { CrewConfigSchema } from "../lib/crew/types.js";
 
 /**
  * `runAgentsEdit` writes through `mutateAgents`, which resolves the project root via
@@ -328,5 +330,36 @@ describe("crew agents list-checks / run-check guard clauses", () => {
     }
     expect(process.exitCode).toBe(1);
     expect(logged).toContain('no proactive check "not-a-real-check"');
+  });
+});
+
+describe("runCrewInit", () => {
+  const savedRoot = process.env.JSTACK_PROJECT_ROOT;
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "jstack-crew-init-"));
+    writeFileSync(join(root, "jstack.config.json"), "{}\n");
+    process.env.JSTACK_PROJECT_ROOT = root;
+    process.exitCode = 0;
+  });
+
+  afterEach(() => {
+    if (savedRoot === undefined) delete process.env.JSTACK_PROJECT_ROOT;
+    else process.env.JSTACK_PROJECT_ROOT = savedRoot;
+    process.exitCode = 0;
+  });
+
+  // Regression: `runCrewInit` used to hard-code `slack.read_limit: 25`, but
+  // `CrewConfigSchema` caps it at 20 (25 is documented in types.ts/slack.ts as the value
+  // that hangs the `claude -p` read) -- so every `crew init` failed the schema's own
+  // `.parse()` before the file could be written, no matter what ids were passed.
+  test("writes a crew config that validates against CrewConfigSchema", () => {
+    runCrewInit("U01234567", "D01234567", root);
+    const raw = JSON.parse(
+      readFileSync(join(root, "jstack.config.json"), "utf8"),
+    );
+    expect(() => CrewConfigSchema.parse(raw.crew)).not.toThrow();
+    expect(raw.crew.slack.read_limit).toBeLessThanOrEqual(20);
   });
 });

@@ -114,6 +114,7 @@ Read the setup preamble first:
 ## Sub-skills
 
 - **`jstack:skill-creator/improve-claude-md`** — Audit and improve the project's CLAUDE.md based on commits, session transcripts, and working-tree state. Read-only by default; emits a unified diff. Use when CLAUDE.md feels stale or when you have been correcting Claude on the same thing repeatedly.
+- **`jstack:skill-creator/retro`** — Read back the local `jstack memory` store, recent eval reports, and declined-edit history; produce a self-improvement retro naming what recurred often enough to promote into a real fix versus what's still a one-off note. Use when the user asks "what have we learned" or "do a retro on our skills."
 
 ## Chaining
 

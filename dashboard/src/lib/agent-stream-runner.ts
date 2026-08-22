@@ -3,9 +3,9 @@ import type { AgentStreamBody } from "@/lib/agent-request-schema";
 /**
  * One decoded SSE payload from `POST /api/agent/stream` (see
  * `dashboard/src/app/api/agent/stream/route.ts` for the `type` values it
- * sends: "start", "text", "tool_use", "result", "stderr", "error", "done",
- * "raw"). Deliberately loose — callers narrow by `type` themselves, the same
- * way the two stores already did before this was extracted.
+ * sends: "start", "session", "text", "tool_use", "result", "stderr", "error",
+ * "done", "raw"). Deliberately loose — callers narrow by `type` themselves,
+ * the same way the two stores already did before this was extracted.
  */
 export type AgentStreamEvent = Record<string, unknown>;
 

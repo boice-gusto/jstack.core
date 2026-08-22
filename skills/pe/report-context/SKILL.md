@@ -1,7 +1,6 @@
 ---
 name: jstack-pe-report-context
-description: Validate and normalize PE / team report JSON against schemas/pe; gate skills until pe.configured is true.
-when_to_use: Building or validating performance/team report context JSON before render or Notion/ HTML publish.
+description: Validate and normalize PE / team report JSON against schemas/pe; gate skills until pe.configured is true. Building or validating performance/team report context JSON before render or Notion/ HTML publish.
 category: reports
 data_class: people_performance
 effort: low

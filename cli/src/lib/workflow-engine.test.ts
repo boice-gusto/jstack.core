@@ -10,9 +10,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   deleteWorkflow,
+  hasWorkflowArtifacts,
   importWorkflowFromFile,
   loadWorkflow,
   saveWorkflow,
+  workflowArtifactsDir,
 } from "./workflow-engine.js";
 import type { WorkflowDefinition } from "../types/workflow.js";
 
@@ -152,6 +154,52 @@ describe("workflow-engine — malformed/schema-invalid files fail closed, not cr
         "utf8",
       );
       expect(importWorkflowFromFile(projectRoot, importFile)).toBeNull();
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * `runWorkflowViaClaude` used to report `ok: true` off `runClaude()`'s process-level result alone
+ * -- "the claude subprocess didn't crash," not "a browser did anything." A live run against this
+ * exact code (no browser-automation MCP configured) proved the gap concretely: the nested agent's
+ * own text said "no steps...were executed" while the wrapper still returned `ok: true`. These
+ * tests cover `hasWorkflowArtifacts`, the deterministic, filesystem-verifiable gate that now sits
+ * between "the process didn't error" and "this run counts as ok" -- no claude process, no mocking.
+ */
+describe("workflow-engine — artifact gate", () => {
+  test("false when the artifacts directory was never created", () => {
+    const { projectRoot, outside } = mkFixture();
+    try {
+      expect(hasWorkflowArtifacts(projectRoot, "never-ran")).toBe(false);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("false when the artifacts directory exists but is empty", () => {
+    const { projectRoot, outside } = mkFixture();
+    try {
+      mkdirSync(workflowArtifactsDir(projectRoot, "empty-run"), {
+        recursive: true,
+      });
+      expect(hasWorkflowArtifacts(projectRoot, "empty-run")).toBe(false);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("true once at least one artifact file exists", () => {
+    const { projectRoot, outside } = mkFixture();
+    try {
+      const dir = workflowArtifactsDir(projectRoot, "real-run");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "step-1.png"), "fake-png-bytes", "utf8");
+      expect(hasWorkflowArtifacts(projectRoot, "real-run")).toBe(true);
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
       rmSync(outside, { recursive: true, force: true });

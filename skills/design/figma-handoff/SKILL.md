@@ -1,6 +1,6 @@
 ---
 name: jstack-figma-handoff
-description: Load jstack Figma workflow guidance before design-to-code or MCP Figma work; chain to figma-use when the host provides it.
+description: Turn a Figma design into an implementable handoff — named components and variants, token references, state coverage, and the accessibility contract each state must meet. Load before design-to-code or MCP Figma work; chain to figma-use when the host provides it. Not for writing the component code or editing the Figma file itself.
 category: design
 data_class: internal
 effort: low

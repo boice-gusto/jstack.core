@@ -132,7 +132,7 @@ export async function runWorkflowRun(
     }
   }
 
-  const res = await runWorkflowViaClaude(def);
+  const res = await runWorkflowViaClaude(root, def);
   if (opts.json) {
     console.log(JSON.stringify({ id, ok: res.ok, log: res.log }, null, 2));
   } else {

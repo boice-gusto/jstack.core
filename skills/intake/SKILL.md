@@ -1,7 +1,6 @@
 ---
 name: jstack-intake
-description: Convert unstructured feature/ticket requests into shaped ticket fields. Split bundled requests into separate candidates.
-when_to_use: Also when shaping a feature idea, PRD snippet, messy notes, or Slack thread into ticket-ready fields (before Jira create).
+description: Convert unstructured feature/ticket requests into shaped ticket fields. Split bundled requests into separate candidates. Also when shaping a feature idea, PRD snippet, messy notes, or Slack thread into ticket-ready fields (before Jira create).
 category: intake
 effort: medium
 ---
