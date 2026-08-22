@@ -414,10 +414,7 @@ async function runSetupInner(opts: {
   });
   if (p.isCancel(debug)) throw new Error("cancelled");
 
-  let gbrainPatch: Record<string, unknown> = {};
-  let sessionPatch: Record<string, unknown> = {};
-  let knowledgeBasePatch: Record<string, unknown> = {};
-  let knowledgeStoragePatch: Record<string, unknown> = {};
+  let gbrainKbPatch: Record<string, unknown> = {};
 
   let runGbrainKb = opts.withGbrainKb === true;
   if (!runGbrainKb) {
@@ -540,27 +537,18 @@ async function runSetupInner(opts: {
     });
     if (p.isCancel(includeGbrainInSearch)) throw new Error("cancelled");
 
-    gbrainPatch = {
+    gbrainKbPatch = {
       gbrain: mergeDeep(s.defGbrain, {
         team: { url: String(teamGbrainUrl).trim() },
         personal: { url: String(personalGbrainUrl).trim() },
       }),
-    };
-
-    sessionPatch = {
       session: mergeDeep(s.defSession, {
         default_gbrain_target: target,
       }),
-    };
-
-    knowledgeBasePatch = {
       knowledge_base: mergeDeep(s.defKb, {
         roots,
         gbrain: mergeDeep(s.defKbGbrain, { include: includeGbrainInSearch }),
       }),
-    };
-
-    knowledgeStoragePatch = {
       knowledge_storage: mergeDeep(defKs, {
         disk_fallback_root: String(diskFallback).trim() || "/tmp/knowledgebase",
         team: mergeDeep(defKsTeam, {
@@ -590,17 +578,8 @@ async function runSetupInner(opts: {
     mcp_servers: mergeMcpRegistry(s.mcpExisting, discovered),
   });
 
-  if (Object.keys(gbrainPatch).length) {
-    draft = mergeDeep(draft, gbrainPatch);
-  }
-  if (Object.keys(sessionPatch).length) {
-    draft = mergeDeep(draft, sessionPatch);
-  }
-  if (Object.keys(knowledgeBasePatch).length) {
-    draft = mergeDeep(draft, knowledgeBasePatch);
-  }
-  if (Object.keys(knowledgeStoragePatch).length) {
-    draft = mergeDeep(draft, knowledgeStoragePatch);
+  if (Object.keys(gbrainKbPatch).length) {
+    draft = mergeDeep(draft, gbrainKbPatch);
   }
 
   if (opts.pe) {
