@@ -139,6 +139,32 @@ export const AgentSchema = z
 
 export type AgentConfig = z.infer<typeof AgentSchema>;
 
+/**
+ * Reactions are the cheapest possible "I saw that". They cannot be removed (C3), so they
+ * accumulate rather than swapping seen -> done.
+ *
+ * Named (rather than inlined) so its wrapper default can derive from `.parse({})` instead of
+ * repeating each field's own `.default(...)` a second time as a hand-duplicated literal --
+ * `.default({...})` on the wrapper does NOT re-invoke the inner per-field defaults, so two
+ * copies of the same numbers used to exist with nothing enforcing they stayed in sync.
+ */
+const ReactionsSchema = z
+  .object({
+    seen: z.string().default("eyes"),
+    done: z.string().default("white_check_mark"),
+    failed: z.string().default("warning"),
+    enabled: z.boolean().default(true),
+  })
+  .strict();
+
+/** See `ReactionsSchema`'s comment for why this is named rather than inlined. */
+const BudgetSchema = z
+  .object({
+    daily_usd: z.number().positive().default(20),
+    per_task_usd: z.number().positive().default(1),
+  })
+  .strict();
+
 export const CrewConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -159,24 +185,7 @@ export const CrewConfigSchema = z
          * drop the oldest of a burst.
          */
         max_pages: z.number().int().positive().max(10).default(3),
-        /**
-         * Reactions are the cheapest possible "I saw that". They cannot be removed
-         * (C3), so they accumulate rather than swapping seen -> done.
-         */
-        reactions: z
-          .object({
-            seen: z.string().default("eyes"),
-            done: z.string().default("white_check_mark"),
-            failed: z.string().default("warning"),
-            enabled: z.boolean().default(true),
-          })
-          .strict()
-          .default({
-            seen: "eyes",
-            done: "white_check_mark",
-            failed: "warning",
-            enabled: true,
-          }),
+        reactions: ReactionsSchema.default(ReactionsSchema.parse({})),
         /**
          * Replies to a message go in ITS thread, so the answer sits inline under the
          * question. Only unprompted posts (digests, alerts) start a new root message.
@@ -186,13 +195,7 @@ export const CrewConfigSchema = z
         thread_active_ms: z.number().int().positive().default(3_600_000),
       })
       .strict(),
-    budget: z
-      .object({
-        daily_usd: z.number().positive().default(20),
-        per_task_usd: z.number().positive().default(1),
-      })
-      .strict()
-      .default({ daily_usd: 20, per_task_usd: 1 }),
+    budget: BudgetSchema.default(BudgetSchema.parse({})),
     /**
      * Named agents, keyed by id. A message routes to the agent whose sigil it matches,
      * so adding one is a config edit rather than a code change. `enabled: false` keeps an
