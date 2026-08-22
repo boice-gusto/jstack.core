@@ -20,6 +20,7 @@ import {
   mergeMcpRegistry,
   readMcpFile,
   type McpFile,
+  type McpMergeCollision,
 } from "../lib/mcp-discovery.js";
 import {
   MCP_ADD_PRESETS,
@@ -61,13 +62,25 @@ export function runMcpRefresh(): void {
   const root = findProjectRoot();
   const cfg = readConfig(root);
   const discovered = discoverFromMcpJson(root);
-  const merged = mergeMcpRegistry(cfg.mcp_servers ?? {}, discovered);
+  const collisions: McpMergeCollision[] = [];
+  const merged = mergeMcpRegistry(cfg.mcp_servers ?? {}, discovered, {
+    collisions,
+    prune: true,
+  });
   writeConfig(root, { ...cfg, mcp_servers: merged });
   console.log(
     chalk.green(
       `Refreshed MCP registry (${Object.keys(merged).length} servers)`,
     ),
   );
+  const pruned = collisions.filter((c) => c.resolution === "pruned");
+  if (pruned.length > 0) {
+    console.log(
+      chalk.dim(
+        `Removed ${pruned.length} server(s) no longer in .mcp.json: ${pruned.map((c) => c.serverId).join(", ")}`,
+      ),
+    );
+  }
 }
 
 export function runMcpHealth(): void {

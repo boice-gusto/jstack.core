@@ -54,7 +54,7 @@ function humanize(id: string): string {
 
 export type McpMergeCollision = {
   serverId: string;
-  resolution: "kept_existing" | "merged_fields" | "replaced";
+  resolution: "kept_existing" | "merged_fields" | "replaced" | "pruned";
   reason: string;
 };
 
@@ -64,7 +64,19 @@ const BOILERPLATE_DESCRIPTION_RE =
 export function mergeMcpRegistry(
   existing: McpRegistry | undefined,
   discovered: McpRegistry,
-  opts?: { collisions?: McpMergeCollision[] },
+  opts?: {
+    collisions?: McpMergeCollision[];
+    /**
+     * Additive-only by default (preserves prior behavior for `setup`/`setup-schema`, which
+     * shouldn't destructively change a registry as a side effect of an unrelated wizard step).
+     * `jstack mcp refresh` -- whose whole purpose is resyncing the registry with `.mcp.json` --
+     * passes `true` so a server removed from `.mcp.json` actually disappears, instead of lingering
+     * forever as a stale `auto_discovered: true` entry that only `mcp remove` could ever clear.
+     * A user-curated entry (`auto_discovered: false`) is never pruned, matching the existing
+     * "kept_existing" collision rule above.
+     */
+    prune?: boolean;
+  },
 ): McpRegistry {
   const out: McpRegistry = { ...(existing ?? {}) };
 
@@ -108,6 +120,19 @@ export function mergeMcpRegistry(
       resolution: "merged_fields",
       reason: "kept user label/tools, refreshed server_id/description",
     });
+  }
+
+  if (opts?.prune) {
+    for (const [id, entry] of Object.entries(out)) {
+      if (entry.auto_discovered === false) continue;
+      if (id in discovered) continue;
+      delete out[id];
+      opts.collisions?.push({
+        serverId: id,
+        resolution: "pruned",
+        reason: "auto-discovered entry no longer present in .mcp.json",
+      });
+    }
   }
 
   return out;

@@ -141,6 +141,59 @@ describe("mergeMcpRegistry", () => {
 });
 
 /**
+ * `mergeMcpRegistry` was additive-only, so `jstack mcp refresh` could never remove a server
+ * dropped from `.mcp.json` -- only `mcp remove` could, via separate hand-rolled key matching.
+ * `opts.prune` closes that gap for callers (only `runMcpRefresh`) that opt into it; every other
+ * caller (setup/setup-schema/mcp add's sync-before-add) keeps the non-destructive default.
+ */
+describe("mergeMcpRegistry — opts.prune", () => {
+  test("without prune, a stale auto-discovered entry lingers forever (documents the pre-fix gap)", () => {
+    const existing: McpRegistry = { a: makeServer(), b: makeServer() };
+    const discovered: McpRegistry = { a: makeServer() }; // "b" no longer in .mcp.json
+    const result = mergeMcpRegistry(existing, discovered);
+    expect(result.b).toBeDefined();
+  });
+
+  test("with prune, an auto-discovered entry missing from discovered is removed", () => {
+    const existing: McpRegistry = { a: makeServer(), b: makeServer() };
+    const discovered: McpRegistry = { a: makeServer() };
+    const collisions: McpMergeCollision[] = [];
+    const result = mergeMcpRegistry(existing, discovered, {
+      collisions,
+      prune: true,
+    });
+    expect(result.b).toBeUndefined();
+    expect(result.a).toBeDefined();
+    expect(collisions).toContainEqual(
+      expect.objectContaining({ serverId: "b", resolution: "pruned" }),
+    );
+  });
+
+  test("with prune, a user-curated (auto_discovered: false) entry is never removed", () => {
+    const existing: McpRegistry = {
+      a: makeServer(),
+      curated: makeServer({ auto_discovered: false }),
+    };
+    const discovered: McpRegistry = { a: makeServer() }; // "curated" absent from .mcp.json
+    const result = mergeMcpRegistry(existing, discovered, { prune: true });
+    expect(result.curated).toBeDefined();
+    expect(result.curated!.auto_discovered).toBe(false);
+  });
+
+  test("with prune, nothing is pruned when discovered contains everything existing has", () => {
+    const existing: McpRegistry = { a: makeServer() };
+    const discovered: McpRegistry = { a: makeServer() };
+    const collisions: McpMergeCollision[] = [];
+    const result = mergeMcpRegistry(existing, discovered, {
+      collisions,
+      prune: true,
+    });
+    expect(Object.keys(result)).toEqual(["a"]);
+    expect(collisions.filter((c) => c.resolution === "pruned")).toHaveLength(0);
+  });
+});
+
+/**
  * `readMcpFile` used to be duplicated verbatim between this module and commands/mcp.ts.
  * Previously untested on either side: a missing file and malformed JSON both fall back to `{}`
  * rather than throwing.
