@@ -22,6 +22,11 @@ SKIP = {
     SKILLS / "recon" / "SKILL.md",
     SKILLS / "skill-creator" / "SKILL.md",
     SKILLS / "skill-creator" / "improve-claude-md" / "SKILL.md",
+    # Hand-authored (2026-08): new skill. Reads back the jstack memory store (jstack memory
+    # log/search) plus eval reports and declined-edit history to produce a self-improvement
+    # retro -- recurrence thresholds, named promotion mechanisms, worked example. No generic
+    # generator data exists for this category of content.
+    SKILLS / "skill-creator" / "retro" / "SKILL.md",
     SKILLS / "computer-use" / "cua" / "SKILL.md",
     SKILLS / "workflow-builder" / "SKILL.md",
     SKILLS / "knowledge" / "search" / "SKILL.md",
@@ -74,6 +79,12 @@ SKIP = {
     # discrepancies, never silently drop a task that exists in only one source) — no generic
     # generator data for this; pinned to avoid a content-free overwrite.
     SKILLS / "self" / "tasks" / "SKILL.md",
+    # Hand-authored (2026-08): rewired to write to the new local `jstack memory log` store first
+    # (real, jsonl-based, no external dependency) with gbrain as an optional second write, instead
+    # of the gbrain-only procedure that made this skill's "durable memory" claim entirely
+    # contingent on an external product the repo doesn't actually call. No generic generator data
+    # exists for this; regenerating would silently revert to the gbrain-only version.
+    SKILLS / "self" / "remember" / "SKILL.md",
     SKILLS / "review" / "code-review" / "SKILL.md",
     # Hand-authored (2026-08): six-lens parallel-dispatch orchestrator (security, compliance,
     # performance, code quality, QA, AI-slop) with a bespoke lens-routing table, an AI-slop

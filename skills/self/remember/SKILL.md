@@ -1,6 +1,6 @@
 ---
 name: jstack-self-remember
-description: Store a durable personal fact or decision in gbrain. Refuse or rotate if the user pastes a secret.
+description: Store a durable personal fact or decision in the local jstack memory store (jstack memory log), optionally also gbrain when configured. Refuses to write anything that looks like a pasted secret.
 category: self
 data_class: internal
 disable-model-invocation: true
@@ -16,8 +16,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Store a durable personal fact or decision in gbrain with full provenance attached. Refuse to store, and tell the user to rotate, anything that looks like a secret or credential.
-- **Out of scope:** Team-visible storage — this always writes to the personal gbrain target.
+Store a durable personal fact or decision, primarily in the local `jstack memory` store (no external dependency), with gbrain as an optional second write when configured. Refuse to store, and tell the user to rotate, anything that looks like a secret or credential.
+- **Out of scope:** Team-visible storage — this always writes to the personal store/gbrain target, never a shared one.
 
 ## Domain rules — self (personal)
 - Session target must match `session/init` — do not mix team pages into personal or vice versa.
@@ -44,8 +44,10 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Personal target by default; write to a shared store only when the user asks explicitly. Never place another person's performance data or PII in a personal or team note.
 
 ### Step 3 — Execute
-Durable fact storage in gbrain. Attach provenance: `jstack_session_id`, `gbrain_target`, `config_label`, `slack_handle` if resolved, `source_skill: jstack-self-remember`, `written_at`. See `gbrain-entry-provenance.md`.
-- Rotate or refuse if the user pastes a secret.
+1. **Always** write to the local, jsonl-based store first — this works with zero external dependency and is the durable record of record:
+   `Bash(jstack memory log '{"kind":"fact","key":"<short-slug>","insight":"<the fact or decision, in the user's own words>","source":"user-stated","skill":"self-remember"}')`
+   Use `"kind":"decision"` instead of `"fact"` when the user is recording a choice they made, not a fact about themselves. The command itself refuses (non-zero exit, no write) if the insight looks like a pasted secret — treat that refusal as the correct behavior, not an error to work around, and tell the user to rotate the credential.
+2. **Optionally**, also write to gbrain if `gbrain.personal` is configured and the user hasn't opted out — attach provenance (`jstack_session_id`, `gbrain_target`, `config_label`, `slack_handle` if resolved, `source_skill: jstack-self-remember`, `written_at`; see `gbrain-entry-provenance.md`). If gbrain is unconfigured or the write fails, say so and continue — the local store from step 1 already has the fact captured, so this is never a hard failure.
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

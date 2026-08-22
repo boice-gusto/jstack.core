@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-20T20:45:58.456Z",
-  "count": 142,
+  "generatedAt": "2026-08-22T09:14:49.536Z",
+  "count": 143,
   "skills": [
     {
       "id": "adr",
@@ -239,8 +239,8 @@
       "path": "skills/granola-daily-summary/SKILL.md",
       "relPath": "skills/granola-daily-summary/SKILL.md",
       "gateId": "jstack:granola-daily-summary",
-      "description": "Summarize Granola (or meeting) notes into a daily digest.",
-      "whenToUse": "End-of-day summary from meeting notes or Granola exports.",
+      "description": "End-of-day rollup across multiple meetings' notes or Granola exports into one digest. For a single Granola export from one meeting, use jstack:meetings-granola instead.",
+      "whenToUse": "",
       "category": "Meetings",
       "categoryKey": "meetings"
     },
@@ -514,7 +514,7 @@
       "path": "skills/meetings/granola-highlights/SKILL.md",
       "relPath": "skills/meetings/granola-highlights/SKILL.md",
       "gateId": "jstack:meetings/granola-highlights",
-      "description": "Import Granola AI highlights and map bullets to Decisions, Open Questions, and Action Items.",
+      "description": "Import Granola AI highlights from one meeting and map bullets to Decisions, Open Questions, and Action Items. For an end-of-day rollup across multiple meetings, use jstack:granola-daily-summary instead.",
       "whenToUse": "",
       "category": "Meetings",
       "categoryKey": "meetings"
@@ -1196,7 +1196,7 @@
       "path": "skills/self/remember/SKILL.md",
       "relPath": "skills/self/remember/SKILL.md",
       "gateId": "jstack:self/remember",
-      "description": "Store a durable personal fact or decision in gbrain. Refuse or rotate if the user pastes a secret.",
+      "description": "Store a durable personal fact or decision in the local jstack memory store (jstack memory log), optionally also gbrain when configured. Refuses to write anything that looks like a pasted secret.",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"
@@ -1274,6 +1274,17 @@
       "relPath": "skills/skill-creator/SKILL.md",
       "gateId": "jstack:skill-creator",
       "description": "Create or revise jstack plugin skills (SKILL.md) using repo conventions, Anthropic-aligned directives, and config-first rules. Use when adding capabilities, forking a skill, or fixing discovery/failure coverage — not for running product workflows.",
+      "whenToUse": "",
+      "category": "Skill Creator",
+      "categoryKey": "skill-creator"
+    },
+    {
+      "id": "skill-creator-retro",
+      "name": "jstack-skill-creator-retro",
+      "path": "skills/skill-creator/retro/SKILL.md",
+      "relPath": "skills/skill-creator/retro/SKILL.md",
+      "gateId": "jstack:skill-creator/retro",
+      "description": "Read back the local jstack memory store (jstack memory search) plus recent eval reports and declined-edit history, and produce a self-improvement retro -- what's been learned, what recurred often enough to promote into a real fix, and what's still just a log entry. Use when the user asks \"what have we learned,\" \"do a retro on our skills,\" \"what keeps coming up,\" or as a periodic hygiene routine. Not for a personal-life retrospective -- that's self/lookback.",
       "whenToUse": "",
       "category": "Skill Creator",
       "categoryKey": "skill-creator"
@@ -1504,7 +1515,7 @@
       "path": "skills/workflows/execute/SKILL.md",
       "relPath": "skills/workflows/execute/SKILL.md",
       "gateId": "jstack:workflows/execute",
-      "description": "Run a saved workflow via CLI; preview then run with --yes. Engine may be stub until Playwright is wired.",
+      "description": "\"Run a saved workflow via CLI: preview, then execute with --yes through a spawned agent driving a browser-automation tool (e.g. Playwright MCP).\"",
       "whenToUse": "After a workflow exists in config/workflows; user wants to run it from the agent or confirm CLI behavior.",
       "category": "Workflows",
       "categoryKey": "workflows"
