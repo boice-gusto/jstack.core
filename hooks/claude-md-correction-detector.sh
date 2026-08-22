@@ -42,7 +42,12 @@ ENABLED="${CFG%% *}"
 THRESHOLD="${CFG##* }"
 [ "$ENABLED" != "true" ] && exit 0
 
-ENCODED=$(echo "$PROJECT_ROOT" | sed 's:/:-:g')
+# Claude Code's real project-dir encoding replaces every non-alphanumeric character with `-`,
+# not just `/` -- a project path containing a dot (e.g. this very repo, ".../jstack.core", or a
+# username like "jonathan.boice") produced the wrong directory name with the old slash-only
+# substitution, so TRANSCRIPT below never existed and this hook silently did nothing for any such
+# path. Verified against a real project dir: /Users/x/jstack.core -> -Users-x-jstack-core.
+ENCODED=$(echo "$PROJECT_ROOT" | sed 's/[^a-zA-Z0-9]/-/g')
 TRANSCRIPT="$HOME/.claude/projects/$ENCODED/${SESSION_ID}.jsonl"
 [ ! -f "$TRANSCRIPT" ] && exit 0
 
