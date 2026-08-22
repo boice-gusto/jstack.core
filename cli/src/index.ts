@@ -462,7 +462,10 @@ const trx = program
 trx.command("status").action(() => runTranscriptsStatus());
 trx.command("ingest").action(() => runTranscriptsIngest());
 
-program.command("upgrade").action(() => runUpgrade());
+program
+  .command("upgrade")
+  .description("Check local vs. remote VERSION and show the upgrade command")
+  .action(async () => await runUpgrade());
 
 const mcp = program.command("mcp").description("MCP registry");
 mcp.command("list").action(() => runMcpList());
