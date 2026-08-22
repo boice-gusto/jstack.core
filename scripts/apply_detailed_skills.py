@@ -39,6 +39,13 @@ SKIP = {
     SKILLS / "design" / "visual-single-page-html" / "SKILL.md",
     SKILLS / "design" / "figma-handoff" / "SKILL.md",
     SKILLS / "granola-daily-summary" / "SKILL.md",
+    # Hand-authored (2026-08): granola-daily-summary and meetings/granola-highlights were found
+    # to be ~95% verbatim-identical boilerplate with no distinguishing description, making
+    # auto-discovery a coin flip between them. Both descriptions were rewritten to state the
+    # cardinality distinction explicitly (single-meeting import vs. multi-meeting daily rollup)
+    # and cross-reference each other. The generator has no per-key data for this distinction and
+    # would silently regenerate `description` back to the generic, colliding version.
+    SKILLS / "meetings" / "granola-highlights" / "SKILL.md",
     # Flattened (2026-08): `create-plugin-pr` was the router's only child with no second one
     # planned, so its content was merged straight into `skills/plugin/SKILL.md` and the child
     # directory removed. `plugin` is no longer in ORCHESTRATORS/ORCH_CHILDREN below.

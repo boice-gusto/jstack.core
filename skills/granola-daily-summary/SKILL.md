@@ -1,7 +1,6 @@
 ---
 name: jstack-granola-daily-summary
-description: Summarize Granola (or meeting) notes into a daily digest.
-when_to_use: End-of-day summary from meeting notes or Granola exports.
+description: End-of-day rollup across multiple meetings' notes or Granola exports into one digest. For a single Granola export from one meeting, use jstack:meetings-granola instead.
 category: meetings
 data_class: internal
 disallowed-tools: AskUserQuestion
