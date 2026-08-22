@@ -105,6 +105,9 @@ Produce a single self-contained HTML page — inline CSS, no build step, CDN scr
 ### Step 1 — Load config
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
+For methodology, examples, and templates for this skill, read:
+!cat ${CLAUDE_PLUGIN_ROOT}/skills/design/visual-single-page-html/references/deep-dive.md
+
 ### Step 2 — Plan the safe path
 Read current state before changing it. Prefer the reversible action; when an action is irreversible, show what will change and get explicit confirmation first. If a required id or path is missing from config, stop and ask — never substitute a guess.
 

@@ -187,18 +187,6 @@ from apply_detailed_skills_data import (
     path_extras,
 )
 
-# Skills with `references/deep-dive.md` — Step 1 adds !cat (expand set as you add files).
-DEEP_DIVE_SKILLS = frozenset(
-    {
-        "prioritize",
-        "sprint/planning",
-        "research/competitive",
-        "intake",
-        "project",
-    }
-)
-
-
 def read_front_matter(p: Path) -> dict:
     t = p.read_text(encoding="utf-8")
     m = re.match(r"^---\n(.*?)\n---\n", t, re.DOTALL)
@@ -363,7 +351,7 @@ def build_body(key: str, fm: dict) -> str:
         "Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, "
         "say so and point to `jstack setup` / `jstack doctor` instead of faking data."
     )
-    if key in DEEP_DIVE_SKILLS:
+    if (SKILLS / key / "references" / "deep-dive.md").exists():
         step1 += (
             "\n\nFor methodology, examples, and templates for this skill, read:\n"
             "!cat ${CLAUDE_PLUGIN_ROOT}/skills/" + key + "/references/deep-dive.md"
