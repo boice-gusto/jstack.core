@@ -103,6 +103,29 @@ program
     false,
   )
   .action(async (o) => {
+    /**
+     * `setup` has 3 disjoint modes (--schema / --ci / legacy) dispatched below, but the 8
+     * flags above live in one flat commander namespace -- a flag meant for one mode used to
+     * be silently ignored under another instead of rejected: `--non-interactive`/`--section`
+     * without `--schema` ran the full interactive prompt flow anyway; `--pe`/`--with-gbrain-kb`
+     * under `--ci` or `--schema` were accepted and then never read. Reject those combinations
+     * up front instead of accepting a flag whose effect quietly never happens.
+     */
+    if (!o.schema && (o.section !== undefined || o.nonInteractive)) {
+      console.error(
+        "--section/--non-interactive only apply with --schema. Re-run with --schema, or drop them.",
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if ((o.ci || o.schema) && (o.pe || o.withGbrainKb)) {
+      console.error(
+        "--pe/--with-gbrain-kb only apply to the interactive (non-schema, non-CI) wizard. " +
+          "Re-run without --ci/--schema, or drop --pe/--with-gbrain-kb.",
+      );
+      process.exitCode = 1;
+      return;
+    }
     if (o.schema) {
       await runSetupSchema({
         reconfigure: o.reconfigure,
