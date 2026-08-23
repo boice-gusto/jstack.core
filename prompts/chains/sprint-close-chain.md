@@ -38,7 +38,7 @@ unknown, and use `[no data]` rather than filling in a plausible-looking placehol
     "sprint_close": {
       "enabled": false,
       "cron": "",
-      "chain": ["sprint", "reports", "announcements"]
+      "chain": ["sprint", "reports/project-report", "announcements"]
     }
   }
 }

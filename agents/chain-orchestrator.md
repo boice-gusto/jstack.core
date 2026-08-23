@@ -241,16 +241,11 @@ one having succeeded (unstated dependency).
 
 ## What this agent does NOT own
 
-- **Browser/UI execution** — running a recorded or defined workflow against a browser, previewing steps,
-  confirming destructive UI actions, or capturing Playwright traces is the **workflow-executor** agent's job.
-  This agent may *decide* that a step in its plan is "run workflow X," but it hands that step's execution
-  to workflow-executor rather than driving the browser itself.
-- **Workflow YAML authoring** — writing or editing `kickoff_workflows` YAML, intake step templates, or the
-  `jstack:workflows` builder/recorder config is the **workflows-coach** agent's job. This agent *consumes* an
-  existing kickoff workflow's declared step order when one matches the goal; it does not author new ones.
-- **Domain execution itself** — filing the actual ticket, writing the actual doc, running the actual
-  migration is the delegated subagent's or leaf skill's job. This agent's deliverable is the plan, the
-  delegation briefs, and the verified/failed status — not the underlying artifact.
+| Concern | Owner | Why not this agent |
+|---------|-------|--------------------|
+| Browser/UI execution — running a recorded or defined workflow against a browser, previewing steps, confirming destructive UI actions, or capturing Playwright traces | `workflow-executor` | This agent may *decide* that a step in its plan is "run workflow X," but it hands that step's execution to workflow-executor rather than driving the browser itself. |
+| Workflow YAML authoring — writing or editing `kickoff_workflows` YAML, intake step templates, or the `jstack:workflows` builder/recorder config | `workflows-coach` | This agent *consumes* an existing kickoff workflow's declared step order when one matches the goal; it does not author new ones. |
+| Domain execution itself — filing the actual ticket, writing the actual doc, running the actual migration | the delegated subagent or leaf skill | This agent's deliverable is the plan, the delegation briefs, and the verified/failed status — not the underlying artifact. |
 
 ## Guardrails
 

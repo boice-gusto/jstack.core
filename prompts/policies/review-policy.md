@@ -12,7 +12,7 @@ and ask rather than assume.
 |----------|---------|-------------|
 | External comms | Anything customers, public, or the board will see | Resolve via `approval_chains.chains.external_comms` (fallback `default`) |
 | Binding decisions | ADRs, SOP changes, policy updates | Resolve via `approval_chains.chains.policy_change` (fallback `default`) |
-| Eval-adjacent | Reports used in a performance or evaluation context | The personas in `policies.review.counsel_roles` (default: ceo, designer, engineer, qa) plus the subject's manager |
+| Eval-adjacent | Reports used in a performance or evaluation context | The personas in `policies.review.counsel_roles` (default: ceo, pm, engineer, qa, designer) plus the subject's manager |
 
 Add rows for other trigger categories as your team hits them — every new row needs a real reviewer, not a placeholder.
 
@@ -50,7 +50,7 @@ There's no dedicated config key for review turnaround, so use this default and o
   "policies": {
     "review": {
       "required_approvals": 1,
-      "counsel_roles": ["ceo", "designer", "engineer", "qa"]
+      "counsel_roles": ["ceo", "pm", "engineer", "qa", "designer"]
     }
   }
 }

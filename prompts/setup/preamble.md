@@ -25,7 +25,7 @@ When you need structured CLI metadata: `jstack --help-json`
 
 If the current task has a target audience, load the matching tone and/or persona:
 - Tones: `prompts/tones/{executive,internal,formal}.md`
-- Personas: `prompts/personas/{engineer,designer,ceo,qa}.md`
-- Policies: `prompts/policies/{incident,sdlc,review,announcement}-policy.md`
+- Personas: `prompts/personas/{engineer,designer,ceo,pm,qa}.md`
+- Policies: `prompts/policies/{incident,review,announcement}-policy.md`, `prompts/policies/sdlc-gates.md`
 
 These files are org-customizable templates. The PM/team lead maintains them so all agents write consistently. Config overrides via `jstack.config.json` keys: `tones.*`, `personas.*`, `policies.*`.
