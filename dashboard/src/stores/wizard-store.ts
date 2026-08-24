@@ -193,6 +193,16 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       return;
     }
 
+    if (get().run.status === "error") {
+      // A server-reported "error" event (as opposed to a thrown network/HTTP failure) doesn't
+      // throw -- runAgentStream resolves normally. Advancing the step here would commit this
+      // step's failed exchange to the transcript as if it had succeeded, and the step could
+      // never be retried (the button would target the next step instead). Only clear the
+      // draft so a retry starts clean; leave stepIndex/transcript/stepContext untouched.
+      set((s) => ({ run: { ...s.run, draft: "" } as WizardRunState }));
+      return;
+    }
+
     const finalContent = draft.trim();
     const assistantMsg: WizardMessage | null =
       finalContent.length > 0
@@ -207,7 +217,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       ],
       stepIndex: s.stepIndex + 1,
       stepContext: "",
-      run: s.run.status === "error" ? { ...s.run, draft: "" } : { status: "done" as const },
+      run: { status: "done" as const },
       structuredJsonText:
         expectStructuredJson && assistantMsg !== null
           ? assistantMsg.content
