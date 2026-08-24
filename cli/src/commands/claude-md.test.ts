@@ -110,8 +110,48 @@ describe("runClaudeMdApply", () => {
         scanMtimeMs: before.getTime(),
         yes: true,
       });
-      expect(result.applied).toBe(false);
+      expect(result.status).toBe("stale");
+      if (result.status !== "stale") throw new Error("unreachable");
       expect(result.reason).toContain("changed since scan");
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  test("requires --yes even when the scan is fresh", async () => {
+    const project = mkdtempSync(join(tmpdir(), "jstack-apply-"));
+    try {
+      writeFileSync(join(project, "CLAUDE.md"), "Use yarn.\n");
+      const mtime = statSync(join(project, "CLAUDE.md")).mtimeMs;
+      const result = await runClaudeMdApply({
+        projectRoot: project,
+        patchPath: join(project, "noop.patch"),
+        scanMtimeMs: mtime,
+        yes: false,
+      });
+      expect(result.status).toBe("needs-confirmation");
+      if (result.status !== "needs-confirmation") throw new Error("unreachable");
+      expect(result.reason).toContain("--apply requires --yes");
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  test("returns the git-apply command when the scan is fresh and --yes is set", async () => {
+    const project = mkdtempSync(join(tmpdir(), "jstack-apply-"));
+    try {
+      writeFileSync(join(project, "CLAUDE.md"), "Use yarn.\n");
+      const mtime = statSync(join(project, "CLAUDE.md")).mtimeMs;
+      const result = await runClaudeMdApply({
+        projectRoot: project,
+        patchPath: join(project, "my.patch"),
+        scanMtimeMs: mtime,
+        yes: true,
+      });
+      expect(result.status).toBe("ready");
+      if (result.status !== "ready") throw new Error("unreachable");
+      expect(result.command).toContain("git -C");
+      expect(result.command).toContain("my.patch");
     } finally {
       rmSync(project, { recursive: true, force: true });
     }
