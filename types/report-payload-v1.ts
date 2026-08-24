@@ -84,7 +84,11 @@ export const ReportSectionSchema = z.union(
       body_markdown: nonEmptyBodyMarkdown,
     }).passthrough(),
   ],
-  { errorMap: () => ({ message: "Section must include chart and/or non-empty body_markdown" }) },
+  {
+    errorMap: () => ({
+      message: "Section must include chart and/or non-empty body_markdown",
+    }),
+  },
 );
 
 export const ReportLinkSchema = z

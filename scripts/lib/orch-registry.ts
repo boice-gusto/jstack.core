@@ -16,13 +16,18 @@ export interface OrchRegistry {
  * since nothing kept them in lockstep.
  */
 export function loadOrchRegistry(root: string): OrchRegistry {
-  const genSrc = readFileSync(join(root, "scripts", "apply_detailed_skills.py"), "utf8");
+  const genSrc = readFileSync(
+    join(root, "scripts", "apply_detailed_skills.py"),
+    "utf8",
+  );
 
   const orchMatch = genSrc.match(/ORCHESTRATORS\s*=\s*\{([\s\S]*?)\}/);
   if (!orchMatch) {
     throw new Error("could not find ORCHESTRATORS in apply_detailed_skills.py");
   }
-  const orchestrators = new Set([...orchMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]));
+  const orchestrators = new Set(
+    [...orchMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]),
+  );
 
   const childrenMatch = genSrc.match(/ORCH_CHILDREN\s*=\s*\{([\s\S]*?)\n\}/);
   if (!childrenMatch) {

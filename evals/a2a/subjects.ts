@@ -27,7 +27,13 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const SUBJECT_KINDS = ["cli", "hook", "file", "agentic", "script"] as const;
+export const SUBJECT_KINDS = [
+  "cli",
+  "hook",
+  "file",
+  "agentic",
+  "script",
+] as const;
 export type SubjectKind = (typeof SUBJECT_KINDS)[number];
 
 export interface SubjectSpec {

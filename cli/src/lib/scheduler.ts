@@ -14,7 +14,11 @@ export interface RoutineRow {
 
 /** The raw shape of `cfg.routines`, shared by every call site below instead of each one
  * independently re-asserting its own (previously slightly inconsistent) belief about it. */
-export type RawRoutineEntry = { cron?: string; enabled?: boolean; chain?: string[] };
+export type RawRoutineEntry = {
+  cron?: string;
+  enabled?: boolean;
+  chain?: string[];
+};
 export type RawRoutines = Record<string, RawRoutineEntry>;
 
 export function listRoutinesFromConfig(cfg: JstackConfig): RoutineRow[] {
@@ -47,7 +51,9 @@ export function patchRoutine(
   patch: { cron?: string; chain?: string[]; enabled?: boolean },
   mode: "merge" | "overwrite" = "merge",
 ): JstackConfig {
-  const routines: RawRoutines = { ...(cfg.routines as RawRoutines | undefined) };
+  const routines: RawRoutines = {
+    ...(cfg.routines as RawRoutines | undefined),
+  };
   const existing = mode === "merge" ? routines[id] : undefined;
   routines[id] = { ...existing, ...patch };
   return JstackConfigSchema.parse({ ...cfg, routines });

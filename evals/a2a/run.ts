@@ -46,11 +46,12 @@ import {
   VERDICT_PASS,
 } from "./protocol.js";
 import { exerciseSubject } from "./subjects.js";
+import { runDeterministicAsserts, type AssertionResult } from "./assertions.js";
 import {
-  runDeterministicAsserts,
-  type AssertionResult,
-} from "./assertions.js";
-import { validateCaseSpec, type CaseLoadError, type CaseSpec } from "./case-spec.js";
+  validateCaseSpec,
+  type CaseLoadError,
+  type CaseSpec,
+} from "./case-spec.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(here, "..", "..");

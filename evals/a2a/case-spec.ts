@@ -33,7 +33,10 @@ export function validateCaseSpec(
   raw: unknown,
   sourceFile: string,
 ): { ok: true; case: CaseSpec } | { ok: false; error: CaseLoadError } {
-  const fail = (message: string) => ({ ok: false as const, error: { sourceFile, message } });
+  const fail = (message: string) => ({
+    ok: false as const,
+    error: { sourceFile, message },
+  });
   if (typeof raw !== "object" || raw === null) {
     return fail("case is not an object");
   }
@@ -48,7 +51,10 @@ export function validateCaseSpec(
     return fail(`case '${c.id}': missing 'subject'`);
   }
   const kind = (c.subject as Record<string, unknown>).kind;
-  if (typeof kind !== "string" || !SUBJECT_KINDS.includes(kind as (typeof SUBJECT_KINDS)[number])) {
+  if (
+    typeof kind !== "string" ||
+    !SUBJECT_KINDS.includes(kind as (typeof SUBJECT_KINDS)[number])
+  ) {
     return fail(
       `case '${c.id}': subject.kind must be one of ${SUBJECT_KINDS.join(", ")}, got ${JSON.stringify(kind)}`,
     );

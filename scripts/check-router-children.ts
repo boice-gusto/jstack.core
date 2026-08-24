@@ -97,7 +97,7 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   const desc =
     typeof parsedDescription === "string"
       ? parsedDescription
-      : raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
+      : (raw.match(/^description:\s*(.+)$/m)?.[1] ?? "");
   const claimsRouting =
     /^route\b|\brequests? to the (right|most specific)\b/i.test(desc);
   if (!claimsRouting) continue;

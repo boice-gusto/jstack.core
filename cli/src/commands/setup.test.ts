@@ -28,7 +28,13 @@ const { runSetup } = await import("./setup.js");
 
 describe("runSetup cancellation", () => {
   test("cancelling a prompt exits with code 130 and writes nothing", async () => {
-    const cfgPath = join(import.meta.dir, "..", "..", "..", "jstack.config.json");
+    const cfgPath = join(
+      import.meta.dir,
+      "..",
+      "..",
+      "..",
+      "jstack.config.json",
+    );
     const before = readFileSync(cfgPath, "utf8");
     const originalExitCode = process.exitCode;
     try {

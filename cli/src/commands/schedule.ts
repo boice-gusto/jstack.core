@@ -302,7 +302,9 @@ export async function runScheduleSetup(
   const root = findProjectRoot();
   const pluginRoot = findPluginRoot();
   const cfg = readConfig(root);
-  const routines: RawRoutines = { ...(cfg.routines as RawRoutines | undefined) };
+  const routines: RawRoutines = {
+    ...(cfg.routines as RawRoutines | undefined),
+  };
 
   const interactive = isInteractive();
   const requestedId = idMaybe?.trim() ?? "";

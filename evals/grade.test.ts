@@ -220,9 +220,18 @@ describe("buildExecutionFailureGrading", () => {
       execResult({ status: "timeout", response: "" }),
       caseDir,
     );
-    expect(result.summary).toEqual({ passed: 0, failed: 2, total: 2, pass_rate: 0 });
-    expect(result.expectations.every((e) => e.evidence === "Execution timeout")).toBe(true);
-    const persisted = JSON.parse(readFileSync(join(caseDir, "grading.json"), "utf8"));
+    expect(result.summary).toEqual({
+      passed: 0,
+      failed: 2,
+      total: 2,
+      pass_rate: 0,
+    });
+    expect(
+      result.expectations.every((e) => e.evidence === "Execution timeout"),
+    ).toBe(true);
+    const persisted = JSON.parse(
+      readFileSync(join(caseDir, "grading.json"), "utf8"),
+    );
     expect(persisted).toEqual(result);
   });
 

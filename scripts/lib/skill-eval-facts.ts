@@ -92,8 +92,10 @@ export function extractSkillFacts(
   const failBody = section(md, "Failure modes");
   const { meta } = parseYamlFrontmatter(md);
   const name = typeof meta.name === "string" ? stripQuotes(meta.name) : "";
-  const description = typeof meta.description === "string" ? stripQuotes(meta.description) : "";
-  const category = typeof meta.category === "string" ? stripQuotes(meta.category) : "";
+  const description =
+    typeof meta.description === "string" ? stripQuotes(meta.description) : "";
+  const category =
+    typeof meta.category === "string" ? stripQuotes(meta.category) : "";
   return {
     id: name || `jstack-${rel.replace(/\//g, "-")}`,
     rel,
