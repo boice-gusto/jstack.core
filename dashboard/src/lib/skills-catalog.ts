@@ -8,8 +8,7 @@ import { getJstackCoreRoot, getSkillCatalogPath } from "@/server/env";
 const SkillEntrySchema = z.object({
   id: z.string(),
   name: z.string().optional(),
-  path: z.string(),
-  relPath: z.string().optional(),
+  relPath: z.string(),
   gateId: z.string().optional(),
   description: z.string().optional(),
   whenToUse: z.string().optional(),
@@ -66,7 +65,7 @@ export function loadSkillCatalogRaw(): SkillCatalogRaw {
     throw new Error(`Invalid skill-catalog.json: ${parsed.error.message}`);
   }
   const skills = parsed.data.skills.map((s) => {
-    const abs = join(root, s.path);
+    const abs = join(root, s.relPath);
     return {
       ...s,
       schemaPaths: listSchemaPaths(abs),
@@ -86,7 +85,7 @@ export function loadSkillMarkdownById(skillId: string): { content: string; absPa
   const entry = catalog.find((s) => s.id === skillId);
   if (entry === undefined) return null;
   const root = getJstackCoreRoot();
-  const abs = join(root, entry.path);
+  const abs = join(root, entry.relPath);
   if (!existsSync(abs)) return null;
   const content = readFileSync(abs, "utf8");
   return { content, absPath: abs };

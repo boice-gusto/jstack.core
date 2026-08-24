@@ -25,7 +25,6 @@ function loadMarkdownRender() {
  * @typedef {{
  *   id: string;
  *   name: string;
- *   path: string;
  *   relPath: string;
  *   description: string;
  *   whenToUse: string;
@@ -191,14 +190,7 @@ function skillMatches(s, q) {
   if (needle.length === 0) {
     return true;
   }
-  const blob = [
-    s.name,
-    s.description,
-    s.whenToUse,
-    s.category,
-    s.relPath,
-    s.path,
-  ]
+  const blob = [s.name, s.description, s.whenToUse, s.category, s.relPath]
     .join("\n")
     .toLowerCase();
   return blob.includes(needle);

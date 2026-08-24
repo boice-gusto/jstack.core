@@ -5,7 +5,6 @@ import { join, relative } from "node:path";
 export type SkillRecord = {
   id: string;
   name: string;
-  path: string;
   relPath: string;
   /** Skill path slug for evals: `jstack:<slug>` (matches evals/eval-config `skillGateId`). */
   gateId: string;
@@ -186,7 +185,6 @@ export async function buildSkillRecords(
     records.push({
       id: uniqueId.length > 0 ? uniqueId : "skill",
       name,
-      path: rel,
       relPath: rel,
       gateId: skillGateIdFromRelPath(rel),
       description,
