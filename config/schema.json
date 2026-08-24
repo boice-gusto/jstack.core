@@ -336,9 +336,7 @@
             "type": "string",
             "enum": [
               "connected",
-              "not_configured",
-              "error",
-              "available"
+              "not_configured"
             ]
           },
           "server_id": {
