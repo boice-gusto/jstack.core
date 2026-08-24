@@ -278,6 +278,18 @@ ORCH_CHILDREN = {
 }
 
 
+def deep_lookup(table: dict, key: str, category: str, default=""):
+    """Specific key wins, else category, else default -- the "specific key overrides its
+    category's generic default" idiom used by MISSIONS/CATEGORY_DEEP/POLICY_LOADS. One of
+    the four sites that needed this (FAILURE_EXTRAS) had the precedence reversed (category
+    checked before key), which is invisible unless a skill's key and category are both present
+    in that specific table with different values -- true today for skills/update-config
+    (key "update-config", category "setup"), so this fix does change its generated Failure
+    modes section on the next real regeneration run, not just its type-level shape.
+    """
+    return table.get(key) or table.get(category) or default
+
+
 def build_description(key: str, fm: dict) -> str:
     if key in DESCRIPTIONS:
         desc = DESCRIPTIONS[key]
@@ -324,13 +336,11 @@ def build_body(key: str, fm: dict) -> str:
 
     # --- mission (unique per skill) ---
     desc = build_description(key, fm)
-    mission_text = MISSIONS.get(key, "")
-    if not mission_text:
-        mission_text = MISSIONS.get(category, desc)
+    mission_text = deep_lookup(MISSIONS, key, category, desc)
     scope_block = f"## What this skill is for\n{mission_text}"
 
     # --- domain detail: prefer skill-key block, else category (e.g. update-config vs setup) ---
-    cat_detail = CATEGORY_DEEP.get(key, CATEGORY_DEEP.get(category, "")).strip()
+    cat_detail = deep_lookup(CATEGORY_DEEP, key, category).strip()
 
     # --- path-specific addendum ---
     path_detail = path_extras(key).strip()
@@ -430,7 +440,7 @@ def build_body(key: str, fm: dict) -> str:
     )
 
     # --- failure modes (category-aware) ---
-    extra_rows = FAILURE_EXTRAS.get(category, FAILURE_EXTRAS.get(key, ""))
+    extra_rows = deep_lookup(FAILURE_EXTRAS, key, category)
     fail_table = (
         "## Failure modes\n\n"
         "| Symptom | Recovery |\n"
@@ -546,7 +556,7 @@ POLICY_LOADS = {
 
 def policy_loads_for(key: str, category: str) -> str:
     """Emit `!cat` lines for the policy files this skill's domain is supposed to obey."""
-    paths = POLICY_LOADS.get(key) or POLICY_LOADS.get(category) or []
+    paths = deep_lookup(POLICY_LOADS, key, category, [])
     existing = [p for p in paths if (SKILLS.parent / p).exists()]
     if not existing:
         return ""
