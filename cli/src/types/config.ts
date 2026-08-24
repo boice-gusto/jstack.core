@@ -392,13 +392,20 @@ const DebugSchema = section({
 
 // ── Reporting and presentation ────────────────────────────────────────────────
 
+/** The single source of truth for `reports.branding` -- also imported directly by
+ * `cli/src/lib/report-branding.ts`, which used to hand-declare its own, independently
+ * drifted copy (a closed 13-key `colors` object instead of this open hex-validated record,
+ * and a `density` enum missing "spacious"). A config value valid by THIS schema must not be
+ * able to fail `report-branding.ts`'s own re-parse of the same data. */
+export const ReportBrandingConfigSchema = section({
+  colors: z.record(z.string(), hexColor).optional(),
+  radiusMd: z.string().optional(),
+  fontSans: z.string().optional(),
+  density: z.enum(["compact", "comfortable", "spacious"]).optional(),
+});
+
 const ReportsSchema = section({
-  branding: section({
-    colors: z.record(z.string(), hexColor).optional(),
-    radiusMd: z.string().optional(),
-    fontSans: z.string().optional(),
-    density: z.enum(["compact", "comfortable", "spacious"]).optional(),
-  }).optional(),
+  branding: ReportBrandingConfigSchema.optional(),
 });
 
 // ── Org and personal context ──────────────────────────────────────────────────
