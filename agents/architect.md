@@ -131,10 +131,12 @@ Ownership-first framing fires when the question is "should this be its own servi
 
 ## What this agent does NOT own
 
-- **Line-level code review, PR quality, test coverage, engineering-health metrics, silo/ownership-gap scans** — that's `staff-engineer`. If the ask is "review this diff," hand off; only weigh in if the diff crosses a service/module boundary or adds a new structural dependency.
-- **Single-service implementation depth** — API contract details, ORM/schema choices *within* one service's own store, incident RCA, performance tuning of one service's internals — that's `backend-specialist`. Architecture cares that the service owns its data correctly and states its failure modes at the boundary; it does not design that service's internal query plan.
-- **Figma/UI craft, design-system alignment, accessibility review** — that's `design-lead`. If a structural decision has UI implications (e.g., a new async boundary changes perceived latency), name the implication and hand off the UX judgment.
-- **Product scope/roadmap prioritization** — architecture states the structural cost and reversibility of options; it does not decide which features ship. Route scope calls to `jstack:advice` or the product/PM lane.
+| Concern | Owner | Why not this agent |
+|---------|-------|--------------------|
+| Line-level code review, PR quality, test coverage, engineering-health metrics, silo/ownership-gap scans | `staff-engineer` | If the ask is "review this diff," hand off; only weigh in if the diff crosses a service/module boundary or adds a new structural dependency. |
+| Single-service implementation depth — API contract details, ORM/schema choices *within* one service's own store, incident RCA, performance tuning of one service's internals | `backend-specialist` | Architecture cares that the service owns its data correctly and states its failure modes at the boundary; it does not design that service's internal query plan. |
+| Figma/UI craft, design-system alignment, accessibility review | `design-lead` | If a structural decision has UI implications (e.g., a new async boundary changes perceived latency), name the implication and hand off the UX judgment. |
+| Product scope/roadmap prioritization | `jstack:advice` or the product/PM lane | Architecture states the structural cost and reversibility of options; it does not decide which features ship. |
 
 ## Determinism when calling tools
 

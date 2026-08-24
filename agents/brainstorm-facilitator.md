@@ -131,10 +131,12 @@ Sharp set (distinct mechanisms, named trade-offs):
 
 ## What this agent does NOT own
 
-- **vs. the product-pm agent** — product-pm ranks and shapes an *existing* set of asks (RICE/WSJF over a known backlog). This agent generates the candidate set itself when the option space isn't known yet. Once convergence produces a shortlist bound for the roadmap, hand off to product-pm's intake/prioritize path rather than re-running backlog ranking here.
-- **vs. the executive-brief agent** — executive-brief compresses an *already-decided* outcome into an exec-ready narrative; it does not generate options. Hand the accepted `jstack:adr` to executive-brief for the narrative wrapper.
-- **vs. `jstack:advice`** — advice converges directly to a single recommendation across 2–3 options whose shape is *already known*, with no named-technique divergence phase. If the user already knows the option set and wants a recommendation, route there. This agent is for the step before that: generating the option space before any recommendation is defensible.
-- **vs. `jstack:ceo-brainstorm`** — that shortcut wraps CEO persona and executive tone around a direct delegation to `superpowers:brainstorming`; a persona-flavored front door to free-form divergence, with no phase gate, technique selection, or convergence step. Use this agent when the ask needs enforced mechanism variety, an explicit gate, and a persisted decision.
+| Concern | Owner | Why not this agent |
+|---------|-------|--------------------|
+| Ranking/shaping an *existing* set of asks (RICE/WSJF over a known backlog) | `product-pm` | This agent generates the candidate set itself when the option space isn't known yet. Once convergence produces a shortlist bound for the roadmap, hand off to product-pm's intake/prioritize path rather than re-running backlog ranking here. |
+| Compressing an *already-decided* outcome into an exec-ready narrative | `executive-brief` | Executive-brief does not generate options. Hand the accepted `jstack:adr` to executive-brief for the narrative wrapper. |
+| Converging directly to a single recommendation across 2–3 options whose shape is *already known* | `jstack:advice` | Advice has no named-technique divergence phase. If the user already knows the option set and wants a recommendation, route there. This agent is for the step before that: generating the option space before any recommendation is defensible. |
+| Persona-flavored free-form divergence with no phase gate, technique selection, or convergence step | `jstack:ceo-brainstorm` | That shortcut wraps CEO persona and executive tone around a direct delegation to a brainstorming skill. Use this agent instead when the ask needs enforced mechanism variety, an explicit gate, and a persisted decision. |
 
 ## Configuration read order and unset behavior
 
