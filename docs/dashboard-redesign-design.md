@@ -1,5 +1,11 @@
 # jstack Dashboard Redesign — Design Doc
 
+**Decision needed now: none.** This is a planning artifact, not a proposal with a deadline —
+it's a single-user internal tool with no external approver. Phase 1 (real Skills panel + other
+read-only views + skill management, on the unchanged backend) is what's being built next; Phase
+2 (`AgentTask` unification, ACP provider layer, crew wizard) is FYI-only and not up for sign-off
+until Phase 1 has shipped and been used.
+
 Status: **Revised after mockup review — the user clarified jstack is meant to be a "command
 center" (interact/setup/manage), not primarily a viewer. Skill management (toggle auto-invoke,
 edit skill_defaults) moved from Phase 2 into Phase 1 as a result. This reopens Phase 1's

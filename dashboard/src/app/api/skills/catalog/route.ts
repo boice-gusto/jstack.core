@@ -24,7 +24,7 @@ export async function GET(): Promise<Response> {
     }));
     return NextResponse.json({ generatedAt, count, skills: payload });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to load catalog";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("GET /api/skills/catalog failed:", e);
+    return NextResponse.json({ error: "Failed to load skill catalog" }, { status: 500 });
   }
 }

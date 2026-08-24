@@ -48,9 +48,18 @@ export type SkillCatalogRaw = {
   skills: SkillCatalogEntry[];
 };
 
+let cachedRaw: { mtimeMs: number; data: SkillCatalogRaw } | null = null;
+
+/** Every skill's `references/schemas/` dir gets stat'd/read on each parse, so this is
+ * cached by the catalog file's mtime rather than re-walked on every request. */
 export function loadSkillCatalogRaw(): SkillCatalogRaw {
-  const root = getJstackCoreRoot();
   const catalogPath = getSkillCatalogPath();
+  const mtimeMs = statSync(catalogPath).mtimeMs;
+  if (cachedRaw !== null && cachedRaw.mtimeMs === mtimeMs) {
+    return cachedRaw.data;
+  }
+
+  const root = getJstackCoreRoot();
   const raw = readFileSync(catalogPath, "utf8");
   const parsed = CatalogSchema.safeParse(JSON.parse(raw) as unknown);
   if (!parsed.success) {
@@ -63,7 +72,9 @@ export function loadSkillCatalogRaw(): SkillCatalogRaw {
       schemaPaths: listSchemaPaths(abs),
     };
   });
-  return { generatedAt: parsed.data.generatedAt, count: parsed.data.count, skills };
+  const data = { generatedAt: parsed.data.generatedAt, count: parsed.data.count, skills };
+  cachedRaw = { mtimeMs, data };
+  return data;
 }
 
 export function loadSkillCatalog(): SkillCatalogEntry[] {
