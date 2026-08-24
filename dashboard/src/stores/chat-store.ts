@@ -2,13 +2,9 @@ import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
-  appendStderrToDraft,
-  extractResultCost,
-  extractResultTokenTotal,
-  extractToolEventName,
+  applyAgentStreamEvent,
   newRunId,
   nextRunStateForDraft,
-  pushSeries,
   type RunState,
 } from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
@@ -134,17 +130,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     let draft = "";
 
-    // Keep updating the draft text as it streams in, without reviving a
-    // "streaming" status once an error event has already flipped us to
-    // "error" (the error stays visible; only the attached draft refreshes).
-    const setDraft = (): void => {
-      set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
-    };
-
     const onEvent = (evt: AgentStreamEvent): void => {
-      set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
-      const type = evt.type;
-      if (type === "start" && typeof evt.cwd === "string") {
+      const current = get();
+      const applied = applyAgentStreamEvent(evt, draft, current);
+      draft = applied.draft;
+      set(applied.patch);
+
+      // Extras that only apply to this surface, not shared with wizard-store:
+      if (evt.type === "start" && typeof evt.cwd === "string") {
         const sid = evt.skillId;
         set({
           lastRunContext: {
@@ -153,47 +146,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
           },
         });
       }
-      if (type === "session" && typeof evt.sessionId === "string" && evt.sessionId.length > 0) {
-        set({ claudeSessionId: evt.sessionId });
-      }
-      if (type === "text" && typeof evt.text === "string") {
-        draft += evt.text;
-        setDraft();
-      }
-      if (type === "error" && typeof evt.message === "string") {
-        set({ run: { status: "error", message: evt.message, draft } });
-      }
-      if (type === "stderr" && typeof evt.text === "string") {
-        const next = appendStderrToDraft(draft, evt.text);
-        if (next !== draft) {
-          draft = next;
-          setDraft();
-        }
-      }
-      if (type === "tool_use") {
-        const name = extractToolEventName(evt);
-        const input = evt.input;
-        set((s) => ({
-          toolEvents: [
-            ...s.toolEvents,
-            { id: newRunId(), name, input },
-          ],
-        }));
-      }
-      if (type === "result") {
-        const cost = extractResultCost(evt);
-        if (cost !== null) {
-          set((s) => ({ costSeries: pushSeries(s.costSeries, cost) }));
-        }
-        const tokenTotal = extractResultTokenTotal(evt);
-        if (tokenTotal !== null) {
-          set((s) => ({ tokenSeries: pushSeries(s.tokenSeries, tokenTotal) }));
-        }
+      if (evt.type === "result") {
         const resultText =
           typeof evt.result === "string" ? evt.result.trim() : "";
         if (resultText.length > 0 && draft.trim().length === 0) {
           draft += resultText;
-          setDraft();
+          set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
         }
       }
     };
@@ -208,6 +166,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
+    if (get().run.status === "error") {
+      // Same rule as wizard-store: a server-reported "error" event doesn't throw --
+      // runAgentStream resolves normally -- so a partial draft can exist alongside a real
+      // error. Committing it as a successful assistant message would hide the error and
+      // flip status to "done" as if the run had actually succeeded.
+      return;
+    }
+
     const finalContent = draft.trim();
     set((s) => {
       if (finalContent.length > 0) {
@@ -218,11 +184,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ],
           run: { status: "done" as const },
         };
-      }
-      if (s.run.status === "error") {
-        // A server-side error already explains why there's no content;
-        // leave it in place rather than overwriting it with "done".
-        return {};
       }
       if (exitCode !== null && exitCode !== 0) {
         return {

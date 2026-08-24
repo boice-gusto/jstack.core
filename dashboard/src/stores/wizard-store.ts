@@ -2,13 +2,7 @@ import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
-  appendStderrToDraft,
-  extractResultCost,
-  extractResultTokenTotal,
-  extractToolEventName,
-  newRunId,
-  nextRunStateForDraft,
-  pushSeries,
+  applyAgentStreamEvent,
   type RunState as SharedRunState,
 } from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
@@ -132,55 +126,11 @@ export const useWizardStore = create<WizardState>((set, get) => ({
 
     let draft = "";
 
-    // Same rule as chat-store: keep refreshing the draft without reviving
-    // "streaming" once an error event has flipped us to "error".
-    const setDraft = (): void => {
-      set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
-    };
-
     const onEvent = (evt: AgentStreamEvent): void => {
-      set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
-      const type = evt.type;
-      if (type === "session" && typeof evt.sessionId === "string" && evt.sessionId.length > 0) {
-        set({ claudeSessionId: evt.sessionId });
-      }
-      if (type === "text" && typeof evt.text === "string") {
-        draft += evt.text;
-        setDraft();
-      }
-      // Parity fix: chat-store has always surfaced server-side "error" and
-      // "stderr" events; wizard-store previously ignored both, so a failure
-      // mid-wizard was silently dropped instead of shown to the user.
-      if (type === "error" && typeof evt.message === "string") {
-        set({ run: { status: "error", message: evt.message, draft } });
-      }
-      if (type === "stderr" && typeof evt.text === "string") {
-        const next = appendStderrToDraft(draft, evt.text);
-        if (next !== draft) {
-          draft = next;
-          setDraft();
-        }
-      }
-      if (type === "tool_use") {
-        const name = extractToolEventName(evt);
-        const input = evt.input;
-        set((s) => ({
-          toolEvents: [
-            ...s.toolEvents,
-            { id: newRunId(), name, input },
-          ],
-        }));
-      }
-      if (type === "result") {
-        const cost = extractResultCost(evt);
-        if (cost !== null) {
-          set((s) => ({ costSeries: pushSeries(s.costSeries, cost) }));
-        }
-        const tokenTotal = extractResultTokenTotal(evt);
-        if (tokenTotal !== null) {
-          set((s) => ({ tokenSeries: pushSeries(s.tokenSeries, tokenTotal) }));
-        }
-      }
+      const current = get();
+      const applied = applyAgentStreamEvent(evt, draft, current);
+      draft = applied.draft;
+      set(applied.patch);
     };
 
     try {
