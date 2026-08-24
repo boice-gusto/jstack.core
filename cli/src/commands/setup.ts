@@ -14,6 +14,7 @@ import {
 } from "../lib/config.js";
 import { discoverFromMcpJson, mergeMcpRegistry } from "../lib/mcp-discovery.js";
 import { asRecord, extractSetupSlices } from "../lib/setup-defaults-slices.js";
+import { PROMPT_CANCELLED } from "../lib/schema-prompt.js";
 import { JstackConfigSchema } from "../types/config.js";
 
 function parseRootsInput(raw: string, fallback: string[]): string[] {
@@ -77,7 +78,7 @@ async function promptTeamRosterSection(
     ],
     initialValue: String(defCg.mode ?? "manual_list"),
   });
-  if (p.isCancel(modeRaw)) throw new Error("cancelled");
+  if (p.isCancel(modeRaw)) throw PROMPT_CANCELLED;
   const mode = String(modeRaw);
 
   let slack_user_group_id = String(defCg.slack_user_group_id ?? "");
@@ -91,14 +92,14 @@ async function promptTeamRosterSection(
       initialValue: slack_user_group_id,
       placeholder: "S01234567",
     });
-    if (p.isCancel(sid)) throw new Error("cancelled");
+    if (p.isCancel(sid)) throw PROMPT_CANCELLED;
     slack_user_group_id = String(sid).trim();
     const sh = await p.text({
       message: "Slack handle for the group (optional, e.g. @eng-platform)",
       initialValue: slack_handle,
       placeholder: "@eng-platform",
     });
-    if (p.isCancel(sh)) throw new Error("cancelled");
+    if (p.isCancel(sh)) throw PROMPT_CANCELLED;
     slack_handle = String(sh).trim();
   }
 
@@ -108,7 +109,7 @@ async function promptTeamRosterSection(
       initialValue: google_group_email,
       placeholder: "team@company.com",
     });
-    if (p.isCancel(ge)) throw new Error("cancelled");
+    if (p.isCancel(ge)) throw PROMPT_CANCELLED;
     google_group_email = String(ge).trim();
   }
 
@@ -117,7 +118,7 @@ async function promptTeamRosterSection(
     initialValue: String(defCg.display_name ?? ""),
     placeholder: "Platform Engineering",
   });
-  if (p.isCancel(display_name)) throw new Error("cancelled");
+  if (p.isCancel(display_name)) throw PROMPT_CANCELLED;
 
   const canonical_group = mergeDeep(defCg, {
     mode,
@@ -133,14 +134,14 @@ async function promptTeamRosterSection(
       "Add a team member now (id, metadata, GitHub, email, Jira, Slack, Notion 1:1s, optional misc)?",
     initialValue: true,
   });
-  if (p.isCancel(addMember)) throw new Error("cancelled");
+  if (p.isCancel(addMember)) throw PROMPT_CANCELLED;
 
   while (addMember) {
     const id = await p.text({
       message: "Member id (slug, no spaces — e.g. alex-k)",
       placeholder: "alex-k",
     });
-    if (p.isCancel(id)) throw new Error("cancelled");
+    if (p.isCancel(id)) throw PROMPT_CANCELLED;
     const idTrim = String(id).trim();
     if (!idTrim) {
       p.log.warn("Skipped empty member id.");
@@ -151,63 +152,63 @@ async function promptTeamRosterSection(
       message: "Display name (optional, stored under metadata.name)",
       placeholder: "Alex Kim",
     });
-    if (p.isCancel(displayName)) throw new Error("cancelled");
+    if (p.isCancel(displayName)) throw PROMPT_CANCELLED;
 
     const level = await p.text({
       message: "Level (optional, e.g. L5 — stored under metadata.level)",
       placeholder: "L5",
     });
-    if (p.isCancel(level)) throw new Error("cancelled");
+    if (p.isCancel(level)) throw PROMPT_CANCELLED;
 
     const role = await p.text({
       message: "Role (optional — stored under metadata.role)",
       placeholder: "Staff Engineer",
     });
-    if (p.isCancel(role)) throw new Error("cancelled");
+    if (p.isCancel(role)) throw PROMPT_CANCELLED;
 
     const title = await p.text({
       message: "Job title (optional — stored under metadata.title)",
       placeholder: "Senior Software Engineer",
     });
-    if (p.isCancel(title)) throw new Error("cancelled");
+    if (p.isCancel(title)) throw PROMPT_CANCELLED;
 
     const githubLogin = await p.text({
       message: "GitHub username (optional — github.login)",
       placeholder: "alex-kim",
     });
-    if (p.isCancel(githubLogin)) throw new Error("cancelled");
+    if (p.isCancel(githubLogin)) throw PROMPT_CANCELLED;
 
     const emailPrimary = await p.text({
       message: "Work email (optional — email.primary)",
       placeholder: "alex@company.com",
     });
-    if (p.isCancel(emailPrimary)) throw new Error("cancelled");
+    if (p.isCancel(emailPrimary)) throw PROMPT_CANCELLED;
 
     const jiraAccountId = await p.text({
       message:
         "Jira account id (optional — jira.account_id; from Jira profile/API)",
       placeholder: "",
     });
-    if (p.isCancel(jiraAccountId)) throw new Error("cancelled");
+    if (p.isCancel(jiraAccountId)) throw PROMPT_CANCELLED;
 
     const slackHandle = await p.text({
       message: "Slack handle (optional — slack.handle, e.g. @alex)",
       placeholder: "@alex",
     });
-    if (p.isCancel(slackHandle)) throw new Error("cancelled");
+    if (p.isCancel(slackHandle)) throw PROMPT_CANCELLED;
 
     const slackUserId = await p.text({
       message: "Slack user id (optional — slack.user_id, often U…)",
       placeholder: "",
     });
-    if (p.isCancel(slackUserId)) throw new Error("cancelled");
+    if (p.isCancel(slackUserId)) throw PROMPT_CANCELLED;
 
     const miscNote = await p.text({
       message:
         "Misc one-line note (optional — misc.note; add more keys in config by hand)",
       placeholder: "",
     });
-    if (p.isCancel(miscNote)) throw new Error("cancelled");
+    if (p.isCancel(miscNote)) throw PROMPT_CANCELLED;
 
     p.log.info(
       chalk.dim(
@@ -218,19 +219,19 @@ async function promptTeamRosterSection(
       message: "Notion 1:1 section parent page ID (optional)",
       placeholder: "",
     });
-    if (p.isCancel(oneOnOneParent)) throw new Error("cancelled");
+    if (p.isCancel(oneOnOneParent)) throw PROMPT_CANCELLED;
 
     const templatePage = await p.text({
       message: "Notion template page ID for this person (optional)",
       placeholder: "",
     });
-    if (p.isCancel(templatePage)) throw new Error("cancelled");
+    if (p.isCancel(templatePage)) throw PROMPT_CANCELLED;
 
     const hubPage = await p.text({
       message: "Notion person hub page ID (optional)",
       placeholder: "",
     });
-    if (p.isCancel(hubPage)) throw new Error("cancelled");
+    if (p.isCancel(hubPage)) throw PROMPT_CANCELLED;
 
     const notion: Record<string, unknown> = {};
     const oop = String(oneOnOneParent).trim();
@@ -289,7 +290,7 @@ async function promptTeamRosterSection(
       message: "Add another team member?",
       initialValue: false,
     });
-    if (p.isCancel(more)) throw new Error("cancelled");
+    if (p.isCancel(more)) throw PROMPT_CANCELLED;
     addMember = more;
   }
 
@@ -310,10 +311,10 @@ export async function runSetup(opts: {
   try {
     return await runSetupInner(opts);
   } catch (err) {
-    // B4 fix: cancellation propagates as an Error("cancelled") from the per-prompt
-    // isCancel checks. Translate that into a clean exit instead of a stack trace.
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg === "cancelled") {
+    // B4 fix: cancellation propagates as PROMPT_CANCELLED (same unforgeable sentinel
+    // schema-prompt.ts uses) from the per-prompt isCancel checks. Translate that into a
+    // clean exit instead of a stack trace.
+    if (err === PROMPT_CANCELLED) {
       p.cancel("Cancelled. No config changes.");
       process.exitCode = 130;
       return;
@@ -365,7 +366,7 @@ async function runSetupInner(opts: {
     placeholder:
       typeof s.defaultsTeam.name === "string" ? s.defaultsTeam.name : undefined,
   });
-  if (p.isCancel(teamName)) throw new Error("cancelled");
+  if (p.isCancel(teamName)) throw PROMPT_CANCELLED;
 
   const tz = await p.text({
     message: "Timezone (IANA)",
@@ -374,7 +375,7 @@ async function runSetupInner(opts: {
         ? s.defaultsTeam.timezone
         : "UTC",
   });
-  if (p.isCancel(tz)) throw new Error("cancelled");
+  if (p.isCancel(tz)) throw PROMPT_CANCELLED;
 
   const defaultsTeam = s.defaultsTeam;
   let teamForDraft = mergeDeep(defaultsTeam, {
@@ -392,26 +393,26 @@ async function runSetupInner(opts: {
     message: "JIRA project key (optional)",
     placeholder: "ENG",
   });
-  if (p.isCancel(jiraKey)) throw new Error("cancelled");
+  if (p.isCancel(jiraKey)) throw PROMPT_CANCELLED;
 
   const jiraUrl = await p.text({
     message: "JIRA base URL (optional)",
     placeholder: "https://yourorg.atlassian.net",
   });
-  if (p.isCancel(jiraUrl)) throw new Error("cancelled");
+  if (p.isCancel(jiraUrl)) throw PROMPT_CANCELLED;
 
   const telemetry = await p.confirm({
     message:
       "Enable anonymous plugin telemetry? (batched metadata only; machine id in ~/.jstack; eval JSONL uses JSTACK_TELEMETRY — see docs/TELEMETRY_NOTION.md)",
     initialValue: false,
   });
-  if (p.isCancel(telemetry)) throw new Error("cancelled");
+  if (p.isCancel(telemetry)) throw PROMPT_CANCELLED;
 
   const debug = await p.confirm({
     message: "Enable debug logging in skills?",
     initialValue: false,
   });
-  if (p.isCancel(debug)) throw new Error("cancelled");
+  if (p.isCancel(debug)) throw PROMPT_CANCELLED;
 
   let gbrainKbPatch: Record<string, unknown> = {};
 
@@ -422,7 +423,7 @@ async function runSetupInner(opts: {
         "Configure GBrain URLs and local knowledge_base roots? (team/personal memory + git-tracked docs paths)",
       initialValue: true,
     });
-    if (p.isCancel(adv)) throw new Error("cancelled");
+    if (p.isCancel(adv)) throw PROMPT_CANCELLED;
     runGbrainKb = adv;
   }
 
@@ -438,7 +439,7 @@ async function runSetupInner(opts: {
       initialValue: defaultGbrain.team?.url ?? "",
       placeholder: "https://…",
     });
-    if (p.isCancel(teamGbrainUrl)) throw new Error("cancelled");
+    if (p.isCancel(teamGbrainUrl)) throw PROMPT_CANCELLED;
 
     const personalGbrainUrl = await p.text({
       message:
@@ -446,7 +447,7 @@ async function runSetupInner(opts: {
       initialValue: defaultGbrain.personal?.url ?? "",
       placeholder: "https://…",
     });
-    if (p.isCancel(personalGbrainUrl)) throw new Error("cancelled");
+    if (p.isCancel(personalGbrainUrl)) throw PROMPT_CANCELLED;
 
     const defKs = s.defKs;
     const defKsTeam = asRecord(s.defKs.team);
@@ -464,7 +465,7 @@ async function runSetupInner(opts: {
       initialValue: String(defKsTeam.git_remote ?? ""),
       placeholder: "https://github.com/org/team-knowledge.git",
     });
-    if (p.isCancel(teamKbGit)) throw new Error("cancelled");
+    if (p.isCancel(teamKbGit)) throw PROMPT_CANCELLED;
 
     const teamKbPath = await p.text({
       message:
@@ -472,7 +473,7 @@ async function runSetupInner(opts: {
       initialValue: String(defKsTeam.local_checkout ?? ""),
       placeholder: "team-knowledge",
     });
-    if (p.isCancel(teamKbPath)) throw new Error("cancelled");
+    if (p.isCancel(teamKbPath)) throw PROMPT_CANCELLED;
 
     const personalKbGit = await p.text({
       message:
@@ -480,7 +481,7 @@ async function runSetupInner(opts: {
       initialValue: String(defKsPersonal.git_remote ?? ""),
       placeholder: "https://github.com/you/jstack-personal-kb.git",
     });
-    if (p.isCancel(personalKbGit)) throw new Error("cancelled");
+    if (p.isCancel(personalKbGit)) throw PROMPT_CANCELLED;
 
     const personalKbPath = await p.text({
       message:
@@ -488,14 +489,14 @@ async function runSetupInner(opts: {
       initialValue: String(defKsPersonal.local_checkout ?? ""),
       placeholder: "personal-knowledge",
     });
-    if (p.isCancel(personalKbPath)) throw new Error("cancelled");
+    if (p.isCancel(personalKbPath)) throw PROMPT_CANCELLED;
 
     const diskFallback = await p.text({
       message:
         "Disk fallback root for markdown when no local_checkout is set (team|personal subfolders, then category, then .md)",
       initialValue: String(defKs.disk_fallback_root ?? "/tmp/knowledgebase"),
     });
-    if (p.isCancel(diskFallback)) throw new Error("cancelled");
+    if (p.isCancel(diskFallback)) throw PROMPT_CANCELLED;
 
     const sessionTargetRaw = s.defSession.default_gbrain_target;
     const sessionTargetInit: "team" | "personal" =
@@ -508,7 +509,7 @@ async function runSetupInner(opts: {
       ],
       initialValue: sessionTargetInit,
     });
-    if (p.isCancel(target)) throw new Error("cancelled");
+    if (p.isCancel(target)) throw PROMPT_CANCELLED;
 
     const rootsHint =
       (defaultKb.roots ?? ["docs", "README.md"]).join(", ") +
@@ -518,7 +519,7 @@ async function runSetupInner(opts: {
         "Knowledge base roots (comma-separated, relative to workspace root)",
       initialValue: rootsHint,
     });
-    if (p.isCancel(rootsRaw)) throw new Error("cancelled");
+    if (p.isCancel(rootsRaw)) throw PROMPT_CANCELLED;
 
     const roots = uniqRoots([
       ...parseRootsInput(
@@ -534,7 +535,7 @@ async function runSetupInner(opts: {
         "Also query GBrain on knowledge-search when paths/URLs are used? (knowledge_base.gbrain.include)",
       initialValue: defaultKb.gbrain?.include === true,
     });
-    if (p.isCancel(includeGbrainInSearch)) throw new Error("cancelled");
+    if (p.isCancel(includeGbrainInSearch)) throw PROMPT_CANCELLED;
 
     gbrainKbPatch = {
       gbrain: mergeDeep(s.defGbrain, {
@@ -587,17 +588,17 @@ async function runSetupInner(opts: {
       message: "PE team refs (comma-separated slugs; no default teams in core)",
       placeholder: "team-nova, team-pulse",
     });
-    if (p.isCancel(teamsRaw)) throw new Error("cancelled");
+    if (p.isCancel(teamsRaw)) throw PROMPT_CANCELLED;
     const keysRaw = await p.text({
       message: "Jira project keys for PE reporting (comma-separated, optional)",
       placeholder: "ENG,PLT",
     });
-    if (p.isCancel(keysRaw)) throw new Error("cancelled");
+    if (p.isCancel(keysRaw)) throw PROMPT_CANCELLED;
     const windowDays = await p.text({
       message: "Default reporting window (days)",
       initialValue: "14",
     });
-    if (p.isCancel(windowDays)) throw new Error("cancelled");
+    if (p.isCancel(windowDays)) throw PROMPT_CANCELLED;
     const teams = String(teamsRaw)
       .split(/[,\n]+/)
       .map((s) => s.trim())
