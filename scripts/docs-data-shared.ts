@@ -152,8 +152,15 @@ export async function buildSkillRecords(
    */
   readContent: (absPath: string) => Promise<string> = (p) =>
     readFile(p, "utf8"),
+  /**
+   * Defaults to a fresh `walkSkillMds`. A caller that already walked the whole skills/ tree for
+   * another purpose (e.g. `build-landing-page.ts`'s `walkAllMarkdownUnderSkills`, which visits
+   * every .md file, SKILL.md included) can pass that already-collected list filtered down to
+   * SKILL.md paths instead, so the tree isn't walked twice in one run.
+   */
+  skillMdAbsPaths?: string[],
 ): Promise<SkillRecord[]> {
-  const absPaths = await walkSkillMds(skillsRoot);
+  const absPaths = skillMdAbsPaths ?? (await walkSkillMds(skillsRoot));
   const records: SkillRecord[] = [];
 
   for (const abs of absPaths.sort()) {
