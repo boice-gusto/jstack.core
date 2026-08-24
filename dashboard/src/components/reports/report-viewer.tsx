@@ -65,11 +65,11 @@ export function ReportViewer({ data }: { data: ReportPayload }): ReactNode {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* ReportSectionSchema is a union requiring chart and/or non-empty
+                  body_markdown, so "neither" is unrepresentable -- no fallback branch needed. */}
               {s.chart != null ? <ReportChartBlock chart={s.chart} /> : null}
               {s.body_markdown != null && s.body_markdown.trim().length > 0 ? (
                 <ReportMarkdown>{s.body_markdown.trim()}</ReportMarkdown>
-              ) : s.chart == null ? (
-                <ReportMarkdown>_No content._</ReportMarkdown>
               ) : null}
             </CardContent>
           </Card>
