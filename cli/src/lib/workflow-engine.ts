@@ -103,14 +103,25 @@ export function importWorkflowFromFile(
 
 function describeStep(step: WorkflowStep, index: number): string {
   const parts = [`${index + 1}. ${step.kind}`];
-  if (step.url) parts.push(`url=${step.url}`);
-  if (step.selector) parts.push(`selector=${step.selector}`);
-  if (step.value !== undefined) {
-    parts.push(
-      step.value.startsWith("env:")
-        ? `value=<secret, resolve ${step.value.slice(4)} from env, never print it>`
-        : `value=${step.value}`,
-    );
+  switch (step.kind) {
+    case "goto":
+      parts.push(`url=${step.url}`);
+      break;
+    case "click":
+    case "wait":
+      parts.push(`selector=${step.selector}`);
+      break;
+    case "fill":
+      parts.push(`selector=${step.selector}`);
+      parts.push(
+        step.value.startsWith("env:")
+          ? `value=<secret, resolve ${step.value.slice(4)} from env, never print it>`
+          : `value=${step.value}`,
+      );
+      break;
+    case "screenshot":
+    case "ai":
+      break;
   }
   if (step.notes) parts.push(`notes=${step.notes}`);
   return `  ${parts.join(" ")}`;
