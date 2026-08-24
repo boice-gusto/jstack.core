@@ -5,14 +5,12 @@ import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
 import { useSkillCatalog } from "@/lib/use-skill-catalog";
+import type { SkillCatalogEntry } from "@/lib/skills-catalog";
 
-export type CatalogSkill = {
-  id: string;
-  name?: string;
-  description?: string;
-  category?: string;
-  schemaPaths: string[];
-};
+export type CatalogSkill = Pick<
+  SkillCatalogEntry,
+  "id" | "name" | "description" | "category" | "schemaPaths"
+>;
 
 const EMPTY_SKILLS: CatalogSkill[] = [];
 
