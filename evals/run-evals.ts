@@ -40,7 +40,7 @@ import {
   skillGateId,
 } from "./eval-config.js";
 import { executeCase, readSkillMd } from "./execute.js";
-import { gradeCase } from "./grade.js";
+import { buildExecutionFailureGrading, gradeCase } from "./grade.js";
 import {
   buildSemanticSummary,
   printSkillTable,
@@ -373,28 +373,10 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
     console.log(`status=${er.status} time=${er.elapsed}s tokens=${er.tokens}`);
 
     console.log(`\n--- Grade [${i + 1}/${cases.length}] ${c.name} ---`);
-    let gr;
-    if (er.status !== "completed") {
-      gr = {
-        expectations: c.criteria.map((t) => ({
-          text: t,
-          passed: false,
-          evidence: `Execution ${er.status}`,
-        })),
-        summary: {
-          passed: 0,
-          failed: c.criteria.length,
-          total: c.criteria.length,
-          pass_rate: 0,
-        },
-      };
-      writeFileSync(
-        join(caseDir, "grading.json"),
-        JSON.stringify(gr, null, 2) + "\n",
-      );
-    } else {
-      gr = gradeCase(env, c, er, caseDir);
-    }
+    const gr =
+      er.status !== "completed"
+        ? buildExecutionFailureGrading(c, er, caseDir)
+        : gradeCase(env, c, er, caseDir);
 
     let gateFails: string[] = [];
     if (mergedGate && er.status === "completed") {

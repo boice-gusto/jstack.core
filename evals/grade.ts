@@ -86,6 +86,23 @@ function finalizeGrading(
   return merged;
 }
 
+/**
+ * Grading for a case that never reached "completed" (timeout/error) -- shares
+ * `finalizeGrading` with `gradeCase`'s own branches instead of being hand-built separately,
+ * which previously skipped `mergeAssertsIntoGrading` entirely: a case with an `assert:` block
+ * showed fewer total_criteria (and a different pass_rate) on timeout/error than it would have
+ * on completion with the same YAML, purely from the duplication -- not intended semantics.
+ */
+export function buildExecutionFailureGrading(
+  caseDef: EvalCase,
+  execResult: ExecuteResult,
+  caseDir: string,
+): GradingResult {
+  const criteria = caseDef.criteria;
+  const result = fallbackGrading(criteria, `Execution ${execResult.status}`);
+  return finalizeGrading(caseDef, execResult, result, caseDir);
+}
+
 export function gradeCase(
   env: GlobalEvalEnv,
   caseDef: EvalCase,
