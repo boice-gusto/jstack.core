@@ -2,15 +2,14 @@
  * Tests for `collectSkills` — the skill-catalog scanner behind `skills index/browse/pick/show`.
  *
  * This is the logic-bearing seam in the skills command: it walks a tree, parses each SKILL.md's
- * frontmatter with its OWN line-based parser, merges an optional org overlay, and sorts. The output
- * feeds the catalog, the docs site, and the interactive pickers, so a parsing quirk here shows up as
- * a skill that is silently unnamed or undescribed in every one of them.
+ * frontmatter (delegating the actual YAML extraction to `scripts/docs-data-shared.ts`'s shared
+ * parser, then re-applying the quote-stripping this command's callers expect), merges an optional
+ * org overlay, and sorts. The output feeds the catalog, the docs site, and the interactive
+ * pickers, so a parsing quirk here shows up as a skill that is silently unnamed or undescribed in
+ * every one of them.
  *
- * Worth knowing: this is the THIRD independent frontmatter parser in the repo, and they do not agree.
- * `scripts/apply_detailed_skills.py` keeps only lines containing `:` and therefore silently drops a
- * YAML block list; this one additionally understands `|` and `>-` block scalars for `description`.
- * These tests pin what THIS parser actually does, so a future consolidation has a specification to
- * work against rather than a guess.
+ * These tests pin the observable name/description extraction behavior `collectSkills` promises
+ * its callers, independent of which parser produces it underneath.
  *
  * Fixtures are synthetic temp trees — never the real `skills/` directory, which has 136 entries and
  * would make every assertion a moving target.
@@ -84,6 +83,16 @@ describe("frontmatter parsing", () => {
       root,
       "s",
       "---\nname: folded\ndescription: >-\n  first part\n  second part\n---\nbody\n",
+    );
+    const [e] = collectSkills(root);
+    expect(e.description).toBe("first part second part");
+  });
+
+  test("joins a bare `>` folded description into one line (regression: used to render the literal string '>')", () => {
+    skill(
+      root,
+      "s",
+      "---\nname: folded-plain\ndescription: >\n  first part\n  second part\n---\nbody\n",
     );
     const [e] = collectSkills(root);
     expect(e.description).toBe("first part second part");

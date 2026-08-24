@@ -9,6 +9,7 @@ import {
   isInteractive,
   nonInteractiveHint,
 } from "../lib/cliUi.js";
+import { parseFrontmatter as parseFrontmatterFields } from "../../../scripts/docs-data-shared.ts";
 
 export type SkillIndexEntry = {
   path: string;
@@ -38,41 +39,23 @@ function walkSkillMd(
   }
 }
 
+function stripQuotes(v: string): string {
+  return v.replace(/^["']|["']$/g, "");
+}
+
+/** Delegates the actual YAML-frontmatter extraction to `scripts/docs-data-shared.ts`'s
+ * shared parser (already used for skill-catalog.json/docs generation) instead of a second,
+ * independent line-based parser -- this file's previous local implementation only recognized
+ * `|`/`>-` block scalars for `description`, not the equally-valid `>`/`|-`, so a skill using
+ * `description: >` (e.g. skills/computer-use/cua) showed the literal string ">" as its
+ * description. Re-applies the quote-stripping the shared parser deliberately doesn't do,
+ * since this command's callers (and its tests) expect quoted values unquoted. */
 function parseFrontmatter(raw: string): { name: string; description: string } {
-  let name = "";
-  let description = "";
-  if (!raw.startsWith("---")) return { name, description };
-  const end = raw.indexOf("\n---", 3);
-  if (end === -1) return { name, description };
-  const block = raw.slice(3, end);
-  let inDesc = false;
-  const descLines: string[] = [];
-  for (const line of block.split("\n")) {
-    if (inDesc) {
-      if (/^\S/.test(line) && !line.startsWith(" ")) {
-        inDesc = false;
-      } else {
-        descLines.push(line.replace(/^\s+/, ""));
-        continue;
-      }
-    }
-    const m = line.match(/^name:\s*(.*)$/);
-    if (m) {
-      name = m[1].trim().replace(/^["']|["']$/g, "");
-      continue;
-    }
-    const d = line.match(/^description:\s*(.*)$/);
-    if (d) {
-      const rest = d[1].trim();
-      if (rest === "|" || rest === ">-") {
-        inDesc = true;
-      } else {
-        description = rest.replace(/^["']|["']$/g, "");
-      }
-    }
-  }
-  if (descLines.length) description = descLines.join(" ").trim();
-  return { name, description };
+  const { meta } = parseFrontmatterFields(raw);
+  return {
+    name: stripQuotes(meta.name ?? ""),
+    description: stripQuotes(meta.description ?? ""),
+  };
 }
 
 /** Collect SKILL.md entries under plugin `skills/` (and optional overlay). Exported for browse/pick and tests. */
