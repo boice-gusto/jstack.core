@@ -3,6 +3,8 @@ import { Command } from "commander";
 import chalk from "chalk";
 import { runSetup, runSetupCi } from "./commands/setup.js";
 import { runSetupSchema } from "./commands/setup-schema.js";
+import { findProjectRoot } from "./lib/config.js";
+import { acquireSetupLock } from "./lib/setup-lock.js";
 import { runConfigShow } from "./commands/config.js";
 import { runStatus } from "./commands/status.js";
 import {
@@ -132,23 +134,50 @@ program
       process.exitCode = 1;
       return;
     }
-    if (o.schema) {
-      await runSetupSchema({
+    // "A setup is running" is a property of this command, not of whichever mode it
+    // dispatches to -- acquiring the lock once here (rather than per-mode) means a plain
+    // `jstack setup` and a `jstack setup --schema` racing each other are caught too, not
+    // just two runs of the same mode.
+    const commandLabel = o.schema
+      ? "jstack setup --schema"
+      : o.ci
+        ? "jstack setup --ci"
+        : "jstack setup";
+    const lock = acquireSetupLock(findProjectRoot(), commandLabel);
+    if (!lock.ok) {
+      console.error(
+        `Another setup is already running (pid ${lock.existing.pid}, started ${lock.existing.started_at}). ` +
+          `If that process is gone, delete .jstack/setup.lock and re-run.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if (lock.stoleStale) {
+      console.warn(
+        `Stole a stale lockfile (pid ${lock.stoleStale.pid}, started ${lock.stoleStale.started_at}). Continuing.`,
+      );
+    }
+    try {
+      if (o.schema) {
+        await runSetupSchema({
+          reconfigure: o.reconfigure,
+          section: o.section,
+          nonInteractive: o.nonInteractive,
+        });
+        return;
+      }
+      if (o.ci) {
+        await runSetupCi({ diskFallbackRoot: o.diskFallbackRoot });
+        return;
+      }
+      await runSetup({
         reconfigure: o.reconfigure,
-        section: o.section,
-        nonInteractive: o.nonInteractive,
+        withGbrainKb: o.withGbrainKb,
+        pe: o.pe,
       });
-      return;
+    } finally {
+      lock.release();
     }
-    if (o.ci) {
-      await runSetupCi({ diskFallbackRoot: o.diskFallbackRoot });
-      return;
-    }
-    await runSetup({
-      reconfigure: o.reconfigure,
-      withGbrainKb: o.withGbrainKb,
-      pe: o.pe,
-    });
   });
 
 program

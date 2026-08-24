@@ -3,7 +3,6 @@ import chalk from "chalk";
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { ENCODING_UTF8 } from "@jstack/constants/paths";
-import { acquireSetupLock } from "../lib/setup-lock.js";
 import {
   configPath,
   findPluginRoot,
@@ -78,6 +77,10 @@ function safeStringifyPatch(
  *
  * Cancellation at any prompt: writes nothing, exits 130, prints a clean note
  * (B4 fix). Validation failure: writes raw decisions to .jstack/setup-recovery.json.
+ *
+ * The setup lock is acquired by the caller (cli/src/index.ts's `setup` dispatch, which
+ * wraps all three setup modes with one lock) rather than here -- "a setup is running" is a
+ * property of the command, not of this one mode.
  */
 export async function runSetupSchema(opts: SetupSchemaOpts): Promise<void> {
   p.intro(chalk.bold("jstack setup --schema — schema-driven wizard"));
@@ -87,29 +90,6 @@ export async function runSetupSchema(opts: SetupSchemaOpts): Promise<void> {
     ),
   );
 
-  const projectRootEarly = findProjectRoot();
-  const lock = acquireSetupLock(projectRootEarly, "jstack setup --schema");
-  if (!lock.ok) {
-    p.cancel(
-      `Another setup is already running (pid ${lock.existing.pid}, started ${lock.existing.started_at}). ` +
-        `If that process is gone, delete .jstack/setup.lock and re-run.`,
-    );
-    process.exitCode = 1;
-    return;
-  }
-  if (lock.stoleStale) {
-    p.log.warn(
-      `Stole a stale lockfile (pid ${lock.stoleStale.pid}, started ${lock.stoleStale.started_at}). Continuing.`,
-    );
-  }
-  try {
-    await runSetupSchemaInner(opts);
-  } finally {
-    lock.release();
-  }
-}
-
-async function runSetupSchemaInner(opts: SetupSchemaOpts): Promise<void> {
   const projectRoot = findProjectRoot();
   const pluginRoot = findPluginRoot();
   const cfgPath = configPath(projectRoot);
