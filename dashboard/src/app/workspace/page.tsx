@@ -10,9 +10,7 @@ type TabId = "bsa" | "team" | "ic";
 
 export default function WorkspacePage(): ReactElement {
   const data = useWorkspaceStore((s) => s.data);
-  const loaded = useWorkspaceStore((s) => s.loaded);
-  const saving = useWorkspaceStore((s) => s.saving);
-  const error = useWorkspaceStore((s) => s.error);
+  const status = useWorkspaceStore((s) => s.status);
   const load = useWorkspaceStore((s) => s.load);
   const save = useWorkspaceStore((s) => s.save);
   const setBsa = useWorkspaceStore((s) => s.setBsa);
@@ -21,11 +19,17 @@ export default function WorkspacePage(): ReactElement {
 
   const [tab, setTab] = useState<TabId>("bsa");
 
+  const isLoading = status.kind === "idle" || status.kind === "loading";
+  const isLoaded = status.kind === "ready" || status.kind === "saving" || status.kind === "save-error";
+  const isSaving = status.kind === "saving";
+  const errorMessage =
+    status.kind === "load-error" || status.kind === "save-error" ? status.message : null;
+
   useEffect(() => {
-    if (!loaded) {
+    if (status.kind === "idle") {
       void load();
     }
-  }, [loaded, load]);
+  }, [status.kind, load]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 pb-8">
@@ -36,13 +40,13 @@ export default function WorkspacePage(): ReactElement {
             BSA (plan/spec/PRD), team sprint notes, and IC focus — persisted as JSON under the server data directory.
           </p>
         </div>
-        <Button type="button" disabled={saving || !loaded} onClick={() => void save()}>
-          {saving ? "Saving…" : "Save"}
+        <Button type="button" disabled={isSaving || !isLoaded} onClick={() => void save()}>
+          {isSaving ? "Saving…" : "Save"}
         </Button>
       </div>
 
-      {error !== null ? <p className="m-0 text-sm text-destructive">{error}</p> : null}
-      {!loaded ? <p className="m-0 text-sm text-muted-foreground">Loading workspace…</p> : null}
+      {errorMessage !== null ? <p className="m-0 text-sm text-destructive">{errorMessage}</p> : null}
+      {isLoading ? <p className="m-0 text-sm text-muted-foreground">Loading workspace…</p> : null}
 
       <div className="flex gap-1 border-b border-border">
         {(
@@ -74,19 +78,19 @@ export default function WorkspacePage(): ReactElement {
             label="PRD"
             value={data.bsa.prd}
             onChange={(v) => setBsa("prd", v)}
-            disabled={!loaded || saving}
+            disabled={!isLoaded || isSaving}
           />
           <Field
             label="Plan"
             value={data.bsa.plan}
             onChange={(v) => setBsa("plan", v)}
-            disabled={!loaded || saving}
+            disabled={!isLoaded || isSaving}
           />
           <Field
             label="Spec"
             value={data.bsa.spec}
             onChange={(v) => setBsa("spec", v)}
-            disabled={!loaded || saving}
+            disabled={!isLoaded || isSaving}
           />
         </div>
       ) : null}
@@ -97,7 +101,7 @@ export default function WorkspacePage(): ReactElement {
             label="Sprint board / notes"
             value={data.team.sprint}
             onChange={(v) => setTeam("sprint", v)}
-            disabled={!loaded || saving}
+            disabled={!isLoaded || isSaving}
           />
         </div>
       ) : null}
@@ -108,7 +112,7 @@ export default function WorkspacePage(): ReactElement {
             label="Personal focus"
             value={data.ic.focus}
             onChange={(v) => setIc("focus", v)}
-            disabled={!loaded || saving}
+            disabled={!isLoaded || isSaving}
           />
         </div>
       ) : null}
