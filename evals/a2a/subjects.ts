@@ -74,6 +74,24 @@ interface SpawnAsyncResult {
 }
 
 /**
+ * Shared by runCli/runHook/runScript: they spawn a real child and just want its combined
+ * output as one blob. (runCandidate, the agentic path, is intentionally NOT included here --
+ * it wants stdout alone, not stdout+stderr joined, and a different no-output message; folding
+ * it in would just relocate its divergence rather than remove any real duplication.)
+ */
+function toSubjectOutput(r: SpawnAsyncResult): SubjectOutput {
+  const stdout = r.stdout ?? "";
+  const stderr = r.stderr ?? "";
+  return {
+    stdout,
+    stderr,
+    exitCode: r.status,
+    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
+    error: r.error ? String(r.error.message ?? r.error) : undefined,
+  };
+}
+
+/**
  * Async equivalent of `child_process.spawnSync`, matching the fields this file's callers already
  * read off a `spawnSync` result (`stdout`, `stderr`, `status`, `error`). Using `spawn` instead of
  * `spawnSync` is the whole point: it lets the event loop run other cases' children concurrently
@@ -189,15 +207,7 @@ export async function runCli(
       } as NodeJS.ProcessEnv,
     },
   );
-  const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
-  return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
-    error: r.error ? String(r.error.message ?? r.error) : undefined,
-  };
+  return toSubjectOutput(r);
 }
 
 /**
@@ -232,15 +242,7 @@ export async function runHook(
     input: spec.stdin ?? "",
     env: { ...process.env, ...(spec.env ?? {}) },
   });
-  const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
-  return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
-    error: r.error ? String(r.error.message ?? r.error) : undefined,
-  };
+  return toSubjectOutput(r);
 }
 
 /** Read artifacts so assertions and judges can inspect them. */
@@ -362,15 +364,7 @@ export async function runScript(
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
     env: { ...process.env, ...(spec.env ?? {}) },
   });
-  const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
-  return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
-    error: r.error ? String(r.error.message ?? r.error) : undefined,
-  };
+  return toSubjectOutput(r);
 }
 
 export async function exerciseSubject(
