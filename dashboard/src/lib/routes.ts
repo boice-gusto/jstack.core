@@ -47,6 +47,12 @@ export const ROUTES: RouteEntry[] = [
       "Renders jstack report JSON (markdown + optional charts) from the repo sample or a built-in example.",
   },
   {
+    href: "/skills",
+    label: "Skills",
+    status: "live",
+    detail: "Real, searchable index of every skill in this install — from the repo's own skill-catalog.json.",
+  },
+  {
     href: "/sprint",
     label: "Sprint",
     status: "stub",

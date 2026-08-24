@@ -12,10 +12,14 @@ const SkillEntrySchema = z.object({
   relPath: z.string().optional(),
   gateId: z.string().optional(),
   description: z.string().optional(),
+  whenToUse: z.string().optional(),
   category: z.string().optional(),
+  categoryKey: z.string().optional(),
 });
 
 const CatalogSchema = z.object({
+  generatedAt: z.string().optional(),
+  count: z.number().optional(),
   skills: z.array(SkillEntrySchema),
 });
 
@@ -38,7 +42,13 @@ function listSchemaPaths(skillMdPath: string): string[] {
   }
 }
 
-export function loadSkillCatalog(): SkillCatalogEntry[] {
+export type SkillCatalogRaw = {
+  generatedAt?: string;
+  count?: number;
+  skills: SkillCatalogEntry[];
+};
+
+export function loadSkillCatalogRaw(): SkillCatalogRaw {
   const root = getJstackCoreRoot();
   const catalogPath = getSkillCatalogPath();
   const raw = readFileSync(catalogPath, "utf8");
@@ -46,13 +56,18 @@ export function loadSkillCatalog(): SkillCatalogEntry[] {
   if (!parsed.success) {
     throw new Error(`Invalid skill-catalog.json: ${parsed.error.message}`);
   }
-  return parsed.data.skills.map((s) => {
+  const skills = parsed.data.skills.map((s) => {
     const abs = join(root, s.path);
     return {
       ...s,
       schemaPaths: listSchemaPaths(abs),
     };
   });
+  return { generatedAt: parsed.data.generatedAt, count: parsed.data.count, skills };
+}
+
+export function loadSkillCatalog(): SkillCatalogEntry[] {
+  return loadSkillCatalogRaw().skills;
 }
 
 export function loadSkillMarkdownById(skillId: string): { content: string; absPath: string } | null {
