@@ -20,6 +20,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverAllSkillRelativePaths } from "../evals/discover.js";
+import { isWriteGated, parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
@@ -132,13 +133,24 @@ const rows: Row[] = [];
 for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
   const abs = join(skillsRoot, rel, "SKILL.md");
   const raw = readFileSync(abs, "utf8");
-  if (!raw.startsWith("---\n")) continue;
-  const fm = raw.slice(4, raw.indexOf("\n---\n", 4));
-  rows.push({
-    rel,
-    gated: /^disable-model-invocation:\s*true\s*$/m.test(fm),
-    forked: /^agent:\s*Explore\s*$/m.test(fm),
-  });
+  const { meta, error, frontmatterText } = parseYamlFrontmatter(raw);
+  if (frontmatterText === undefined) continue; // no --- delimiters at all
+  if (!error) {
+    rows.push({
+      rel,
+      gated: isWriteGated(meta),
+      forked: meta["agent"] === "Explore",
+    });
+  } else {
+    // Malformed YAML elsewhere in the frontmatter must not hide a real gate/fork declaration
+    // from this security-relevant check -- fall back to literal text matching on the raw
+    // frontmatter block, same as this file always did before adopting the shared parser.
+    rows.push({
+      rel,
+      gated: /^disable-model-invocation:\s*true\s*$/m.test(frontmatterText),
+      forked: /^agent:\s*Explore\s*$/m.test(frontmatterText),
+    });
+  }
 }
 
 const errors: string[] = [];

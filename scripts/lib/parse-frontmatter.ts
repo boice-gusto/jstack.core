@@ -39,6 +39,14 @@ export interface ParsedFrontmatter {
   frontmatterText?: string;
 }
 
+/** True when a skill's frontmatter declares `disable-model-invocation: true` -- the flag that
+ * stops Claude from auto-triggering a write/operational skill from conversation. Shared so
+ * every caller tests the same field the same way (check-write-gates.ts,
+ * scripts/lib/skill-eval-facts.ts previously each had their own copy of this check). */
+export function isWriteGated(meta: Record<string, unknown>): boolean {
+  return meta["disable-model-invocation"] === true;
+}
+
 /** Parses `---\n...\n---\n` delimited YAML frontmatter from the top of a file's contents. */
 export function parseYamlFrontmatter(raw: string): ParsedFrontmatter {
   const fm = raw.match(/^---\n([\s\S]*?)\n---\n/);

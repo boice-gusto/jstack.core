@@ -19,6 +19,7 @@
  *   write-gated (DMI)      40
  */
 import { readFileSync } from "node:fs";
+import { isWriteGated, parseYamlFrontmatter } from "./parse-frontmatter.js";
 
 export interface SkillFacts {
   /** Frontmatter `name`, e.g. `jstack-jira-create`. */
@@ -79,9 +80,8 @@ function outputLabels(body: string): string[] {
   return [...labels].filter((l) => !/^https?:/i.test(l)).slice(0, 6);
 }
 
-function frontmatterScalar(md: string, key: string): string {
-  const m = md.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
-  return m ? m[1].trim().replace(/^["']|["']$/g, "") : "";
+function stripQuotes(v: string): string {
+  return v.replace(/^["']|["']$/g, "");
 }
 
 export function extractSkillFacts(
@@ -90,12 +90,16 @@ export function extractSkillFacts(
 ): SkillFacts {
   const md = readFileSync(skillMdPath, "utf8");
   const failBody = section(md, "Failure modes");
+  const { meta } = parseYamlFrontmatter(md);
+  const name = typeof meta.name === "string" ? stripQuotes(meta.name) : "";
+  const description = typeof meta.description === "string" ? stripQuotes(meta.description) : "";
+  const category = typeof meta.category === "string" ? stripQuotes(meta.category) : "";
   return {
-    id: frontmatterScalar(md, "name") || `jstack-${rel.replace(/\//g, "-")}`,
+    id: name || `jstack-${rel.replace(/\//g, "-")}`,
     rel,
-    description: frontmatterScalar(md, "description"),
-    category: frontmatterScalar(md, "category"),
-    writeGated: /^disable-model-invocation:\s*true\s*$/m.test(md),
+    description,
+    category,
+    writeGated: isWriteGated(meta),
     outOfScope:
       md.match(/^-\s+\*\*Out of scope:\*\*\s*(.+)$/m)?.[1]?.trim() ?? "",
     outputLabels: outputLabels(section(md, "Output shape")),

@@ -24,6 +24,7 @@
 import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
@@ -114,7 +115,14 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   const md = join(skillsRoot, entry.name, "SKILL.md");
   if (!existsSync(md)) continue;
   const raw = readFileSync(md, "utf8");
-  const desc = raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
+  // A block-scalar description (`description: >` / `|`) used to be invisible to the old
+  // single-line regex here -- it would capture just the `>`/`|` marker itself, never the real
+  // routing-claim text on the following lines. The shared parser handles block scalars.
+  const parsedDescription = parseYamlFrontmatter(raw).meta.description;
+  const desc =
+    typeof parsedDescription === "string"
+      ? parsedDescription
+      : raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
   const claimsRouting =
     /^route\b|\brequests? to the (right|most specific)\b/i.test(desc);
   if (!claimsRouting) continue;

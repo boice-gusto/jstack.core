@@ -3,9 +3,10 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parseYamlFrontmatter } from "../scripts/lib/parse-frontmatter.js";
 
-/** Same capture as scripts/agents-check.ts — suffix after `jstack-` in frontmatter name line. */
-const NAME_LINE = /^name:\s*["']?jstack-([a-z0-9-]+)["']?\s*$/im;
+/** Same capture as scripts/agents-check.ts — suffix after `jstack-` in the parsed `name` field. */
+const NAME_PREFIX = /^jstack-([a-z0-9-]+)$/;
 
 export function buildSuffixToRelPath(
   skillsRoot: string,
@@ -19,8 +20,9 @@ export function buildSuffixToRelPath(
       "SKILL.md",
     );
     const raw = readFileSync(skillMd, "utf8");
-    const m = raw.match(NAME_LINE);
-    const suffix = m?.[1];
+    const { meta } = parseYamlFrontmatter(raw);
+    const name = typeof meta.name === "string" ? meta.name : "";
+    const suffix = name.match(NAME_PREFIX)?.[1];
     if (suffix === undefined) {
       throw new Error(`${skillMd}: missing or invalid name: jstack-<suffix>`);
     }
