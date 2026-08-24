@@ -224,6 +224,60 @@ describe("applyRepairsInteractive — path containment", () => {
   });
 });
 
+describe("applyRepairsInteractive — duplicate targets within a batch", () => {
+  test("write_file: two repairs targeting the same path count as one applied change", async () => {
+    const { projectRoot, pluginRoot, outside } = mkFixture();
+    try {
+      const target = join(projectRoot, "same-file.txt");
+      const issues = [
+        issue([
+          { kind: "write_file", path: target, content: "a", ifMissing: true },
+        ]),
+        issue([
+          { kind: "write_file", path: target, content: "b", ifMissing: true },
+        ]),
+      ];
+
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
+
+      expect(applied).toBe(1);
+      expect(existsSync(target)).toBe(true);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(pluginRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("set_config: two repairs targeting the same config path count as one applied change", async () => {
+    const { projectRoot, pluginRoot, outside } = mkFixture();
+    try {
+      const issues = [
+        issue([{ kind: "set_config", path: ["team", "name"], value: "A" }]),
+        issue([{ kind: "set_config", path: ["team", "name"], value: "B" }]),
+      ];
+
+      const applied = await applyRepairsInteractive(
+        issues,
+        projectRoot,
+        {},
+        pluginRoot,
+      );
+
+      expect(applied).toBe(1);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(pluginRoot, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("applyRepairsInteractive — set_config prototype pollution", () => {
   test("a __proto__ path does not pollute Object.prototype", async () => {
     const { projectRoot, pluginRoot, outside } = mkFixture();
