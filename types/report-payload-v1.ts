@@ -94,7 +94,7 @@ export const ReportSectionSchema = z.union(
 export const ReportLinkSchema = z
   .object({
     label: z.string().optional(),
-    url: z.string().optional(),
+    url: z.string().min(1),
   })
   .passthrough();
 

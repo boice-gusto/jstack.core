@@ -58,8 +58,9 @@
         "type": "object",
         "properties": {
           "label": { "type": "string" },
-          "url": { "type": "string" }
-        }
+          "url": { "type": "string", "minLength": 1 }
+        },
+        "required": ["url"]
       }
     }
   },
