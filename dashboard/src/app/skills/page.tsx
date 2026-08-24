@@ -1,42 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 
-import type { SkillCatalogEntry } from "@/lib/skills-catalog";
-
-type FetchState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ok"; generatedAt: string; skills: SkillCatalogEntry[] };
+import { useSkillCatalog } from "@/lib/use-skill-catalog";
 
 export default function SkillsPage(): ReactElement {
-  const [state, setState] = useState<FetchState>({ status: "loading" });
+  const state = useSkillCatalog();
   const [query, setQuery] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/skills/catalog", { credentials: "include" })
-      .then(async (res) => {
-        const body = (await res.json()) as {
-          skills?: SkillCatalogEntry[];
-          generatedAt?: string;
-          error?: string;
-        };
-        if (cancelled) return;
-        if (!res.ok || !body.skills) {
-          setState({ status: "error", message: body.error ?? `HTTP ${res.status}` });
-          return;
-        }
-        setState({ status: "ok", generatedAt: body.generatedAt ?? "", skills: body.skills });
-      })
-      .catch((e: unknown) => {
-        if (cancelled) return;
-        setState({ status: "error", message: e instanceof Error ? e.message : "Network error" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const filtered = useMemo(() => {
     if (state.status !== "ok") return [];
