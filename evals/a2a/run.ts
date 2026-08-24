@@ -45,12 +45,12 @@ import {
   VERDICT_FAIL,
   VERDICT_PASS,
 } from "./protocol.js";
-import { exerciseSubject, type SubjectSpec } from "./subjects.js";
+import { exerciseSubject } from "./subjects.js";
 import {
   runDeterministicAsserts,
-  type DeterministicExpect,
   type AssertionResult,
 } from "./assertions.js";
+import { validateCaseSpec, type CaseLoadError, type CaseSpec } from "./case-spec.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(here, "..", "..");
@@ -83,16 +83,6 @@ const cliJudgeAllowed =
   !!process.env.CLAUDE_CODE_ENTRYPOINT;
 const judgeReachable = !!apiKey || cliJudgeAllowed;
 
-interface CaseSpec {
-  id: string;
-  surface: string;
-  description: string;
-  subject: SubjectSpec;
-  expect?: DeterministicExpect;
-  /** Semantic claims for the judge. Omit for a purely deterministic case. */
-  criteria?: string[];
-}
-
 type Status = "passed" | "failed" | "skipped";
 
 interface CaseResult {
@@ -105,18 +95,24 @@ interface CaseResult {
   elapsedMs: number;
 }
 
-function loadCases(): CaseSpec[] {
-  if (!existsSync(casesDir)) return [];
-  const out: CaseSpec[] = [];
+function loadCases(): { cases: CaseSpec[]; loadErrors: CaseLoadError[] } {
+  if (!existsSync(casesDir)) return { cases: [], loadErrors: [] };
+  const cases: CaseSpec[] = [];
+  const loadErrors: CaseLoadError[] = [];
   for (const f of readdirSync(casesDir).sort()) {
     if (!f.endsWith(".yaml") && !f.endsWith(".yml")) continue;
     const parsed = yaml.load(readFileSync(join(casesDir, f), "utf8"));
     const list = Array.isArray(parsed) ? parsed : [parsed];
     for (const c of list) {
-      if (c && typeof c === "object") out.push(c as CaseSpec);
+      const validated = validateCaseSpec(c, f);
+      if (validated.ok) {
+        cases.push(validated.case);
+      } else {
+        loadErrors.push(validated.error);
+      }
     }
   }
-  return out;
+  return { cases, loadErrors };
 }
 
 /** Ask an independent judge agent. Returns null when no judge is available. */
@@ -199,7 +195,12 @@ function judgeAvailable(): boolean {
   return !probe.error && probe.status === 0;
 }
 
-const cases = loadCases();
+const { cases, loadErrors } = loadCases();
+if (loadErrors.length > 0) {
+  for (const e of loadErrors) {
+    console.error(`✗ invalid case in ${e.sourceFile}: ${e.message}`);
+  }
+}
 const selected = cases.filter(
   (c) =>
     (!filter || c.id.includes(filter)) &&
@@ -300,11 +301,22 @@ const concurrency = Math.max(
   1,
   Number(process.env.JSTACK_EVAL_CONCURRENCY ?? 6),
 );
-const results: CaseResult[] = await runWithConcurrency(
+const runResults: CaseResult[] = await runWithConcurrency(
   selected,
   concurrency,
   runCase,
 );
+// Invalid cases fail the gate too instead of being silently swallowed as console warnings --
+// "fail closed," matching this file's own stated design goal.
+const loadErrorResults: CaseResult[] = loadErrors.map((e) => ({
+  id: `invalid:${e.sourceFile}`,
+  surface: "load",
+  status: "failed",
+  asserts: [],
+  reason: e.message,
+  elapsedMs: 0,
+}));
+const results: CaseResult[] = [...runResults, ...loadErrorResults];
 
 const passed = results.filter((r) => r.status === "passed").length;
 const failed = results.filter((r) => r.status === "failed").length;
