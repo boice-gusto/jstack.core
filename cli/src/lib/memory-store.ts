@@ -91,6 +91,7 @@ export function validateMemoryEntry(input: unknown): MemoryEntryInput {
       `source must be one of: ${MEMORY_SOURCES.join(", ")} (got ${JSON.stringify(j.source)})`,
     );
   }
+  let confidence: number | undefined;
   if (j.confidence !== undefined) {
     const c = Number(j.confidence);
     if (!Number.isInteger(c) || c < 1 || c > 10) {
@@ -98,6 +99,7 @@ export function validateMemoryEntry(input: unknown): MemoryEntryInput {
         "confidence must be an integer from 1 to 10 when provided",
       );
     }
+    confidence = c;
   }
   if (j.skill !== undefined && typeof j.skill !== "string") {
     throw new MemoryValidationError("skill must be a string when provided");
@@ -117,7 +119,7 @@ export function validateMemoryEntry(input: unknown): MemoryEntryInput {
     insight: j.insight,
     source: j.source as MemorySource,
     skill: j.skill as string | undefined,
-    confidence: j.confidence as number | undefined,
+    confidence,
   };
 }
 
