@@ -32,10 +32,10 @@ Conventions and constraints for working in this repo. Loaded into every Claude C
 
 ## Skill authoring
 
-- Hand-maintained skills must be added to the `SKIP` set in `scripts/apply_detailed_skills.py`. Otherwise running `python3 scripts/apply_detailed_skills.py` regenerates the body and overwrites your work.
+- Hand-maintained skills must either be added to the `SKIP` set in `scripts/apply_detailed_skills.py`, or self-declare it with `generator: skip` in their own frontmatter. Otherwise running `python3 scripts/apply_detailed_skills.py` regenerates the body and overwrites your work. Prefer `generator: skip` for a skill you're actively hand-editing right now — it's a one-file change instead of two, and can't go stale by someone forgetting the second edit.
 - Read the current SKIP set from the source rather than a list here (it has gone stale repeatedly):
   `python3 -c "import sys; sys.path.insert(0,'scripts'); from apply_detailed_skills import SKIP, SKILLS; print(sorted(str(p.relative_to(SKILLS).parent) for p in SKIP))"`
-  Everything not in that set is auto-regenerated.
+  Everything not in that set AND not self-declared `generator: skip` is auto-regenerated.
 - Every `SKILL.md` needs: `name` (kebab-case, prefixed `jstack-`), `description` (one to three sentences naming when to invoke **and when not to**), `category` (folder name), and `effort`. See `skills/_core/references/skill-conventions.md`.
 - `category` is a jstack-internal field — the Claude Code platform ignores it. It drives `skill-catalog.json` and the docs site, so it still has to be right.
 - Every `SKILL.md` should `!cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md` before its procedure, so config defaults are loaded.

@@ -595,14 +595,36 @@ def write_skill(path: Path) -> None:
     path.write_text(hdr + "\n" + body + "\n", encoding="utf-8")
 
 
+def is_self_declared_skip(p: Path) -> bool:
+    """A SKILL.md can opt out of regeneration itself via `generator: skip` in its own
+    frontmatter, in addition to being listed in SKIP above. The "is this skill hand-maintained"
+    fact used to live ONLY in this second, disjoint file -- forgetting to add a newly
+    hand-edited skill here has repeatedly caused real edits to be silently reverted on the next
+    run (see CLAUDE.md's "Skill authoring" section). This is additive, not a replacement: SKIP
+    still works exactly as before.
+    """
+    try:
+        fm = read_front_matter(p)
+    except SystemExit:
+        return False
+    return fm.get("generator") == "skip"
+
+
 def main() -> None:
     n = 0
+    self_declared = 0
     for p in sorted(SKILLS.rglob("SKILL.md")):
         if p in SKIP:
             continue
+        if is_self_declared_skip(p):
+            self_declared += 1
+            continue
         write_skill(p)
         n += 1
-    print(f"Wrote {n} skills. Skipped {len(SKIP)} hand-maintained.")
+    print(
+        f"Wrote {n} skills. Skipped {len(SKIP)} hand-maintained (SKIP set) "
+        f"+ {self_declared} self-declared (generator: skip)."
+    )
 
 
 if __name__ == "__main__":
