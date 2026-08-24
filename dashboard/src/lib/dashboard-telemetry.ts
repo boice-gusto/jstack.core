@@ -108,7 +108,7 @@ export function recordDashboardAgentRun(input: DashboardRunTelemetryInput): void
   void flushIfConfigured();
 }
 
-async function flushIfConfigured(): Promise<void> {
+export async function flushIfConfigured(): Promise<void> {
   try {
     const cfg = readJstackConfig(process.cwd()) as {
       telemetry?: { enabled?: boolean; endpoint?: string };
@@ -119,8 +119,8 @@ async function flushIfConfigured(): Promise<void> {
     if (!enabled || endpoint.length === 0) return;
     const events = snapshotBuffer();
     if (events.length === 0) return;
-    clearBuffer();
-    await sendBatch(endpoint, events);
+    const sent = await sendBatch(endpoint, events);
+    if (sent) clearBuffer();
   } catch {
     // Best-effort: a flush failure (unreachable endpoint, bad config) must never surface to
     // the agent run that generated the event it was trying to send.
