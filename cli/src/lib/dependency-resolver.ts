@@ -17,7 +17,12 @@ import type { JstackConfig } from "../types/config.js";
 export type RepairAction =
   | { kind: "mkdir"; path: string }
   | { kind: "write_file"; path: string; content: string; ifMissing: true }
-  | { kind: "set_config"; path: string[]; value: unknown }
+  // `value?` (not `value:`) because it matches what repair-serializer.ts's Zod schema
+  // actually enforces: z.unknown() validates successfully even when the key is entirely
+  // absent, so a `set_config` repair with no `value` key already passes schema validation
+  // today (verified). The hand-written type previously claimed `value` was required, which
+  // was never true of the real validated behavior on the --apply-repairs untrusted-JSON path.
+  | { kind: "set_config"; path: string[]; value?: unknown }
   | { kind: "shell_hint"; cmd: string; reason: string };
 
 export type DependencyIssue = {

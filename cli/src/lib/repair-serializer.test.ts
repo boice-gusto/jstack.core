@@ -157,4 +157,21 @@ describe("repair-serializer", () => {
       reason: "re-run setup",
     });
   });
+
+  it("a set_config repair JSON with no `value` key still passes schema validation (documents the real permissive behavior on the --apply-repairs untrusted-JSON path, not an intended new feature)", () => {
+    const json = JSON.stringify([
+      {
+        id: "t",
+        configPath: ["a"],
+        severity: "warn",
+        message: "t",
+        repairs: [{ kind: "set_config", path: ["team", "name"] }],
+      },
+    ]);
+    const back = deserializeRepairs(json);
+    expect(back[0]!.repairs[0]).toEqual({
+      kind: "set_config",
+      path: ["team", "name"],
+    });
+  });
 });
