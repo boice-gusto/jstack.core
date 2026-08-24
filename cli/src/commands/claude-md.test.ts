@@ -130,7 +130,8 @@ describe("runClaudeMdApply", () => {
         yes: false,
       });
       expect(result.status).toBe("needs-confirmation");
-      if (result.status !== "needs-confirmation") throw new Error("unreachable");
+      if (result.status !== "needs-confirmation")
+        throw new Error("unreachable");
       expect(result.reason).toContain("--apply requires --yes");
     } finally {
       rmSync(project, { recursive: true, force: true });

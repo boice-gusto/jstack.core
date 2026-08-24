@@ -289,7 +289,10 @@ async function main(): Promise<number> {
   writeHealth(
     stateDir,
     Object.fromEntries(
-      Object.entries(cfg.agents).map(([id, a]) => [id, expandHome(a.workspace)]),
+      Object.entries(cfg.agents).map(([id, a]) => [
+        id,
+        expandHome(a.workspace),
+      ]),
     ),
     configSource,
   );
