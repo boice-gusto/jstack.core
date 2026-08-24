@@ -224,6 +224,18 @@ describe("resolveDependencies", () => {
     expect(repair.cmd).toBe("jstack mcp add jstack-mock");
   });
 
+  test("mcp-mock-missing when .mcp.json is present but not valid JSON (distinct from 'missing')", () => {
+    const root = mkTmpRoot();
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, ".mcp.json"), "{ not valid json", "utf8");
+    const cfg = baseCfg({ debug: { mock_mcp: true } });
+    const issues = resolveDependencies({ cfg, projectRoot: root });
+    const issue = findIssue(issues, "mcp-mock-missing");
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain("not valid JSON");
+    expect(issue?.message).not.toContain("is missing");
+  });
+
   test("mcp-mock-missing when .mcp.json present but lacks jstack-mock entry", () => {
     const root = mkTmpRoot();
     mkdirSync(join(root, "docs"), { recursive: true });

@@ -179,26 +179,45 @@ function checkGbrainTargetUrl(
   });
 }
 
+/**
+ * Reads `.mcp.json`'s `mcpServers` map, or `null` if the file is missing OR malformed --
+ * checkMockMcp and checkMcpServerWiring below used to each independently read+parse this same
+ * file, with two different (undocumented, apparently accidental rather than intentional)
+ * fallback behaviors for malformed JSON: one still surfaced a warning, the other silently
+ * skipped its entire check. Treating "missing" and "malformed" the same way for both callers
+ * is the more correct, consistent behavior -- a real misconfiguration (a corrupt file that
+ * also has genuinely unwired mcp_servers) is now caught instead of silently passing.
+ */
+function readMcpServersFile(
+  projectRoot: string,
+): Record<string, unknown> | null {
+  const mcpPath = join(projectRoot, ".mcp.json");
+  if (!existsSync(mcpPath)) return null;
+  try {
+    const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    return asRecord(raw?.mcpServers) ?? {};
+  } catch {
+    return null;
+  }
+}
+
 function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
   if (input.cfg.debug?.mock_mcp !== true) return;
 
   const mcpPath = join(input.projectRoot, ".mcp.json");
+  const servers = readMcpServersFile(input.projectRoot);
   let hasMockEntry = false;
 
-  if (existsSync(mcpPath)) {
-    try {
-      const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as {
-        mcpServers?: Record<string, { args?: unknown; command?: unknown }>;
-      };
-      const servers = raw?.mcpServers ?? {};
-      hasMockEntry = Object.entries(servers).some(([key, spec]) => {
-        if (key.toLowerCase() === "jstack-mock") return true;
-        const args = Array.isArray(spec?.args) ? (spec.args as unknown[]) : [];
-        return args.some((a) => String(a).includes("mcp-mock/server"));
-      });
-    } catch {
-      hasMockEntry = false;
-    }
+  if (servers) {
+    hasMockEntry = Object.entries(servers).some(([key, specRaw]) => {
+      if (key.toLowerCase() === "jstack-mock") return true;
+      const spec = asRecord(specRaw);
+      const args = Array.isArray(spec?.args) ? (spec.args as unknown[]) : [];
+      return args.some((a) => String(a).includes("mcp-mock/server"));
+    });
   }
 
   if (!hasMockEntry) {
@@ -206,9 +225,12 @@ function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
       id: "mcp-mock-missing",
       configPath: ["debug", "mock_mcp"],
       severity: "warn",
-      message: existsSync(mcpPath)
-        ? "debug.mock_mcp is true but .mcp.json has no jstack-mock server entry."
-        : "debug.mock_mcp is true but .mcp.json is missing.",
+      message:
+        servers !== null
+          ? "debug.mock_mcp is true but .mcp.json has no jstack-mock server entry."
+          : existsSync(mcpPath)
+            ? "debug.mock_mcp is true but .mcp.json is present but not valid JSON."
+            : "debug.mock_mcp is true but .mcp.json is missing.",
       repairs: [
         {
           kind: "shell_hint",
@@ -330,18 +352,8 @@ function checkMcpServerWiring(
 ): void {
   const mcpServers = input.cfg.mcp_servers;
   if (!mcpServers || Object.keys(mcpServers).length === 0) return;
-  const mcpJsonPath = join(input.projectRoot, ".mcp.json");
-  if (!existsSync(mcpJsonPath)) return;
-  let registeredServers: Record<string, unknown> = {};
-  try {
-    const raw = JSON.parse(readFileSync(mcpJsonPath, "utf8")) as Record<
-      string,
-      unknown
-    >;
-    registeredServers = asRecord(raw?.mcpServers) ?? {};
-  } catch {
-    return;
-  }
+  const registeredServers = readMcpServersFile(input.projectRoot);
+  if (registeredServers === null) return;
   for (const [name, serverRaw] of Object.entries(mcpServers)) {
     // mcp_servers[name] is typed as a full McpServer, but this cfg may not have gone through
     // JstackConfigSchema.parse() at the call site — keep the defensive narrowing.
