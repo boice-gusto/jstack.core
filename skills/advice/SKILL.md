@@ -36,7 +36,7 @@ Read the setup preamble first:
    - **Decision** — “Should we A or B (or hybrid)?”
    - **Narrative** — “What should I say to X about Y?”
    - **Principles** — “How do we think about Z as a team?”
-   - **Review** — “Poke holes in this plan” (if multi-persona, consider `jstack:review-counsel` or `jstack:review-project` instead; still usable here if the user asked for a single “advice” pass).
+   - **Review** — “Poke holes in this plan” (if multi-persona, consider `jstack:counsel-review` or `jstack:project-review` instead; still usable here if the user asked for a single “advice” pass).
 
 2. **Fill gaps with at most one question** (if several dimensions are missing, pick the **highest leverage** one first)
    - **Audience** — Who will hear or use this? (peer EM, C-level, design partner, **self** reflection)
@@ -154,7 +154,7 @@ options:
 | No `jstack.config.json` or team context | Direct to `/jstack:setup` or `jstack setup`; give **generic** principles-only advice and label it `[principles only—configure team context for tailored advice]`. |
 | User asks for **facts** you cannot verify (revenue, headcount, legal) | Do not invent; state what role should supply the fact. |
 | **Emotional** crisis language | Be brief, kind, suggest human support; do not role-play therapy. |
-| **Multi-persona deep review** with formal roles | Suggest `jstack:review-counsel` and `prompts/personas/*` for full pass; this skill can still do a **single** unified recommendation. |
+| **Multi-persona deep review** with formal roles | Suggest `jstack:counsel-review` and `prompts/personas/*` for full pass; this skill can still do a **single** unified recommendation. |
 | **gbrain** configured but unreachable | Fall back to stated assumptions; list **exact** fields or URLs the user should paste next time. |
 
 ## Micro-examples (style only; do not copy as live advice)
