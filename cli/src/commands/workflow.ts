@@ -112,8 +112,9 @@ export async function runWorkflowRun(
   // @clack/prompts, its own UI) onto stdout ahead of the JSON payload this mode promises.
   if (opts.json && !opts.yes) {
     console.error(
-      chalk.red("--json requires --yes (no interactive confirm in JSON mode). ") +
-        chalk.dim(nonInteractiveHint("--yes / --dry-run")),
+      chalk.red(
+        "--json requires --yes (no interactive confirm in JSON mode). ",
+      ) + chalk.dim(nonInteractiveHint("--yes / --dry-run")),
     );
     process.exitCode = 1;
     return;

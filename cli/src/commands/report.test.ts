@@ -46,7 +46,10 @@ describe("report render — invalid input", () => {
   test("rejects a schema-invalid payload before writing anything", () => {
     const dataPath = join(dir, "bad-schema.json");
     const outPath = join(dir, "out.html");
-    writeFileSync(dataPath, JSON.stringify({ schema_version: 1, sections: "not-an-array" }));
+    writeFileSync(
+      dataPath,
+      JSON.stringify({ schema_version: 1, sections: "not-an-array" }),
+    );
     const { code, out } = runReport(["--data", dataPath, "--out", outPath]);
     expect(code).toBe(1);
     expect(out).toContain("Invalid report payload");
@@ -56,7 +59,13 @@ describe("report render — invalid input", () => {
 
 describe("report render — valid input", () => {
   test("renders a real example payload successfully", () => {
-    const dataPath = join(REPO_ROOT, "examples", "reports", "payloads", "generic.json");
+    const dataPath = join(
+      REPO_ROOT,
+      "examples",
+      "reports",
+      "payloads",
+      "generic.json",
+    );
     const outPath = join(dir, "out.html");
     const { code, out } = runReport(["--data", dataPath, "--out", outPath]);
     expect(code).toBe(0);
