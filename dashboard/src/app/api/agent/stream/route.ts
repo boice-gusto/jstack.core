@@ -190,12 +190,36 @@ export async function POST(request: NextRequest): Promise<Response> {
         }
       });
 
+      // Node's docs say a process that fails to even spawn (e.g. bad CLAUDE_BIN) may emit 'error'
+      // without 'close' ever following -- there was nothing to close. This code relied on 'close'
+      // always firing to clear killTimer/close the stream/record telemetry; under Bun (this repo's
+      // runtime) 'close' does still fire after a spawn ENOENT, so no hang was reproduced here, but
+      // that's an observed implementation detail, not a documented guarantee `route.ts` (which
+      // declares `runtime = "nodejs"`) should depend on. Handle 'error' itself instead of assuming
+      // 'close' will clean up after it, and track whether either terminal event already ran so
+      // the rarer case where both still fire doesn't double-close the controller or double-record
+      // telemetry.
+      let finished = false;
       child.on("error", (err: Error) => {
+        if (finished) return;
+        finished = true;
         sawErrorEvent = err.message;
         send({ type: "error", message: err.message });
+        clearTimeout(killTimer);
+        recordDashboardAgentRun({
+          surface,
+          skillId: skillId ?? null,
+          startedAt: runStartedAt,
+          success: false,
+          errorType: sawErrorEvent,
+          usage: lastUsage,
+        });
+        controller.close();
       });
 
       child.on("close", (code: number | null) => {
+        if (finished) return;
+        finished = true;
         clearTimeout(killTimer);
         recordDashboardAgentRun({
           surface,
