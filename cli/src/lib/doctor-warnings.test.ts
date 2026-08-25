@@ -260,4 +260,15 @@ describe("collectMockMcpDoctorWarnings", () => {
     );
     expect(w.filter((m) => m.includes("scenario file is missing"))).toEqual([]);
   });
+
+  test("warns that .mcp.json could not be parsed when it's present but malformed JSON", () => {
+    const root = mkdtempSync(join(tmpdir(), "jstack-mock-malformed-"));
+    writeFileSync(join(root, ".mcp.json"), "not json {{{", "utf8");
+    const w = collectMockMcpDoctorWarnings(
+      root,
+      PLUGIN_ROOT,
+      debugCfg({ mock_mcp: true, mock_mcp_scenario: "default" }),
+    );
+    expect(w.some((m) => m.includes("could not be parsed"))).toBe(true);
+  });
 });

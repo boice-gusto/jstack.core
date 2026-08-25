@@ -126,31 +126,48 @@ export function collectDoctorConfigWarnings(
   return warnings;
 }
 
-function readMcpFixtureRootFromDisk(projectRoot: string): string | null {
+type McpServerSpec = {
+  args?: string[];
+  command?: string;
+  env?: Record<string, string>;
+};
+
+/**
+ * Reads `.mcp.json`'s `mcpServers` map, or `null` if missing/malformed. `readMcpFixtureRootFromDisk`
+ * and `collectMockMcpDoctorWarnings` below used to each independently JSON.parse this same file and
+ * reimplement the identical "is this the jstack-mock server" predicate -- the same duplication
+ * pattern already consolidated once in dependency-resolver.ts's readMcpServersFile.
+ */
+function readMcpServers(
+  projectRoot: string,
+): Record<string, McpServerSpec> | null {
   const mcpPath = join(projectRoot, ".mcp.json");
   if (!existsSync(mcpPath)) return null;
   try {
     const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as {
-      mcpServers?: Record<
-        string,
-        { args?: string[]; command?: string; env?: Record<string, string> }
-      >;
+      mcpServers?: Record<string, McpServerSpec>;
     };
-    const servers = raw.mcpServers ?? {};
-    for (const [key, spec] of Object.entries(servers)) {
-      const isMockName = key.toLowerCase() === "jstack-mock";
-      const args = spec.args ?? [];
-      const argsLookLikeMock = args.some((a) =>
-        String(a).includes("mcp-mock/server"),
-      );
-      if (!isMockName && !argsLookLikeMock) continue;
-      const fromEnv = spec.env?.JSTACK_MCP_FIXTURE_ROOT?.trim();
-      if (fromEnv && fromEnv.length > 0) {
-        return isAbsolute(fromEnv) ? fromEnv : resolve(projectRoot, fromEnv);
-      }
-    }
+    return raw.mcpServers ?? {};
   } catch {
     return null;
+  }
+}
+
+function isMockMcpServerEntry(key: string, spec: McpServerSpec): boolean {
+  if (key.toLowerCase() === "jstack-mock") return true;
+  const args = spec.args ?? [];
+  return args.some((a) => String(a).includes("mcp-mock/server"));
+}
+
+function readMcpFixtureRootFromDisk(projectRoot: string): string | null {
+  const servers = readMcpServers(projectRoot);
+  if (!servers) return null;
+  for (const [key, spec] of Object.entries(servers)) {
+    if (!isMockMcpServerEntry(key, spec)) continue;
+    const fromEnv = spec.env?.JSTACK_MCP_FIXTURE_ROOT?.trim();
+    if (fromEnv && fromEnv.length > 0) {
+      return isAbsolute(fromEnv) ? fromEnv : resolve(projectRoot, fromEnv);
+    }
   }
   return null;
 }
@@ -187,25 +204,21 @@ export function collectMockMcpDoctorWarnings(
     );
   }
 
-  try {
-    const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as {
-      mcpServers?: Record<string, { args?: string[]; command?: string }>;
-    };
-    const servers = raw.mcpServers ?? {};
-    const entries = Object.entries(servers);
-    const hasMock = entries.some(([key, spec]) => {
-      if (key.toLowerCase() === "jstack-mock") return true;
-      const args = spec.args ?? [];
-      return args.some((a) => String(a).includes("mcp-mock/server"));
-    });
-    if (!hasMock) {
-      warnings.push(
-        "debug.mock_mcp is true but .mcp.json has no jstack-mock server (or path containing mcp-mock/server) — run `jstack mcp add jstack-mock`.",
-      );
-    }
-  } catch {
+  // We already know mcpPath exists (checked above), so a null result here means it failed to
+  // parse, not that it's missing.
+  const servers = readMcpServers(projectRoot);
+  if (servers === null) {
     warnings.push(
       "debug.mock_mcp is true but .mcp.json could not be parsed — fix JSON.",
+    );
+    return warnings;
+  }
+  const hasMock = Object.entries(servers).some(([key, spec]) =>
+    isMockMcpServerEntry(key, spec),
+  );
+  if (!hasMock) {
+    warnings.push(
+      "debug.mock_mcp is true but .mcp.json has no jstack-mock server (or path containing mcp-mock/server) — run `jstack mcp add jstack-mock`.",
     );
   }
 
