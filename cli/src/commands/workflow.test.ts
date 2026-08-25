@@ -130,3 +130,21 @@ describe("workflow run non-interactive without --yes/--dry-run", () => {
     expect(out).toContain("--dry-run");
   });
 });
+
+describe("workflow run --json without --yes", () => {
+  test("errors requiring --yes instead of printing a Preview heading (CLAUDE.md: no prose in --json output)", () => {
+    writeDef(dir, {
+      id: "flow4",
+      name: "Flow 4",
+      start_url: "https://example.com",
+      steps: [{ id: "s1", kind: "goto", url: "https://example.com" }],
+    });
+    const { code, out } = runWorkflow(dir, ["run", "flow4", "--json"]);
+    expect(code).toBe(1);
+    expect(out).toContain("--yes");
+    // The old bug: this printed "Preview" plus the full definition JSON on stdout, then either
+    // blocked on an interactive confirm or (non-interactively, as here) fell through to the
+    // separate non-interactive error below it -- either way, prose landed on stdout in --json mode.
+    expect(out).not.toContain("Preview");
+  });
+});

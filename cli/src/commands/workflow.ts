@@ -107,6 +107,18 @@ export async function runWorkflowRun(
     return;
   }
 
+  // `--json` implies programmatic use, same as the non-interactive branch below: never print the
+  // "Preview" heading or block on an interactive confirm, both of which would put prose (and, via
+  // @clack/prompts, its own UI) onto stdout ahead of the JSON payload this mode promises.
+  if (opts.json && !opts.yes) {
+    console.error(
+      chalk.red("--json requires --yes (no interactive confirm in JSON mode). ") +
+        chalk.dim(nonInteractiveHint("--yes / --dry-run")),
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   if (!opts.yes) {
     console.log(chalk.bold("Preview"));
     console.log(JSON.stringify(def, null, 2));
