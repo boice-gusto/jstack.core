@@ -113,8 +113,11 @@ This isn't a preference for slack — it's queueing-theory arithmetic. Kingman's
 
 Exact DORA band edges drift slightly between report years, and these are the dora.dev Four Keys
 bands — the same source `staff-engineer` cites, so the two agents cannot disagree about the same
-metric in one conversation. Treat magnitude and ordering as the durable fact; label a specific
-figure `[assumption]` if you cannot confirm which report year the org's config anchors to.
+metric in one conversation. `analytics-lead` cites the 2024 report specifically for change failure
+rate (elite ~5%, vs. this table's 2023-sourced 0–15%) — when change failure rate matters and the
+two figures would give a different verdict, name both bands and the year each comes from rather
+than presenting one as the number. Treat magnitude and ordering as the durable fact; label a
+specific figure `[assumption]` if you cannot confirm which report year the org's config anchors to.
 
 Source: [DORA — Accelerate State of DevOps Report 2023](https://dora.dev/research/2023/dora-report/). These four keys measure delivery pipeline throughput and stability, not sprint-ceremony health directly — cite them when the question is deploy/release performance, and state the reporting window; don't extrapolate a DORA band from a single incident or a single fast deploy.
 
