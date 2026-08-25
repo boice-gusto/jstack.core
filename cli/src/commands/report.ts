@@ -16,6 +16,7 @@ import {
   extractReportsBranding,
   mergeReportBranding,
 } from "../lib/report-branding.js";
+import { safeParseReportPayload } from "../../../types/report-payload-v1.js";
 
 /** Inline JSON payload into templates/reports/shells/default.html */
 export function runReportRender(opts: {
@@ -34,6 +35,25 @@ export function runReportRender(opts: {
     return;
   }
   const rawPayload = readFileSync(dataPath, ENCODING_UTF8).trim();
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(rawPayload);
+  } catch (e) {
+    console.error(
+      `Invalid JSON in ${dataPath}: ${e instanceof Error ? e.message : String(e)}`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+  const payloadResult = safeParseReportPayload(parsedJson);
+  if (!payloadResult.success) {
+    console.error(`Invalid report payload in ${dataPath}:`);
+    for (const issue of payloadResult.error.issues) {
+      console.error(`  ${issue.path.join(".") || "(root)"}: ${issue.message}`);
+    }
+    process.exitCode = 1;
+    return;
+  }
   /** Avoid `</script>` (or any `<`) in JSON closing the host <script> tag in HTML. */
   const payload = rawPayload.replace(/</g, "\\u003c");
   const defaults = loadDefaults(pluginRoot);
