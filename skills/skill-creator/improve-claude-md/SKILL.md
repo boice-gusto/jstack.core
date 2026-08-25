@@ -2,6 +2,7 @@
 name: jstack-improve-claude-md
 description: Audit a project's CLAUDE.md against commits, session transcripts, and working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or as a monthly hygiene routine.
 category: skill-creator
+disable-model-invocation: true
 effort: high
 ---
 
