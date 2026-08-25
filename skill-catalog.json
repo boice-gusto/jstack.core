@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T11:14:50.354Z",
+  "generatedAt": "2026-08-25T08:51:47.712Z",
   "count": 143,
   "skills": [
     {
@@ -49,8 +49,8 @@
       "gateId": "jstack:shortcuts/ceo-brainstorm",
       "description": "\"Alias jstack:ceo-brainstorm — CEO persona + executive tone, then superpowers:brainstorming. Use when the user wants exec-lens ideation.\"",
       "whenToUse": "",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
+      "category": "Shortcuts",
+      "categoryKey": "shortcuts"
     },
     {
       "id": "computer-use",
@@ -67,7 +67,7 @@
       "name": "jstack-computer-use-cua",
       "relPath": "skills/computer-use/cua/SKILL.md",
       "gateId": "jstack:computer-use/cua",
-      "description": "Operate CUA (computer-use): Cua Driver (macOS AX + MCP), CuaBot (Docker + Xpra), Cua sandboxes (Python SDK / cloud CLI). Verbs: setup, test, execute, status, restart, destroy. Use when the user mentions cua, trycua, cua-driver, cuabot, computer-use, sandbox, macOS desktop QA, Electron, native app automation, MCP desktop control, TCC, or debug/QA repro outside the browser. Parent router: jstack-computer-use.",
+      "description": "\"Operate CUA (computer-use): Cua Driver (macOS AX + MCP), CuaBot (Docker + Xpra), Cua sandboxes (Python SDK / cloud CLI). Verbs: setup, test, execute, status, restart, destroy. Use when the user mentions cua, trycua, cua-driver, cuabot, computer-use, sandbox, macOS desktop QA, Electron, native app automation, MCP desktop control, TCC, or debug/QA repro outside the browser. Parent router: jstack-computer-use.\"",
       "whenToUse": "",
       "category": "Computer Use",
       "categoryKey": "computer-use"
@@ -157,7 +157,7 @@
       "name": "jstack-engineering-health",
       "relPath": "skills/engineering/health/SKILL.md",
       "gateId": "jstack:engineering/health",
-      "description": "Summarize engineering health — CI status, PR queue, flaky tests, revert risk — from configured repos only.",
+      "description": "DORA-banded engineering health — the four keys (deploy frequency, lead time, change-failure rate, MTTR) reported as independent bands with the metric, measurement window, and threshold behind each, paired with leading indicators (PR review latency, CI flake trend). For a quick composite snapshot without DORA bands or trend context, use jstack:engineering instead.",
       "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"
@@ -167,7 +167,7 @@
       "name": "jstack-engineering-silo-scan",
       "relPath": "skills/engineering/silo-scan/SKILL.md",
       "gateId": "jstack:engineering/silo-scan",
-      "description": "Detect overlapping work — same files or similar tickets/PRs — from a Jira ticket or GitHub PR; confidence-thresholded; read-only unless user approves comments.",
+      "description": "Bus-factor / knowledge-concentration scan — per-module bus factor and silo ratio from trailing commit and review-authorship spread, weighted by change frequency and fan-in. Read-only unless user approves comments. Not for detecting overlapping work on the same files or similar tickets/PRs.",
       "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"
@@ -189,15 +189,15 @@
       "gateId": "jstack:shortcuts/executive-research-brief",
       "description": "\"Alias jstack:executive-research-brief — CEO lens + executive tone, then jstack competitive research for leadership.\"",
       "whenToUse": "",
-      "category": "Knowledge",
-      "categoryKey": "knowledge"
+      "category": "Shortcuts",
+      "categoryKey": "shortcuts"
     },
     {
       "id": "federated-search",
       "name": "jstack-federated-search",
       "relPath": "skills/federated-search/SKILL.md",
       "gateId": "jstack:federated-search",
-      "description": "Multi-provider federated search — selects N backends (Jira, Notion, Slack, GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits, ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis. Reads jstack.config.json mcp_servers and integrations; does not invent credentials.",
+      "description": "Multi-provider federated search — selects N backends (Jira, Notion, Slack, GitHub, Glean, Google, DuckDuckGo, gbrain, knowledge_base, etc.) from the user query or explicit flags; delegates one constrained subagent (or isolated tool sweep) per provider; merges hits, ranks relevance to the question, structures a single answer. Supports --raw to skip synthesis. Reads jstack.config.json mcp_servers and integrations; does not invent credentials. Not for knowledge-base-only lookups — use jstack:knowledge-search for that.",
       "whenToUse": "",
       "category": "Research",
       "categoryKey": "research"
