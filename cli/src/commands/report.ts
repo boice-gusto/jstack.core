@@ -34,9 +34,10 @@ export function runReportRender(opts: {
     process.exitCode = 1;
     return;
   }
-  const rawPayload = readFileSync(dataPath, ENCODING_UTF8).trim();
+  let rawPayload: string;
   let parsedJson: unknown;
   try {
+    rawPayload = readFileSync(dataPath, ENCODING_UTF8).trim();
     parsedJson = JSON.parse(rawPayload);
   } catch (e) {
     console.error(
