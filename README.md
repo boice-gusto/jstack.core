@@ -154,6 +154,9 @@ writes require explicit confirmation.
 ## CLI
 
 `jstack --help-json` is the authoritative command registry; the table below is a summary.
+`cli/src/index.test.ts`'s "registry matches the live command tree" suite fails CI if the
+hand-maintained registry (`cli/src/types/cli-registry.ts`) ever drifts from the live commander
+tree, so the two can't silently diverge as commands are added.
 
 | Command | Purpose |
 |---------|---------|
