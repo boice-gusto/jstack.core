@@ -30,8 +30,10 @@ Higher rank = broader orchestration or higher-privilege automation touched first
 | 20 | `brainstorm-facilitator` | Divergent-then-convergent option generation; can land an ADR |
 | 21 | `qa-engineer` | Test-strategy and flake judgment; advisory, no writes |
 | 22 | `technical-writer` | Reference/doc authoring; code is the source of truth, advisory only |
+| 23 | `security-auditor` | OWASP-lens vulnerability review; advisory, no writes |
+| 24 | `compliance-officer` | Data-handling/regulatory-risk lens; advisory, no writes, no legal advice |
 
-Ranks 19–22 are appended rather than interleaved, so the existing priority order above is unchanged.
+Ranks 19–24 are appended rather than interleaved, so the existing priority order above is unchanged.
 
 ## Configuration matrix
 
@@ -45,7 +47,7 @@ Ranks 19–22 are appended rather than interleaved, so the existing priority ord
 | `recon-scanner` | `channels.routing`, Slack/Jira slices in config, `team.*` | — | Empty integration → say what is disconnected; read-only default |
 | `chain-orchestrator` | `skills`, `skill_defaults`, `debug.trace_chains` | `prompts/chains/*`, `chaining-guide.md` | Missing skill → suggest closest `jstack:*` by description; stop chain on auth failure |
 | `staff-engineer` | `engineering_health`, `silo_scan`, `code_review`, `levels_and_expectations`, `policies.review` | `prompts/personas/` for counsel | Health unavailable → `[no data]`; levels path empty → generic IC framing |
-| `product-pm` | `pe.*`, `impact.*`, `prioritize` skill defaults, `team_context` | `prompts/tones/`, `prompts/personas/` | No IDs → `[assumption]`; conflicting stakeholders → tensions table only |
+| `product-pm` | `projects`, `sprint.*`, `policies.*`, `skill_defaults.prioritize.*`, `notion_defaults` | `prompts/tones/`, `prompts/personas/` | No IDs → `[assumption]`; conflicting stakeholders → tensions table only |
 | `design-lead` | `reports.branding` (when publishing), team Notion/Figma context | `prompts/personas/*`, `html-spa-design` refs | No Figma MCP → screenshot + `[blocked]`; tokens unknown → flag gaps |
 | `analytics-lead` | `team.*` / `metrics` slices (audience filters + rollup scope), `policies.*` (IC-name redaction), org day boundary / timezone | `prompts/tones/` on handoff to `report-generator` only | No integration → paste-only with unverified cells marked `[no data]`, never blank or zero; scope unset → ask aggregate vs. per-team once; day boundary unset → state `[assumption: UTC day boundary]` |
 | `executive-brief` | `policies.incidents`, `skill_defaults.reports`, recon scopes | `prompts/tones/executive` | No facts → ask for paste or approve recon; tone missing → `[tone: default]` |
@@ -59,6 +61,8 @@ Ranks 19–22 are appended rather than interleaved, so the existing priority ord
 | `brainstorm-facilitator` | `skill_defaults.prioritize.*`, `policies.*`, `notion_defaults` | — | No configured rubric → default to a 1–5 scale stated explicitly; approver unset → note the assumption and proceed; no Notion target → local markdown ADR only |
 | `qa-engineer` | `skill_defaults.qa` (test runner / framework hints), `policies.*` (release gate), `engineering_health` | `prompts/personas/qa` | Stack hints unset → infer from the repo's existing test files or ask once, never assume a stack; gate policy unset → describe the evidence a gate needs without inventing an approver; health unset → pasted CI output only |
 | `technical-writer` | The code itself (primary source), `jstack.config.json` / `config/schema.json` for documented behavior | `prompts/tones/` — default register is `internal`, not `executive`/`formal` | Code and an existing doc disagree → code wins; config field unset → state that it's unset and the default behavior, never invent a value; requested tone applies but must not soften reference-mode precision |
+| `security-auditor` | `policies.*` (approval gates), `engineering_health` (optional corroboration), dependency manifests/lockfiles | — | Approver unset → describe the evidence a sign-off needs without inventing one; health unset → rely on code/config evidence only; manifest missing/unreachable → `[no data]`, never assert a CVE from memory |
+| `compliance-officer` | `policies.*` (approval gates before treating a finding as resolved), `data_class` (skill/agent frontmatter convention) | — | Approver unset → describe the evidence a sign-off needs; `data_class` unset → infer classification from the code/schema and label it `[assumption]`, never trust an unverified label alone |
 
 ## Verification
 
