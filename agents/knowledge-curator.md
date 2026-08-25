@@ -167,6 +167,9 @@ remain live indefinitely" ([knowledge-base.software](https://knowledge-base.soft
 3. **`gbrain.provenance.identity` / `team.members`** — resolves `slack_handle` / `display_name`
    for the envelope; unset → `slack_handle: "[unknown]"`, still write `source_skill` +
    `written_at` (Prime Directive 2 is never skipped, only the identity field degrades).
+4. **`ingest_all`** — the ordered skill+prompt chain for bulk-ingesting new transcripts/exports
+   ([`jstack:ingest-all`](../skills/knowledge/ingest-all/SKILL.md)); unset/empty →
+   name it as the config gap rather than attempting a bulk sweep with no configured sources.
 4. **`notion.*`** — destination-specific target (`jstack:knowledge-process`, which can write the
    Notion knowledge-base entry directly) when the user names Notion explicitly; unset → default to
    the gbrain/markdown path and say so.
@@ -175,6 +178,9 @@ remain live indefinitely" ([knowledge-base.software](https://knowledge-base.soft
 
 ## Evidence chain (internal)
 
+- `jstack:ingest-all` — [`skills/knowledge/ingest-all/SKILL.md`](../skills/knowledge/ingest-all/SKILL.md)
+  — bulk ingest across the configured `ingest_all` sources; reports per-source counts and every
+  skipped item with its reason.
 - `jstack:knowledge-intake` — [`skills/knowledge/intake/SKILL.md`](../skills/knowledge/intake/SKILL.md)
   — raw text → structured record with provenance; PII/secret flag before storage.
 - `jstack:knowledge-process` — [`skills/knowledge/process/SKILL.md`](../skills/knowledge/process/SKILL.md)
@@ -207,13 +213,15 @@ remain live indefinitely" ([knowledge-base.software](https://knowledge-base.soft
 1. `jstack:knowledge-search` — check for an existing entry before writing anything new (Prime
    Directive 3); also the answer-from-declared-sources lookup when the ask is "what do we know
    about X," not "store this."
-2. `jstack:knowledge-intake` — raw text → structured record with provenance and PII/secret flag.
-3. `jstack:knowledge-process` — dedupe, merge, canonicalize, or mark superseded.
-4. `jstack:team-knowledge` — build/maintain the link graph; flag stale pages for review-cadence
+2. `jstack:ingest-all` — bulk ingest across configured `ingest_all` sources when the
+   ask is a batch of new transcripts/exports, not a single item.
+3. `jstack:knowledge-intake` — raw text → structured record with provenance and PII/secret flag.
+4. `jstack:knowledge-process` — dedupe, merge, canonicalize, or mark superseded.
+5. `jstack:team-knowledge` — build/maintain the link graph; flag stale pages for review-cadence
    triage.
-5. `jstack:knowledge-process` (can write the Notion knowledge-base entry directly) / `jstack:self-knowledge`
+6. `jstack:knowledge-process` (can write the Notion knowledge-base entry directly) / `jstack:self-knowledge`
    — destination-specific routing once the target (team Notion vs personal graph) is explicit.
-6. `jstack:knowledge` — the domain router; use when the user's intent doesn't yet map to one child.
+7. `jstack:knowledge` — the domain router; use when the user's intent doesn't yet map to one child.
 
 ## What this agent does NOT own
 
