@@ -6,7 +6,13 @@
  * loudly instead of silently no-opping like the old stub did.
  */
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -22,6 +28,39 @@ function runWorkflow(cwd: string, args: string[]) {
     env: { ...process.env, JSTACK_INTROSPECT: "", NO_COLOR: "1" },
   });
   return { code: r.status, out: `${r.stdout ?? ""}${r.stderr ?? ""}` };
+}
+
+/**
+ * Actually running a workflow shells out to a real `claude -p` (runClaude in
+ * workflow-engine.ts), which needs a live API key and takes real time/money -- not something a
+ * unit test should invoke. Puts a fake `claude` on PATH instead: a tiny script that immediately
+ * prints the same `--output-format json` shape the real CLI would, so runClaude resolves fast
+ * without ever touching the network.
+ */
+function runWorkflowWithFakeClaude(cwd: string, args: string[]) {
+  const fakeBinDir = mkdtempSync(join(tmpdir(), "jstack-fake-claude-"));
+  const fakeClaudePath = join(fakeBinDir, "claude");
+  writeFileSync(
+    fakeClaudePath,
+    '#!/bin/sh\necho \'{"is_error": false, "result": "fake agent ran", "total_cost_usd": 0}\'\n',
+  );
+  chmodSync(fakeClaudePath, 0o755);
+  try {
+    const r = spawnSync("bun", ["run", ENTRY, "workflow", ...args], {
+      cwd,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        JSTACK_INTROSPECT: "",
+        NO_COLOR: "1",
+        PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
+      },
+      timeout: 15_000,
+    });
+    return { code: r.status, out: `${r.stdout ?? ""}${r.stderr ?? ""}` };
+  } finally {
+    rmSync(fakeBinDir, { recursive: true, force: true });
+  }
 }
 
 function writeDef(cwd: string, def: WorkflowDefinition) {
@@ -146,5 +185,32 @@ describe("workflow run --json without --yes", () => {
     // blocked on an interactive confirm or (non-interactively, as here) fell through to the
     // separate non-interactive error below it -- either way, prose landed on stdout in --json mode.
     expect(out).not.toContain("Preview");
+  });
+});
+
+describe("workflow run --json --yes (happy path)", () => {
+  test("prints pure JSON with no Preview heading or prompt prose, only --json's own object", () => {
+    writeDef(dir, {
+      id: "flow5",
+      name: "Flow 5",
+      start_url: "https://example.com",
+      steps: [{ id: "s1", kind: "goto", url: "https://example.com" }],
+    });
+    const { code, out } = runWorkflowWithFakeClaude(dir, [
+      "run",
+      "flow5",
+      "--json",
+      "--yes",
+    ]);
+    // The fake claude never produces a real browser artifact, so runWorkflowViaClaude reports
+    // ok:false (correctly -- "the process completed" isn't evidence anything ran) and the CLI
+    // exits 1 accordingly. That's expected and not what this test is about: the point is that
+    // --json's output is STILL pure JSON with no Preview/prompt prose ahead of it, success or not.
+    expect(code).toBe(1);
+    expect(out).not.toContain("Preview");
+    const parsed = JSON.parse(out);
+    expect(parsed.id).toBe("flow5");
+    expect(parsed.ok).toBe(false);
+    expect(Array.isArray(parsed.log)).toBe(true);
   });
 });
