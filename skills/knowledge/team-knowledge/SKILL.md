@@ -2,8 +2,10 @@
 name: jstack-team-knowledge
 description: "Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages."
 category: knowledge
+data_class: internal
 disable-model-invocation: true
 effort: high
+gbrain_destination: team
 ---
 
 <!-- Chain Contract -->

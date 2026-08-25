@@ -2,8 +2,10 @@
 name: jstack-self-knowledge
 description: Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.
 category: knowledge
+data_class: internal
 disable-model-invocation: true
 effort: high
+gbrain_destination: personal
 ---
 
 <!-- Chain Contract -->
