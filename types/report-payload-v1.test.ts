@@ -31,6 +31,24 @@ describe("ReportLinkSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  test("rejects a javascript: url (click-to-execute via a.href in the report shell)", () => {
+    const result = ReportLinkSchema.safeParse({
+      label: "Sprint board",
+      url: "javascript:alert(1)",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("accepts http:, https:, and mailto: schemes", () => {
+    for (const url of [
+      "http://example.com",
+      "https://example.com",
+      "mailto:a@b.com",
+    ]) {
+      expect(ReportLinkSchema.safeParse({ url }).success).toBe(true);
+    }
+  });
 });
 
 describe("safeParseReportPayload — links", () => {

@@ -91,10 +91,25 @@ export const ReportSectionSchema = z.union(
   },
 );
 
+/**
+ * `min(1)` alone (the original fix for the missing-url case) still accepted
+ * `javascript:alert(1)` -- report-viewer.tsx and the static shell templates both assign this
+ * value directly to `a.href`, so an unallowlisted scheme is click-to-execute from a report
+ * rendered off untrusted/LLM-generated JSON. Restrict to the schemes an external link actually
+ * needs.
+ */
+const ALLOWED_LINK_URL_PATTERN = /^(https?:|mailto:)/i;
+
 export const ReportLinkSchema = z
   .object({
     label: z.string().optional(),
-    url: z.string().min(1),
+    url: z
+      .string()
+      .min(1)
+      .regex(
+        ALLOWED_LINK_URL_PATTERN,
+        "url must start with http:, https:, or mailto:",
+      ),
   })
   .passthrough();
 
