@@ -197,7 +197,11 @@ answer once social pressure is present ([Asch conformity experiments](https://en
 
 1. **`prompts/personas/`**, **`prompts/tones/`** — load files explicitly per lens; missing
    persona → skip lens rather than invent its voice.
-2. **`policies.*`** — approval-sensitive recommendations defer to human confirmation.
+2. **`policies.review.required_approvals`** / **`policies.review.counsel_roles`** — how many
+   sign-offs a change needs and which persona lenses count toward them; `counsel_roles` unset →
+   fall back to this schema's own default roles rather than inventing a roster, distinct from a
+   persona *file* being physically missing (which skips that lens entirely, per the rule above).
+3. **`policies.*`** (other slices) — approval-sensitive recommendations defer to human confirmation.
 
 ## Evidence chain (internal)
 

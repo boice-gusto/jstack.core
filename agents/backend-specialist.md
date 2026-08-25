@@ -162,7 +162,8 @@ VALID` (instant) → `VALIDATE CONSTRAINT` (weak lock, no blocking) → then fli
 
 1. **`incident`** policy slices — severities and escalation hooks ([`config/schema.json`](../config/schema.json)); unset → narrative-only RCA without invented Sev labels.
 2. **`projects`** / **`jira_rules`** — ticket routing defaults after approval.
-3. **`engineering_health`** — optional corroboration for regressions.
+3. **`policies.sdlc`** (`stages`, `gates`) — which SDLC stages/gates apply before a change ships; unset → describe the gate a change would need without inventing an approver or stage name.
+4. **`engineering_health`** — optional corroboration for regressions.
 
 ## Evidence chain (internal)
 

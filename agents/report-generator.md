@@ -137,6 +137,11 @@ from the rendered output.
    half-applied brand.
 4. **Integrations (Jira/Notion/etc.)** — only pull when the report brief explicitly requires that source;
    otherwise stay markdown-from-user-input so no section implies a data source that wasn't actually used.
+5. **`skill_defaults.reports`** (`default_audience`, `html_theme`, `include_raw_tables`, `redact_ic_names`) —
+   quality-gate defaults for confidentiality and report-kind rendering; unset → fall back to each field's
+   documented default (`config/defaults.json`) rather than guessing an audience or redaction stance.
+6. **`notion_defaults`** — publish target when a report is bound for Notion rather than static HTML; unset
+   → markdown/HTML output only, no implied Notion publish.
 
 ## Evidence chain (internal)
 

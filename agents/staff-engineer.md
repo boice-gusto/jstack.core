@@ -155,7 +155,9 @@ and label a specific figure `[assumption]` if you can't confirm which report yea
 
 1. **`engineering_health`** / **`levels_and_expectations`** — when present ([`config/schema.json`](../config/schema.json)), anchor severity labels and DORA-band comparisons to the org's own thresholds; unset → describe what data would be needed before claiming a health verdict, and label any DORA-band comparison `[assumption]`.
 2. **`team.members`** — ownership context for silo scans; missing → broader risk notes labeled `[assumption]`.
-3. **`policies.*`** — approval gates before `jstack:jira` writes.
+3. **`silo_scan`** (`confidence_threshold`, `comment_marker`, `jira_lookback_days`) — thresholds `jstack:engineering-silo-scan` runs with; unset → use that skill's own documented defaults and say so rather than inventing a threshold.
+4. **`code_review`** — org-specific review conventions consumed by `jstack:review-code-review`; unset → fall back to general code-review practice, labeled `[no org-specific convention configured]`.
+5. **`policies.*`** — approval gates before `jstack:jira` writes.
 
 ## Evidence chain (internal)
 
