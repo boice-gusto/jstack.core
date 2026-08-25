@@ -5,7 +5,7 @@ description: >-
   enabled, else Notion private PE or 1:1 parent pages; always append AI attribution.
 category: meetings
 arguments: [person_name]
-argument-hint: [person-name]
+argument-hint: "[person-name]"
 disable-model-invocation: true
 effort: high
 ---

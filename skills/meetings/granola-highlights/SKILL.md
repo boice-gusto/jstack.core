@@ -2,7 +2,7 @@
 name: jstack-meetings-granola
 description: Import Granola AI highlights from one meeting and map bullets to Decisions, Open Questions, and Action Items. For an end-of-day rollup across multiple meetings, use jstack:granola-daily-summary instead.
 category: meetings
-effort: low
+effort: medium
 ---
 
 <!-- Chain Contract -->

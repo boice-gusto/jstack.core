@@ -19,7 +19,7 @@ End the current session: produce summary, flush carryover items, run eval hooks 
 - **Out of scope:** Starting a new session in the same turn without asking.
 
 ## Domain rules — session lifecycle
-- `init` sets gbrain target, issues or reads `session.current_session_id`, loads context; `end` flushes to GBrain with **provenance** per `gbrain.provenance` and `gbrain-entry-provenance.md`.
+- `init` sets gbrain target, issues or reads `session.current_session_id`, loads context; `end` flushes to GBrain with **provenance** per `gbrain.provenance` and `${CLAUDE_PLUGIN_ROOT}/skills/knowledge/references/gbrain-entry-provenance.md`.
 - Config keys: `session.*`, `gbrain` URLs + `gbrain.provenance` (config_label, identity, entry_fields), eval hooks.
 - Not a login system — the host enforces auth; this manages jstack session state only.
 
@@ -43,7 +43,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Make init and end idempotent — re-running either must not duplicate state or double-write carryover. Read the existing session id before assigning one.
 
 ### Step 3 — Execute
-Summary, carryover, links. When writing to GBrain, include envelope: session id, gbrain_target, config_label, slack_handle/ids if resolved, `source_skill: jstack-end-session`, `written_at`. See `gbrain-entry-provenance.md`.
+Summary, carryover, links. When writing to GBrain, include envelope: session id, gbrain_target, config_label, slack_handle/ids if resolved, `source_skill: jstack-end-session`, `written_at`. See `${CLAUDE_PLUGIN_ROOT}/skills/knowledge/references/gbrain-entry-provenance.md`.
 - Optional metrics from eval hooks. Clear ready for next init.
 
 ### Step 4 — Validate
