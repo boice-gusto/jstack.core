@@ -188,8 +188,8 @@ describe("workflow run --json without --yes", () => {
   });
 });
 
-describe("workflow run --json --yes (happy path)", () => {
-  test("prints pure JSON with no Preview heading or prompt prose, only --json's own object", () => {
+describe("workflow run --json --yes (the run-and-report path, not the confirm-gate path)", () => {
+  test("prints pure JSON with no Preview heading or prompt prose, regardless of the run's own ok/false outcome", () => {
     writeDef(dir, {
       id: "flow5",
       name: "Flow 5",

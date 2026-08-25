@@ -13,49 +13,54 @@ import { z } from "zod";
  * selector"), but that a hand-edited or shared workflow file could still slip past validation
  * with. `screenshot` and `ai` require no field beyond `notes` -- `ai` is a free-form,
  * agent-directed step by design (there is no assertion kind; a check is a `wait`).
+ *
+ * Every required field uses `min(1)`, not bare `z.string()`: the discriminated union closed the
+ * missing-key case (a `goto` with no `url` key) but originally still let the key be present with
+ * an empty string (`url: ""`), which is the same semantically-incomplete step the union exists
+ * to reject.
  */
 export const WorkflowStepSchema = z.discriminatedUnion("kind", [
   z.object({
-    id: z.string(),
+    id: z.string().min(1),
     kind: z.literal("goto"),
-    url: z.string(),
+    url: z.string().min(1),
     notes: z.string().optional(),
   }),
   z.object({
-    id: z.string(),
+    id: z.string().min(1),
     kind: z.literal("click"),
-    selector: z.string(),
+    selector: z.string().min(1),
     notes: z.string().optional(),
   }),
   z.object({
-    id: z.string(),
+    id: z.string().min(1),
     kind: z.literal("fill"),
-    selector: z.string(),
-    value: z.string(),
+    selector: z.string().min(1),
+    value: z.string().min(1),
     notes: z.string().optional(),
   }),
   z.object({
-    id: z.string(),
+    id: z.string().min(1),
     kind: z.literal("wait"),
-    selector: z.string(),
+    selector: z.string().min(1),
     notes: z.string().optional(),
   }),
   z.object({
-    id: z.string(),
+    id: z.string().min(1),
     kind: z.literal("screenshot"),
     notes: z.string().optional(),
   }),
   z.object({
-    id: z.string(),
+    id: z.string().min(1),
     kind: z.literal("ai"),
     notes: z.string().optional(),
   }),
 ]);
 
 export const WorkflowDefinitionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  start_url: z.string(),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  start_url: z.string().min(1),
   steps: z.array(WorkflowStepSchema),
   created_at: z.string().optional(),
 });

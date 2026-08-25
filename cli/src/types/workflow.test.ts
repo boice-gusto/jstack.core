@@ -65,4 +65,27 @@ describe("WorkflowStepSchema", () => {
       true,
     );
   });
+
+  test("rejects an empty-string value for a required field, not just a missing key", () => {
+    // The key being present with "" is the same semantically-incomplete step the
+    // discriminated union exists to reject, not a materially different case.
+    expect(
+      WorkflowStepSchema.safeParse({ id: "s1", kind: "goto", url: "" }).success,
+    ).toBe(false);
+    expect(
+      WorkflowStepSchema.safeParse({ id: "s1", kind: "click", selector: "" })
+        .success,
+    ).toBe(false);
+    expect(
+      WorkflowStepSchema.safeParse({
+        id: "s1",
+        kind: "fill",
+        selector: "#x",
+        value: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      WorkflowStepSchema.safeParse({ id: "", kind: "screenshot" }).success,
+    ).toBe(false);
+  });
 });
