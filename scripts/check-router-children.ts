@@ -93,7 +93,9 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   // A block-scalar description (`description: >` / `|`) used to be invisible to the old
   // single-line regex here -- it would capture just the `>`/`|` marker itself, never the real
   // routing-claim text on the following lines. The shared parser handles block scalars.
-  const parsedDescription = parseYamlFrontmatter(raw).meta.description;
+  const parsedFm = parseYamlFrontmatter(raw);
+  const parsedDescription =
+    parsedFm.status === "ok" ? parsedFm.meta.description : undefined;
   const desc =
     typeof parsedDescription === "string"
       ? parsedDescription

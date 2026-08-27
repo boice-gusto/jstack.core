@@ -136,15 +136,16 @@ const rows: Row[] = [];
 for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
   const abs = join(skillsRoot, rel, "SKILL.md");
   const raw = readFileSync(abs, "utf8");
-  const { meta, error, frontmatterText } = parseYamlFrontmatter(raw);
-  if (frontmatterText === undefined) continue; // no --- delimiters at all
-  if (!error) {
+  const parsed = parseYamlFrontmatter(raw);
+  if (parsed.status === "missing") continue; // no --- delimiters at all
+  if (parsed.status === "ok") {
     rows.push({
       rel,
-      gated: isWriteGated(meta),
-      forked: meta["agent"] === "Explore",
+      gated: isWriteGated(parsed.meta),
+      forked: parsed.meta["agent"] === "Explore",
     });
   } else {
+    const frontmatterText = parsed.frontmatterText;
     // Malformed YAML elsewhere in the frontmatter must not hide a real gate/fork declaration
     // from this security-relevant check -- fall back to literal text matching on the raw
     // frontmatter block, same as this file always did before adopting the shared parser.

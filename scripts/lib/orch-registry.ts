@@ -8,25 +8,17 @@ export interface OrchRegistry {
 }
 
 /**
- * Parses the `ORCHESTRATORS` set literal and `ORCH_CHILDREN` dict literal out of
- * scripts/apply_detailed_skills.py -- the source of truth `check-router-children.ts` enforces
- * against disk and `validate-router-matrix.ts` cross-checks against the eval matrix. Both used
- * to independently regex-parse the same Python source with near-identical regexes; any
- * formatting change to that file risked breaking one gate's parse while the other kept working,
- * since nothing kept them in lockstep.
+ * Parses the `ORCH_CHILDREN` dict literal out of scripts/apply_detailed_skills.py -- the source
+ * of truth `check-router-children.ts` enforces against disk and `validate-router-matrix.ts`
+ * cross-checks against the eval matrix. `ORCHESTRATORS` is derived from the same dict's keys,
+ * mirroring the Python source's own `ORCHESTRATORS = set(ORCH_CHILDREN.keys())` (2026-08 audit:
+ * the two used to be independently hand-maintained set/dict literals with the same key set,
+ * kept in sync only by discipline).
  */
 export function loadOrchRegistry(root: string): OrchRegistry {
   const genSrc = readFileSync(
     join(root, "scripts", "apply_detailed_skills.py"),
     "utf8",
-  );
-
-  const orchMatch = genSrc.match(/ORCHESTRATORS\s*=\s*\{([\s\S]*?)\}/);
-  if (!orchMatch) {
-    throw new Error("could not find ORCHESTRATORS in apply_detailed_skills.py");
-  }
-  const orchestrators = new Set(
-    [...orchMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]),
   );
 
   const childrenMatch = genSrc.match(/ORCH_CHILDREN\s*=\s*\{([\s\S]*?)\n\}/);
@@ -39,5 +31,5 @@ export function loadOrchRegistry(root: string): OrchRegistry {
     if (kv) children.set(kv[1], kv[2]);
   }
 
-  return { orchestrators, children };
+  return { orchestrators: new Set(children.keys()), children };
 }

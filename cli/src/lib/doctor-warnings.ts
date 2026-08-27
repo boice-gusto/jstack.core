@@ -1,6 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import type { JstackConfig } from "../types/config.js";
+import {
+  isMockMcpServerEntry,
+  mcpServerEnvString,
+  readMcpServers,
+} from "./mcp-file.js";
 import { resolveMachineReadableSettings } from "./machine-readable.js";
 
 export function gbrainTeamUrl(cfg: JstackConfig): string {
@@ -126,46 +131,13 @@ export function collectDoctorConfigWarnings(
   return warnings;
 }
 
-type McpServerSpec = {
-  args?: string[];
-  command?: string;
-  env?: Record<string, string>;
-};
-
-/**
- * Reads `.mcp.json`'s `mcpServers` map, or `null` if missing/malformed. `readMcpFixtureRootFromDisk`
- * and `collectMockMcpDoctorWarnings` below used to each independently JSON.parse this same file and
- * reimplement the identical "is this the jstack-mock server" predicate -- the same duplication
- * pattern already consolidated once in dependency-resolver.ts's readMcpServersFile.
- */
-function readMcpServers(
-  projectRoot: string,
-): Record<string, McpServerSpec> | null {
-  const mcpPath = join(projectRoot, ".mcp.json");
-  if (!existsSync(mcpPath)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as {
-      mcpServers?: Record<string, McpServerSpec>;
-    };
-    return raw.mcpServers ?? {};
-  } catch {
-    return null;
-  }
-}
-
-function isMockMcpServerEntry(key: string, spec: McpServerSpec): boolean {
-  if (key.toLowerCase() === "jstack-mock") return true;
-  const args = spec.args ?? [];
-  return args.some((a) => String(a).includes("mcp-mock/server"));
-}
-
 function readMcpFixtureRootFromDisk(projectRoot: string): string | null {
   const servers = readMcpServers(projectRoot);
   if (!servers) return null;
   for (const [key, spec] of Object.entries(servers)) {
     if (!isMockMcpServerEntry(key, spec)) continue;
-    const fromEnv = spec.env?.JSTACK_MCP_FIXTURE_ROOT?.trim();
-    if (fromEnv && fromEnv.length > 0) {
+    const fromEnv = mcpServerEnvString(spec, "JSTACK_MCP_FIXTURE_ROOT");
+    if (fromEnv) {
       return isAbsolute(fromEnv) ? fromEnv : resolve(projectRoot, fromEnv);
     }
   }

@@ -90,7 +90,8 @@ export function extractSkillFacts(
 ): SkillFacts {
   const md = readFileSync(skillMdPath, "utf8");
   const failBody = section(md, "Failure modes");
-  const { meta } = parseYamlFrontmatter(md);
+  const parsedFm = parseYamlFrontmatter(md);
+  const meta = parsedFm.status === "ok" ? parsedFm.meta : {};
   const name = typeof meta.name === "string" ? stripQuotes(meta.name) : "";
   const description =
     typeof meta.description === "string" ? stripQuotes(meta.description) : "";

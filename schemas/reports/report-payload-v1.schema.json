@@ -1,26 +1,28 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://jstack.local/schemas/reports/report-payload-v1.json",
   "title": "ReportPayload",
+  "description": "GENERATED FILE — do not edit by hand. Produced from the Zod schema in types/report-payload-v1.ts by `bun run report-schema:generate`. That Zod schema is the contract `jstack report render` and the dashboard preview actually enforce; this file is its human- and agent-readable projection. `bun run check` fails if the two drift apart.",
   "type": "object",
-  "required": ["schema_version", "meta"],
   "properties": {
-    "schema_version": { "const": 1 },
+    "schema_version": {
+      "type": "number",
+      "const": 1
+    },
     "meta": {
       "type": "object",
-      "required": ["title", "generated_at"],
       "properties": {
-        "title": { "type": "string" },
-        "generated_at": { "type": "string" },
-        "team": { "type": "string" },
-        "subtitle": { "type": "string", "description": "Optional subtitle (e.g. week range) for UI shells." },
-        "footer_note": {
-          "type": "string",
-          "description": "Optional footer line; when omitted, the report shell picks copy from report_kind."
+        "title": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "team": {
+          "type": "string"
         },
         "report_kind": {
           "type": "string",
-          "description": "Aligns with templates/reports/*.md names (for dashboard badge and routing).",
           "enum": [
             "team-weekly",
             "engineer-weekly",
@@ -32,24 +34,248 @@
             "self-report",
             "generic"
           ]
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "footer_note": {
+          "type": "string"
         }
-      }
+      },
+      "required": [
+        "title",
+        "generated_at"
+      ],
+      "additionalProperties": true
     },
     "sections": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "body_markdown": { "type": "string" },
-          "chart": { "$ref": "#/$defs/ReportChart" }
-        },
         "anyOf": [
-          { "required": ["body_markdown"] },
-          { "required": ["chart"] }
-        ],
-        "additionalProperties": true
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "chart": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "bar",
+                      "line",
+                      "doughnut"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "datasets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        },
+                        "backgroundColor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "borderColor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "fill": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "stacked": {
+                        "type": "boolean"
+                      },
+                      "y_axis_begin_at_zero": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "labels",
+                  "datasets"
+                ],
+                "additionalProperties": false
+              },
+              "body_markdown": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "chart"
+            ],
+            "additionalProperties": true
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "chart": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "bar",
+                      "line",
+                      "doughnut"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "datasets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        },
+                        "backgroundColor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "borderColor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "fill": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "stacked": {
+                        "type": "boolean"
+                      },
+                      "y_axis_begin_at_zero": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "type",
+                  "labels",
+                  "datasets"
+                ],
+                "additionalProperties": false
+              },
+              "body_markdown": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "body_markdown"
+            ],
+            "additionalProperties": true
+          }
+        ]
       }
     },
     "links": {
@@ -57,59 +283,25 @@
       "items": {
         "type": "object",
         "properties": {
-          "label": { "type": "string" },
-          "url": { "type": "string", "minLength": 1, "pattern": "^(https?:|mailto:)" }
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(https?:|mailto:)"
+          }
         },
-        "required": ["url"]
+        "required": [
+          "url"
+        ],
+        "additionalProperties": true
       }
     }
   },
-  "additionalProperties": true,
-  "$defs": {
-    "ReportChartDataset": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["label", "data"],
-      "properties": {
-        "label": { "type": "string" },
-        "data": { "type": "array", "items": { "type": "number" } },
-        "backgroundColor": {
-          "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
-          ]
-        },
-        "borderColor": {
-          "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
-          ]
-        },
-        "fill": { "type": "boolean" }
-      }
-    },
-    "ReportChart": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["type", "labels", "datasets"],
-      "properties": {
-        "type": { "type": "string", "enum": ["bar", "line", "doughnut"] },
-        "title": { "type": "string" },
-        "labels": { "type": "array", "minItems": 1, "items": { "type": "string" } },
-        "datasets": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/ReportChartDataset" }
-        },
-        "options": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "stacked": { "type": "boolean" },
-            "y_axis_begin_at_zero": { "type": "boolean" }
-          }
-        }
-      }
-    }
-  }
+  "required": [
+    "schema_version",
+    "meta"
+  ],
+  "additionalProperties": true
 }

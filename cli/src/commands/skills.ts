@@ -113,6 +113,37 @@ function printEntriesJson(entries: SkillIndexEntry[]): void {
   console.log(JSON.stringify({ skills: entries }, null, 2));
 }
 
+/**
+ * Shared by `browse`/`pick`: load entries, then handle the `--json` short-circuit, the
+ * non-interactive-TTY guard, and the empty-list guard the same way. Returns `undefined` when
+ * the caller should return immediately (one of the three cases already handled it); returns the
+ * entries otherwise.
+ */
+function loadInteractiveEntries(opts: {
+  json?: boolean;
+  overlay?: string;
+}): SkillIndexEntry[] | undefined {
+  const entries = loadEntries(opts);
+
+  if (opts.json) {
+    printEntriesJson(entries);
+    return undefined;
+  }
+
+  if (!isInteractive()) {
+    console.error(chalk.yellow(nonInteractiveHint()));
+    process.exitCode = 1;
+    return undefined;
+  }
+
+  if (entries.length === 0) {
+    console.log(chalk.dim("No SKILL.md files found."));
+    return undefined;
+  }
+
+  return entries;
+}
+
 export function runSkillsIndex(opts: {
   json?: boolean;
   overlay?: string;
@@ -132,23 +163,8 @@ export async function runSkillsBrowse(opts: {
   json?: boolean;
   overlay?: string;
 }): Promise<void> {
-  const entries = loadEntries(opts);
-
-  if (opts.json) {
-    printEntriesJson(entries);
-    return;
-  }
-
-  if (!isInteractive()) {
-    console.error(chalk.yellow(nonInteractiveHint()));
-    process.exitCode = 1;
-    return;
-  }
-
-  if (entries.length === 0) {
-    console.log(chalk.dim("No SKILL.md files found."));
-    return;
-  }
+  const entries = loadInteractiveEntries(opts);
+  if (!entries) return;
 
   const picked = await p.select<string>({
     message: "Select a skill",
@@ -189,23 +205,8 @@ export async function runSkillsPick(opts: {
   json?: boolean;
   overlay?: string;
 }): Promise<void> {
-  const entries = loadEntries(opts);
-
-  if (opts.json) {
-    printEntriesJson(entries);
-    return;
-  }
-
-  if (!isInteractive()) {
-    console.error(chalk.yellow(nonInteractiveHint()));
-    process.exitCode = 1;
-    return;
-  }
-
-  if (entries.length === 0) {
-    console.log(chalk.dim("No SKILL.md files found."));
-    return;
-  }
+  const entries = loadInteractiveEntries(opts);
+  if (!entries) return;
 
   const filterRaw = await p.text({
     message: "Filter skills (name, path, or description; empty = show all)",

@@ -20,24 +20,21 @@
  */
 import yaml from "js-yaml";
 
-export interface ParsedFrontmatter {
-  /** Parsed key/value pairs. Empty object when frontmatter is missing or failed to parse. */
-  meta: Record<string, unknown>;
-  /** File content after the closing `---` delimiter. Equals `raw` when no frontmatter was found. */
-  body: string;
-  /**
-   * Set when the file has no `---`-delimited frontmatter block at all, or when the block was
-   * found but its content is not valid YAML. Callers distinguish the two cases via
-   * `frontmatterText` (present only when delimiters were found).
-   */
-  error?: string;
-  /**
-   * Raw text between the `---` delimiters, present whenever the delimiters themselves were
-   * found — even if the YAML inside them failed to parse. Lets a caller run its own fallback
-   * parse (e.g. a line-based `key: value` scan) without re-deriving the delimiter regex.
-   */
-  frontmatterText?: string;
-}
+/**
+ * The three real outcomes of parsing frontmatter, as a tag instead of two optional fields a
+ * caller had to re-derive the same "which state is this" mapping from (no `---` delimiters at
+ * all vs. delimiters present but invalid YAML vs. valid) — see the module comment above for the
+ * bug class that ambiguity already caused once.
+ */
+export type ParsedFrontmatter =
+  | { status: "missing"; body: string }
+  | { status: "invalid"; body: string; frontmatterText: string; error: string }
+  | {
+      status: "ok";
+      body: string;
+      frontmatterText: string;
+      meta: Record<string, unknown>;
+    };
 
 /** True when a skill's frontmatter declares `disable-model-invocation: true` -- the flag that
  * stops Claude from auto-triggering a write/operational skill from conversation. Shared so
@@ -51,16 +48,16 @@ export function isWriteGated(meta: Record<string, unknown>): boolean {
 export function parseYamlFrontmatter(raw: string): ParsedFrontmatter {
   const fm = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!fm) {
-    return { meta: {}, body: raw, error: "missing YAML frontmatter" };
+    return { status: "missing", body: raw };
   }
   const body = raw.slice(fm[0].length);
   const frontmatterText = fm[1] ?? "";
   try {
     const meta = (yaml.load(frontmatterText) ?? {}) as Record<string, unknown>;
-    return { meta, body, frontmatterText };
+    return { status: "ok", meta, body, frontmatterText };
   } catch (err) {
     return {
-      meta: {},
+      status: "invalid",
       body,
       frontmatterText,
       error: err instanceof Error ? err.message : String(err),

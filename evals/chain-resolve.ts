@@ -20,7 +20,8 @@ export function buildSuffixToRelPath(
       "SKILL.md",
     );
     const raw = readFileSync(skillMd, "utf8");
-    const { meta } = parseYamlFrontmatter(raw);
+    const parsedFm = parseYamlFrontmatter(raw);
+    const meta = parsedFm.status === "ok" ? parsedFm.meta : {};
     const name = typeof meta.name === "string" ? meta.name : "";
     const suffix = name.match(NAME_PREFIX)?.[1];
     if (suffix === undefined) {

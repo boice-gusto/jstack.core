@@ -62,6 +62,72 @@ import { cliRegistryJson } from "./types/cli-registry.js";
 import { registerClaudeMdCommand } from "./commands/claude-md.js";
 import { registerCrewCommand } from "./commands/crew.js";
 
+/**
+ * `jstack setup` has 3 disjoint modes (--schema / --ci / legacy interactive), but the raw
+ * commander options live in one flat namespace of 8 independently-settable flags. A flag meant
+ * for one mode used to be silently ignored under another instead of rejected:
+ * `--non-interactive`/`--section` without `--schema` ran the full interactive prompt flow anyway;
+ * `--pe`/`--with-gbrain-kb` under `--ci` or `--schema` were accepted and then never read. Parsing
+ * once into this union makes the 3-way mode a value instead of something re-derived from 2
+ * booleans at every dispatch/label/validation site, and makes a cross-mode flag combination an
+ * `"error"` variant instead of a reachable state 2 separately-maintained guard clauses must
+ * catch.
+ */
+type SetupInvocation =
+  | {
+      mode: "schema";
+      reconfigure: boolean;
+      section: string | undefined;
+      nonInteractive: boolean;
+    }
+  | { mode: "ci"; diskFallbackRoot: string }
+  | { mode: "legacy"; reconfigure: boolean; withGbrainKb: boolean; pe: boolean }
+  | { mode: "error"; message: string };
+
+function parseSetupInvocation(o: {
+  schema: boolean;
+  ci: boolean;
+  section?: string;
+  nonInteractive: boolean;
+  pe: boolean;
+  withGbrainKb: boolean;
+  reconfigure: boolean;
+  diskFallbackRoot: string;
+}): SetupInvocation {
+  if (!o.schema && (o.section !== undefined || o.nonInteractive)) {
+    return {
+      mode: "error",
+      message:
+        "--section/--non-interactive only apply with --schema. Re-run with --schema, or drop them.",
+    };
+  }
+  if ((o.ci || o.schema) && (o.pe || o.withGbrainKb)) {
+    return {
+      mode: "error",
+      message:
+        "--pe/--with-gbrain-kb only apply to the interactive (non-schema, non-CI) wizard. " +
+        "Re-run without --ci/--schema, or drop --pe/--with-gbrain-kb.",
+    };
+  }
+  if (o.schema) {
+    return {
+      mode: "schema",
+      reconfigure: o.reconfigure,
+      section: o.section,
+      nonInteractive: o.nonInteractive,
+    };
+  }
+  if (o.ci) {
+    return { mode: "ci", diskFallbackRoot: o.diskFallbackRoot };
+  }
+  return {
+    mode: "legacy",
+    reconfigure: o.reconfigure,
+    withGbrainKb: o.withGbrainKb,
+    pe: o.pe,
+  };
+}
+
 const program = new Command();
 program
   .name("jstackc")
@@ -111,26 +177,9 @@ program
     false,
   )
   .action(async (o) => {
-    /**
-     * `setup` has 3 disjoint modes (--schema / --ci / legacy) dispatched below, but the 8
-     * flags above live in one flat commander namespace -- a flag meant for one mode used to
-     * be silently ignored under another instead of rejected: `--non-interactive`/`--section`
-     * without `--schema` ran the full interactive prompt flow anyway; `--pe`/`--with-gbrain-kb`
-     * under `--ci` or `--schema` were accepted and then never read. Reject those combinations
-     * up front instead of accepting a flag whose effect quietly never happens.
-     */
-    if (!o.schema && (o.section !== undefined || o.nonInteractive)) {
-      console.error(
-        "--section/--non-interactive only apply with --schema. Re-run with --schema, or drop them.",
-      );
-      process.exitCode = 1;
-      return;
-    }
-    if ((o.ci || o.schema) && (o.pe || o.withGbrainKb)) {
-      console.error(
-        "--pe/--with-gbrain-kb only apply to the interactive (non-schema, non-CI) wizard. " +
-          "Re-run without --ci/--schema, or drop --pe/--with-gbrain-kb.",
-      );
+    const invocation = parseSetupInvocation(o);
+    if (invocation.mode === "error") {
+      console.error(invocation.message);
       process.exitCode = 1;
       return;
     }
@@ -138,11 +187,12 @@ program
     // dispatches to -- acquiring the lock once here (rather than per-mode) means a plain
     // `jstack setup` and a `jstack setup --schema` racing each other are caught too, not
     // just two runs of the same mode.
-    const commandLabel = o.schema
-      ? "jstack setup --schema"
-      : o.ci
-        ? "jstack setup --ci"
-        : "jstack setup";
+    const commandLabel =
+      invocation.mode === "schema"
+        ? "jstack setup --schema"
+        : invocation.mode === "ci"
+          ? "jstack setup --ci"
+          : "jstack setup";
     const lock = acquireSetupLock(findProjectRoot(), commandLabel);
     if (!lock.ok) {
       console.error(
@@ -158,23 +208,25 @@ program
       );
     }
     try {
-      if (o.schema) {
-        await runSetupSchema({
-          reconfigure: o.reconfigure,
-          section: o.section,
-          nonInteractive: o.nonInteractive,
-        });
-        return;
+      switch (invocation.mode) {
+        case "schema":
+          await runSetupSchema({
+            reconfigure: invocation.reconfigure,
+            section: invocation.section,
+            nonInteractive: invocation.nonInteractive,
+          });
+          return;
+        case "ci":
+          await runSetupCi({ diskFallbackRoot: invocation.diskFallbackRoot });
+          return;
+        case "legacy":
+          await runSetup({
+            reconfigure: invocation.reconfigure,
+            withGbrainKb: invocation.withGbrainKb,
+            pe: invocation.pe,
+          });
+          return;
       }
-      if (o.ci) {
-        await runSetupCi({ diskFallbackRoot: o.diskFallbackRoot });
-        return;
-      }
-      await runSetup({
-        reconfigure: o.reconfigure,
-        withGbrainKb: o.withGbrainKb,
-        pe: o.pe,
-      });
     } finally {
       lock.release();
     }

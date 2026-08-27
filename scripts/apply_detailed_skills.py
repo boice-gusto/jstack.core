@@ -250,11 +250,6 @@ def skill_key(p: Path) -> str:
     return str(r.parent) if r.name == "SKILL.md" else str(r)
 
 
-ORCHESTRATORS = {
-    "jira", "notion", "meetings", "research", "reports", "self",
-    "knowledge", "review", "session", "metrics", "routines", "workflows", "incident",
-    "sop", "sprint", "computer-use", "design", "pe", "shortcuts",
-}
 ORCH_CHILDREN = {
     "jira": "get, create, update, intake, transition, notify, append",
     "notion": "update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup",
@@ -276,6 +271,7 @@ ORCH_CHILDREN = {
     "shortcuts": "ceo-brainstorm, executive-research-brief",
     "sprint": "prep, refinement, planning",
 }
+ORCHESTRATORS = set(ORCH_CHILDREN.keys())
 
 
 def deep_lookup(table: dict, key: str, category: str, default=""):
