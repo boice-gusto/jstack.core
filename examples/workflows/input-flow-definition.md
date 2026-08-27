@@ -11,7 +11,6 @@ Definitions live at `config/workflows/<id>.json`. **JSON, not YAML** — `loadWo
 {
   "id": "smoke-staging-auth",
   "name": "Staging auth smoke",
-  "start_url": "${STAGING_BASE_URL}/login",
   "steps": [
     { "id": "s1", "kind": "goto", "url": "${STAGING_BASE_URL}/login", "notes": "Base URL from env; never hardcode a host." },
     { "id": "s2", "kind": "wait", "selector": "[data-testid=login-form]", "notes": "Gate on the form existing before typing into it." },
@@ -28,8 +27,10 @@ Definitions live at `config/workflows/<id>.json`. **JSON, not YAML** — `loadWo
 
 ## Why it looks like this
 
-**Every field is in the schema.** `WorkflowDefinition` is `{ id, name, start_url, steps[], created_at? }`.
-A step is `{ id, kind, selector?, value?, url?, notes? }`. Nothing else validates.
+**Every field is in the schema.** `WorkflowDefinition` is `{ id, name, steps[], created_at? }` -- no
+separate `start_url`; the start URL is `steps[0].url` when that step is a `goto` (see
+`workflowStartUrl()` in `cli/src/types/workflow.ts`). A step is
+`{ id, kind, selector?, value?, url?, notes? }`. Nothing else validates.
 
 **`kind` has exactly six legal values:** `goto`, `click`, `fill`, `wait`, `screenshot`, `ai`. There is
 **no `assertions` field and no assert kind** — `grep -rn assert cli/src/types/workflow.ts

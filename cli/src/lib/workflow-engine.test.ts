@@ -30,7 +30,11 @@ function mkFixture() {
 }
 
 function def(id: string): WorkflowDefinition {
-  return { id, name: "t", start_url: "https://example.com", steps: [] };
+  return {
+    id,
+    name: "t",
+    steps: [{ id: "s1", kind: "goto", url: "https://example.com" }],
+  };
 }
 
 describe("workflow-engine — path containment", () => {
@@ -118,7 +122,7 @@ describe("workflow-engine — malformed/schema-invalid files fail closed, not cr
       mkdirSync(dir, { recursive: true });
       writeFileSync(
         join(dir, "broken.json"),
-        JSON.stringify({ id: "broken", name: "t" }), // missing start_url/steps
+        JSON.stringify({ id: "broken", name: "t" }), // missing steps
         "utf8",
       );
       expect(loadWorkflow(projectRoot, "broken")).toBeNull();

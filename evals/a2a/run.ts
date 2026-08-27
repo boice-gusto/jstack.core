@@ -37,7 +37,7 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import yaml from "js-yaml";
 import {
   buildJudgePrompt,
@@ -45,7 +45,7 @@ import {
   VERDICT_FAIL,
   VERDICT_PASS,
 } from "./protocol.js";
-import { exerciseSubject } from "./subjects.js";
+import { exerciseSubject, spawnAsync } from "./subjects.js";
 import { runDeterministicAsserts, type AssertionResult } from "./assertions.js";
 import {
   validateCaseSpec,
@@ -116,47 +116,26 @@ function loadCases(): { cases: CaseSpec[]; loadErrors: CaseLoadError[] } {
   return { cases, loadErrors };
 }
 
-/** Ask an independent judge agent. Returns null when no judge is available. */
+/**
+ * Ask an independent judge agent. Returns null when no judge is available.
+ *
+ * Reuses `subjects.ts`'s `spawnAsync` (spawn + timeout-driven SIGTERM + settle-once) instead of
+ * a second, independent copy of the same spawn/timeout/settle logic -- the two had already
+ * drifted (this one hardcoded `8 * 1024 * 1024` again instead of importing `MAX_BUFFER`, and
+ * ignored stderr entirely rather than capturing it alongside stdout). Losing the "ignore stdin
+ * via `stdio: ['ignore', ...]`" distinction is harmless: `spawnAsync` with no `input` just closes
+ * the write end of a piped stdin instead, which is the same "no input" outcome from the child's
+ * side.
+ */
 function askJudge(prompt: string): Promise<string | null> {
   if (!judgeReachable) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const timeoutMs = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
-    let child: ReturnType<typeof spawn>;
-    try {
-      child = spawn(claudeBin, ["-p", prompt, "--output-format", "text"], {
-        cwd: pluginRoot,
-        env: { ...process.env, ANTHROPIC_API_KEY: apiKey ?? "" },
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-    } catch {
-      resolve(null);
-      return;
-    }
-    let stdout = "";
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      child.kill("SIGTERM");
-      settled = true;
-      resolve(null);
-    }, timeoutMs);
-    child.stdout?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => {
-      if (stdout.length < 8 * 1024 * 1024) stdout += chunk;
-    });
-    child.on("error", () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(null);
-    });
-    child.on("close", () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      const text = stdout.trim();
-      resolve(text === "" ? null : text);
-    });
+  return spawnAsync(claudeBin, ["-p", prompt, "--output-format", "text"], {
+    cwd: pluginRoot,
+    env: { ...process.env, ANTHROPIC_API_KEY: apiKey ?? "" },
+    timeoutMs: Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000),
+  }).then((r) => {
+    const text = (r.stdout ?? "").trim();
+    return text === "" ? null : text;
   });
 }
 

@@ -3,6 +3,7 @@ import { create } from "zustand";
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
   applyAgentStreamEvent,
+  initialAgentRunSlice,
   type RunState as SharedRunState,
   type ToolEvent,
 } from "@/lib/agent-run-shared";
@@ -47,15 +48,9 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   stepIndex: 0,
   transcript: [],
   stepContext: "",
-  run: { status: "idle" },
-  toolEvents: [],
-  streamEvents: [],
-  costSeries: [],
-  tokenSeries: [],
+  ...initialAgentRunSlice(),
   skillId: "",
   expectStructuredJson: false,
-  structuredJsonText: null,
-  claudeSessionId: null,
 
   setSkillId: (id: string) => set({ skillId: id }),
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
@@ -66,13 +61,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       stepIndex: 0,
       transcript: [],
       stepContext: "",
-      run: { status: "idle" },
-      toolEvents: [],
-      streamEvents: [],
-      costSeries: [],
-      tokenSeries: [],
-      structuredJsonText: null,
-      claudeSessionId: null,
+      ...initialAgentRunSlice(),
     });
   },
 

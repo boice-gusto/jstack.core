@@ -11,6 +11,7 @@ import { resolveWithinRoots } from "./path-utils.js";
 import { runClaude } from "./crew/slack.js";
 import {
   WorkflowDefinitionSchema,
+  workflowStartUrl,
   type WorkflowDefinition,
   type WorkflowStep,
 } from "../types/workflow.js";
@@ -137,10 +138,11 @@ function describeStep(step: WorkflowStep, index: number): string {
  */
 export function buildWorkflowRunPrompt(def: WorkflowDefinition): string {
   const steps = def.steps.map(describeStep).join("\n");
+  const startUrl = workflowStartUrl(def);
   return (
     `Run the browser workflow "${def.name}" (id "${def.id}"), triggered by ` +
     `\`jstack workflow run ${def.id} --yes\`.\n\n` +
-    `Start at: ${def.start_url}\n\n` +
+    `Start at: ${startUrl ?? "(first step is not a goto -- follow the step list below)"}\n\n` +
     `Steps, in order:\n${steps || "  (no steps defined)"}\n\n` +
     `Discipline:\n` +
     `- Drive a real browser via whichever browser-automation tool you have available (e.g. ` +

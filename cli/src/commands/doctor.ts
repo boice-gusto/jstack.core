@@ -27,7 +27,10 @@ import {
   collectMockMcpDoctorWarnings,
 } from "../lib/doctor-warnings.js";
 import { exitCancelled, handleCancel, isInteractive } from "../lib/cliUi.js";
-import { checkDistributionUpdate } from "../lib/update-check.js";
+import {
+  checkDistributionUpdate,
+  toLegacyUpdateFields,
+} from "../lib/update-check.js";
 import {
   type DependencyIssue,
   type RepairAction,
@@ -203,12 +206,7 @@ export async function runDoctor(opts: {
             notes: aliasDrift.notes,
           },
           distribution: update
-            ? {
-                local_version: update.local_version,
-                remote_version: update.remote_version,
-                upgrade_available: update.upgrade_available,
-                raw_line: update.raw_line,
-              }
+            ? toLegacyUpdateFields(update)
             : { skipped: true },
           cross_plugins: {
             gbrain: gbrainPlugin
@@ -307,10 +305,9 @@ export async function runDoctor(opts: {
     true,
   );
 
-  if (update?.upgrade_available && update.raw_line) {
-    warn(
-      `Plugin update: ${update.raw_line} — see jstack upgrade or release notes.`,
-    );
+  if (update?.status === "upgrade-available") {
+    const rawLine = `UPGRADE_AVAILABLE ${update.local_version} ${update.remote_version}`;
+    warn(`Plugin update: ${rawLine} — see jstack upgrade or release notes.`);
   }
 
   if (cfg) {

@@ -21,6 +21,22 @@ export type Evidence = {
   related_rules?: number[];
 };
 
+/**
+ * Forces every one of Evidence's optional fields to be named here -- renderProse and
+ * evidenceFingerprint below both fan out over Evidence's fields, and both independently missed
+ * `related_rules` (added after the other three) at the same time, since a missing branch is a
+ * silent no-op, not a compile error. Adding a field to `Evidence` without adding it here is now
+ * a type error, so the two fan-out sites can't silently drift from the type again.
+ */
+type _EvidenceFieldCheck = Record<keyof Evidence, true>;
+const _evidenceFields: _EvidenceFieldCheck = {
+  commits: true,
+  session_excerpts: true,
+  file_paths: true,
+  related_rules: true,
+};
+void _evidenceFields;
+
 export type Issue = {
   id: string;
   detector: string;
@@ -714,6 +730,8 @@ export function renderProse(input: RenderInput): string {
       for (const e of i.evidence.session_excerpts)
         lines.push(`  - \`${e.session_id}\`: ${e.excerpt}`);
     }
+    if (i.evidence.related_rules?.length)
+      lines.push(`- Rule line(s): ${i.evidence.related_rules.join(", ")}`);
     lines.push("");
     n++;
   }
@@ -821,6 +839,7 @@ function evidenceFingerprint(issue: Issue): string {
     (ev.commits ?? []).join(","),
     (ev.file_paths ?? []).join(","),
     (ev.session_excerpts ?? []).map((e) => e.session_id).join(","),
+    (ev.related_rules ?? []).join(","),
   ];
   return parts.join("|");
 }

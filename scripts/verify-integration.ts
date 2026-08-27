@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ENCODING_UTF8, JSTACK_CONFIG_FILE } from "../constants/paths.js";
-import { isRecord, runBun } from "./lib/proc-utils.js";
+import { isRecord, runBun, runStepOrExit } from "./lib/proc-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, "..");
@@ -154,13 +154,11 @@ function main(): void {
   mkdirSync(diskKb, { recursive: true });
 
   console.log("3) Fixture: setup --ci\n");
-  const e0 = runBun(
+  runStepOrExit(
     ["run", cliEntry, "setup", "--ci", "--disk-fallback-root", diskKb],
     tmpProject,
     { CLAUDE_PLUGIN_ROOT: pluginRoot },
   );
-  console.log(e0.out);
-  if (e0.status !== 0) process.exit(1);
   if (!existsSync(join(tmpProject, JSTACK_CONFIG_FILE))) {
     console.error("Missing jstack.config.json after setup --ci");
     process.exit(1);

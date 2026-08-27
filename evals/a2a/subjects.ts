@@ -70,13 +70,18 @@ export interface SubjectOutput {
  * latency masquerade as a behavioral finding.
  */
 const TIMEOUT_MS = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
-const MAX_BUFFER = 8 * 1024 * 1024;
+export const MAX_BUFFER = 8 * 1024 * 1024;
 
-interface SpawnAsyncResult {
+export interface SpawnAsyncResult {
   stdout: string;
   stderr: string;
   status: number | null;
   error?: Error;
+}
+
+/** The subject never ran at all (missing config, missing file, spawn failure never reached). */
+function subjectError(message: string): SubjectOutput {
+  return { text: "", exitCode: null, stdout: "", stderr: "", error: message };
 }
 
 /**
@@ -85,11 +90,6 @@ interface SpawnAsyncResult {
  * it wants stdout alone, not stdout+stderr joined, and a different no-output message; folding
  * it in would just relocate its divergence rather than remove any real duplication.)
  */
-/** The subject never ran at all (missing config, missing file, spawn failure never reached). */
-function subjectError(message: string): SubjectOutput {
-  return { text: "", exitCode: null, stdout: "", stderr: "", error: message };
-}
-
 function toSubjectOutput(r: SpawnAsyncResult): SubjectOutput {
   const stdout = r.stdout ?? "";
   const stderr = r.stderr ?? "";
@@ -108,7 +108,7 @@ function toSubjectOutput(r: SpawnAsyncResult): SubjectOutput {
  * `spawnSync` is the whole point: it lets the event loop run other cases' children concurrently
  * instead of blocking on this one until it exits.
  */
-function spawnAsync(
+export function spawnAsync(
   cmd: string,
   args: string[],
   opts: {

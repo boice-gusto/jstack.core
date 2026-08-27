@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ENCODING_UTF8, JSTACK_CONFIG_FILE } from "../constants/paths.js";
-import { isRecord, runBun } from "./lib/proc-utils.js";
+import { isRecord, runBun, runStepOrExit } from "./lib/proc-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, "..");
@@ -32,13 +32,11 @@ async function main(): Promise<void> {
   mkdirSync(diskKb, { recursive: true });
 
   console.log("1) jstack setup --ci (non-interactive fixture)\n");
-  const e1 = runBun(
+  runStepOrExit(
     ["run", cliEntry, "setup", "--ci", "--disk-fallback-root", diskKb],
     tmpProject,
     { CLAUDE_PLUGIN_ROOT: pluginRoot },
   );
-  console.log(e1.out);
-  if (e1.status !== 0) process.exit(1);
 
   if (process.env.JSTACK_MOCK_MCP === "1") {
     console.log(
@@ -61,15 +59,9 @@ async function main(): Promise<void> {
       JSON.stringify(parsed, null, 2) + "\n",
       ENCODING_UTF8,
     );
-    const em = runBun(
-      ["run", cliEntry, "mcp", "add", "jstack-mock"],
-      tmpProject,
-      {
-        CLAUDE_PLUGIN_ROOT: pluginRoot,
-      },
-    );
-    console.log(em.out);
-    if (em.status !== 0) process.exit(1);
+    runStepOrExit(["run", cliEntry, "mcp", "add", "jstack-mock"], tmpProject, {
+      CLAUDE_PLUGIN_ROOT: pluginRoot,
+    });
     console.log("   OK mock MCP preset registered\n");
   }
 
@@ -93,11 +85,9 @@ async function main(): Promise<void> {
   );
 
   console.log("2) jstack doctor\n");
-  const e2 = runBun(["run", cliEntry, "doctor"], tmpProject, {
+  runStepOrExit(["run", cliEntry, "doctor"], tmpProject, {
     CLAUDE_PLUGIN_ROOT: pluginRoot,
   });
-  console.log(e2.out);
-  if (e2.status !== 0) process.exit(1);
   console.log("   OK doctor exit 0\n");
 
   console.log(

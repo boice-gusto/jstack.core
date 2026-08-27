@@ -89,7 +89,6 @@ describe("workflow run --dry-run", () => {
     writeDef(dir, {
       id: "login-check",
       name: "Login check",
-      start_url: "https://example.com/login",
       steps: [
         { id: "s1", kind: "goto", url: "https://example.com/login" },
         { id: "s2", kind: "fill", selector: "#user", value: "env:LOGIN_USER" },
@@ -112,7 +111,6 @@ describe("workflow run --dry-run", () => {
     writeDef(dir, {
       id: "secret-flow",
       name: "Secret flow",
-      start_url: "https://example.com",
       steps: [
         { id: "s1", kind: "fill", selector: "#pw", value: "env:MY_PASSWORD" },
       ],
@@ -126,7 +124,6 @@ describe("workflow run --dry-run", () => {
     writeDef(dir, {
       id: "flow2",
       name: "Flow 2",
-      start_url: "https://example.com",
       steps: [{ id: "s1", kind: "goto", url: "https://example.com" }],
     });
     const { code, out } = runWorkflow(dir, [
@@ -160,7 +157,6 @@ describe("workflow run non-interactive without --yes/--dry-run", () => {
     writeDef(dir, {
       id: "flow3",
       name: "Flow 3",
-      start_url: "https://example.com",
       steps: [],
     });
     const { code, out } = runWorkflow(dir, ["run", "flow3"]);
@@ -175,7 +171,6 @@ describe("workflow run --json without --yes", () => {
     writeDef(dir, {
       id: "flow4",
       name: "Flow 4",
-      start_url: "https://example.com",
       steps: [{ id: "s1", kind: "goto", url: "https://example.com" }],
     });
     const { code, out } = runWorkflow(dir, ["run", "flow4", "--json"]);
@@ -193,7 +188,6 @@ describe("workflow run --json --yes (the run-and-report path, not the confirm-ga
     writeDef(dir, {
       id: "flow5",
       name: "Flow 5",
-      start_url: "https://example.com",
       steps: [{ id: "s1", kind: "goto", url: "https://example.com" }],
     });
     const { code, out } = runWorkflowWithFakeClaude(dir, [

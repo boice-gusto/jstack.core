@@ -3,6 +3,7 @@ import { create } from "zustand";
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
   applyAgentStreamEvent,
+  initialAgentRunSlice,
   newRunId,
   nextRunStateForDraft,
   type RunState,
@@ -47,16 +48,10 @@ type ChatState = {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
-  run: { status: "idle" },
-  toolEvents: [],
-  streamEvents: [],
+  ...initialAgentRunSlice(),
   lastRunContext: null,
-  costSeries: [],
-  tokenSeries: [],
   skillId: "",
   expectStructuredJson: false,
-  structuredJsonText: null,
-  claudeSessionId: null,
 
   appendUser: (content: string) => {
     const trimmed = content.trim();
@@ -74,14 +69,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   resetConversation: () => {
     set({
       messages: [],
-      run: { status: "idle" },
-      toolEvents: [],
-      streamEvents: [],
+      ...initialAgentRunSlice(),
       lastRunContext: null,
-      costSeries: [],
-      tokenSeries: [],
-      structuredJsonText: null,
-      claudeSessionId: null,
     });
   },
 

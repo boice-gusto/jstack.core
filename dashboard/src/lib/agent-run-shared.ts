@@ -83,6 +83,28 @@ export type AgentStreamCommonSlice = {
 };
 
 /**
+ * The same 7-key initial/reset shape (`AgentStreamCommonSlice` plus `structuredJsonText`) used
+ * to be hand-copied 4 times -- once in each store's `create()` initializer, once in each store's
+ * reset action -- and this exact class of duplicated-state-shape drift already caused a real bug
+ * once (see `applyAgentStreamEvent`'s comment on the prior "Parity fix"). A function, not a
+ * shared object literal, so each call returns fresh arrays rather than one instance every caller
+ * would otherwise spread the same array references from.
+ */
+export function initialAgentRunSlice(): AgentStreamCommonSlice & {
+  structuredJsonText: string | null;
+} {
+  return {
+    run: { status: "idle" },
+    toolEvents: [],
+    streamEvents: [],
+    costSeries: [],
+    tokenSeries: [],
+    structuredJsonText: null,
+    claudeSessionId: null,
+  };
+}
+
+/**
  * Computes the next common-slice values for one incoming SSE event, given the running draft
  * text and the current common slice. Both stores used to hand-copy this entire dispatch
  * themselves -- not just the pure extractors above, which were already shared -- and that

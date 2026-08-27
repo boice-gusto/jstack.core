@@ -7,7 +7,7 @@ richer surface than the CLI currently implements, and the gap is where fabricate
 
 | Capability | Where | Notes |
 |---|---|---|
-| Define a flow as JSON | `WorkflowDefinitionSchema`, [`cli/src/types/workflow.ts`](../../cli/src/types/workflow.ts) | `{id, name, start_url, steps[]}`; step `kind` ∈ `goto`, `click`, `fill`, `wait`, `screenshot`, `ai` |
+| Define a flow as JSON | `WorkflowDefinitionSchema`, [`cli/src/types/workflow.ts`](../../cli/src/types/workflow.ts) | `{id, name, steps[]}` (start URL derives from `steps[0]`); step `kind` ∈ `goto`, `click`, `fill`, `wait`, `screenshot`, `ai` |
 | Save / load / list / delete | `workflow-engine.ts` | Files at `config/workflows/<id>.json` |
 | Import / export | `importWorkflowFromFile`, `exportWorkflow` | Import validates against the schema — this is the real lint |
 | Preview a saved flow | `jstack workflow` CLI | Restates the definition; see [`output-preview-summary.md`](output-preview-summary.md) |

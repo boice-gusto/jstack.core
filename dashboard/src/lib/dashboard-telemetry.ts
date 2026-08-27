@@ -110,12 +110,9 @@ export function recordDashboardAgentRun(input: DashboardRunTelemetryInput): void
 
 export async function flushIfConfigured(): Promise<void> {
   try {
-    const cfg = readJstackConfig(process.cwd()) as {
-      telemetry?: { enabled?: boolean; endpoint?: string };
-    } | null;
+    const cfg = readJstackConfig();
     const enabled = cfg?.telemetry?.enabled === true;
-    const endpoint =
-      typeof cfg?.telemetry?.endpoint === "string" ? cfg.telemetry.endpoint.trim() : "";
+    const endpoint = cfg?.telemetry?.endpoint?.trim() ?? "";
     if (!enabled || endpoint.length === 0) return;
     const events = snapshotBuffer();
     if (events.length === 0) return;

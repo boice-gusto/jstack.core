@@ -538,16 +538,18 @@ async function runSetupInner(opts: {
     if (p.isCancel(includeGbrainInSearch)) throw PROMPT_CANCELLED;
 
     gbrainKbPatch = {
-      gbrain: mergeDeep(s.defGbrain, {
+      gbrain: mergeDeep(defaultGbrain as Record<string, unknown>, {
         team: { url: String(teamGbrainUrl).trim() },
         personal: { url: String(personalGbrainUrl).trim() },
       }),
       session: mergeDeep(s.defSession, {
         default_gbrain_target: target,
       }),
-      knowledge_base: mergeDeep(s.defKb, {
+      knowledge_base: mergeDeep(defaultKb as Record<string, unknown>, {
         roots,
-        gbrain: mergeDeep(s.defKbGbrain, { include: includeGbrainInSearch }),
+        gbrain: mergeDeep(asRecord(defaultKb.gbrain), {
+          include: includeGbrainInSearch,
+        }),
       }),
       knowledge_storage: mergeDeep(defKs, {
         disk_fallback_root: String(diskFallback).trim() || "/tmp/knowledgebase",
@@ -679,11 +681,11 @@ export async function runSetupCi(opts: {
       default_gbrain_target: "team",
       current_session_id: "",
     }),
-    gbrain: mergeDeep(s.defGbrain, {
+    gbrain: mergeDeep(s.defaultGbrain as Record<string, unknown>, {
       team: { url: "" },
       personal: { url: "" },
     }),
-    knowledge_base: mergeDeep(s.defKb, {
+    knowledge_base: mergeDeep(s.defaultKb as Record<string, unknown>, {
       roots: ["docs"],
       gbrain: { include: false },
     }),
