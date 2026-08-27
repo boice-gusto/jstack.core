@@ -14,7 +14,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Assemble the team report from configured sources, labelling every figure measured, estimated, or assumed.
-- **Out of scope:** Publishing it (`jstack:reports-share-html-publish`), and filling a section whose data source is unavailable.
+- **Out of scope:** Publishing it (`jstack:share-html-publish`), and filling a section whose data source is unavailable.
 
 ## Domain rules — team-report
 

@@ -8,7 +8,7 @@ effort: high
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config -->
 <!-- outputs: structured_result -->
-<!-- chains-to: superpowers:brainstorming (via Skill tool when available) -->
+<!-- Delegates to superpowers:brainstorming, an external plugin skill, not a jstack catalog entry -- see ## Chaining below. No chains-to comment here since validate-chains only resolves jstack:<slug> tokens. -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md

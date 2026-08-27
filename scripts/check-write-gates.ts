@@ -89,6 +89,9 @@ const WRITES = new Set<string>([
   "reports/eval-report",
   "reports/report-design",
   "reports/share-html-publish",
+  // Executes an arbitrary config-defined chain of skill slugs, which can include any write
+  // skill above -- gated for the same reason as workflows/execute.
+  "routines/custom",
   "routines/sprint-close",
   "scaffold",
   "setup",

@@ -4,8 +4,7 @@ description: >-
   Paired 1:1 prep and after-meeting notes from configured transcript sources; prefer Lattice MCP when
   enabled, else Notion private PE or 1:1 parent pages; always append AI attribution.
 category: meetings
-arguments: [person_name]
-argument-hint: "[person-name]"
+argument-hint: "[prepare|after]"
 disable-model-invocation: true
 effort: high
 ---

@@ -10,7 +10,7 @@ effort: high
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config -->
 <!-- outputs: structured_result with sources_cited -->
-<!-- chains-to: jstack:knowledge-intake (only if user asks to save the answer) -->
+<!-- chains-to: jstack:knowledge-intake -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md

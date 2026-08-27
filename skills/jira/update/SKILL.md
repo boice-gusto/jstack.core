@@ -1,6 +1,6 @@
 ---
 name: jstack-jira-update
-description: Update fields or add comments on an existing Jira issue. Confirm before sensitive field changes.
+description: Update fields or add a plain comment on an existing Jira issue. Confirm before sensitive field changes. For a structured note/checklist block, use jira/append instead.
 category: jira
 argument-hint: "[PROJ-123]"
 arguments: "[ticket_id]"

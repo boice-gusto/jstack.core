@@ -1,6 +1,6 @@
 ---
 name: jstack-setup
-description: "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that. Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config)."
+description: "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or corrupted jstack.config.json on a project that was previously working, or re-run MCP server discovery/health checks. No secrets in chat. Not for a brand-new user's first-time walkthrough (use jstack:onboarding) or editing an already-working config (use jstack:update-config)."
 category: setup
 disable-model-invocation: true
 effort: low

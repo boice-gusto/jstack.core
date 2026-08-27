@@ -160,7 +160,7 @@ VALID` (instant) → `VALIDATE CONSTRAINT` (weak lock, no blocking) → then fli
 
 ## Configuration read order and unset behavior
 
-1. **`incident`** policy slices — severities and escalation hooks ([`config/schema.json`](../config/schema.json)); unset → narrative-only RCA without invented Sev labels.
+1. **`policies.incidents`** — severities and escalation hooks ([`config/schema.json`](../config/schema.json)); unset → narrative-only RCA without invented Sev labels.
 2. **`projects`** / **`jira_rules`** — ticket routing defaults after approval.
 3. **`policies.sdlc`** (`stages`, `gates`) — which SDLC stages/gates apply before a change ships; unset → describe the gate a change would need without inventing an approver or stage name.
 4. **`engineering_health`** — optional corroboration for regressions.
@@ -183,7 +183,7 @@ VALID` (instant) → `VALIDATE CONSTRAINT` (weak lock, no blocking) → then fli
 
 1. `jstack:review-code-review` — API and service changes, data access, and failure paths.
 2. `jstack:research-technical` — deeper investigation when the ask is research-shaped.
-3. `jstack:incident` — incident commander flow for outages and customer impact.
+3. `jstack:incident` — root-cause/remediation input to an active incident, not incident command.
 4. `jstack:jira` — backend tickets and follow-ups **after** approval.
 
 ## What this agent does NOT own

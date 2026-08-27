@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-25T09:03:38.372Z",
+  "generatedAt": "2026-08-27T08:25:49.720Z",
   "count": 143,
   "skills": [
     {
@@ -283,6 +283,16 @@
       "categoryKey": "incident"
     },
     {
+      "id": "incident-retro",
+      "name": "jstack-incident-retro",
+      "relPath": "skills/incident/retro/SKILL.md",
+      "gateId": "jstack:incident/retro",
+      "description": "\"Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.\"",
+      "whenToUse": "",
+      "category": "Incident",
+      "categoryKey": "incident"
+    },
+    {
       "id": "knowledge-ingest-all",
       "name": "jstack-ingest-all",
       "relPath": "skills/knowledge/ingest-all/SKILL.md",
@@ -327,7 +337,7 @@
       "name": "jstack-jira-append",
       "relPath": "skills/jira/append/SKILL.md",
       "gateId": "jstack:jira/append",
-      "description": "Append structured content (meeting notes, checklist, update block) to an existing Jira issue description or comment.",
+      "description": "Append a structured content block (meeting notes, checklist, update block) to an existing Jira issue's description or as a formatted comment. For a plain one-line comment, use jira/update instead.",
       "whenToUse": "",
       "category": "Jira",
       "categoryKey": "jira"
@@ -387,7 +397,7 @@
       "name": "jstack-jira-update",
       "relPath": "skills/jira/update/SKILL.md",
       "gateId": "jstack:jira/update",
-      "description": "Update fields or add comments on an existing Jira issue. Confirm before sensitive field changes.",
+      "description": "Update fields or add a plain comment on an existing Jira issue. Confirm before sensitive field changes. For a structured note/checklist block, use jira/append instead.",
       "whenToUse": "",
       "category": "Jira",
       "categoryKey": "jira"
@@ -657,7 +667,7 @@
       "name": "jstack-notion-report",
       "relPath": "skills/notion/report/SKILL.md",
       "gateId": "jstack:notion/report",
-      "description": "Create a long-form report page or DB row in Notion. Set Status to Draft until user reviews.",
+      "description": "Create a one-off long-form report page or DB row in Notion. Set Status to Draft until user reviews. For a recurring week-over-week team status report, use notion/team-report instead.",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -687,7 +697,7 @@
       "name": "jstack-notion-standup",
       "relPath": "skills/notion/standup/SKILL.md",
       "gateId": "jstack:notion/standup",
-      "description": "Create or update a standup page or database row in Notion using templates/notion/standup.json and optional gallery template page from config.",
+      "description": "Create or update a standup page or database row in Notion using the configured standup template and optional gallery template page from config.",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -759,8 +769,8 @@
       "gateId": "jstack:pe/report-context",
       "description": "Validate and normalize PE / team report JSON against schemas/pe; gate skills until pe.configured is true. Building or validating performance/team report context JSON before render or Notion/ HTML publish.",
       "whenToUse": "",
-      "category": "Reports",
-      "categoryKey": "reports"
+      "category": "Pe",
+      "categoryKey": "pe"
     },
     {
       "id": "plugin",
@@ -827,7 +837,7 @@
       "name": "jstack-report-design",
       "relPath": "skills/reports/report-design/SKILL.md",
       "gateId": "jstack:reports/report-design",
-      "description": "Map org brand to semantic report tokens (colors, type, radius) for static HTML shells and jstack report render. User wants report HTML/PDF to match brand; configure reports.branding and related defaults.",
+      "description": "Choose a report's shape before its content — audience, sections, and which figures earn a place — before jstack:reports assembles the finished report. Use when the report's structure isn't decided yet, not for filling an already-decided shape with data.",
       "whenToUse": "",
       "category": "Reports",
       "categoryKey": "reports"
@@ -901,16 +911,6 @@
       "whenToUse": "",
       "category": "Research",
       "categoryKey": "research"
-    },
-    {
-      "id": "incident-retro",
-      "name": "jstack-retro",
-      "relPath": "skills/incident/retro/SKILL.md",
-      "gateId": "jstack:incident/retro",
-      "description": "\"Facilitate a blameless retrospective: timeline, impact, what went well, improvements, actions with owners and dates.\"",
-      "whenToUse": "",
-      "category": "Incident",
-      "categoryKey": "incident"
     },
     {
       "id": "review",
@@ -1127,7 +1127,7 @@
       "name": "jstack-setup",
       "relPath": "skills/setup/SKILL.md",
       "gateId": "jstack:setup",
-      "description": "\"Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that. Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config).\"",
+      "description": "\"Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or corrupted jstack.config.json on a project that was previously working, or re-run MCP server discovery/health checks. No secrets in chat. Not for a brand-new user's first-time walkthrough (use jstack:onboarding) or editing an already-working config (use jstack:update-config).\"",
       "whenToUse": "",
       "category": "Setup",
       "categoryKey": "setup"
