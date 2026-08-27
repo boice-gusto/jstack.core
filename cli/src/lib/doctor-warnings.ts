@@ -6,7 +6,30 @@ import {
   mcpServerEnvString,
   readMcpServers,
 } from "./mcp-file.js";
+import { resolveDependencies } from "./dependency-resolver.js";
 import { resolveMachineReadableSettings } from "./machine-readable.js";
+
+/**
+ * `DependencyIssue` ids from `dependency-resolver.ts` this file's `collectDoctorConfigWarnings`
+ * re-surfaces as plain warning strings on every `jstack doctor` run (not just `--fix`), instead
+ * of re-running the same existsSync/absolutize checks a second time. Deliberately NOT every
+ * dependency-resolver check: `gbrain-target-empty-url` only covers the *resolved session
+ * target's* URL being empty, while this file's own (kept, not consolidated below) gbrain check
+ * also warns when NEITHER team nor personal URL is set regardless of target -- a real coverage
+ * difference, not just wording, so folding it in would silently drop that case. Likewise
+ * `pe-configured-incomplete` (warns when `pe.configured` is true but its arrays are empty) is a
+ * different condition from this file's own `pe.configured === false` check, not a duplicate of
+ * it. Both are left as this file's own checks below, unconsolidated, until someone decides that
+ * divergence is itself a bug worth fixing rather than two intentionally distinct diagnostics.
+ */
+const CONSOLIDATED_ISSUE_IDS = new Set([
+  "kb-root-missing",
+  "ks-team-checkout-missing",
+  "ks-team-checkout-not-on-disk",
+  "ks-personal-checkout-missing",
+  "ks-personal-checkout-not-on-disk",
+  "cross-plugins-gbrain-empty-skills",
+]);
 
 export function gbrainTeamUrl(cfg: JstackConfig): string {
   return String(cfg.gbrain?.team?.url ?? "").trim();
@@ -29,53 +52,11 @@ export function collectDoctorConfigWarnings(
   defaultsCfg?: JstackConfig,
 ): string[] {
   const warnings: string[] = [];
+  for (const issue of resolveDependencies({ cfg, projectRoot })) {
+    if (CONSOLIDATED_ISSUE_IDS.has(issue.id)) warnings.push(issue.message);
+  }
+
   const kb = cfg.knowledge_base;
-  const roots = kb?.roots;
-  if (Array.isArray(roots) && roots.length > 0) {
-    for (const r of roots) {
-      const rel = String(r).trim();
-      if (!rel) continue;
-      const abs = isAbsolute(rel) ? rel : resolve(projectRoot, rel);
-      if (!existsSync(abs)) {
-        warnings.push(
-          `knowledge_base root missing on disk: ${rel} (resolved: ${abs}) — create it or fix jstack.config.json`,
-        );
-      }
-    }
-  }
-
-  const ks = cfg.knowledge_storage;
-  const ksTeam = ks?.team;
-  const ksPersonal = ks?.personal;
-  const ksTeamCo = String(ksTeam?.local_checkout ?? "").trim();
-  const ksPersonalCo = String(ksPersonal?.local_checkout ?? "").trim();
-  const ksTeamRem = String(ksTeam?.git_remote ?? "").trim();
-  const ksPersonalRem = String(ksPersonal?.git_remote ?? "").trim();
-
-  if (ksTeamRem && !ksTeamCo) {
-    warnings.push(
-      "knowledge_storage.team.git_remote is set but local_checkout is empty — clone the repo into a workspace-relative path and set local_checkout (then add it to knowledge_base.roots if needed).",
-    );
-  }
-  if (ksPersonalRem && !ksPersonalCo) {
-    warnings.push(
-      "knowledge_storage.personal.git_remote is set but local_checkout is empty — clone your personal KB and set local_checkout.",
-    );
-  }
-
-  for (const { rel, label } of [
-    { rel: ksTeamCo, label: "knowledge_storage.team.local_checkout" },
-    { rel: ksPersonalCo, label: "knowledge_storage.personal.local_checkout" },
-  ]) {
-    if (!rel) continue;
-    const abs = isAbsolute(rel) ? rel : resolve(projectRoot, rel);
-    if (!existsSync(abs)) {
-      warnings.push(
-        `${label} missing on disk: ${rel} (resolved: ${abs}) — clone/create or fix config.`,
-      );
-    }
-  }
-
   const teamU = gbrainTeamUrl(cfg);
   const personalU = gbrainPersonalUrl(cfg);
   const kbGbrainInclude = kb?.gbrain?.include === true;
@@ -104,16 +85,6 @@ export function collectDoctorConfigWarnings(
     warnings.push(
       "pe.configured is false — run `jstack setup --pe` or set pe.* in jstack.config.json before PE/team management reports.",
     );
-  }
-
-  const gb = cfg.cross_plugins?.gbrain;
-  if (gb?.enabled === true) {
-    const skills = gb.skills;
-    if (!Array.isArray(skills) || skills.length === 0) {
-      warnings.push(
-        "cross_plugins.gbrain.enabled but skills[] is empty — list expected gbrain:* skill ids.",
-      );
-    }
   }
 
   const mr = resolveMachineReadableSettings(cfg, defaultsCfg);
