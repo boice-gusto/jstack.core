@@ -64,12 +64,19 @@ export function pushSeries(series: number[], value: number, max = 24): number[] 
   return [...series, value].slice(-max);
 }
 
+/** A single `tool_use` event, as recorded by both stores' tool timelines. */
+export type ToolEvent = {
+  id: string;
+  name: string;
+  input: unknown;
+};
+
 /** The slice of store state every `onEvent` handler below reads and writes, shared by
  * chat-store and wizard-store. */
 export type AgentStreamCommonSlice = {
   run: RunState;
   streamEvents: AgentStreamEvent[];
-  toolEvents: { id: string; name: string; input: unknown }[];
+  toolEvents: ToolEvent[];
   costSeries: number[];
   tokenSeries: number[];
   claudeSessionId: string | null;

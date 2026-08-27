@@ -85,6 +85,11 @@ interface SpawnAsyncResult {
  * it wants stdout alone, not stdout+stderr joined, and a different no-output message; folding
  * it in would just relocate its divergence rather than remove any real duplication.)
  */
+/** The subject never ran at all (missing config, missing file, spawn failure never reached). */
+function subjectError(message: string): SubjectOutput {
+  return { text: "", exitCode: null, stdout: "", stderr: "", error: message };
+}
+
 function toSubjectOutput(r: SpawnAsyncResult): SubjectOutput {
   const stdout = r.stdout ?? "";
   const stderr = r.stderr ?? "";
@@ -185,13 +190,7 @@ export async function runCli(
   spec: SubjectSpec,
 ): Promise<SubjectOutput> {
   if (spec.command === undefined) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "cli subject has no command",
-    };
+    return subjectError("cli subject has no command");
   }
   const argv = spec.command;
   // The entrypoint must be ABSOLUTE. It was relative, which silently broke the documented
@@ -225,23 +224,11 @@ export async function runHook(
   spec: SubjectSpec,
 ): Promise<SubjectOutput> {
   if (!spec.script) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "hook subject has no script",
-    };
+    return subjectError("hook subject has no script");
   }
   const abs = join(pluginRoot, spec.script);
   if (!existsSync(abs)) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: `hook script not found: ${spec.script}`,
-    };
+    return subjectError(`hook script not found: ${spec.script}`);
   }
   const r = await spawnAsync("bash", [abs], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
@@ -258,25 +245,13 @@ export function readFiles(
 ): SubjectOutput {
   const paths = spec.paths ?? [];
   if (paths.length === 0) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "file subject has no paths",
-    };
+    return subjectError("file subject has no paths");
   }
   const parts: string[] = [];
   for (const rel of paths) {
     const abs = join(pluginRoot, rel);
     if (!existsSync(abs)) {
-      return {
-        text: "",
-        exitCode: null,
-        stdout: "",
-        stderr: "",
-        error: `file not found: ${rel}`,
-      };
+      return subjectError(`file not found: ${rel}`);
     }
     parts.push(`===== ${rel} =====\n${readFileSync(abs, "utf8")}`);
   }
@@ -299,13 +274,7 @@ export async function runCandidate(
   const artifacts = readFiles(pluginRoot, spec);
   if (artifacts.error) return artifacts;
   if (!spec.task) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "agentic subject has no task",
-    };
+    return subjectError("agentic subject has no task");
   }
 
   const prompt = [
@@ -358,13 +327,7 @@ export async function runScript(
 ): Promise<SubjectOutput> {
   const name = spec.script;
   if (!name) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "script subject has no script name",
-    };
+    return subjectError("script subject has no script name");
   }
   const r = await spawnAsync("bun", ["run", name, ...(spec.command ?? [])], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
@@ -391,12 +354,6 @@ export async function exerciseSubject(
     case "agentic":
       return runCandidate(pluginRoot, spec, claudeBin, apiKey);
     default:
-      return {
-        text: "",
-        exitCode: null,
-        stdout: "",
-        stderr: "",
-        error: `unknown subject kind: ${spec.kind}`,
-      };
+      return subjectError(`unknown subject kind: ${spec.kind}`);
   }
 }

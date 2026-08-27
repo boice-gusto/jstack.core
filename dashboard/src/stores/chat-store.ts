@@ -6,22 +6,17 @@ import {
   newRunId,
   nextRunStateForDraft,
   type RunState,
+  type ToolEvent,
 } from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
 export type { AgentStreamEvent } from "@/lib/agent-stream-runner";
-export type { RunState } from "@/lib/agent-run-shared";
+export type { RunState, ToolEvent } from "@/lib/agent-run-shared";
 
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
-};
-
-export type ToolEvent = {
-  id: string;
-  name: string;
-  input: unknown;
 };
 
 export type AgentRunContext = {

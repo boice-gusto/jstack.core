@@ -4,6 +4,7 @@ import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
   applyAgentStreamEvent,
   type RunState as SharedRunState,
+  type ToolEvent,
 } from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
@@ -26,7 +27,7 @@ type WizardState = {
   /** Optional user notes appended to the current step prompt when running. */
   stepContext: string;
   run: WizardRunState;
-  toolEvents: { id: string; name: string; input: unknown }[];
+  toolEvents: ToolEvent[];
   streamEvents: AgentStreamEvent[];
   costSeries: number[];
   tokenSeries: number[];

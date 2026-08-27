@@ -29,9 +29,9 @@ function kindLabel(kind: ReportKind | undefined): string {
 
 export function ReportViewer({ data }: { data: ReportPayload }): ReactNode {
   const { meta, sections, links } = data;
-  const kind = (meta as { report_kind?: ReportKind }).report_kind;
-  const subtitle = (meta as { subtitle?: string }).subtitle;
-  const team = (meta as { team?: string }).team;
+  const kind = meta.report_kind;
+  const subtitle = meta.subtitle;
+  const team = meta.team;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
