@@ -170,10 +170,10 @@ remain live indefinitely" ([knowledge-base.software](https://knowledge-base.soft
 4. **`ingest_all`** — the ordered skill+prompt chain for bulk-ingesting new transcripts/exports
    ([`jstack:ingest-all`](../skills/knowledge/ingest-all/SKILL.md)); unset/empty →
    name it as the config gap rather than attempting a bulk sweep with no configured sources.
-4. **`notion.*`** — destination-specific target (`jstack:knowledge-process`, which can write the
+5. **`notion.*`** — destination-specific target (`jstack:knowledge-process`, which can write the
    Notion knowledge-base entry directly) when the user names Notion explicitly; unset → default to
    the gbrain/markdown path and say so.
-5. **Merge conflicts** — always ask before overwriting team-visible canonical content (Prime
+6. **Merge conflicts** — always ask before overwriting team-visible canonical content (Prime
    Directive 10); never auto-resolve a disagreement silently.
 
 ## Evidence chain (internal)

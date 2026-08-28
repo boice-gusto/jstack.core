@@ -90,8 +90,10 @@ const WRITES = new Set<string>([
   "reports/report-design",
   "reports/share-html-publish",
   // Executes an arbitrary config-defined chain of skill slugs, which can include any write
-  // skill above -- gated for the same reason as workflows/execute.
+  // skill above -- gated for the same reason as workflows/execute. morning-kickoff's
+  // `kickoff_workflows.definitions[]` is the same shape (see agents/routine-runner.md).
   "routines/custom",
+  "routines/morning-kickoff",
   "routines/sprint-close",
   "scaffold",
   "setup",
