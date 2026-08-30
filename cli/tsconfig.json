@@ -7,7 +7,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["bun"],
+    "types": ["bun", "node"],
     "baseUrl": ".",
     "paths": {
       "@jstack/constants/*": ["../constants/*"]
