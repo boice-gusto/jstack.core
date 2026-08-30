@@ -50,12 +50,36 @@ export function installPaths(stateDir: string): InstallPaths {
   };
 }
 
+export interface PlistOptions {
+  /**
+   * Default `false`: today's exact behavior, launchd re-invokes a one-shot tick every
+   * `intervalSeconds` (`StartInterval`). `true` installs a long-lived process instead
+   * (`KeepAlive`, no `StartInterval`) that loops internally and also serves the manual-session
+   * RPC socket -- see crewd.ts's `runResident()`. Only crewd.ts's own runtime behavior differs
+   * between the two; the compiled binary is identical either way, so switching modes is a plist
+   * regeneration + reinstall, not a rebuild.
+   */
+  resident?: boolean;
+}
+
 export function renderPlist(
   p: InstallPaths,
   projectRoot: string,
   intervalSeconds: number,
+  opts: PlistOptions = {},
 ): string {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const resident = opts.resident ?? false;
+  const residentEnv = resident
+    ? `    <key>JSTACK_CREW_RESIDENT</key><string>1</string>
+    <key>JSTACK_CREW_TICK_INTERVAL_MS</key><string>${intervalSeconds * 1000}</string>
+`
+    : "";
+  const scheduleKeys = resident
+    ? `  <key>KeepAlive</key><true/>
+`
+    : `  <key>StartInterval</key><integer>${intervalSeconds}</integer>
+`;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -71,9 +95,8 @@ export function renderPlist(
     <key>USER</key><string>${esc(process.env.USER ?? "")}</string>
     <key>HOME</key><string>${esc(homedir())}</string>
     <key>PATH</key><string>/usr/bin:/bin:/usr/sbin:/sbin:${esc(join(homedir(), ".local", "bin"))}</string>
-  </dict>
-  <key>StartInterval</key><integer>${intervalSeconds}</integer>
-  <key>RunAtLoad</key><true/>
+${residentEnv}  </dict>
+${scheduleKeys}  <key>RunAtLoad</key><true/>
   <key>ThrottleInterval</key><integer>30</integer>
   <key>ExitTimeOut</key><integer>60</integer>
   <key>LimitLoadToSessionType</key><string>Aqua</string>
@@ -89,10 +112,11 @@ export function writePlist(
   p: InstallPaths,
   projectRoot: string,
   intervalSeconds: number,
+  opts: PlistOptions = {},
 ): void {
   mkdirSync(join(homedir(), "Library", "LaunchAgents"), { recursive: true });
   mkdirSync(join(expandHome("~/.jstack/crew"), "logs"), { recursive: true });
-  writeFileSync(p.plist, renderPlist(p, projectRoot, intervalSeconds), {
+  writeFileSync(p.plist, renderPlist(p, projectRoot, intervalSeconds, opts), {
     mode: 0o600,
   });
 }

@@ -408,6 +408,7 @@ function schedInterval(plistPath: string): number | null {
 export async function runCrewInstall(
   intervalS: number,
   skipBuild: boolean,
+  resident = false,
 ): Promise<void> {
   const cfg = loadCrewConfig();
   const root = findProjectRoot();
@@ -463,7 +464,7 @@ export async function runCrewInstall(
     return;
   }
 
-  writePlist(p, root, intervalS);
+  writePlist(p, root, intervalS, { resident });
   const r = bootstrap(p);
   if (!r.ok) {
     console.error(chalk.red(`launchctl bootstrap failed: ${r.detail}`));
@@ -471,7 +472,20 @@ export async function runCrewInstall(
     return;
   }
 
-  console.log(chalk.green(`Installed ${LABEL}, every ${intervalS}s.`));
+  if (resident) {
+    console.log(
+      chalk.green(
+        `Installed ${LABEL} (resident), ticking every ${intervalS}s.`,
+      ),
+    );
+    console.log(
+      chalk.dim(
+        `  Manual sessions: jstackc crew sessions new/prompt/cancel (socket at ${expandHome(cfg.state_dir)}/agent.sock once running)`,
+      ),
+    );
+  } else {
+    console.log(chalk.green(`Installed ${LABEL}, every ${intervalS}s.`));
+  }
   console.log(`  binary  ${p.binary}`);
   console.log(`  logs    ${p.stdout}`);
 
@@ -2126,9 +2140,18 @@ export function registerCrewCommand(program: Command): void {
       "300",
     )
     .option("--skip-build", "reuse the existing compiled binary", false)
+    .option(
+      "--resident",
+      "run as a long-lived process (KeepAlive) with the manual-session RPC socket, instead of a fresh process per tick",
+      false,
+    )
     .action(
-      safeAction(async (o: { interval: string; skipBuild: boolean }) =>
-        runCrewInstall(Number(o.interval), o.skipBuild),
+      safeAction(
+        async (o: {
+          interval: string;
+          skipBuild: boolean;
+          resident: boolean;
+        }) => runCrewInstall(Number(o.interval), o.skipBuild, o.resident),
       ),
     );
 
