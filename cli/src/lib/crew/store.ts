@@ -323,12 +323,23 @@ export class CrewStore {
     agentId: string;
     sessionId: string;
     threadTs: string;
+    turns: number;
+    endedAt: number | null;
   } | null {
     const r = this.db
       .query<
-        { id: string; agent_id: string; session_id: string; thread_ts: string },
+        {
+          id: string;
+          agent_id: string;
+          session_id: string;
+          thread_ts: string;
+          turns: number;
+          ended_at: number | null;
+        },
         [string]
-      >("SELECT id, agent_id, session_id, thread_ts FROM task WHERE id = ?")
+      >(
+        "SELECT id, agent_id, session_id, thread_ts, turns, ended_at FROM task WHERE id = ?",
+      )
       .get(id);
     if (!r) return null;
     return {
@@ -336,6 +347,8 @@ export class CrewStore {
       agentId: r.agent_id ?? "",
       sessionId: r.session_id ?? "",
       threadTs: r.thread_ts ?? "",
+      turns: r.turns,
+      endedAt: r.ended_at,
     };
   }
 

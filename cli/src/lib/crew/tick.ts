@@ -249,7 +249,13 @@ function renderResult(
  * makes a thread remember what was already said. Without it Ralph answers each
  * follow-up cold, which is exactly how the first live conversation failed.
  */
-async function runWorker(
+/**
+ * Runs one turn for `agent` with the same sandboxing every Slack-triggered turn gets (no MCP,
+ * no Bash, workspace-scoped, untrusted-content wrapping) -- exported so `session.ts`'s manual
+ * (non-Slack) sessions reuse this instead of a second, looser turn-runner that would silently
+ * regress that sandboxing for anything not routed through Slack.
+ */
+export async function runWorker(
   cfg: CrewConfig,
   agent: AgentConfig,
   request: string,
