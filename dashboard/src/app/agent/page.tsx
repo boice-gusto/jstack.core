@@ -27,6 +27,7 @@ export default function AgentPage(): ReactElement {
   const costSeries = useChatStore((s) => s.costSeries);
   const tokenSeries = useChatStore((s) => s.tokenSeries);
   const skillId = useChatStore((s) => s.skillId);
+  const backend = useChatStore((s) => s.backend);
   const expectStructuredJson = useChatStore((s) => s.expectStructuredJson);
   const structuredJsonText = useChatStore((s) => s.structuredJsonText);
   const lastRunContext = useChatStore((s) => s.lastRunContext);
@@ -36,6 +37,7 @@ export default function AgentPage(): ReactElement {
   const runAgent = useChatStore((s) => s.runAgent);
   const resetConversation = useChatStore((s) => s.resetConversation);
   const setSkillId = useChatStore((s) => s.setSkillId);
+  const setBackend = useChatStore((s) => s.setBackend);
   const setExpectStructuredJson = useChatStore((s) => s.setExpectStructuredJson);
 
   async function handleSendAndRun(): Promise<void> {
@@ -57,15 +59,16 @@ export default function AgentPage(): ReactElement {
             Wizard
           </a>
           : local{" "}
-          <code className="rounded border border-border bg-muted px-1 font-mono text-xs">claude -p</code> with{" "}
-          <code className="rounded border border-border bg-muted px-1 font-mono text-xs">stream-json</code>, optional
+          <code className="rounded border border-border bg-muted px-1 font-mono text-xs">claude -p</code> or{" "}
+          <code className="rounded border border-border bg-muted px-1 font-mono text-xs">codex exec --json</code>, optional
           skill text from the repo skill catalog, tool timeline, cost/token sparklines, structured JSON mode for
           evals, and a raw SSE panel for integrators.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          Requires <code className="rounded bg-muted px-1 font-mono">CLAUDE_BIN</code>,{" "}
+          Requires <code className="rounded bg-muted px-1 font-mono">CLAUDE_BIN</code> or{" "}
+          <code className="rounded bg-muted px-1 font-mono">CODEX_BIN</code>,{" "}
           <code className="rounded bg-muted px-1 font-mono">DASHBOARD_AGENT_CWD</code> (or defaults to jstack.core), and
-          an Anthropic-capable environment for the child process.
+          an authenticated environment for whichever child process you select below.
         </p>
       </div>
 
@@ -78,6 +81,19 @@ export default function AgentPage(): ReactElement {
             />
             <SkillPicker value={skillId} onChange={setSkillId} id="agent-skill" />
             <SkillDocumentsPanel skillId={skillId} />
+            <label className="flex items-center gap-2 text-sm text-foreground" htmlFor="agent-backend">
+              Model
+              <select
+                id="agent-backend"
+                className="rounded border border-input bg-background px-2 py-1 text-sm"
+                value={backend}
+                onChange={(e) => setBackend(e.target.value as "claude" | "codex")}
+                disabled={isStreaming}
+              >
+                <option value="claude">Claude</option>
+                <option value="codex">Codex</option>
+              </select>
+            </label>
             <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
@@ -94,7 +110,7 @@ export default function AgentPage(): ReactElement {
             {isStreaming ? (
               <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 shrink-0 animate-spin text-primary" aria-hidden />
-                <span>Receiving stream from local Claude…</span>
+                <span>Receiving stream from local {backend === "codex" ? "Codex" : "Claude"}…</span>
               </div>
             ) : null}
             <div className="max-h-[min(50vh,28rem)] space-y-3 overflow-y-auto p-4">

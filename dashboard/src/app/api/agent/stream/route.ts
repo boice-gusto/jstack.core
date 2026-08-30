@@ -7,6 +7,7 @@ import { z } from "zod";
 import { AgentMessageSchema, AgentStreamBodySchema } from "@/lib/agent-request-schema";
 import { resolveAgentCwd } from "@/lib/agent-cwd";
 import { extractSessionId, mapStreamJsonLine } from "@/lib/claude-stream-json";
+import { extractCodexSessionId, mapCodexStreamJsonLine } from "@/lib/codex-stream-json";
 import { loadSkillMarkdownById } from "@/lib/skills-catalog";
 import { recordDashboardAgentRun } from "@/lib/dashboard-telemetry";
 import { getDashboardEnv } from "@/server/env";
@@ -97,23 +98,38 @@ export async function POST(request: NextRequest): Promise<Response> {
     parsed.data.expectStructuredJson === true,
   );
 
+  const backend = parsed.data.backend ?? "claude";
+
   const childEnv: NodeJS.ProcessEnv = {
     ...process.env,
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY ?? process.env.ANTHROPIC_API_KEY ?? "",
   };
 
-  const args = [
-    "-p",
-    prompt,
-    "--output-format",
-    "stream-json",
-    "--verbose",
-    "--include-partial-messages",
-    "--permission-mode",
-    env.DASHBOARD_AGENT_PERMISSION_MODE,
-    ...(isResuming ? ["--resume", resumeSessionId] : []),
-  ];
-  const child = spawn(env.CLAUDE_BIN, args, {
+  // The two backends' CLIs take structurally different argv (flag-based resume + a
+  // permission-mode string for Claude; a `resume <id>` subcommand with no `--sandbox` support at
+  // all for Codex, confirmed via `codex exec resume --help`) -- kept as two literal argv builds
+  // rather than one "merged" args array that would have to fake shared semantics neither CLI
+  // actually has.
+  const bin = backend === "codex" ? env.CODEX_BIN : env.CLAUDE_BIN;
+  const args =
+    backend === "codex"
+      ? isResuming
+        ? ["exec", "resume", resumeSessionId, prompt, "--json"]
+        : ["exec", prompt, "--json", "--sandbox", env.DASHBOARD_AGENT_CODEX_SANDBOX]
+      : [
+          "-p",
+          prompt,
+          "--output-format",
+          "stream-json",
+          "--verbose",
+          "--include-partial-messages",
+          "--permission-mode",
+          env.DASHBOARD_AGENT_PERMISSION_MODE,
+          ...(isResuming ? ["--resume", resumeSessionId] : []),
+        ];
+  const extractBackendSessionId = backend === "codex" ? extractCodexSessionId : extractSessionId;
+  const mapBackendStreamJsonLine = backend === "codex" ? mapCodexStreamJsonLine : mapStreamJsonLine;
+  const child = spawn(bin, args, {
     cwd,
     env: childEnv,
     stdio: ["ignore", "pipe", "pipe"],
@@ -138,7 +154,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         controller.enqueue(encoder.encode(sseEncode(obj)));
       };
 
-      send({ type: "start", cwd, skillId: skillId ?? null });
+      send({ type: "start", cwd, skillId: skillId ?? null, backend });
 
       if (child.stderr !== null) {
         child.stderr.setEncoding("utf8");
@@ -149,7 +165,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       if (child.stdout === null) {
         clearTimeout(killTimer);
-        send({ type: "error", message: "No stdout from claude" });
+        send({ type: "error", message: `No stdout from ${bin}` });
         controller.close();
         return;
       }
@@ -164,13 +180,13 @@ export async function POST(request: NextRequest): Promise<Response> {
           return;
         }
         if (!sentSessionId) {
-          const sid = extractSessionId(line);
+          const sid = extractBackendSessionId(line);
           if (sid !== null) {
             sentSessionId = true;
             send({ type: "session", sessionId: sid });
           }
         }
-        const events = mapStreamJsonLine(line);
+        const events = mapBackendStreamJsonLine(line);
         for (const ev of events) {
           if (ev.kind === "assistant_text") {
             send({ type: "text", text: ev.text });

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const DashboardEnvSchema = z.object({
   CLAUDE_BIN: z.string().min(1).default("claude"),
+  CODEX_BIN: z.string().min(1).default("codex"),
   ANTHROPIC_API_KEY: z.string().optional(),
   DASHBOARD_API_KEY: z.string().min(1),
   DASHBOARD_ADMIN_USER: z.string().optional(),
@@ -28,6 +29,12 @@ const DashboardEnvSchema = z.object({
       return trimmed !== undefined && trimmed.length > 0 ? trimmed : "acceptEdits";
     }),
   DASHBOARD_AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
+  /** Passed to `codex exec` as `--sandbox` on a fresh (non-resume) run. `codex exec resume`
+   * doesn't accept `--sandbox` at all (confirmed via `codex exec resume --help`) -- it inherits
+   * whatever policy the original session started with. */
+  DASHBOARD_AGENT_CODEX_SANDBOX: z
+    .enum(["read-only", "workspace-write", "danger-full-access"])
+    .default("workspace-write"),
   DASHBOARD_STREAM_MAX_BUFFER_BYTES: z.coerce.number().int().positive().default(64 * 1024 * 1024),
 });
 

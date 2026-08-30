@@ -36,13 +36,17 @@ type ChatState = {
   skillId: string;
   expectStructuredJson: boolean;
   structuredJsonText: string | null;
-  /** `claude` session id from the last run's `start` event; lets the next turn `--resume` instead
-   *  of resending the whole transcript. Cleared by `resetConversation`. */
+  /** `claude`/`codex` session id from the last run's `start` event; lets the next turn resume
+   *  instead of resending the whole transcript. Cleared by `resetConversation` and by
+   *  `setBackend` (a session id from one backend means nothing to the other's CLI). */
   claudeSessionId: string | null;
+  /** Which model CLI runs the next turn. Defaults to `claude`. */
+  backend: "claude" | "codex";
   appendUser: (content: string) => void;
   resetConversation: () => void;
   setSkillId: (id: string) => void;
   setExpectStructuredJson: (v: boolean) => void;
+  setBackend: (b: "claude" | "codex") => void;
   runAgent: () => Promise<void>;
 };
 
@@ -52,6 +56,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   lastRunContext: null,
   skillId: "",
   expectStructuredJson: false,
+  backend: "claude",
 
   appendUser: (content: string) => {
     const trimmed = content.trim();
@@ -76,9 +81,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setSkillId: (id: string) => set({ skillId: id }),
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
+  setBackend: (b: "claude" | "codex") =>
+    set((s) => (s.backend === b ? s : { backend: b, claudeSessionId: null })),
 
   runAgent: async () => {
-    const { messages, skillId, expectStructuredJson, run, claudeSessionId } = get();
+    const { messages, skillId, expectStructuredJson, run, claudeSessionId, backend } = get();
     if (run.status === "streaming") {
       return;
     }
@@ -87,7 +94,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    // Resuming an existing `claude` session: it already holds every earlier turn, so only the
+    // Resuming an existing session: the backend already holds every earlier turn, so only the
     // newest message needs to go over the wire. A fresh run (no session yet) still sends the
     // full transcript once, which is what establishes that session in the first place.
     const messagesToSend =
@@ -102,6 +109,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       expectStructuredJson: expectStructuredJson || undefined,
       surface: "agent",
       resumeSessionId: claudeSessionId ?? undefined,
+      backend,
     };
 
     set({
