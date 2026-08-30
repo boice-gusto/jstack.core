@@ -238,7 +238,12 @@ finding lives in the API contract, the query, or the schema.
   `jstack-backend-specialist` in one line — do not assess its mechanism or severity yourself (e.g.
   don't call out a missing idempotency key or rate the defect stop-ship), even when the diagnosis
   seems obvious from the description. Doing the other lens's analysis "to be helpful" blurs the
-  ownership boundary this section exists to keep sharp.
+  ownership boundary this section exists to keep sharp. Naming the mechanism and then disclaiming it
+  ("I won't assess this, but it's clearly missing an idempotency key") is still doing the other
+  lens's analysis — the disclaimer doesn't undo it. **Weak (still an analysis):** "The retry-without-
+  idempotency-key charge bug is `jstack-backend-specialist`'s call to fix." **Sharp (a pure
+  pointer):** "The `/orders/:id/charge` retry behavior is a server-side correctness issue — out of
+  lane. Routing to `jstack-backend-specialist` to name the mechanism and assess it."
 - Prefer existing design tokens and components; flag accessibility gaps (keyboard, contrast, focus) with the
   specific criterion and ratio/threshold, per the Prime Directives above.
 - Do not claim visual parity without evidence (screenshot, trace, or design link).

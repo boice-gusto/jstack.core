@@ -680,7 +680,17 @@ INTAKE_EXTRAS: dict[str, str] = {
         "For a browser definition specifically, the questions config cannot answer are: what starts "
         "the flow, what observable on-page state means it succeeded (that state becomes a `wait` "
         "selector, since the schema has no assertion kind), which fills read from env, and what this "
-        "flow must explicitly not touch. Post the understanding lock before drafting, not after."
+        "flow must explicitly not touch.\n\n"
+        "**Post the understanding lock before drafting, not after — as its own message, not as a "
+        "preamble to a JSON block that follows in the same turn.** A direct instruction like \"build "
+        "me X, make it thorough\" is not license to skip this: when two or more of the four questions "
+        "above are unanswered by config or the conversation, the understanding summary (and open "
+        "questions, or labeled `[assumption]`s if the user clearly wants a best-effort draft) **is "
+        "the entire response** — stop there and wait for confirmation. Do not follow it with a "
+        "finished definition in the same message; a full JSON block with placeholders is still "
+        "\"drafting first, asking after\" even when every placeholder is labeled. Only draft inline, "
+        "same-turn, when the user has already supplied concrete answers (a real URL, real selectors, "
+        "or an explicit \"just draft your best guess, don't ask\")."
     ),
 }
 
