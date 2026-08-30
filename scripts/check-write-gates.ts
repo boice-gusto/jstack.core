@@ -20,6 +20,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { discoverAllSkillRelativePaths } from "../evals/discover.js";
+import { isWriteGated, parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
@@ -65,6 +66,7 @@ const WRITES = new Set<string>([
   "meetings/transcripts-ingest",
   "self/brag",
   "self/diary",
+  "self/eval",
   "self/impact-prep",
   "self/remember",
   "session/end",
@@ -87,10 +89,17 @@ const WRITES = new Set<string>([
   "reports/eval-report",
   "reports/report-design",
   "reports/share-html-publish",
+  // Executes an arbitrary config-defined chain of skill slugs, which can include any write
+  // skill above -- gated for the same reason as workflows/execute. morning-kickoff's
+  // `kickoff_workflows.definitions[]` is the same shape (see agents/routine-runner.md).
+  "routines/custom",
+  "routines/morning-kickoff",
   "routines/sprint-close",
   "scaffold",
+  "setup",
   "setup/onboarding",
   "skill-creator",
+  "skill-creator/improve-claude-md",
   "update-config",
   "sprint/planning",
   "sprint/refinement",
@@ -132,13 +141,25 @@ const rows: Row[] = [];
 for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
   const abs = join(skillsRoot, rel, "SKILL.md");
   const raw = readFileSync(abs, "utf8");
-  if (!raw.startsWith("---\n")) continue;
-  const fm = raw.slice(4, raw.indexOf("\n---\n", 4));
-  rows.push({
-    rel,
-    gated: /^disable-model-invocation:\s*true\s*$/m.test(fm),
-    forked: /^agent:\s*Explore\s*$/m.test(fm),
-  });
+  const parsed = parseYamlFrontmatter(raw);
+  if (parsed.status === "missing") continue; // no --- delimiters at all
+  if (parsed.status === "ok") {
+    rows.push({
+      rel,
+      gated: isWriteGated(parsed.meta),
+      forked: parsed.meta["agent"] === "Explore",
+    });
+  } else {
+    const frontmatterText = parsed.frontmatterText;
+    // Malformed YAML elsewhere in the frontmatter must not hide a real gate/fork declaration
+    // from this security-relevant check -- fall back to literal text matching on the raw
+    // frontmatter block, same as this file always did before adopting the shared parser.
+    rows.push({
+      rel,
+      gated: /^disable-model-invocation:\s*true\s*$/m.test(frontmatterText),
+      forked: /^agent:\s*Explore\s*$/m.test(frontmatterText),
+    });
+  }
 }
 
 const errors: string[] = [];

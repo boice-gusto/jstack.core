@@ -14,7 +14,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Write a short narrative of recent work — commits, tickets, reviews — tying it to user impact for a PR description or standup update. Keep it factual; never invent work that did not happen.
-- **Out of scope:** Full accomplishment reports — use `jstack:self-brag` or `jstack:self-report`.
+- **Out of scope:** Full accomplishment reports — use `jstack:self-brag`.
 
 ## Domain rules — explain
 

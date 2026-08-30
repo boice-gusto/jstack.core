@@ -22,7 +22,7 @@ export async function GET(
     }
     return NextResponse.json({ skillId: decoded, documents });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to load documents";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error(`GET /api/skills/${decoded}/documents failed:`, e);
+    return NextResponse.json({ error: "Failed to load skill documents" }, { status: 500 });
   }
 }

@@ -24,7 +24,7 @@ Route a review request to the right lens: code-review (diff), project-review (sc
 - If the same content must ship in Notion, feed output to `jstack:notion-article` with edits applied.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/review/`:** code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review
+**Under `skills/review/`:** code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

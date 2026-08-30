@@ -1,6 +1,6 @@
 ---
 name: jstack-notion-report
-description: Create a long-form report page or DB row in Notion. Set Status to Draft until user reviews.
+description: Create a one-off long-form report page or DB row in Notion. Set Status to Draft until user reviews. For a recurring week-over-week team status report, use notion/team-report instead.
 category: notion
 disable-model-invocation: true
 effort: high

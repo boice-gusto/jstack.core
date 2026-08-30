@@ -40,7 +40,7 @@ import {
   skillGateId,
 } from "./eval-config.js";
 import { executeCase, readSkillMd } from "./execute.js";
-import { gradeCase } from "./grade.js";
+import { buildExecutionFailureGrading, gradeCase } from "./grade.js";
 import {
   buildSemanticSummary,
   printSkillTable,
@@ -373,28 +373,10 @@ function runSemanticCases(opts: RunSemanticCasesOptions): {
     console.log(`status=${er.status} time=${er.elapsed}s tokens=${er.tokens}`);
 
     console.log(`\n--- Grade [${i + 1}/${cases.length}] ${c.name} ---`);
-    let gr;
-    if (er.status !== "completed") {
-      gr = {
-        expectations: c.criteria.map((t) => ({
-          text: t,
-          passed: false,
-          evidence: `Execution ${er.status}`,
-        })),
-        summary: {
-          passed: 0,
-          failed: c.criteria.length,
-          total: c.criteria.length,
-          pass_rate: 0,
-        },
-      };
-      writeFileSync(
-        join(caseDir, "grading.json"),
-        JSON.stringify(gr, null, 2) + "\n",
-      );
-    } else {
-      gr = gradeCase(env, c, er, caseDir);
-    }
+    const gr =
+      er.status !== "completed"
+        ? buildExecutionFailureGrading(c, er, caseDir)
+        : gradeCase(env, c, er, caseDir);
 
     let gateFails: string[] = [];
     if (mergedGate && er.status === "completed") {
@@ -555,6 +537,64 @@ function cmdReport(_args: CliArgs): number {
   return 0;
 }
 
+/**
+ * Shared by cmdSemantic and cmdScenarios: run one case-runner per target, accumulate results,
+ * and write a multi-skill report if there's more than one. They used to each hand-duplicate
+ * this ~18-line accumulate/report loop, already drifted (cmdScenarios had an extra
+ * "no matching skills" check cmdSemantic lacked -- meaning a zero-target semantic run silently
+ * returned success instead of erroring). Applying that check uniformly here is a deliberate,
+ * small behavior change to cmdSemantic: a run that executed nothing should fail, not silently
+ * pass, matching this repo's own stated philosophy elsewhere ("a gate that reports success when
+ * it has nothing to check" is the exact bug class evals/a2a/protocol.test.ts guards against).
+ *
+ * `runOne` returns `null` for a target that should be skipped without affecting pass/fail
+ * (e.g. cmdScenarios' "no SKILL.md" case) -- distinct from a real failure, which it should throw.
+ */
+type TargetRunResult = {
+  summary: ReturnType<typeof buildSemanticSummary>;
+  passed: boolean;
+} | null;
+
+export function runTargetsAndReport(
+  targets: string[],
+  threshold: number,
+  runOne: (rel: string) => TargetRunResult,
+): number {
+  const parts: {
+    skill: string;
+    summary: ReturnType<typeof buildSemanticSummary>;
+    passed_threshold: boolean;
+  }[] = [];
+  let allPass = true;
+  for (const rel of targets) {
+    let result: TargetRunResult;
+    try {
+      result = runOne(rel);
+    } catch (e) {
+      console.error(e);
+      allPass = false;
+      continue;
+    }
+    if (result === null) continue;
+    if (!result.passed) allPass = false;
+    parts.push({
+      skill: rel,
+      summary: result.summary,
+      passed_threshold: result.passed,
+    });
+  }
+  if (parts.length === 0) {
+    console.error("No matching skills to run.");
+    return 1;
+  }
+  if (parts.length > 1) {
+    const multiPath = writeMultiReport(reportsDir, parts, threshold);
+    console.log(`\nMulti-skill report: ${multiPath}`);
+    console.log(`Also: ${join(reportsDir, "REPORT_LATEST.md")}`);
+  }
+  return allPass ? 0 : 1;
+}
+
 function cmdSemantic(args: CliArgs): number {
   const env = loadGlobalEvalEnv(pluginRoot);
   mkdirSync(env.workspaceDir, { recursive: true });
@@ -576,35 +616,16 @@ function cmdSemantic(args: CliArgs): number {
       return 1;
     }
   }
-  const parts: {
-    skill: string;
-    summary: ReturnType<typeof buildSemanticSummary>;
-    passed_threshold: boolean;
-  }[] = [];
-  let allPass = true;
-  for (const rel of targets) {
-    try {
-      const { summary, passed } = runSemanticSkill(
-        rel,
-        env,
-        threshold,
-        gateRules,
-        args.viewer,
-        args.maxCases,
-      );
-      if (!passed) allPass = false;
-      parts.push({ skill: rel, summary, passed_threshold: passed });
-    } catch (e) {
-      console.error(e);
-      allPass = false;
-    }
-  }
-  if (parts.length > 1) {
-    const multiPath = writeMultiReport(reportsDir, parts, threshold);
-    console.log(`\nMulti-skill report: ${multiPath}`);
-    console.log(`Also: ${join(reportsDir, "REPORT_LATEST.md")}`);
-  }
-  return allPass ? 0 : 1;
+  return runTargetsAndReport(targets, threshold, (rel) =>
+    runSemanticSkill(
+      rel,
+      env,
+      threshold,
+      gateRules,
+      args.viewer,
+      args.maxCases,
+    ),
+  );
 }
 
 function cmdScenariosValidate(_args: CliArgs): number {
@@ -739,25 +760,21 @@ function cmdScenarios(args: CliArgs): number {
   }
 
   const gateRules = loadGateRules(pluginRoot);
-  const parts: {
-    skill: string;
-    summary: ReturnType<typeof buildSemanticSummary>;
-    passed_threshold: boolean;
-  }[] = [];
-  let allPass = true;
-  for (const rel of targets) {
-    const skillFile = join(
-      skillsRoot,
-      ...rel.split("/").filter(Boolean),
-      "SKILL.md",
-    );
-    if (!existsSync(skillFile)) {
-      console.warn(`Skipping ${rel}: no SKILL.md`);
-      continue;
-    }
-    const cases = expandPackForSkill(pack, rel, `pack:${pack.id}`);
-    try {
-      const { summary, passed } = runSemanticCases({
+  return runTargetsAndReport(
+    targets,
+    scenarioPassThresh ?? defaultTh,
+    (rel) => {
+      const skillFile = join(
+        skillsRoot,
+        ...rel.split("/").filter(Boolean),
+        "SKILL.md",
+      );
+      if (!existsSync(skillFile)) {
+        console.warn(`Skipping ${rel}: no SKILL.md`);
+        return null;
+      }
+      const cases = expandPackForSkill(pack, rel, `pack:${pack.id}`);
+      return runSemanticCases({
         skillRel: rel,
         cases,
         env,
@@ -773,27 +790,8 @@ function cmdScenarios(args: CliArgs): number {
         reportSlug: `${rel.replace(/\//g, "__")}__scenarios__${pack.id}`,
         summarySkillName: `${rel} [scenario:${pack.id}]`,
       });
-      if (!passed) allPass = false;
-      parts.push({ skill: rel, summary, passed_threshold: passed });
-    } catch (e) {
-      console.error(e);
-      allPass = false;
-    }
-  }
-  if (parts.length === 0) {
-    console.error("No matching skills to run.");
-    return 1;
-  }
-  if (parts.length > 1) {
-    const multiPath = writeMultiReport(
-      reportsDir,
-      parts,
-      scenarioPassThresh ?? defaultTh,
-    );
-    console.log(`\nMulti-skill report: ${multiPath}`);
-    console.log(`Also: ${join(reportsDir, "REPORT_LATEST.md")}`);
-  }
-  return allPass ? 0 : 1;
+    },
+  );
 }
 
 function cmdQuick(args: CliArgs): number {
@@ -873,11 +871,19 @@ const commands: Record<string, (args: CliArgs) => number> = {
   quick: cmdQuick,
 };
 
-const cmd = args.command;
-const handler = commands[cmd];
-if (!handler) {
-  console.error(`Unknown command: ${cmd}`);
-  printHelp();
-  process.exit(1);
+/**
+ * Guard needed because this module now exports `runTargetsAndReport` for unit testing
+ * (see run-evals.test.ts): without it, merely importing this file -- e.g. from a test --
+ * would run a full eval command and call process.exit(), killing the importer. Same fix
+ * as cli/src/crewd.ts's `import.meta.main` guard, added there for the identical reason.
+ */
+if (import.meta.main) {
+  const cmd = args.command;
+  const handler = commands[cmd];
+  if (!handler) {
+    console.error(`Unknown command: ${cmd}`);
+    printHelp();
+    process.exit(1);
+  }
+  process.exit(handler(args));
 }
-process.exit(handler(args));

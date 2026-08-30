@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import type { JstackConfig } from "../types/config.js";
+import { isMockMcpServerEntry, readMcpServers } from "./mcp-file.js";
 
 /**
  * Pure dependency resolution for jstack config: given a parsed config object
@@ -17,7 +18,12 @@ import type { JstackConfig } from "../types/config.js";
 export type RepairAction =
   | { kind: "mkdir"; path: string }
   | { kind: "write_file"; path: string; content: string; ifMissing: true }
-  | { kind: "set_config"; path: string[]; value: unknown }
+  // `value?` (not `value:`) because it matches what repair-serializer.ts's Zod schema
+  // actually enforces: z.unknown() validates successfully even when the key is entirely
+  // absent, so a `set_config` repair with no `value` key already passes schema validation
+  // today (verified). The hand-written type previously claimed `value` was required, which
+  // was never true of the real validated behavior on the --apply-repairs untrusted-JSON path.
+  | { kind: "set_config"; path: string[]; value?: unknown }
   | { kind: "shell_hint"; cmd: string; reason: string };
 
 export type DependencyIssue = {
@@ -178,22 +184,13 @@ function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
   if (input.cfg.debug?.mock_mcp !== true) return;
 
   const mcpPath = join(input.projectRoot, ".mcp.json");
+  const servers = readMcpServers(input.projectRoot);
   let hasMockEntry = false;
 
-  if (existsSync(mcpPath)) {
-    try {
-      const raw = JSON.parse(readFileSync(mcpPath, "utf8")) as {
-        mcpServers?: Record<string, { args?: unknown; command?: unknown }>;
-      };
-      const servers = raw?.mcpServers ?? {};
-      hasMockEntry = Object.entries(servers).some(([key, spec]) => {
-        if (key.toLowerCase() === "jstack-mock") return true;
-        const args = Array.isArray(spec?.args) ? (spec.args as unknown[]) : [];
-        return args.some((a) => String(a).includes("mcp-mock/server"));
-      });
-    } catch {
-      hasMockEntry = false;
-    }
+  if (servers) {
+    hasMockEntry = Object.entries(servers).some(([key, specRaw]) =>
+      isMockMcpServerEntry(key, specRaw),
+    );
   }
 
   if (!hasMockEntry) {
@@ -201,9 +198,12 @@ function checkMockMcp(input: ResolverInput, issues: DependencyIssue[]): void {
       id: "mcp-mock-missing",
       configPath: ["debug", "mock_mcp"],
       severity: "warn",
-      message: existsSync(mcpPath)
-        ? "debug.mock_mcp is true but .mcp.json has no jstack-mock server entry."
-        : "debug.mock_mcp is true but .mcp.json is missing.",
+      message:
+        servers !== null
+          ? "debug.mock_mcp is true but .mcp.json has no jstack-mock server entry."
+          : existsSync(mcpPath)
+            ? "debug.mock_mcp is true but .mcp.json is present but not valid JSON."
+            : "debug.mock_mcp is true but .mcp.json is missing.",
       repairs: [
         {
           kind: "shell_hint",
@@ -325,18 +325,8 @@ function checkMcpServerWiring(
 ): void {
   const mcpServers = input.cfg.mcp_servers;
   if (!mcpServers || Object.keys(mcpServers).length === 0) return;
-  const mcpJsonPath = join(input.projectRoot, ".mcp.json");
-  if (!existsSync(mcpJsonPath)) return;
-  let registeredServers: Record<string, unknown> = {};
-  try {
-    const raw = JSON.parse(readFileSync(mcpJsonPath, "utf8")) as Record<
-      string,
-      unknown
-    >;
-    registeredServers = asRecord(raw?.mcpServers) ?? {};
-  } catch {
-    return;
-  }
+  const registeredServers = readMcpServers(input.projectRoot);
+  if (registeredServers === null) return;
   for (const [name, serverRaw] of Object.entries(mcpServers)) {
     // mcp_servers[name] is typed as a full McpServer, but this cfg may not have gone through
     // JstackConfigSchema.parse() at the call site — keep the defensive narrowing.

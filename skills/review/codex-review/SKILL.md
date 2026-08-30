@@ -43,8 +43,9 @@ pass.
    - No assumptions: every claim needs a cited basis. If codex can't cite one, it should say it
      is uncertain rather than assert.
 2. **Never just accept or dismiss a finding.** For each finding codex raises, pick one of:
-   - **(a) Fix and re-review** — make the edit, then send the diff of *that* edit back to the
-     same `thread_id` (via `codex-bridge`'s resume) and ask codex to confirm it's resolved.
+   - **(a) Fix and re-review** — get the user's explicit go-ahead before applying the edit (per
+     the Failure modes/Step 4 rule below), then make the edit, send the diff of *that* edit back
+     to the same `thread_id` (via `codex-bridge`'s resume), and ask codex to confirm it's resolved.
    - **(b) Push back with a concrete counter-argument** — if the finding misreads intentional
      design, say exactly why (cite the design decision, the file, the reasoning) and ask codex to
      respond to that specific argument, not a restatement of the disagreement.

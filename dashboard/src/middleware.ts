@@ -1,7 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { getRateLimitIdentity, isAuthorizedRequest } from "@/lib/auth-request";
+import {
+  extractClientIp,
+  isAuthorizedIdentity,
+  rateLimitKeyForIdentity,
+  resolveRequestIdentity,
+} from "@/lib/auth-request";
 import { getDashboardEnv } from "@/lib/dashboard-env";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -33,13 +38,24 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Server misconfigured (env)" }, { status: 503 });
   }
 
+  // Rate limit BEFORE any auth check, for both API and page routes: an unauthenticated request
+  // must never get to skip the throttle by virtue of failing auth first. The API branch below
+  // already did this; the page branch used to check auth first, so hammering a protected page
+  // with no session cookie got an unthrottled 302 every time -- never a 429.
+  //
+  // Identity (which itself verifies the session cookie's HMAC when a cookie is present) is
+  // resolved exactly once here and reused for both the rate-limit key and the auth decision --
+  // this request used to run that verification twice (once per helper call).
+  const identity = await resolveRequestIdentity(request);
+  const id = rateLimitKeyForIdentity(identity, extractClientIp(request));
+  const rl = checkRateLimit(
+    id,
+    env.DASHBOARD_RATE_LIMIT_MAX,
+    env.DASHBOARD_RATE_LIMIT_WINDOW_MS,
+  );
+  const authorized = isAuthorizedIdentity(identity);
+
   if (pathname.startsWith("/api/")) {
-    const id = await getRateLimitIdentity(request);
-    const rl = checkRateLimit(
-      id,
-      env.DASHBOARD_RATE_LIMIT_MAX,
-      env.DASHBOARD_RATE_LIMIT_WINDOW_MS,
-    );
     if (!rl.ok) {
       return NextResponse.json(
         { error: "Rate limit exceeded" },
@@ -49,30 +65,24 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     if (isPublicPath(pathname)) {
       return NextResponse.next();
     }
-    if (!(await isAuthorizedRequest(request))) {
+    if (!authorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.next();
   }
 
-  if (!(await isAuthorizedRequest(request))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  const id = await getRateLimitIdentity(request);
-  const rl = checkRateLimit(
-    id,
-    env.DASHBOARD_RATE_LIMIT_MAX,
-    env.DASHBOARD_RATE_LIMIT_WINDOW_MS,
-  );
   if (!rl.ok) {
     return new NextResponse("Too many requests", {
       status: 429,
       headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) },
     });
+  }
+
+  if (!authorized) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

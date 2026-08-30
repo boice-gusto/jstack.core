@@ -10,7 +10,7 @@ effort: high
 <!-- Chain Contract -->
 <!-- inputs: optional $ARGUMENTS (skill/kind filter, lookback window), .jstack/memory.jsonl, evals/.reports/*.json, .jstack/claude-md-improver-history.json -->
 <!-- outputs: retro_report (learned/recurring/promoted-to-fix/still-just-a-log-entry), optional skill_deep or SKIP-set follow-ups -->
-<!-- chains-to: jstack:skill-creator, jstack:update-config (if persisting new defaults only) -->
+<!-- chains-to: jstack:skill-creator, jstack:update-config -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -163,7 +163,7 @@ inside this skill.
 | User asks for a retro scoped to one skill that has zero memory entries | Say plainly that skill has no logged history yet; that absence is itself informative. |
 
 ## Chaining
-Suggest `suggested_next: jstack-skill-creator` for any accepted promotion that needs a SKILL.md or `skill_deep` edit. Do not make the edit inside this skill.
+Suggest `suggested_next: jstack-skill-creator` for any accepted promotion that needs a SKILL.md or `skill_deep` edit. Do not make the edit inside this skill. Chains to `jstack:update-config` only when persisting new defaults, not on every run.
 
 ## User request
 

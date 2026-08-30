@@ -29,9 +29,9 @@ function kindLabel(kind: ReportKind | undefined): string {
 
 export function ReportViewer({ data }: { data: ReportPayload }): ReactNode {
   const { meta, sections, links } = data;
-  const kind = (meta as { report_kind?: ReportKind }).report_kind;
-  const subtitle = (meta as { subtitle?: string }).subtitle;
-  const team = (meta as { team?: string }).team;
+  const kind = meta.report_kind;
+  const subtitle = meta.subtitle;
+  const team = meta.team;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -65,11 +65,11 @@ export function ReportViewer({ data }: { data: ReportPayload }): ReactNode {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* ReportSectionSchema is a union requiring chart and/or non-empty
+                  body_markdown, so "neither" is unrepresentable -- no fallback branch needed. */}
               {s.chart != null ? <ReportChartBlock chart={s.chart} /> : null}
               {s.body_markdown != null && s.body_markdown.trim().length > 0 ? (
                 <ReportMarkdown>{s.body_markdown.trim()}</ReportMarkdown>
-              ) : s.chart == null ? (
-                <ReportMarkdown>_No content._</ReportMarkdown>
               ) : null}
             </CardContent>
           </Card>

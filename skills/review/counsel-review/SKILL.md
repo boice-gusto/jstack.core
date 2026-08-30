@@ -18,6 +18,7 @@ Load the policy this domain is governed by (do not restate it from memory):
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/engineer.md
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/qa.md
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/designer.md
+!cat ${CLAUDE_PLUGIN_ROOT}/prompts/personas/security.md
 
 ## What this skill is for
 Reconcile multiple persona lenses into one verdict, attributing each concern to the lens that raised it and stating what would change the call.

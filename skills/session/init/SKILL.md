@@ -18,7 +18,7 @@ Start a session: set gbrain target, load sprint and timezone from `jstack time`,
 - **Out of scope:** Silently ending a prior session — ask once if ambiguous.
 
 ## Domain rules — session lifecycle
-- `init` sets gbrain target, issues or reads `session.current_session_id`, loads context; `end` flushes to GBrain with **provenance** per `gbrain.provenance` and `gbrain-entry-provenance.md`.
+- `init` sets gbrain target, issues or reads `session.current_session_id`, loads context; `end` flushes to GBrain with **provenance** per `gbrain.provenance` and `${CLAUDE_PLUGIN_ROOT}/skills/knowledge/references/gbrain-entry-provenance.md`.
 - Config keys: `session.*`, `gbrain` URLs + `gbrain.provenance` (config_label, identity, entry_fields), eval hooks.
 - Not a login system — the host enforces auth; this manages jstack session state only.
 

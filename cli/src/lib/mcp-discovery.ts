@@ -54,7 +54,7 @@ function humanize(id: string): string {
 
 export type McpMergeCollision = {
   serverId: string;
-  resolution: "kept_existing" | "merged_fields" | "replaced" | "pruned";
+  resolution: "kept_existing" | "merged_fields" | "pruned";
   reason: string;
 };
 

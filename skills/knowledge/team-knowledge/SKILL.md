@@ -2,8 +2,10 @@
 name: jstack-team-knowledge
 description: "Build the team knowledge graph: link issues, ADRs, runbooks. Suggest hubs and flag stale pages."
 category: knowledge
+data_class: internal
 disable-model-invocation: true
 effort: high
+gbrain_destination: team
 ---
 
 <!-- Chain Contract -->
@@ -49,7 +51,7 @@ Build the shared team knowledge graph — issues, ADRs, runbooks — with canoni
 - *Sharp:* "Linked INC-4021 → `runbooks/payment-retry.md` (source: incident postmortem, 2026-06-14). Duplicate check: an older link from ADR-118 already covers this relationship — keeping ADR-118 canonical, superseding the new one rather than creating a parallel edge. Runbook flagged stale (last reviewed 2025-11-02, past the 6-month window) — recommend re-verifying retry steps before relying on it live. No personal names or 1:1 content included in this entry."
 
 ### What this skill must not do
-- Does not manage an individual's personal capture — that's `jstack:knowledge-self-knowledge`.
+- Does not manage an individual's personal capture — that's `jstack:self-knowledge`.
 - Must never write personal data into the shared store, regardless of how the request is phrased.
 - Does not unilaterally restructure Notion — it proposes links/hubs/stale flags; write-scale changes need user confirmation.
 

@@ -8,14 +8,17 @@ import { getJstackCoreRoot, getSkillCatalogPath } from "@/server/env";
 const SkillEntrySchema = z.object({
   id: z.string(),
   name: z.string().optional(),
-  path: z.string(),
-  relPath: z.string().optional(),
+  relPath: z.string(),
   gateId: z.string().optional(),
   description: z.string().optional(),
+  whenToUse: z.string().optional(),
   category: z.string().optional(),
+  categoryKey: z.string().optional(),
 });
 
 const CatalogSchema = z.object({
+  generatedAt: z.string().optional(),
+  count: z.number().optional(),
   skills: z.array(SkillEntrySchema),
 });
 
@@ -38,21 +41,43 @@ function listSchemaPaths(skillMdPath: string): string[] {
   }
 }
 
-export function loadSkillCatalog(): SkillCatalogEntry[] {
-  const root = getJstackCoreRoot();
+export type SkillCatalogRaw = {
+  generatedAt?: string;
+  count?: number;
+  skills: SkillCatalogEntry[];
+};
+
+let cachedRaw: { mtimeMs: number; data: SkillCatalogRaw } | null = null;
+
+/** Every skill's `references/schemas/` dir gets stat'd/read on each parse, so this is
+ * cached by the catalog file's mtime rather than re-walked on every request. */
+export function loadSkillCatalogRaw(): SkillCatalogRaw {
   const catalogPath = getSkillCatalogPath();
+  const mtimeMs = statSync(catalogPath).mtimeMs;
+  if (cachedRaw !== null && cachedRaw.mtimeMs === mtimeMs) {
+    return cachedRaw.data;
+  }
+
+  const root = getJstackCoreRoot();
   const raw = readFileSync(catalogPath, "utf8");
   const parsed = CatalogSchema.safeParse(JSON.parse(raw) as unknown);
   if (!parsed.success) {
     throw new Error(`Invalid skill-catalog.json: ${parsed.error.message}`);
   }
-  return parsed.data.skills.map((s) => {
-    const abs = join(root, s.path);
+  const skills = parsed.data.skills.map((s) => {
+    const abs = join(root, s.relPath);
     return {
       ...s,
       schemaPaths: listSchemaPaths(abs),
     };
   });
+  const data = { generatedAt: parsed.data.generatedAt, count: parsed.data.count, skills };
+  cachedRaw = { mtimeMs, data };
+  return data;
+}
+
+export function loadSkillCatalog(): SkillCatalogEntry[] {
+  return loadSkillCatalogRaw().skills;
 }
 
 export function loadSkillMarkdownById(skillId: string): { content: string; absPath: string } | null {
@@ -60,7 +85,7 @@ export function loadSkillMarkdownById(skillId: string): { content: string; absPa
   const entry = catalog.find((s) => s.id === skillId);
   if (entry === undefined) return null;
   const root = getJstackCoreRoot();
-  const abs = join(root, entry.path);
+  const abs = join(root, entry.relPath);
   if (!existsSync(abs)) return null;
   const content = readFileSync(abs, "utf8");
   return { content, absPath: abs };

@@ -16,7 +16,11 @@ export const McpToolSchema = z.object({
 export const McpServerSchema = z.object({
   label: z.string(),
   description: z.string(),
-  status: z.enum(["connected", "not_configured", "error", "available"]),
+  // "error" and "available" were never produced anywhere in this repo (confirmed via grep) --
+  // narrowed to what mcp-discovery.ts actually emits ("connected") and what a not-yet-connected
+  // entry is represented as ("not_configured"). If a live-health-check feature adds a real
+  // third/fourth state later, add it back here alongside whatever code actually produces it.
+  status: z.enum(["connected", "not_configured"]),
   server_id: z.string().nullable(),
   tools: z.array(McpToolSchema),
   used_by_skills: z.array(z.string()),

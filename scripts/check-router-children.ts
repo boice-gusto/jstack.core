@@ -24,6 +24,8 @@
 import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
+import { loadOrchRegistry } from "./lib/orch-registry.js";
 
 // `JSTACK_CHECK_ROOT` lets a test point this gate at a synthetic fixture tree. Production runs
 // never set it, so behaviour is unchanged; without it these gates could only be verified by
@@ -32,31 +34,6 @@ const root =
   process.env.JSTACK_CHECK_ROOT ??
   join(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(root, "skills");
-const genSrc = readFileSync(
-  join(root, "scripts", "apply_detailed_skills.py"),
-  "utf8",
-);
-
-/** Parse the ORCHESTRATORS set literal out of the generator. */
-function parseOrchestrators(): Set<string> {
-  const m = genSrc.match(/ORCHESTRATORS\s*=\s*\{([\s\S]*?)\}/);
-  if (!m)
-    throw new Error("could not find ORCHESTRATORS in apply_detailed_skills.py");
-  return new Set([...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]));
-}
-
-/** Parse ORCH_CHILDREN into router -> raw comma string. */
-function parseOrchChildren(): Map<string, string> {
-  const m = genSrc.match(/ORCH_CHILDREN\s*=\s*\{([\s\S]*?)\n\}/);
-  if (!m)
-    throw new Error("could not find ORCH_CHILDREN in apply_detailed_skills.py");
-  const out = new Map<string, string>();
-  for (const line of m[1].split("\n")) {
-    const kv = line.match(/^\s*"([^"]+)":\s*"([^"]*)"/);
-    if (kv) out.set(kv[1], kv[2]);
-  }
-  return out;
-}
 
 /** Immediate subdirectories that are themselves skills. */
 function diskChildren(router: string): string[] {
@@ -68,8 +45,7 @@ function diskChildren(router: string): string[] {
     .sort();
 }
 
-const orchestrators = parseOrchestrators();
-const children = parseOrchChildren();
+const { orchestrators, children } = loadOrchRegistry(root);
 const errors: string[] = [];
 let checked = 0;
 
@@ -114,7 +90,16 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   const md = join(skillsRoot, entry.name, "SKILL.md");
   if (!existsSync(md)) continue;
   const raw = readFileSync(md, "utf8");
-  const desc = raw.match(/^description:\s*(.+)$/m)?.[1] ?? "";
+  // A block-scalar description (`description: >` / `|`) used to be invisible to the old
+  // single-line regex here -- it would capture just the `>`/`|` marker itself, never the real
+  // routing-claim text on the following lines. The shared parser handles block scalars.
+  const parsedFm = parseYamlFrontmatter(raw);
+  const parsedDescription =
+    parsedFm.status === "ok" ? parsedFm.meta.description : undefined;
+  const desc =
+    typeof parsedDescription === "string"
+      ? parsedDescription
+      : (raw.match(/^description:\s*(.+)$/m)?.[1] ?? "");
   const claimsRouting =
     /^route\b|\brequests? to the (right|most specific)\b/i.test(desc);
   if (!claimsRouting) continue;

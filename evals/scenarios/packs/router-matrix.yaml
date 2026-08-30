@@ -11,7 +11,6 @@ default_timeout: 120
 default_targets:
   - jira
   - notion
-  - federated-search
   - meetings
   - research
   - reports
@@ -28,6 +27,7 @@ default_targets:
   - computer-use
   - design
   - pe
+  - shortcuts
 
 scenarios:
   - id: jira
@@ -49,16 +49,6 @@ scenarios:
     criteria:
       - "Names a child skill path or one clarifying question"
       - "Does not present fake page URLs or database IDs as verified"
-
-  - id: federated-search
-    name: "Router — Federated search domain intake"
-    targets: [federated-search]
-    prompt: |
-      User: "Search everywhere for how we handle refunds — Jira, Notion, and the wiki."
-      As **jstack:federated-search**, state how you pick providers and merge results (see `skills/federated-search/`), or ask one clarifying question. No fake credentials or live IDs. Under ~200 words.
-    criteria:
-      - "Names provider selection or merge behavior or one clarifying question"
-      - "Does not invent MCP connectivity or verified hits"
 
   - id: meetings
     name: "Router — Meetings domain intake"
@@ -219,3 +209,13 @@ scenarios:
     criteria:
       - "Names a pe/* route or one clarifying question"
       - "Does not write performance narrative about a named individual"
+
+  - id: shortcuts
+    name: "Router — Shortcuts domain intake"
+    targets: [shortcuts]
+    prompt: |
+      User: "I need to think through a big strategic bet before I bring it to leadership."
+      As **jstack:shortcuts**, which **child** under `skills/shortcuts/` first (ceo-brainstorm vs. executive-research-brief), or one question? Under ~200 words.
+    criteria:
+      - "Names a shortcuts/* route or one clarifying question"
+      - "Does not present fabricated leadership decisions or research findings as verified"

@@ -174,7 +174,7 @@ for (const rel of skillDirs) {
   const dir = join(skillsRoot, rel);
   const raw = readFileSync(join(dir, "SKILL.md"), "utf8");
   const parsed = parseYamlFrontmatter(raw);
-  if (parsed.error && parsed.frontmatterText === undefined) {
+  if (parsed.status === "missing") {
     // No `---` delimiters at all — there is no frontmatter text to fall back to parsing.
     findings.push({
       skill: rel,
@@ -186,8 +186,8 @@ for (const rel of skillDirs) {
   }
   const body = parsed.body;
 
-  let meta: Record<string, unknown> = parsed.meta;
-  if (parsed.error) {
+  let meta: Record<string, unknown> = parsed.status === "ok" ? parsed.meta : {};
+  if (parsed.status === "invalid") {
     // Frontmatter MUST be valid YAML. 27 of 137 files once failed `yaml.safe_load` — usually a
     // colon-space inside an unquoted description — and every consumer using a real YAML parser saw an
     // EMPTY mapping for them, so `name`, `effort`, and `disable-model-invocation` all read as absent.

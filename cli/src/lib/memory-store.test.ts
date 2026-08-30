@@ -40,6 +40,18 @@ describe("validateMemoryEntry", () => {
     expect(v.skill).toBe("self-lookback");
   });
 
+  test("coerces a numeric-string confidence to a real number", () => {
+    const v = validateMemoryEntry({
+      kind: "pattern",
+      key: "review-latency",
+      insight: "Reviews tend to slip past 2 days without a nudge.",
+      source: "observed",
+      confidence: "7",
+    });
+    expect(v.confidence).toBe(7);
+    expect(typeof v.confidence).toBe("number");
+  });
+
   test("rejects an invalid kind", () => {
     expect(() =>
       validateMemoryEntry({

@@ -2,6 +2,7 @@
 name: jstack-morning-kickoff
 description: Config-driven morning routine — ordered jstack skill steps with PASS/FAIL/SKIP/BLOCKED, markdown checklist, on_fail stop|continue|ask; not browser workflow runner.
 category: routines
+disable-model-invocation: true
 disallowed-tools: AskUserQuestion
 effort: low
 ---

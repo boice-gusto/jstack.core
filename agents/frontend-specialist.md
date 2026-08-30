@@ -167,6 +167,7 @@ changes, lead with regression blast radius.
 
 1. **`workflows.*`** — browser runner roots when automation is in scope; unset → manual repro steps only.
 2. **`debug.trace_*`** — optional tracing for flaky UI; off → describe deterministic repro checklist.
+3. **`cross_plugins`** — when hosts expose sibling browser-automation tools (e.g. a Playwright MCP) for a repro or workflow step to reference; empty → document the CLI-only path instead of assuming an MCP surface exists.
 
 ## Evidence chain (internal)
 

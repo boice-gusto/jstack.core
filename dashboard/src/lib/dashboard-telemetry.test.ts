@@ -1,8 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clearBuffer, snapshotBuffer } from "@jstack/telemetry/collector";
+import { clearBuffer, recordEvent, snapshotBuffer } from "@jstack/telemetry/collector";
 
-import { recordDashboardAgentRun } from "@/lib/dashboard-telemetry";
+import { flushIfConfigured, recordDashboardAgentRun } from "@/lib/dashboard-telemetry";
+
+vi.mock("@/lib/config-reader", () => ({
+  readJstackConfig: () => ({ telemetry: { enabled: true, endpoint: "https://example.invalid/ingest" } }),
+}));
 
 /**
  * Exercises against the REAL `telemetry/collector.ts` buffer rather than a mock -- it's a plain
@@ -83,5 +87,45 @@ describe("recordDashboardAgentRun", () => {
     const events = snapshotBuffer();
     expect(events[0]?.success).toBe(false);
     expect(events[0]?.error_type).toBe("exit_1");
+  });
+});
+
+describe("flushIfConfigured", () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    clearBuffer();
+    recordEvent({
+      timestamp: new Date().toISOString(),
+      plugin_version: "test",
+      skill_name: "dashboard-agent",
+      skill_category: "dashboard",
+      token_input: 1,
+      token_output: 1,
+      token_total: 2,
+      latency_ms: 1,
+      success: true,
+    });
+  });
+
+  afterEach(() => {
+    clearBuffer();
+    global.fetch = originalFetch;
+  });
+
+  it("keeps the buffered event when the send fails -- does not clear before the send is confirmed", async () => {
+    global.fetch = (async () => new Response("boom", { status: 500 })) as unknown as typeof fetch;
+
+    await flushIfConfigured();
+
+    expect(snapshotBuffer()).toHaveLength(1);
+  });
+
+  it("clears the buffer once the send actually succeeds", async () => {
+    global.fetch = (async () => new Response("{}", { status: 200 })) as unknown as typeof fetch;
+
+    await flushIfConfigured();
+
+    expect(snapshotBuffer()).toHaveLength(0);
   });
 });

@@ -123,7 +123,7 @@ WHEN_TO_USE: dict[str, str] = {
     "jira": "Also when the user mentions tickets, issues, JQL, triage, filing bugs, sprint backlog, status transitions, or commenting on an issue.",
     "knowledge": "Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
     "session": "Also when starting or ending a jstack session, choosing personal vs team gbrain target, or wrapping up with a session summary.",
-    "setup": "Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config).",
+    "setup": "Also when the user says jstack is broken, doctor is failing, an MCP server won't connect, or asks to reset/repair/reinstall an existing setup.",
     "update-config": "Not for a brand-new project with no config yet — that is jstack:onboarding's job.",
     "adr": "Also when the user mentions docs/decisions, RFC-lite, supersede ADR-NNN, or recording architecture or org decisions in git markdown.",
     "intake": "Also when shaping a feature idea, PRD snippet, messy notes, or Slack thread into ticket-ready fields (before Jira create).",
@@ -200,7 +200,7 @@ MISSIONS: dict[str, str] = {
     # --- adr (repo markdown; Notion ADRs use notion/adr) ---
     "adr": "Draft or revise a **local** `.md` ADR: classify kind (engineering, design, team, codebase, org), resolve `docs/adr/` or user path per `${CLAUDE_PLUGIN_ROOT}/skills/adr/references/discovery.md`, match numbering and cross-links to sibling files.\n- **Out of scope:** Notion database ADRs — use `jstack:notion-adr` (`skills/notion/adr`). Silent overwrite — confirm full path first.",
     # --- setup ---
-    "setup": "Walk the user through first-time onboarding: `jstack setup` wizard, config creation, `jstack doctor` validation, dashboard pointers.\n- **Out of scope:** Writing secrets to markdown or logging tokens. If the user pastes a token, tell them to move it to an env/secret store and rotate.",
+    "setup": "Repair an existing jstack setup: interpret a `jstack doctor` failure, fix a missing or broken `jstack.config.json` on a project that was previously working, or re-run MCP server discovery.\n- **Out of scope:** Writing secrets to markdown or logging tokens. If the user pastes a token, tell them to move it to an env/secret store and rotate. Also out of scope: a brand-new user's first-time walkthrough (`jstack:onboarding`) and editing an already-working config (`jstack:update-config`).",
     # --- sdlc ---
     "sdlc": "Map SDLC stages to evidence the team produces. For each gate, list entrance/exit criteria. Do not waive a gate without a named risk-acceptance line.\n- **Out of scope:** Making Jira state changes or deploying code — produce checklists and narrative only.",
     # --- announcements ---

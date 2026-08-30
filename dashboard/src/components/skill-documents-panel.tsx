@@ -6,12 +6,7 @@ import type { ReactElement } from "react";
 import { ChatMarkdown } from "@/components/chat-markdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-type DocumentRow = {
-  relPath: string;
-  title: string;
-  markdown: string;
-};
+import type { SkillDocumentChunk } from "@/lib/skills-catalog";
 
 export function SkillDocumentsPanel({
   skillId,
@@ -20,7 +15,7 @@ export function SkillDocumentsPanel({
   skillId: string;
   className?: string;
 }): ReactElement | null {
-  const [documents, setDocuments] = useState<DocumentRow[] | null>(null);
+  const [documents, setDocuments] = useState<SkillDocumentChunk[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +43,7 @@ export function SkillDocumentsPanel({
           credentials: "include",
         });
         const json = (await res.json()) as {
-          documents?: DocumentRow[];
+          documents?: SkillDocumentChunk[];
           error?: string;
         };
         if (cancelled) {

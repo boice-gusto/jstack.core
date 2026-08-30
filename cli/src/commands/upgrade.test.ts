@@ -14,32 +14,24 @@ import type { UpdateCheckResult } from "../lib/update-check.js";
  * (0.2.0)." with exit 0.
  */
 
-function result(over: Partial<UpdateCheckResult>): UpdateCheckResult {
-  return {
-    local_version: "0.2.0",
-    remote_version: "0.2.0",
-    upgrade_available: false,
-    raw_line: null,
-    ...over,
-  };
-}
-
 describe("formatUpgradeMessage", () => {
   test("reports up to date when local matches remote", () => {
-    const lines = formatUpgradeMessage(result({}), false);
+    const result: UpdateCheckResult = {
+      status: "up-to-date",
+      local_version: "0.2.0",
+    };
+    const lines = formatUpgradeMessage(result, false);
     expect(lines.join("\n")).toContain("up to date");
     expect(lines.join("\n")).toContain("0.2.0");
   });
 
   test("reports the version gap and git commands when an update is available in a git checkout", () => {
-    const lines = formatUpgradeMessage(
-      result({
-        remote_version: "0.3.0",
-        upgrade_available: true,
-        raw_line: "UPGRADE_AVAILABLE 0.2.0 0.3.0",
-      }),
-      true,
-    );
+    const result: UpdateCheckResult = {
+      status: "upgrade-available",
+      local_version: "0.2.0",
+      remote_version: "0.3.0",
+    };
+    const lines = formatUpgradeMessage(result, true);
     const out = lines.join("\n");
     expect(out).toContain("0.2.0");
     expect(out).toContain("0.3.0");
@@ -47,14 +39,12 @@ describe("formatUpgradeMessage", () => {
   });
 
   test("tells the user to pin manually when an update is available but this isn't a git checkout", () => {
-    const lines = formatUpgradeMessage(
-      result({
-        remote_version: "0.3.0",
-        upgrade_available: true,
-        raw_line: "UPGRADE_AVAILABLE 0.2.0 0.3.0",
-      }),
-      false,
-    );
+    const result: UpdateCheckResult = {
+      status: "upgrade-available",
+      local_version: "0.2.0",
+      remote_version: "0.3.0",
+    };
+    const lines = formatUpgradeMessage(result, false);
     const out = lines.join("\n");
     expect(out).toContain(
       "Pin your package/git ref to the new version manually",
@@ -63,27 +53,27 @@ describe("formatUpgradeMessage", () => {
   });
 
   test("reports missing VERSION file instead of a false 'up to date'", () => {
-    const lines = formatUpgradeMessage(
-      result({ local_version: null, remote_version: null }),
-      false,
-    );
+    const result: UpdateCheckResult = { status: "no-local-version" };
+    const lines = formatUpgradeMessage(result, false);
     const out = lines.join("\n");
     expect(out).toContain("No VERSION file found");
     expect(out).not.toContain("up to date");
   });
 
   test("reports an unreachable remote instead of a false 'up to date'", () => {
-    const lines = formatUpgradeMessage(result({ remote_version: null }), false);
+    const result: UpdateCheckResult = {
+      status: "offline",
+      local_version: "0.2.0",
+    };
+    const lines = formatUpgradeMessage(result, false);
     const out = lines.join("\n");
     expect(out).toContain("Could not reach");
     expect(out).not.toContain("up to date");
   });
 
   test("prefers the missing-VERSION message over the unreachable-remote message when both are true", () => {
-    const lines = formatUpgradeMessage(
-      result({ local_version: null, remote_version: null }),
-      false,
-    );
+    const result: UpdateCheckResult = { status: "no-local-version" };
+    const lines = formatUpgradeMessage(result, false);
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("No VERSION file found");
   });

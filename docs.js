@@ -25,7 +25,6 @@ function loadMarkdownRender() {
  * @typedef {{
  *   id: string;
  *   name: string;
- *   path: string;
  *   relPath: string;
  *   description: string;
  *   whenToUse: string;
@@ -191,14 +190,7 @@ function skillMatches(s, q) {
   if (needle.length === 0) {
     return true;
   }
-  const blob = [
-    s.name,
-    s.description,
-    s.whenToUse,
-    s.category,
-    s.relPath,
-    s.path,
-  ]
+  const blob = [s.name, s.description, s.whenToUse, s.category, s.relPath]
     .join("\n")
     .toLowerCase();
   return blob.includes(needle);
@@ -466,6 +458,29 @@ function init() {
   }
 
   /**
+   * Single source of truth for the skill-body panel's loading/ready/error status line and error
+   * link, mirroring `setSheetState` in md-preview.js for the analogous sheet-body problem: every
+   * transition now goes through one place instead of four ad hoc property writes per branch, so
+   * `className`/`errLink.hidden` can't be forgotten on a transition the way the two success
+   * branches below used to (neither reset `className` off `--loading`, and `errLink.hidden` was
+   * only ever touched by the loading/error branches).
+   * @param {HTMLElement} statusEl
+   * @param {HTMLAnchorElement} errLink
+   * @param {"loading" | "ready" | { error: string }} state
+   */
+  function setSkillBodyStatus(statusEl, errLink, state) {
+    const isError = typeof state === "object";
+    statusEl.hidden = state === "ready";
+    errLink.hidden = !isError;
+    statusEl.className = `skill-card-panel-status skill-card-panel-status--${isError ? "error" : state}`;
+    statusEl.textContent = isError
+      ? state.error
+      : state === "loading"
+        ? "Loading documentation…"
+        : "";
+  }
+
+  /**
    * @param {Skill} s
    * @param {HTMLElement} statusEl
    * @param {HTMLElement} bodyEl
@@ -474,11 +489,7 @@ function init() {
   async function loadSkillBody(s, statusEl, bodyEl, errLink) {
     const url = new URL(skillHref(s.relPath), window.location.href).href;
     errLink.href = url;
-    errLink.hidden = true;
-    statusEl.hidden = false;
-    statusEl.textContent = "Loading documentation…";
-    statusEl.className =
-      "skill-card-panel-status skill-card-panel-status--loading";
+    setSkillBodyStatus(statusEl, errLink, "loading");
     bodyEl.replaceChildren();
 
     try {
@@ -491,8 +502,7 @@ function init() {
         const tpl = document.createElement("template");
         tpl.innerHTML = embeddedHtml;
         bodyEl.replaceChildren(tpl.content);
-        statusEl.hidden = true;
-        statusEl.textContent = "";
+        setSkillBodyStatus(statusEl, errLink, "ready");
         return;
       }
 
@@ -510,15 +520,10 @@ function init() {
       }
       const frag = await markdownToSafeFragment(md);
       bodyEl.replaceChildren(frag);
-      statusEl.hidden = true;
-      statusEl.textContent = "";
+      setSkillBodyStatus(statusEl, errLink, "ready");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
-      statusEl.hidden = false;
-      errLink.hidden = false;
-      statusEl.className =
-        "skill-card-panel-status skill-card-panel-status--error";
-      statusEl.textContent = msg;
+      setSkillBodyStatus(statusEl, errLink, { error: msg });
     }
   }
 

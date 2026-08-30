@@ -7,23 +7,11 @@ import { readJstackConfig } from "@/lib/config-reader";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return v !== null && typeof v === "object";
-}
-
-function teamNameFromConfig(cfg: unknown): string | null {
-  if (!isRecord(cfg)) return null;
-  const team = cfg["team"];
-  if (!isRecord(team)) return null;
-  const name = team["name"];
-  return typeof name === "string" ? name : null;
-}
-
 const areas = ROUTES.filter((r) => r.href !== "/");
 
 export default function Page() {
-  const cfg = readJstackConfig(process.cwd());
-  const team = teamNameFromConfig(cfg) ?? (cfg === null ? null : "not set");
+  const cfg = readJstackConfig();
+  const team = cfg?.team?.name ?? (cfg === null ? null : "not set");
   const configPath = "jstack.core/jstack.config.json (sibling of dashboard when run from this package)";
 
   return (

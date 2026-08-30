@@ -11,6 +11,7 @@ import { resolveWithinRoots } from "./path-utils.js";
 import { runClaude } from "./crew/slack.js";
 import {
   WorkflowDefinitionSchema,
+  workflowStartUrl,
   type WorkflowDefinition,
   type WorkflowStep,
 } from "../types/workflow.js";
@@ -103,14 +104,25 @@ export function importWorkflowFromFile(
 
 function describeStep(step: WorkflowStep, index: number): string {
   const parts = [`${index + 1}. ${step.kind}`];
-  if (step.url) parts.push(`url=${step.url}`);
-  if (step.selector) parts.push(`selector=${step.selector}`);
-  if (step.value !== undefined) {
-    parts.push(
-      step.value.startsWith("env:")
-        ? `value=<secret, resolve ${step.value.slice(4)} from env, never print it>`
-        : `value=${step.value}`,
-    );
+  switch (step.kind) {
+    case "goto":
+      parts.push(`url=${step.url}`);
+      break;
+    case "click":
+    case "wait":
+      parts.push(`selector=${step.selector}`);
+      break;
+    case "fill":
+      parts.push(`selector=${step.selector}`);
+      parts.push(
+        step.value.startsWith("env:")
+          ? `value=<secret, resolve ${step.value.slice(4)} from env, never print it>`
+          : `value=${step.value}`,
+      );
+      break;
+    case "screenshot":
+    case "ai":
+      break;
   }
   if (step.notes) parts.push(`notes=${step.notes}`);
   return `  ${parts.join(" ")}`;
@@ -126,10 +138,11 @@ function describeStep(step: WorkflowStep, index: number): string {
  */
 export function buildWorkflowRunPrompt(def: WorkflowDefinition): string {
   const steps = def.steps.map(describeStep).join("\n");
+  const startUrl = workflowStartUrl(def);
   return (
     `Run the browser workflow "${def.name}" (id "${def.id}"), triggered by ` +
     `\`jstack workflow run ${def.id} --yes\`.\n\n` +
-    `Start at: ${def.start_url}\n\n` +
+    `Start at: ${startUrl ?? "(first step is not a goto -- follow the step list below)"}\n\n` +
     `Steps, in order:\n${steps || "  (no steps defined)"}\n\n` +
     `Discipline:\n` +
     `- Drive a real browser via whichever browser-automation tool you have available (e.g. ` +

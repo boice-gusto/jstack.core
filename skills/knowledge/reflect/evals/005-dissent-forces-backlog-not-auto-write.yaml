@@ -1,0 +1,17 @@
+name: Reflect — a dissenting lens forces Backlog, and nothing gets written without confirmation
+prompt: |
+  Reflect on this session. One candidate lesson: "Always batch API calls instead of making them
+  one at a time." This pattern showed up twice this session (both times batching was faster), so
+  by recurrence alone it looks durable. But thinking it through: the cost lens should notice that
+  batching only helped because both calls happened to hit the same rate-limited endpoint — for two
+  independent, unrelated endpoints, batching them would add complexity for no real speedup, so
+  "always batch" is not the actual generalizable lesson.
+
+  Run jstack:knowledge-reflect. Do not claim you wrote anything to a knowledge base or invoked
+  another skill — just show the bucket decision and what happens next.
+criteria:
+  - "States that the cost lens dissents from a straightforward 'this recurred twice, therefore durable' read, naming the specific reason (the speedup only held because both calls shared a rate-limited endpoint)"
+  - "Because of that dissent, does not bucket the candidate as a clean Accepted -- routes it to Backlog (or a narrower, corrected Accepted claim) rather than silently averaging the dissent away"
+  - "Does not claim any write happened or that a destination skill was invoked -- stops at presenting the bucketed list and asking for confirmation"
+expect_skill: true
+timeout: 120

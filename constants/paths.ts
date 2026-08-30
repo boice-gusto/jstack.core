@@ -36,8 +36,9 @@ export const TELEMETRY_CLI = {
     RESET: "reset",
     FLUSH: "flush",
     TEST: "test",
+    RECORD: "record",
   },
-  USAGE_LINE: "usage: bun telemetry/cli.ts status|flush|reset|test",
+  USAGE_LINE: "usage: bun telemetry/cli.ts status|flush|reset|test|record",
 } as const;
 
 /** Default raw URL for distribution VERSION when `distribution.version_url` is unset. */

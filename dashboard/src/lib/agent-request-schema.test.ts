@@ -31,4 +31,31 @@ describe("AgentStreamBodySchema", () => {
       expect(r.data.expectStructuredJson).toBe(true);
     }
   });
+
+  it("defaults backend to undefined (route.ts treats that as claude)", () => {
+    const r = AgentStreamBodySchema.safeParse({ messages: [{ role: "user", content: "hi" }] });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.backend).toBeUndefined();
+    }
+  });
+
+  it("accepts backend: codex", () => {
+    const r = AgentStreamBodySchema.safeParse({
+      messages: [{ role: "user", content: "hi" }],
+      backend: "codex",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.backend).toBe("codex");
+    }
+  });
+
+  it("rejects an unknown backend value", () => {
+    const r = AgentStreamBodySchema.safeParse({
+      messages: [{ role: "user", content: "hi" }],
+      backend: "gpt5",
+    });
+    expect(r.success).toBe(false);
+  });
 });

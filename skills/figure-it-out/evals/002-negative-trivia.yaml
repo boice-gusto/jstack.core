@@ -1,0 +1,33 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-figure-it-out** (path: `figure-it-out`).
+
+  Category: figure-it-out.
+
+  Skill description: Design and run a rigorous, scoped, one-off plan for a big or unusual task that
+  doesn't match any existing skill, playbook, or SOP in the catalog. Frames the actual
+  goal/constraints/done-state in 1-2 sentences, picks the smallest set of steps a reviewer could
+  verify, runs them in order checking each before the next, and hands back a plain-prose audit trail
+  naming what was verified vs. assumed. Not for a task a real skill already covers — check the
+  catalog first and chain to that skill instead. Not for authoring a new **permanent** skill file —
+  use `jstack:skill-creator` instead. Not for a chain that will recur — use
+  `jstack:workflow-builder` instead once the same one-off has run more than a couple of times.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Any task a real skill
+  already covers.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Any
+    task a real skill already covers
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:skill-creator)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

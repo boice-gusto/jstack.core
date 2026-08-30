@@ -1,0 +1,39 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-review-interrogate** (path: `review/interrogate`).
+
+  Category: review.
+
+  Skill description: Run one rigorous correctness/quality review prompt through Claude (this agent)
+  and the external `codex` CLI independently, once each, against the same diff/PR/file, then
+  reconcile the two reads into an attributed triage table — agree-block (both models independently
+  flagged it, higher confidence), disagree (both positions stated, not resolved by picking a side),
+  single-model-flag (worth a second look, not dropped and not silently promoted), and praise.
+  Mirrors `agents/review-counsel.md`'s reconciliation discipline (the agent `jstack:counsel-review`
+  invokes for multi-persona synthesis — Prime Directives 4, 8, and 10) applied across MODELS instead
+  of personas. Use when a diff/PR/file is worth a second, independently-reasoning model's read and a
+  single one-shot comparison is enough. Do NOT use for a negotiated back-and-forth with codex across
+  multiple rounds (fix / push-back / escalate, applying edits, resuming a thread) — that is
+  `jstack:review-codex-review`'s job; this skill runs each side exactly once and never edits
+  anything. Do NOT use for multi-persona (CEO/PM/eng/QA/ design) synthesis — that is
+  `jstack:counsel-review`. Do NOT use on a trivial one-line/rename-only change — say so and decline
+  rather than manufacturing findings.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Negotiating with codex
+  over multiple rounds, applying a fix and re-checking it,.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    Negotiating with codex over multiple rounds, applying a fix and re-checking it,
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:plugin)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

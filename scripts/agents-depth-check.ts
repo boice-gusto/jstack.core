@@ -160,17 +160,16 @@ const depthScores = new Map<string, number>();
 for (const file of files) {
   const raw = readFileSync(join(agentsDir, file), "utf8");
   const parsed = parseYamlFrontmatter(raw);
-  if (parsed.error) {
-    // `frontmatterText` is only set once the `---` delimiters were found — that's what
-    // distinguishes "no frontmatter block at all" from "block present but not valid YAML",
-    // matching this gate's original two messages exactly.
+  if (parsed.status !== "ok") {
+    // The tag distinguishes "no frontmatter block at all" from "block present but not valid
+    // YAML", matching this gate's original two messages exactly.
     findings.push({
       file,
       kind: "correctness",
       id: "frontmatter",
       message:
-        parsed.frontmatterText === undefined
-          ? parsed.error
+        parsed.status === "missing"
+          ? "missing YAML frontmatter"
           : `invalid YAML: ${parsed.error}`,
     });
     continue;

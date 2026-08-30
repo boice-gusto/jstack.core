@@ -52,8 +52,8 @@ The `description` is what Claude uses first to decide whether to load the skill.
 4. **Domain rules** — category-level guardrails
 5. **Config and references** — what to read first (include wizard ref for any skill that needs config)
 6. **Intake** — how to parse `$ARGUMENTS`. If the skill tells the user to run **`jstack`**, prefer naming **guided commands** that match shipped UX (`skills browse` vs manual grep); align picker wording with [`cli-vs-host-interaction.md`](./cli-vs-host-interaction.md).
-7. **Procedure** — 5-step flow (load, plan, execute, validate, summarize)
-8. **Output shape** — expected format (default: natural language). Optional machine-readable replies: see [`output-formats.md`](./output-formats.md) (`--output=json|yaml`, schemas under `references/schemas/`).
+7. **Procedure** — 5-step flow (load, plan, execute, validate, summarize). For a multi-step or chain-driving skill (routine-runner, workflow-executor, chain-orchestrator, and similar), a step that gets skipped stays listed in the visible plan with the reason it was skipped — never silently dropped. A vanished step reads as "didn't need to happen"; a step marked `skip: <reason>` reads as "considered and deliberately not run," which is the fact a reviewer actually needs.
+8. **Output shape** — expected format (default: natural language). For a skill whose final reply is a multi-step run's summary (not a single Q&A), name the exact fields that reply must contain (e.g. "status per step, whether anything was posted, what's blocked") — a fixed reply contract makes a thin or hedged summary visibly incomplete instead of passable prose. Optional machine-readable replies: see [`output-formats.md`](./output-formats.md) (`--output=json|yaml`, schemas under `references/schemas/`).
 9. **Failure modes** — table of symptoms and recoveries
 10. **Chaining** — how this skill connects to others
 11. **User request** — `$ARGUMENTS` placeholder

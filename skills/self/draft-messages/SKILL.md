@@ -33,6 +33,9 @@ phrasing-specific note on how the recipient might receive each one.
   - **Slack-specific draft-only posting mechanics** (channel resolution, thread-vs-channel,
     `@here` rules) once venue = Slack. This skill hands the drafted text to
     `jstack:meetings-post-slack` for that; it does not duplicate that skill's posting logic.
+  - **Recurring work-status narratives** (a standup update, a PR description tying commits to
+    impact). Those are `jstack:self-explain`'s job, not a one-off message this skill's
+    venue/relationship/intent intake is built for — redirect there.
 
 ## Domain rules — draft-messages
 

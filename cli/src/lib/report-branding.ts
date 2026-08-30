@@ -1,29 +1,10 @@
 import { z } from "zod";
+import { ReportBrandingConfigSchema } from "../types/config.js";
 
-const ColorSchema = z.string().min(1);
-
-export const ReportBrandingSchema = z.object({
-  colors: z
-    .object({
-      main: ColorSchema.optional(),
-      primary: ColorSchema.optional(),
-      secondary: ColorSchema.optional(),
-      background: ColorSchema.optional(),
-      surface: ColorSchema.optional(),
-      text: ColorSchema.optional(),
-      textMuted: ColorSchema.optional(),
-      border: ColorSchema.optional(),
-      buttonPrimaryBg: ColorSchema.optional(),
-      buttonPrimaryText: ColorSchema.optional(),
-      buttonSecondaryBg: ColorSchema.optional(),
-      buttonSecondaryText: ColorSchema.optional(),
-      link: ColorSchema.optional(),
-    })
-    .optional(),
-  radiusMd: z.string().optional(),
-  fontSans: z.string().optional(),
-  density: z.enum(["compact", "comfortable"]).optional(),
-});
+/** Re-exported for callers that used to import this name -- the schema itself now lives in
+ * types/config.ts, the single source of truth `reports.branding` is validated against
+ * everywhere else too, so this file can no longer independently drift from it. */
+export const ReportBrandingSchema = ReportBrandingConfigSchema;
 
 export type ReportBranding = z.infer<typeof ReportBrandingSchema>;
 
@@ -63,6 +44,10 @@ export function mergeReportBranding(
   }
   if (branding.radiusMd) lines.push(`  --radius-md: ${branding.radiusMd};`);
   if (branding.fontSans) lines.push(`  --font-sans: ${branding.fontSans};`);
+  // Previously validated but never emitted anywhere -- a config author setting it saw no
+  // effect. Emit it as a CSS custom property (matching radiusMd/fontSans) so a template can
+  // opt into reading it instead of the value being silently inert.
+  if (branding.density) lines.push(`  --report-density: ${branding.density};`);
   lines.push("}");
   return { css: lines.join("\n"), branding };
 }

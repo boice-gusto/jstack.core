@@ -3,6 +3,7 @@ name: jstack-self-eval
 description: Self-assessment on a 9-grid with one growth goal for next 2 weeks. Not formal HR input unless user says so.
 category: self
 data_class: people_performance
+disable-model-invocation: true
 effort: high
 gbrain_destination: personal
 ---

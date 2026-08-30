@@ -23,33 +23,33 @@ export function formatUpgradeMessage(
   result: UpdateCheckResult,
   isGitCheckout: boolean,
 ): string[] {
-  if (!result.local_version) {
-    return ["No VERSION file found -- can't determine the current version."];
+  switch (result.status) {
+    case "no-local-version":
+      return ["No VERSION file found -- can't determine the current version."];
+    case "offline":
+      return [
+        `Local version ${result.local_version}. Could not reach the remote VERSION file ` +
+          "(offline, or the distribution URL changed) -- can't check for an update right now.",
+      ];
+    case "up-to-date":
+      return [`jstack is up to date (${result.local_version}).`];
+    case "upgrade-available": {
+      const lines = [
+        `Update available: ${result.local_version} -> ${result.remote_version}`,
+      ];
+      if (isGitCheckout) {
+        lines.push("This is a git checkout. To upgrade:");
+        lines.push("  git fetch origin");
+        lines.push("  git checkout main && git pull");
+      } else {
+        lines.push(
+          "Pin your package/git ref to the new version manually -- this checkout isn't a git " +
+            "repo, so there's no single command that applies to every install method.",
+        );
+      }
+      return lines;
+    }
   }
-  if (!result.remote_version) {
-    return [
-      `Local version ${result.local_version}. Could not reach the remote VERSION file ` +
-        "(offline, or the distribution URL changed) -- can't check for an update right now.",
-    ];
-  }
-  if (!result.upgrade_available) {
-    return [`jstack is up to date (${result.local_version}).`];
-  }
-
-  const lines = [
-    `Update available: ${result.local_version} -> ${result.remote_version}`,
-  ];
-  if (isGitCheckout) {
-    lines.push("This is a git checkout. To upgrade:");
-    lines.push("  git fetch origin");
-    lines.push("  git checkout main && git pull");
-  } else {
-    lines.push(
-      "Pin your package/git ref to the new version manually -- this checkout isn't a git " +
-        "repo, so there's no single command that applies to every install method.",
-    );
-  }
-  return lines;
 }
 
 /**
@@ -72,9 +72,9 @@ export async function runUpgrade(): Promise<void> {
   const lines = formatUpgradeMessage(result, isGitCheckout);
 
   const color =
-    !result.local_version || !result.remote_version
+    result.status === "no-local-version" || result.status === "offline"
       ? chalk.yellow
-      : result.upgrade_available
+      : result.status === "upgrade-available"
         ? chalk.blue
         : chalk.green;
   console.log(color(lines[0]));

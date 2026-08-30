@@ -337,9 +337,9 @@ describe("JSTACK_CHECK_ROOT", () => {
         env: { ...process.env, JSTACK_CHECK_ROOT: "", NO_COLOR: "1" },
       },
     );
-    // The real repo has 20 prompt files; a fixture would report far fewer.
+    // The real repo has 21 prompt files; a fixture would report far fewer.
     expect(r.status).toBe(0);
-    expect(`${r.stdout}`).toContain("20 prompt file(s)");
+    expect(`${r.stdout}`).toContain("21 prompt file(s)");
   });
 });
 

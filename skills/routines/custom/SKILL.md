@@ -2,6 +2,7 @@
 name: jstack-custom
 description: Execute a custom routine from its config/schedules/<id>.json definition plus the routines block in config/defaults.json. If schedule JSON is invalid, return a fix, not a fake result.
 category: routines
+disable-model-invocation: true
 disallowed-tools: AskUserQuestion
 effort: low
 ---

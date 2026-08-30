@@ -42,3 +42,18 @@ describe("DASHBOARD_ALLOW_INSECURE_COOKIES", () => {
     expect(getDashboardEnv().DASHBOARD_ALLOW_INSECURE_COOKIES).toBe(true);
   });
 });
+
+describe("Codex backend defaults", () => {
+  it("CODEX_BIN defaults to 'codex' and sandbox defaults to workspace-write", async () => {
+    const getDashboardEnv = await freshGetDashboardEnv();
+    const env = getDashboardEnv();
+    expect(env.CODEX_BIN).toBe("codex");
+    expect(env.DASHBOARD_AGENT_CODEX_SANDBOX).toBe("workspace-write");
+  });
+
+  it("rejects an invalid sandbox value", async () => {
+    vi.stubEnv("DASHBOARD_AGENT_CODEX_SANDBOX", "not-a-real-mode");
+    const getDashboardEnv = await freshGetDashboardEnv();
+    expect(() => getDashboardEnv()).toThrow();
+  });
+});

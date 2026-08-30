@@ -27,7 +27,10 @@ import {
   collectMockMcpDoctorWarnings,
 } from "../lib/doctor-warnings.js";
 import { exitCancelled, handleCancel, isInteractive } from "../lib/cliUi.js";
-import { checkDistributionUpdate } from "../lib/update-check.js";
+import {
+  checkDistributionUpdate,
+  toLegacyUpdateFields,
+} from "../lib/update-check.js";
 import {
   type DependencyIssue,
   type RepairAction,
@@ -203,12 +206,7 @@ export async function runDoctor(opts: {
             notes: aliasDrift.notes,
           },
           distribution: update
-            ? {
-                local_version: update.local_version,
-                remote_version: update.remote_version,
-                upgrade_available: update.upgrade_available,
-                raw_line: update.raw_line,
-              }
+            ? toLegacyUpdateFields(update)
             : { skipped: true },
           cross_plugins: {
             gbrain: gbrainPlugin
@@ -307,10 +305,9 @@ export async function runDoctor(opts: {
     true,
   );
 
-  if (update?.upgrade_available && update.raw_line) {
-    warn(
-      `Plugin update: ${update.raw_line} — see jstack upgrade or release notes.`,
-    );
+  if (update?.status === "upgrade-available") {
+    const rawLine = `UPGRADE_AVAILABLE ${update.local_version} ${update.remote_version}`;
+    warn(`Plugin update: ${rawLine} — see jstack upgrade or release notes.`);
   }
 
   if (cfg) {
@@ -442,10 +439,12 @@ export async function applyRepairsInteractive(
     return resolved;
   };
 
-  // Group repairs by kind so we ask for consent per category.
+  // Group repairs by kind so we ask for consent per category. Keyed by target so a
+  // batch with two repairs aimed at the same path counts (and applies) as one change,
+  // not two -- otherwise the consent prompt overcounts vs. what actually gets written.
   const mkdirs = new Set<string>();
-  const writes: Array<{ path: string; content: string }> = [];
-  const setConfig: Array<{ path: string[]; value: unknown }> = [];
+  const writes = new Map<string, { path: string; content: string }>();
+  const setConfig = new Map<string, { path: string[]; value: unknown }>();
   for (const i of issues) {
     for (const r of i.repairs) {
       if (r.kind === "mkdir") {
@@ -453,9 +452,9 @@ export async function applyRepairsInteractive(
         if (abs) mkdirs.add(abs);
       } else if (r.kind === "write_file") {
         const abs = contain(r.path);
-        if (abs) writes.push({ path: abs, content: r.content });
+        if (abs) writes.set(abs, { path: abs, content: r.content });
       } else if (r.kind === "set_config")
-        setConfig.push({ path: r.path, value: r.value });
+        setConfig.set(r.path.join("."), { path: r.path, value: r.value });
       // shell_hint is informational; never executed automatically.
     }
   }
@@ -495,14 +494,14 @@ export async function applyRepairsInteractive(
     }
   }
 
-  if (writes.length > 0) {
+  if (writes.size > 0) {
     const ok = await p.confirm({
-      message: `Create ${writes.length} template file(s) where missing?`,
+      message: `Create ${writes.size} template file(s) where missing?`,
       initialValue: REPAIR_CONSENT_DEFAULT.write_file,
     });
     if (handleCancel(ok)) exitCancelled();
     if (ok) {
-      for (const w of writes) {
+      for (const w of writes.values()) {
         if (existsSync(w.path)) continue;
         mkdirSync(join(w.path, ".."), { recursive: true });
         writeFileSync(w.path, w.content, "utf8");
@@ -511,19 +510,19 @@ export async function applyRepairsInteractive(
     }
   }
 
-  if (setConfig.length > 0) {
+  if (setConfig.size > 0) {
     const ok = await p.confirm({
-      message: `Apply ${setConfig.length} config change(s) to jstack.config.json?`,
+      message: `Apply ${setConfig.size} config change(s) to jstack.config.json?`,
       initialValue: REPAIR_CONSENT_DEFAULT.set_config,
     });
     if (handleCancel(ok)) exitCancelled();
     if (ok) {
       const draft: Record<string, unknown> = JSON.parse(JSON.stringify(cfg));
       try {
-        for (const s of setConfig) setAt(draft, s.path, s.value);
+        for (const s of setConfig.values()) setAt(draft, s.path, s.value);
         const parsed = JstackConfigSchema.parse(draft);
         writeConfig(projectRoot, parsed);
-        applied += setConfig.length;
+        applied += setConfig.size;
       } catch (err) {
         console.log(
           chalk.red(

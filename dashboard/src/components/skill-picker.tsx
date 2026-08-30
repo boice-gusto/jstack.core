@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
 import { cn } from "@/lib/utils";
+import { useSkillCatalog } from "@/lib/use-skill-catalog";
+import type { SkillCatalogEntry } from "@/lib/skills-catalog";
 
-export type CatalogSkill = {
-  id: string;
-  name?: string;
-  description?: string;
-  category?: string;
-  schemaPaths: string[];
-};
+export type CatalogSkill = Pick<
+  SkillCatalogEntry,
+  "id" | "name" | "description" | "category" | "schemaPaths"
+>;
+
+const EMPTY_SKILLS: CatalogSkill[] = [];
 
 export function SkillPicker({
   value,
@@ -22,8 +23,9 @@ export function SkillPicker({
   onChange: (skillId: string) => void;
   id?: string;
 }): ReactElement {
-  const [skills, setSkills] = useState<CatalogSkill[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const state = useSkillCatalog();
+  const skills = state.status === "ok" ? state.skills : EMPTY_SKILLS;
+  const loadError = state.status === "error" ? state.message : null;
   const [filter, setFilter] = useState("");
 
   const filteredSkills = useMemo(() => {
@@ -53,36 +55,6 @@ export function SkillPicker({
     }
     return base;
   }, [skills, filter, value]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/skills/catalog", { credentials: "include" });
-        if (!res.ok) {
-          const t = await res.text();
-          if (!cancelled) setLoadError(t.slice(0, 200));
-          return;
-        }
-        const json = (await res.json()) as { skills?: CatalogSkill[]; error?: string };
-        if (!cancelled) {
-          if (json.error !== undefined) {
-            setLoadError(json.error);
-          } else {
-            setSkills(json.skills ?? []);
-            setLoadError(null);
-          }
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : "Failed to load catalog");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <div className="space-y-2">
@@ -117,6 +89,9 @@ export function SkillPicker({
           </option>
         ))}
       </select>
+      {state.status === "loading" ? (
+        <p className="m-0 text-xs text-muted-foreground">Loading skill catalog…</p>
+      ) : null}
       {loadError !== null ? (
         <p className="m-0 text-xs text-destructive">Catalog: {loadError}</p>
       ) : null}

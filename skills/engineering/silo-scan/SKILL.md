@@ -1,6 +1,6 @@
 ---
 name: jstack-engineering-silo-scan
-description: Detect overlapping work — same files or similar tickets/PRs — from a Jira ticket or GitHub PR; confidence-thresholded; read-only unless user approves comments.
+description: Bus-factor / knowledge-concentration scan — per-module bus factor and silo ratio from trailing commit and review-authorship spread, weighted by change frequency and fan-in. Read-only unless user approves comments. Not for detecting overlapping work on the same files or similar tickets/PRs.
 category: engineering
 disable-model-invocation: true
 effort: high
@@ -14,8 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Detect overlapping work — same files or similar tickets and PRs — starting from a Jira ticket or GitHub PR, flagging matches above a confidence threshold.
-- **Out of scope:** Posting comments on matched items without explicit user approval.
+Compute per-module bus factor and silo ratio from trailing commit and review-authorship spread, flagging critical modules below threshold and weighting priority by change frequency and fan-in.
+- **Out of scope:** Posting comments on flagged modules without explicit user approval; detecting overlapping work on the same files or similar tickets/PRs.
 
 ## Domain rules — silo / bus-factor scan
 

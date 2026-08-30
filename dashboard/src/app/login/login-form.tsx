@@ -7,6 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+/**
+ * `next` comes straight from the query string, so it's attacker-controlled: a bare
+ * `next.startsWith("/")` check lets `//evil.com` through as a "same-origin" path, since it's
+ * also a valid protocol-relative URL that browsers resolve against the current scheme. Require
+ * exactly one leading slash.
+ */
+export function safeRedirectTarget(next: string): string {
+  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return "/";
+  }
+  return next;
+}
+
 export function LoginForm(): ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,7 +51,7 @@ export function LoginForm(): ReactElement {
         setError(msg);
         return;
       }
-      router.push(next.startsWith("/") ? next : "/");
+      router.push(safeRedirectTarget(next));
       router.refresh();
     } finally {
       setPending(false);

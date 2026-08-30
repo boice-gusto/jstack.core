@@ -2,14 +2,10 @@ import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
-  appendStderrToDraft,
-  extractResultCost,
-  extractResultTokenTotal,
-  extractToolEventName,
-  newRunId,
-  nextRunStateForDraft,
-  pushSeries,
+  applyAgentStreamEvent,
+  initialAgentRunSlice,
   type RunState as SharedRunState,
+  type ToolEvent,
 } from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
@@ -32,7 +28,7 @@ type WizardState = {
   /** Optional user notes appended to the current step prompt when running. */
   stepContext: string;
   run: WizardRunState;
-  toolEvents: { id: string; name: string; input: unknown }[];
+  toolEvents: ToolEvent[];
   streamEvents: AgentStreamEvent[];
   costSeries: number[];
   tokenSeries: number[];
@@ -52,15 +48,9 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   stepIndex: 0,
   transcript: [],
   stepContext: "",
-  run: { status: "idle" },
-  toolEvents: [],
-  streamEvents: [],
-  costSeries: [],
-  tokenSeries: [],
+  ...initialAgentRunSlice(),
   skillId: "",
   expectStructuredJson: false,
-  structuredJsonText: null,
-  claudeSessionId: null,
 
   setSkillId: (id: string) => set({ skillId: id }),
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
@@ -71,13 +61,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       stepIndex: 0,
       transcript: [],
       stepContext: "",
-      run: { status: "idle" },
-      toolEvents: [],
-      streamEvents: [],
-      costSeries: [],
-      tokenSeries: [],
-      structuredJsonText: null,
-      claudeSessionId: null,
+      ...initialAgentRunSlice(),
     });
   },
 
@@ -132,55 +116,11 @@ export const useWizardStore = create<WizardState>((set, get) => ({
 
     let draft = "";
 
-    // Same rule as chat-store: keep refreshing the draft without reviving
-    // "streaming" once an error event has flipped us to "error".
-    const setDraft = (): void => {
-      set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
-    };
-
     const onEvent = (evt: AgentStreamEvent): void => {
-      set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
-      const type = evt.type;
-      if (type === "session" && typeof evt.sessionId === "string" && evt.sessionId.length > 0) {
-        set({ claudeSessionId: evt.sessionId });
-      }
-      if (type === "text" && typeof evt.text === "string") {
-        draft += evt.text;
-        setDraft();
-      }
-      // Parity fix: chat-store has always surfaced server-side "error" and
-      // "stderr" events; wizard-store previously ignored both, so a failure
-      // mid-wizard was silently dropped instead of shown to the user.
-      if (type === "error" && typeof evt.message === "string") {
-        set({ run: { status: "error", message: evt.message, draft } });
-      }
-      if (type === "stderr" && typeof evt.text === "string") {
-        const next = appendStderrToDraft(draft, evt.text);
-        if (next !== draft) {
-          draft = next;
-          setDraft();
-        }
-      }
-      if (type === "tool_use") {
-        const name = extractToolEventName(evt);
-        const input = evt.input;
-        set((s) => ({
-          toolEvents: [
-            ...s.toolEvents,
-            { id: newRunId(), name, input },
-          ],
-        }));
-      }
-      if (type === "result") {
-        const cost = extractResultCost(evt);
-        if (cost !== null) {
-          set((s) => ({ costSeries: pushSeries(s.costSeries, cost) }));
-        }
-        const tokenTotal = extractResultTokenTotal(evt);
-        if (tokenTotal !== null) {
-          set((s) => ({ tokenSeries: pushSeries(s.tokenSeries, tokenTotal) }));
-        }
-      }
+      const current = get();
+      const applied = applyAgentStreamEvent(evt, draft, current);
+      draft = applied.draft;
+      set(applied.patch);
     };
 
     try {
@@ -190,6 +130,16 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Stream error";
       set({ run: { status: "error", message: msg, draft } });
+      return;
+    }
+
+    if (get().run.status === "error") {
+      // A server-reported "error" event (as opposed to a thrown network/HTTP failure) doesn't
+      // throw -- runAgentStream resolves normally. Advancing the step here would commit this
+      // step's failed exchange to the transcript as if it had succeeded, and the step could
+      // never be retried (the button would target the next step instead). Only clear the
+      // draft so a retry starts clean; leave stepIndex/transcript/stepContext untouched.
+      set((s) => ({ run: { ...s.run, draft: "" } as WizardRunState }));
       return;
     }
 
@@ -207,7 +157,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       ],
       stepIndex: s.stepIndex + 1,
       stepContext: "",
-      run: s.run.status === "error" ? { ...s.run, draft: "" } : { status: "done" as const },
+      run: { status: "done" as const },
       structuredJsonText:
         expectStructuredJson && assistantMsg !== null
           ? assistantMsg.content

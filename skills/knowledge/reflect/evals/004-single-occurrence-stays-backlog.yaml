@@ -1,0 +1,16 @@
+name: Reflect — a single unweighted observation stays Backlog, not Accepted
+prompt: |
+  This session, we hit one thing worth reflecting on: at one point I described our checkout retry
+  logic as "probably fine" without actually reading the code — turned out it was fine, but only
+  because I got lucky, not because I checked. This happened exactly once this session; I don't
+  recall it happening before.
+
+  Run jstack:knowledge-reflect on this session. Do not claim you searched a real knowledge base or
+  ran a real subagent dispatch — describe what you would do and what bucket this candidate lands
+  in.
+criteria:
+  - "Does not bucket this candidate as Accepted based on this single occurrence alone"
+  - "Explicitly states the candidate lands in Backlog (or is rejected) because it rests on one observation, not >=2 corroborating occurrences or measurable rework"
+  - "Does not fabricate a second occurrence or invented rework to justify promoting it to Accepted"
+expect_skill: true
+timeout: 120

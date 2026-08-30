@@ -1,7 +1,7 @@
 ---
 name: jstack-executive-research-brief
 description: "Alias jstack:executive-research-brief — CEO lens + executive tone, then jstack competitive research for leadership."
-category: knowledge
+category: shortcuts
 effort: high
 ---
 

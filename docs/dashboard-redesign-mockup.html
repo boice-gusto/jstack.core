@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>jstack Dashboard — Phase 1 Mockup</title>
+<style>
+  :root[data-theme="light"] {
+    --background: 210 20% 98%; --foreground: 222 47% 11%;
+    --card: 0 0% 100%; --card-foreground: 222 47% 11%;
+    --primary: 199 89% 48%; --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%; --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%; --muted-foreground: 215 16% 47%;
+    --accent: 199 60% 94%; --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%; --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%; --ring: 199 89% 48%;
+    --sidebar: 210 25% 97%;
+  }
+  :root[data-theme="dark"] {
+    --background: 222 47% 6%; --foreground: 210 40% 98%;
+    --card: 222 40% 9%; --card-foreground: 210 40% 98%;
+    --primary: 199 80% 55%; --primary-foreground: 222 47% 6%;
+    --secondary: 217 33% 14%; --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 14%; --muted-foreground: 215 20% 65%;
+    --accent: 199 40% 18%; --accent-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%; --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 18%; --ring: 199 80% 55%;
+    --sidebar: 222 44% 8%;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: hsl(var(--background)); color: hsl(var(--foreground));
+    font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .visually-hidden { position: absolute; left: -9999px; }
+
+  /* ---------- annotation banner ---------- */
+  .annotate-toggle {
+    position: fixed; bottom: 16px; right: 16px; z-index: 50;
+    background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
+    border: none; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.2);
+  }
+  body.annotated .ann { display: block; }
+  .ann {
+    display: none; font-size: 12px; color: hsl(var(--primary)); background: hsl(var(--accent));
+    border: 1px dashed hsl(var(--primary)); border-radius: 6px; padding: 6px 8px; margin-top: 8px;
+  }
+  .phase-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em;
+    padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+  }
+  .phase-tag.p1 { background: hsl(var(--accent)); color: hsl(var(--primary)); }
+  .phase-tag.p2 { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; gap: 12px;
+    height: 56px; padding: 0 16px;
+    background: hsl(var(--card) / .9); backdrop-filter: blur(8px);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  .brand { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: hsl(var(--primary)); }
+  .search-trigger {
+    flex: 1; max-width: 420px; margin: 0 auto;
+    display: flex; align-items: center; gap: 8px;
+    background: hsl(var(--secondary)); border: 1px solid hsl(var(--border));
+    border-radius: 8px; padding: 8px 12px; color: hsl(var(--muted-foreground));
+    cursor: pointer; font-size: 13px;
+  }
+  .search-trigger kbd {
+    margin-left: auto; font-size: 11px; background: hsl(var(--card));
+    border: 1px solid hsl(var(--border)); border-radius: 4px; padding: 1px 5px;
+  }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 34px; height: 34px; display: grid; place-items: center;
+    border-radius: 8px; border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+    cursor: pointer; color: hsl(var(--foreground));
+  }
+  .icon-btn:hover { background: hsl(var(--secondary)); }
+  .provider-chip {
+    display: flex; align-items: center; gap: 6px; font-size: 12px;
+    background: hsl(var(--secondary)); border-radius: 999px; padding: 5px 10px;
+  }
+  .provider-chip .live { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+
+  /* ---------- layout ---------- */
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+  .page-head { margin-bottom: 6px; }
+  .page-head h1 { font-size: 22px; margin: 0 0 4px; }
+  .page-head p { margin: 0; color: hsl(var(--muted-foreground)); font-size: 13.5px; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 20px;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 12px;
+    padding: 16px; display: flex; flex-direction: column; gap: 10px; text-decoration: none;
+    transition: border-color .15s, transform .1s;
+  }
+  .card:hover { border-color: hsl(var(--primary)); transform: translateY(-1px); }
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .card-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: hsl(var(--accent));
+    color: hsl(var(--primary)); display: grid; place-items: center; font-size: 15px;
+  }
+  .card h3 { margin: 0; font-size: 14px; }
+  .card .stat { font-size: 24px; font-weight: 700; }
+  .card .sub { font-size: 12.5px; color: hsl(var(--muted-foreground)); }
+  .card .empty { font-size: 12.5px; color: hsl(var(--muted-foreground)); font-style: italic; }
+  .badge {
+    font-size: 11px; padding: 2px 7px; border-radius: 999px; background: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground)); font-weight: 600;
+  }
+  .badge.warn { background: hsl(var(--destructive) / .12); color: hsl(var(--destructive)); }
+  .badge.ok { background: #22c55e22; color: #16a34a; }
+
+  .sparkline { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
+  .sparkline i { flex: 1; background: hsl(var(--primary)); border-radius: 2px 2px 0 0; opacity: .8; }
+
+  section.explain {
+    background: hsl(var(--accent) / .5); border: 1px solid hsl(var(--border));
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 4px; font-size: 13px;
+  }
+  section.explain h2 { font-size: 13px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em; color: hsl(var(--muted-foreground)); }
+
+  /* ---------- palette ---------- */
+  .palette-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100;
+    display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh;
+  }
+  .palette {
+    width: min(560px, 90vw); background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+    border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: hidden;
+  }
+  .palette input {
+    width: 100%; border: none; padding: 16px; font-size: 15px; outline: none;
+    background: transparent; color: hsl(var(--foreground)); border-bottom: 1px solid hsl(var(--border));
+  }
+  .palette ul { list-style: none; margin: 0; padding: 6px; max-height: 320px; overflow: auto; }
+  .palette li { padding: 10px 12px; border-radius: 8px; font-size: 13.5px; display: flex; justify-content: space-between; cursor: pointer; }
+  .palette li:hover, .palette li.active { background: hsl(var(--secondary)); }
+  .palette li span.cat { color: hsl(var(--muted-foreground)); font-size: 11.5px; }
+
+  /* ---------- detail page ---------- */
+  .breadcrumb { font-size: 12.5px; color: hsl(var(--muted-foreground)); margin-bottom: 10px; }
+  .breadcrumb a { color: hsl(var(--primary)); text-decoration: none; cursor: pointer; }
+  .toolbar { display: flex; gap: 8px; margin: 16px 0; }
+  .toolbar input {
+    flex: 1; padding: 9px 12px; border-radius: 8px; border: 1px solid hsl(var(--border));
+    background: hsl(var(--card)); color: hsl(var(--foreground)); font-size: 13.5px;
+  }
+  .filter-chip {
+    padding: 8px 12px; border-radius: 8px; border: 1px solid hsl(var(--border));
+    background: hsl(var(--secondary)); font-size: 13px; cursor: pointer;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: hsl(var(--muted-foreground)); font-weight: 600; font-size: 12px; padding: 8px 10px; border-bottom: 1px solid hsl(var(--border)); }
+  td { padding: 10px 10px; border-bottom: 1px solid hsl(var(--border)); }
+  tr:hover td { background: hsl(var(--secondary) / .5); }
+  code { background: hsl(var(--secondary)); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+  .hidden { display: none !important; }
+
+  /* ---------- toggle switch ---------- */
+  .toggle-cell { display: flex; }
+  .toggle {
+    width: 36px; height: 20px; border-radius: 999px; border: none; position: relative;
+    cursor: pointer; background: hsl(var(--muted)); transition: background .15s;
+  }
+  .toggle span {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: white; transition: left .15s; box-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  .toggle.on { background: #22c55e; }
+  .toggle.on span { left: 18px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> jstack</div>
+  <div class="search-trigger" id="paletteTrigger">
+    🔍 Search skills, agents, memory… <kbd>⌘K</kbd>
+  </div>
+  <div class="topbar-actions">
+    <div class="provider-chip"><span class="live"></span> Claude</div>
+    <button class="icon-btn" id="themeToggle" title="Toggle dark/light">🌓</button>
+  </div>
+</div>
+
+<!-- ================= OVERVIEW ================= -->
+<main id="view-overview">
+  <div class="page-head">
+    <h1>Overview</h1>
+    <p>Everything jstack is and has, at a glance. Click any card for the full view.</p>
+  </div>
+
+  <section class="explain ann">
+    <h2>Why this exists</h2>
+    This screen is the whole point of Phase 1: today, answering "did last night's routine run,"
+    "what's in memory," or "is my config valid" takes 3+ separate CLI commands with no unified
+    view. This grid is meant to answer all of that in one glance — that's the success metric
+    (usage frequency) this phase is built to test.
+  </section>
+
+  <div class="grid">
+
+    <a class="card" href="#" onclick="showView(event,'skills')">
+      <div class="card-top"><div class="card-icon">🧩</div><span class="badge">P1 — manage</span></div>
+      <h3>Skills</h3>
+      <div class="stat">177</div>
+      <div class="sub">across 2 repos · 4 changed this week</div>
+      <div class="ann">Browse + <code>argument-hint</code> per skill, **plus** toggle auto-invocation (<code>disable-model-invocation</code>) and edit <code>skill_defaults.&lt;id&gt;</code> — gated by the regeneration-safety check (many SKILL.md files are auto-generated; the write path checks the generator's SKIP set before writing).</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'crew')">
+      <div class="card-top"><div class="card-icon">🤖</div><span class="badge">P1</span></div>
+      <h3>Crew agents <span class="phase-tag p2">setup wizard in P2</span></h3>
+      <div class="stat">6</div>
+      <div class="sub">5 enabled · 1 disabled</div>
+      <div class="ann">P1 = roster view only, via <code>jstack crew agents list --json</code>. Add/edit stays CLI-only until P2's setup wizard.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'personas')">
+      <div class="card-top"><div class="card-icon">🎭</div><span class="badge">P1</span></div>
+      <h3>Persona agents</h3>
+      <div class="stat">24</div>
+      <div class="sub">backend, frontend, staff-eng, +21 more</div>
+      <div class="ann">Read-only, always. Static read of <code>agents/*.md</code> frontmatter — no write path exists for these.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'memory')">
+      <div class="card-top"><div class="card-icon">🧠</div><span class="badge">P1</span></div>
+      <h3>Memory</h3>
+      <div class="stat">42</div>
+      <div class="sub">entries · 3 added today</div>
+      <div class="ann">Data: <code>jstack memory search --json</code>.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'config')">
+      <div class="card-top"><div class="card-icon">⚙️</div><span class="badge warn">1 warning</span></div>
+      <h3>Config</h3>
+      <div class="stat sub" style="font-size:15px;font-weight:600;color:hsl(0 84% 45%)">telemetry.endpoint unset</div>
+      <div class="sub">otherwise valid</div>
+      <div class="ann">Data: <code>jstack config show --json</code> + <code>validate-config</code> drift check.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'reports')">
+      <div class="card-top"><div class="card-icon">📄</div><span class="badge">P1</span></div>
+      <h3>Reports</h3>
+      <div class="stat sub" style="font-size:14px;font-weight:600">Team weekly — Core platform</div>
+      <div class="sub">generated 2 days ago</div>
+      <div class="ann">Carried forward from today's dashboard, unchanged.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'tasks')">
+      <div class="card-top"><div class="card-icon">📋</div><span class="badge">P2</span></div>
+      <h3>Tasks</h3>
+      <div class="empty">Not in Phase 1 — routines/workflows + to-dos ship in Phase 2.</div>
+      <div class="ann">Deferred: needs the new to-do data model + concurrency-safe local store.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'usage')">
+      <div class="card-top"><div class="card-icon">📈</div><span class="badge">P1</span></div>
+      <h3>Usage this week</h3>
+      <div class="sparkline">
+        <i style="height:30%"></i><i style="height:55%"></i><i style="height:40%"></i>
+        <i style="height:70%"></i><i style="height:45%"></i><i style="height:90%"></i><i style="height:60%"></i>
+      </div>
+      <div class="sub">$1.42 total · 38k tokens</div>
+      <div class="ann">Fed by this session's <code>recordEvent()</code> telemetry wiring — already recorded, just not displayed until now.</div>
+    </a>
+
+    <a class="card" href="#" onclick="showView(event,'chat')">
+      <div class="card-top"><div class="card-icon">💬</div><span class="badge">P1</span></div>
+      <h3>Agent chat</h3>
+      <div class="sub">Last: "explain the workflow ok:true fix" · 12m ago</div>
+      <div class="ann">UI rebuilt with AI Elements; backend stays today's <code>spawn('claude', ...)</code> — provider rewrite is P2.</div>
+    </a>
+
+  </div>
+</main>
+
+<!-- ================= DETAIL VIEWS (every card drills into one of these) ================= -->
+
+<main id="view-skills" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Skills</div>
+  <div class="page-head">
+    <h1>Skills <span class="phase-tag p1">P1 — browse + manage</span></h1>
+    <p>177 skills across jstack.core and jstack.gusto. Toggle auto-invocation or customize defaults directly.</p>
+  </div>
+  <div class="toolbar">
+    <input placeholder="Search skills by name, category, or description…" />
+    <button class="filter-chip">Category ▾</button>
+    <button class="filter-chip">Repo ▾</button>
+  </div>
+  <table>
+    <thead><tr><th>Skill</th><th>Category</th><th>Effort</th><th>Arguments</th><th>Auto-invoke</th><th></th></tr></thead>
+    <tbody id="skillsRows">
+      <tr data-skip="false"><td><code>jstack:recon</code></td><td>recon</td><td>max</td><td class="sub">—</td><td class="toggle-cell"><button class="toggle on" onclick="toggleSkill(this)"><span></span></button></td><td><button class="filter-chip" style="padding:4px 8px;font-size:12px" onclick="customizeSkill(this)">Customize</button></td></tr>
+      <tr data-skip="true"><td><code>jstack:workflows-execute</code></td><td>workflows</td><td>high</td><td class="sub">—</td><td class="toggle-cell"><button class="toggle off" onclick="toggleSkill(this)"><span></span></button></td><td><button class="filter-chip" style="padding:4px 8px;font-size:12px" onclick="customizeSkill(this)">Customize</button></td></tr>
+      <tr data-skip="false"><td><code>jstack:setup-onboarding</code></td><td>setup</td><td>medium</td><td><code>[ic|lead|shared]</code></td><td class="toggle-cell"><button class="toggle off" onclick="toggleSkill(this)"><span></span></button></td><td><button class="filter-chip" style="padding:4px 8px;font-size:12px" onclick="customizeSkill(this)">Customize</button></td></tr>
+      <tr data-skip="true"><td><code>jstack-gusto:oncall-frontend-crash-monitor</code></td><td>gusto-oncall</td><td>high</td><td class="sub">—</td><td class="toggle-cell"><button class="toggle on" onclick="toggleSkill(this)"><span></span></button></td><td><button class="filter-chip" style="padding:4px 8px;font-size:12px" onclick="customizeSkill(this)">Customize</button></td></tr>
+      <tr data-skip="false"><td><code>jstack:skill-creator-retro</code></td><td>skill-creator</td><td>high</td><td class="sub">—</td><td class="toggle-cell"><button class="toggle on" onclick="toggleSkill(this)"><span></span></button></td><td><button class="filter-chip" style="padding:4px 8px;font-size:12px" onclick="customizeSkill(this)">Customize</button></td></tr>
+    </tbody>
+  </table>
+  <div id="skillWriteNote" class="ann" style="margin-top:12px"></div>
+  <div class="ann" style="margin-top:8px">Try toggling <code>jstack:recon</code> (writes directly — it's hand-authored, in the generator's <code>SKIP</code> set) vs. <code>jstack:workflows-execute</code> (auto-generated — the write is refused with a pointer to the real source, per the regeneration-safety check).</div>
+
+  <div id="customizeDrawer" class="hidden" style="margin-top:16px;border:1px solid hsl(var(--border));border-radius:10px;padding:14px;background:hsl(var(--card))">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong id="customizeTitle">Customize skill</strong>
+      <button class="icon-btn" style="width:26px;height:26px" onclick="document.getElementById('customizeDrawer').classList.add('hidden')">✕</button>
+    </div>
+    <label class="sub" style="display:block;margin-bottom:4px">skill_defaults overrides (JSON)</label>
+    <textarea style="width:100%;min-height:80px;font-family:monospace;font-size:12.5px;padding:8px;border-radius:6px;border:1px solid hsl(var(--border));background:hsl(var(--secondary));color:hsl(var(--foreground))">{
+  "effort": "high"
+}</textarea>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="filter-chip" style="background:hsl(var(--primary));color:hsl(var(--primary-foreground));border:none">Save</button>
+      <button class="filter-chip" onclick="document.getElementById('customizeDrawer').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</main>
+
+<main id="view-crew" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Crew agents</div>
+  <div class="page-head">
+    <h1>Crew agents <span class="phase-tag p1">P1 view</span> <span class="phase-tag p2">P2 setup wizard</span></h1>
+    <p>Background Slack-integrated bots. Roster is view-only until P2's create/edit wizard ships.</p>
+  </div>
+  <table>
+    <thead><tr><th>Agent</th><th>Sigil</th><th>Status</th><th>Proactive checks</th></tr></thead>
+    <tbody>
+      <tr><td>ralph</td><td><code>!ralph</code></td><td><span class="badge ok">enabled</span></td><td>morning-incidents</td></tr>
+      <tr><td>alpha</td><td><code>!alpha</code></td><td><span class="badge ok">enabled</span></td><td>—</td></tr>
+      <tr><td>eta</td><td><code>!eta</code></td><td><span class="badge ok">enabled</span></td><td>incidents</td></tr>
+      <tr><td>iota</td><td><code>!iota</code></td><td><span class="badge warn">disabled</span></td><td>old-check</td></tr>
+    </tbody>
+  </table>
+  <div class="ann" style="margin-top:12px">P1 data: <code>jstack crew agents list --json</code>. The "add agent" button that would sit above this table is P2.</div>
+</main>
+
+<main id="view-personas" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Persona agents</div>
+  <div class="page-head">
+    <h1>Persona agents <span class="phase-tag p1">P1 — always read-only</span></h1>
+    <p>Static routing personas a chat session can invoke. No write path exists for these, in any phase.</p>
+  </div>
+  <table>
+    <thead><tr><th>Persona</th><th>Prefers over</th><th>Not for</th></tr></thead>
+    <tbody>
+      <tr><td><code>backend-specialist</code></td><td>frontend-specialist (server-side findings)</td><td>incident coordination</td></tr>
+      <tr><td><code>design-lead</code></td><td>frontend-specialist (design intent)</td><td>implementation-as-shipped a11y</td></tr>
+      <tr><td><code>review-counsel</code></td><td>staff-engineer (multi-persona asks)</td><td>single-domain code review</td></tr>
+    </tbody>
+  </table>
+  <div class="ann" style="margin-top:12px">Data: static read of <code>agents/*.md</code> frontmatter.</div>
+</main>
+
+<main id="view-memory" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Memory</div>
+  <div class="page-head">
+    <h1>Memory <span class="phase-tag p1">P1</span></h1>
+    <p>Searchable log of facts/decisions/preferences/patterns jstack has recorded about you and your projects.</p>
+  </div>
+  <div class="toolbar"><input placeholder="Search memory entries…" /><button class="filter-chip">Kind ▾</button></div>
+  <table>
+    <thead><tr><th>Entry</th><th>Kind</th><th>Skill</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Prefers terse commit messages, no trailing summary</td><td>preference</td><td>self/remember</td><td>today</td></tr>
+      <tr><td>Merge freeze begins after mobile release cut</td><td>fact</td><td>self/remember</td><td>3 days ago</td></tr>
+      <tr><td>Never mock the DB in integration tests</td><td>decision</td><td>self/remember</td><td>1 week ago</td></tr>
+    </tbody>
+  </table>
+  <div class="ann" style="margin-top:12px">Data: <code>jstack memory search --json</code>.</div>
+</main>
+
+<main id="view-config" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Config</div>
+  <div class="page-head">
+    <h1>Config <span class="phase-tag p1">P1 view-only</span></h1>
+    <p>Resolved <code>jstack.config.json</code>, with drift/validation warnings surfaced inline.</p>
+  </div>
+  <div class="ann" style="margin:0 0 12px">⚠ <code>telemetry.endpoint</code> is unset while <code>telemetry.enabled</code> is not — flagged by <code>validate-config</code>, not fabricated by the UI.</div>
+  <table>
+    <thead><tr><th>Section</th><th>Key</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>team</td><td>name</td><td><code>ci-fixture</code></td></tr>
+      <tr><td>team</td><td>timezone</td><td><code>UTC</code></td></tr>
+      <tr><td>telemetry</td><td>enabled</td><td><code>false</code></td></tr>
+      <tr><td>routines</td><td>standup.cron</td><td><code>0 9 * * 1-5</code></td></tr>
+    </tbody>
+  </table>
+  <div class="ann" style="margin-top:12px">Data: <code>jstack config show --json</code>. Editing config stays CLI-only in both phases (not on this doc's roadmap yet).</div>
+</main>
+
+<main id="view-reports" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Reports</div>
+  <div class="page-head">
+    <h1>Reports <span class="phase-tag p1">P1</span></h1>
+    <p>Rendered report JSON (markdown + optional charts) — same renderer as today's dashboard, carried forward.</p>
+  </div>
+  <div class="card" style="max-width:480px">
+    <h3>Team weekly — Core platform</h3>
+    <div class="sub">Week of 2026-08-17 · generated 2 days ago</div>
+    <div class="sub" style="margin-top:8px">Highlights: shipped auth hardening; zero Sev1. Next week: finish flag rollout to 10% canary.</div>
+  </div>
+  <div class="ann" style="margin-top:12px">Data: existing report-rendering code, unchanged from today's dashboard.</div>
+</main>
+
+<main id="view-tasks" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Tasks</div>
+  <div class="page-head">
+    <h1>Tasks <span class="phase-tag p2">Phase 2</span></h1>
+    <p>Not built in Phase 1.</p>
+  </div>
+  <div class="card" style="max-width:480px">
+    <div class="empty">This panel ships in Phase 2: routines/workflow history (<code>jstack schedule report</code>, <code>jstack workflow list</code>) plus a new lightweight to-do list. Explicitly deferred, not dropped — see the design doc's Decision Log.</div>
+  </div>
+</main>
+
+<main id="view-usage" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Usage</div>
+  <div class="page-head">
+    <h1>Usage &amp; cost <span class="phase-tag p1">P1</span></h1>
+    <p>Token/cost trend, fed by this session's <code>recordEvent()</code> telemetry wiring.</p>
+  </div>
+  <table>
+    <thead><tr><th>Day</th><th>Runs</th><th>Tokens</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Today</td><td>6</td><td>9.1k</td><td>$0.31</td></tr>
+      <tr><td>Yesterday</td><td>11</td><td>14.8k</td><td>$0.52</td></tr>
+      <tr><td>2 days ago</td><td>4</td><td>5.2k</td><td>$0.19</td></tr>
+    </tbody>
+  </table>
+</main>
+
+<main id="view-chat" class="hidden view-detail">
+  <div class="breadcrumb"><a onclick="showOverview()">← Overview</a> / Agent chat</div>
+  <div class="page-head">
+    <h1>Agent chat <span class="phase-tag p1">P1 UI rebuild</span> <span class="phase-tag p2">P2 provider rewrite</span></h1>
+    <p>Full chat, rebuilt with AI Elements. Backend stays today's <code>spawn('claude', ...)</code> in P1.</p>
+  </div>
+  <div class="card" style="max-width:560px;gap:14px">
+    <div class="sub"><strong>You:</strong> explain the workflow ok:true fix</div>
+    <div class="sub"><strong>Claude:</strong> The old code trusted the subprocess exit status as if it meant the workflow succeeded. Now it checks whether an artifact actually exists on disk before reporting <code>ok: true</code>…</div>
+  </div>
+  <div class="ann" style="margin-top:12px">P2 swaps only the backend seam (provider layer) behind this same UI — the chat experience itself doesn't change when that lands.</div>
+</main>
+
+<!-- ================= COMMAND PALETTE ================= -->
+<div class="palette-overlay hidden" id="palette">
+  <div class="palette">
+    <input placeholder="Search skills, agents, memory, or jump to a panel…" autofocus id="paletteInput" />
+    <ul>
+      <li class="active"><span>Go to Skills</span><span class="cat">panel</span></li>
+      <li><span>Go to Crew agents</span><span class="cat">panel</span></li>
+      <li><span>Go to Memory</span><span class="cat">panel</span></li>
+      <li><span>jstack:recon</span><span class="cat">skill</span></li>
+      <li><span>"prefer staging over prod" — memory entry</span><span class="cat">memory</span></li>
+    </ul>
+  </div>
+</div>
+
+<button class="annotate-toggle" id="annToggle">Show design notes</button>
+
+<script>
+  const themeBtn = document.getElementById('themeToggle');
+  themeBtn.onclick = () => {
+    const html = document.documentElement;
+    html.dataset.theme = html.dataset.theme === 'light' ? 'dark' : 'light';
+  };
+
+  const palette = document.getElementById('palette');
+  const openPalette = () => { palette.classList.remove('hidden'); document.getElementById('paletteInput').focus(); };
+  const closePalette = () => palette.classList.add('hidden');
+  document.getElementById('paletteTrigger').onclick = openPalette;
+  palette.onclick = (e) => { if (e.target === palette) closePalette(); };
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
+    if (e.key === 'Escape') closePalette();
+  });
+
+  function showView(e, id) {
+    e.preventDefault();
+    document.getElementById('view-overview').classList.add('hidden');
+    document.querySelectorAll('.view-detail').forEach(el => el.classList.add('hidden'));
+    document.getElementById('view-' + id).classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+  function showOverview() {
+    document.querySelectorAll('.view-detail').forEach(el => el.classList.add('hidden'));
+    document.getElementById('view-overview').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }
+
+  // Real write path, simulated: a skill in the generator's SKIP set (hand-authored) writes
+  // directly; one that isn't gets refused with the regeneration-safety message instead of
+  // silently flipping a flag that a later `apply_detailed_skills.py` run would just revert.
+  function toggleSkill(btn) {
+    const row = btn.closest('tr');
+    const inSkip = row.dataset.skip === 'true';
+    const note = document.getElementById('skillWriteNote');
+    const name = row.querySelector('code').textContent;
+    if (inSkip) {
+      btn.classList.toggle('on');
+      btn.classList.toggle('off');
+      note.textContent = `✓ Wrote disable-model-invocation directly to ${name}'s SKILL.md — it's hand-authored (in the generator's SKIP set), so the write is safe.`;
+      note.style.color = '#16a34a';
+    } else {
+      note.textContent = `✗ Refused: ${name} is auto-generated by apply_detailed_skills.py. Edit apply_detailed_skills_data.py instead — writing the frontmatter directly would be silently reverted on the next regeneration.`;
+      note.style.color = 'hsl(var(--destructive))';
+    }
+  }
+
+  function customizeSkill(btn) {
+    const name = btn.closest('tr').querySelector('code').textContent;
+    document.getElementById('customizeTitle').textContent = 'Customize ' + name;
+    document.getElementById('customizeDrawer').classList.remove('hidden');
+  }
+
+  document.getElementById('annToggle').onclick = () => {
+    document.body.classList.toggle('annotated');
+    document.getElementById('annToggle').textContent =
+      document.body.classList.contains('annotated') ? 'Hide design notes' : 'Show design notes';
+  };
+</script>
+
+</body>
+</html>

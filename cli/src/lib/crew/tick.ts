@@ -563,27 +563,33 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
        * Refused across agents: a session carries a workspace and a tool set, so letting one
        * agent resume another's conversation would ground it in the wrong repository.
        */
+      // A tagged result instead of `{ sessionId: string; note?: string }` with `sessionId: ""`
+      // meaning "unresolved" -- every downstream read used to have to know that convention
+      // (truthiness checks on `sessionId`) instead of reading a tag.
+      type RecallOutcome =
+        | { kind: "resolved"; sessionId: string }
+        | { kind: "unresolved"; note: string };
       const ref = findRecallRef(m.text);
-      let recall: { sessionId: string; note?: string } | null = null;
+      let recall: RecallOutcome | null = null;
       if (ref) {
         const found = store.findTaskById(ref);
         if (!found) {
           recall = {
-            sessionId: "",
+            kind: "unresolved",
             note: `I could not find session \`${ref}\`, so this starts fresh.`,
           };
         } else if (found.agentId && found.agentId !== agentId) {
           recall = {
-            sessionId: "",
+            kind: "unresolved",
             note: `\`${ref}\` belongs to *${found.agentId}*, not me — I cannot resume another agent's session, so this starts fresh.`,
           };
         } else if (!found.sessionId.trim()) {
           recall = {
-            sessionId: "",
+            kind: "unresolved",
             note: `Session \`${ref}\` has no resumable id recorded, so this starts fresh.`,
           };
         } else {
-          recall = { sessionId: found.sessionId.trim() };
+          recall = { kind: "resolved", sessionId: found.sessionId.trim() };
           log(`  recall ${ref} -> session ${found.sessionId.slice(0, 8)}`);
         }
       }
@@ -594,7 +600,9 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
        * a fresh session rather than failing the turn. The conversation loses its memory,
        * which is worse than remembering but far better than refusing to answer.
        */
-      const prior = recall?.sessionId?.trim() || existing?.sessionId?.trim();
+      const prior =
+        (recall?.kind === "resolved" ? recall.sessionId : undefined) ||
+        existing?.sessionId?.trim();
       const canResume = !!prior;
       const sessionId = prior || randomUUID();
       // A follow-up threads on the SAME parent, so the whole exchange stays in one place.
@@ -675,7 +683,8 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
         });
       }
       // A recall resumes even on a FIRST turn -- that is the whole point of naming a session.
-      const wantResume = canResume && (isFollowUp || !!recall?.sessionId);
+      const wantResume =
+        canResume && (isFollowUp || recall?.kind === "resolved");
       const request = stripRecallRef(
         stripSigils(m.text, allSigils(cfg.agents)),
       );
@@ -719,7 +728,7 @@ export async function tick(opts: TickOptions): Promise<TickSummary> {
       // Surface a recall problem in the REPLY, not just the log: the operator is the one who
       // needs to know the answer was written without the context they asked for.
       const notes = [
-        recall?.note,
+        recall?.kind === "unresolved" ? recall.note : null,
         recallFailed
           ? `That session could no longer be resumed, so I answered without its history.`
           : null,

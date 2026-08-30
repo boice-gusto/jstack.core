@@ -12,32 +12,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ENCODING_UTF8, JSTACK_CONFIG_FILE } from "../constants/paths.js";
+import { isRecord, runBun, runStepOrExit } from "./lib/proc-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, "..");
 const cliEntry = join(pluginRoot, "cli/src/index.ts");
 const hooksPath = join(pluginRoot, "hooks/hooks.json");
-
-function runBun(
-  args: string[],
-  cwd: string,
-  env: Record<string, string | undefined>,
-): {
-  status: number;
-  out: string;
-} {
-  const r = spawnSync("bun", args, {
-    cwd,
-    env: { ...process.env, ...env },
-    encoding: ENCODING_UTF8,
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  return { status: r.status ?? 1, out: (r.stdout ?? "") + (r.stderr ?? "") };
-}
-
-function isRecord(x: unknown): x is Record<string, unknown> {
-  return typeof x === "object" && x !== null && !Array.isArray(x);
-}
 
 function extractSessionStartCommands(raw: unknown): string[] {
   if (!isRecord(raw)) throw new Error("hooks.json: root must be an object");
@@ -174,13 +154,11 @@ function main(): void {
   mkdirSync(diskKb, { recursive: true });
 
   console.log("3) Fixture: setup --ci\n");
-  const e0 = runBun(
+  runStepOrExit(
     ["run", cliEntry, "setup", "--ci", "--disk-fallback-root", diskKb],
     tmpProject,
     { CLAUDE_PLUGIN_ROOT: pluginRoot },
   );
-  console.log(e0.out);
-  if (e0.status !== 0) process.exit(1);
   if (!existsSync(join(tmpProject, JSTACK_CONFIG_FILE))) {
     console.error("Missing jstack.config.json after setup --ci");
     process.exit(1);

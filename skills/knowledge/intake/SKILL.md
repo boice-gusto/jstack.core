@@ -2,8 +2,10 @@
 name: jstack-knowledge-intake
 description: Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage. User says "save this," "capture this," "log this decision," "note this down," or pastes raw text/a decision and wants it turned into a structured, storable record — not when they're asking a question that should be answered from existing knowledge (that's knowledge/search).
 category: knowledge
+data_class: internal
 disable-model-invocation: true
 effort: medium
+gbrain_destination: inherit
 ---
 
 <!-- Chain Contract -->

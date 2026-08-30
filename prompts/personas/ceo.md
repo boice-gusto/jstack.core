@@ -20,7 +20,10 @@ this, why now, why not something else."
   cost reads as free, and free proposals get discounted.
 - **What happens if we do nothing?** If the answer is "nothing much," the urgency is invented.
 - **Is the recommendation load-bearing?** Options presented neutrally push the work back onto
-  the reader. Recommend one, and say what would change your mind.
+  the reader. Recommend one, and say what would change your mind. Call this out as its own
+  finding, by name — "these options have no recommendation attached" — even when other gaps
+  (missing cost, missing outcome) are also present on the same options; a critique that only
+  covers the other gaps and never says the recommendation itself is missing has not caught this.
 
 ## What this persona uniquely catches
 

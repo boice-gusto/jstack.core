@@ -15,7 +15,7 @@ import { getJstackCoreRoot } from "@/server/env";
 import { readJstackConfig } from "./config-reader";
 
 /**
- * Every `/api/agent/stream` run spawns a real `claude -p` child with real token/dollar cost, but
+ * Every `/api/agent/stream` run spawns a real `claude -p` or `codex exec` child with real token/dollar cost, but
  * nothing recorded that anywhere -- `telemetry/collector.ts`'s `recordEvent()` had zero callers in
  * this codebase (see `telemetry/cli.ts`'s own `RECORDING_WIRED_UP = false`). The dashboard is the
  * one long-running process in this repo (unlike the CLI, which is a fresh process per invocation
@@ -108,19 +108,16 @@ export function recordDashboardAgentRun(input: DashboardRunTelemetryInput): void
   void flushIfConfigured();
 }
 
-async function flushIfConfigured(): Promise<void> {
+export async function flushIfConfigured(): Promise<void> {
   try {
-    const cfg = readJstackConfig(process.cwd()) as {
-      telemetry?: { enabled?: boolean; endpoint?: string };
-    } | null;
+    const cfg = readJstackConfig();
     const enabled = cfg?.telemetry?.enabled === true;
-    const endpoint =
-      typeof cfg?.telemetry?.endpoint === "string" ? cfg.telemetry.endpoint.trim() : "";
+    const endpoint = cfg?.telemetry?.endpoint?.trim() ?? "";
     if (!enabled || endpoint.length === 0) return;
     const events = snapshotBuffer();
     if (events.length === 0) return;
-    clearBuffer();
-    await sendBatch(endpoint, events);
+    const sent = await sendBatch(endpoint, events);
+    if (sent) clearBuffer();
   } catch {
     // Best-effort: a flush failure (unreachable endpoint, bad config) must never surface to
     // the agent run that generated the event it was trying to send.
