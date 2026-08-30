@@ -1,0 +1,57 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-knowledge-reflect** (path: `knowledge/reflect`).
+
+  Category: knowledge.
+
+  Skill description: Mine THIS session's own transcript for durable, reusable lessons once a task
+  has landed — not mid-task. Runs 2–3 independent adversarial reviewer passes over every candidate
+  lesson (did it actually work, was the approach sound, was there a cheaper way), then one synthesis
+  pass that buckets each candidate into Accepted / Rejected / Backlog, and stops for explicit human
+  confirmation before handing the Accepted list to `jstack:team-knowledge` or
+  `jstack:self-knowledge` for the actual write — this skill never writes to gbrain itself. Use after
+  a hard debug, a long multi-step task, or a project wrap-up to ask "what should a future session
+  already know so it doesn't repeat this mistake or redo this work." Trigger phrases: "reflect on
+  this," "what did we learn," "do a retro before we close this out," "mine this session for
+  lessons," "capture what we just learned." Not for knowledge pasted in from outside this session —
+  use `jstack:knowledge-intake`; not for the write itself — use `jstack:knowledge-process`,
+  `jstack:team-knowledge`, or `jstack:self-knowledge`; not for reading back logged history across
+  many past sessions — use `jstack:skill-creator-retro`.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Mine THIS session's own transcript for durable, reusable lessons once a task has landed —
+    not mid-task. Runs 2–3 independent adversarial reviewer passes over every candidate lesson (did
+    it actually work, was the approach sound, was there a cheaper way), then one synthesis pass that
+    buckets each candidate into Accepted / Rejected / Backlog, and stops for explicit human
+    confirmation before handing the Accepted list to `jstack:team-knowledge` or
+    `jstack:self-knowledge` for the actual write — this skill never writes to gbrain itself. Use
+    after a hard debug, a long multi-step task, or a project wrap-up to ask "what should a future
+    session already know so it doesn't repeat this mistake or redo this work." Trigger phrases:
+    "reflect on this," "what did we learn," "do a retro before we close this out," "mine this
+    session for lessons," "capture what we just learned." Not for knowledge pasted in from outside
+    this session — use `jstack:knowledge-intake`; not for the write itself — use
+    `jstack:knowledge-process`, `jstack:team-knowledge`, or `jstack:self-knowledge`; not for reading
+    back logged history across many past sessions — use `jstack:skill-creator-retro`.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

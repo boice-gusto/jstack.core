@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-27T08:25:49.720Z",
-  "count": 143,
+  "generatedAt": "2026-08-29T07:49:54.274Z",
+  "count": 147,
   "skills": [
     {
       "id": "adr",
@@ -153,6 +153,16 @@
       "categoryKey": "engineering"
     },
     {
+      "id": "engineering-compatibility-check",
+      "name": "jstack-engineering-compatibility-check",
+      "relPath": "skills/engineering/compatibility-check/SKILL.md",
+      "gateId": "jstack:engineering/compatibility-check",
+      "description": "Runs jstack.core's own ten structural gates (config schema, agent/skill config-matrix, agent/skill depth, chain and router integrity, description-reference, referenced-file, name-collision, and prompt-wiring checks) and blends the results into one weighted compatibility score plus a ranked \"fix these first\" list, the way the agent-compatibility plugin fans a review into scored sub-checks. Read-only — it only runs checks and reports; it never edits a file and never runs the slower legs of `bun run check` (typecheck, tests, format, evals, the a2a suite). For DORA-banded engineering health, use jstack:engineering-health instead; for bus-factor / knowledge-silo risk, use jstack:engineering-silo-scan instead; for the full CI chain including tests and typecheck, tell the user to run `bun run check` directly.",
+      "whenToUse": "\"Also trigger on: 'is the skill catalog healthy', 'run the compatibility gates', 'score the repo's config/skill checks', 'what's broken across the gates', 'give me a fix-first list for the structural checks', or a request to summarize `bun run check` failures into one number.\"",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
       "id": "engineering-health",
       "name": "jstack-engineering-health",
       "relPath": "skills/engineering/health/SKILL.md",
@@ -211,6 +221,16 @@
       "whenToUse": "",
       "category": "Design",
       "categoryKey": "design"
+    },
+    {
+      "id": "figure-it-out",
+      "name": "jstack-figure-it-out",
+      "relPath": "skills/figure-it-out/SKILL.md",
+      "gateId": "jstack:figure-it-out",
+      "description": "Design and run a rigorous, scoped, one-off plan for a big or unusual task that doesn't match any existing skill, playbook, or SOP in the catalog. Frames the actual goal/constraints/done-state in 1-2 sentences, picks the smallest set of steps a reviewer could verify, runs them in order checking each before the next, and hands back a plain-prose audit trail naming what was verified vs. assumed. Not for a task a real skill already covers — check the catalog first and chain to that skill instead. Not for authoring a new **permanent** skill file — use `jstack:skill-creator` instead. Not for a chain that will recur — use `jstack:workflow-builder` instead once the same one-off has run more than a couple of times.",
+      "whenToUse": "\"Also trigger on: 'no skill fits this', 'this is a one-off', 'figure this out', 'make a plan for this weird task', 'nothing in the catalog covers this', an ask that spans multiple unrelated systems with no existing chain, or a request explicitly declined by a more specific skill's out-of-scope note.\"",
+      "category": "Figure It Out",
+      "categoryKey": "figure-it-out"
     },
     {
       "id": "granola-daily-summary",
@@ -428,6 +448,16 @@
       "relPath": "skills/knowledge/process/SKILL.md",
       "gateId": "jstack:knowledge/process",
       "description": "Deduplicate, merge near-duplicates, and set canonical links across gbrain/Notion entries.",
+      "whenToUse": "",
+      "category": "Knowledge",
+      "categoryKey": "knowledge"
+    },
+    {
+      "id": "knowledge-reflect",
+      "name": "jstack-knowledge-reflect",
+      "relPath": "skills/knowledge/reflect/SKILL.md",
+      "gateId": "jstack:knowledge/reflect",
+      "description": "Mine THIS session's own transcript for durable, reusable lessons once a task has landed — not mid-task. Runs 2–3 independent adversarial reviewer passes over every candidate lesson (did it actually work, was the approach sound, was there a cheaper way), then one synthesis pass that buckets each candidate into Accepted / Rejected / Backlog, and stops for explicit human confirmation before handing the Accepted list to `jstack:team-knowledge` or `jstack:self-knowledge` for the actual write — this skill never writes to gbrain itself. Use after a hard debug, a long multi-step task, or a project wrap-up to ask \"what should a future session already know so it doesn't repeat this mistake or redo this work.\" Trigger phrases: \"reflect on this,\" \"what did we learn,\" \"do a retro before we close this out,\" \"mine this session for lessons,\" \"capture what we just learned.\" Not for knowledge pasted in from outside this session — use `jstack:knowledge-intake`; not for the write itself — use `jstack:knowledge-process`, `jstack:team-knowledge`, or `jstack:self-knowledge`; not for reading back logged history across many past sessions — use `jstack:skill-creator-retro`.",
       "whenToUse": "",
       "category": "Knowledge",
       "categoryKey": "knowledge"
@@ -948,6 +978,16 @@
       "relPath": "skills/review/codex-review/SKILL.md",
       "gateId": "jstack:review/codex-review",
       "description": "Get a genuinely independent second opinion on a diff or PR from the external `codex` CLI, built on `jstack:review-codex-bridge` — send the diff with explicit grounding/citation standards, work through any pushback with codex for a bounded number of rounds, and surface real, unresolved disagreement to the user instead of collapsing it into a fake consensus. Use when a change is genuinely worth a second, independent model's scrutiny and codex is installed. Do NOT use on trivial one-line/rename-only changes — say so and decline rather than manufacturing findings. Complements, not replaces, `jstack-review-code-review` (one letter away — Claude's own internal review persona); this skill's whole value is being a separate, external check.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
+      "id": "review-interrogate",
+      "name": "jstack-review-interrogate",
+      "relPath": "skills/review/interrogate/SKILL.md",
+      "gateId": "jstack:review/interrogate",
+      "description": "Run one rigorous correctness/quality review prompt through Claude (this agent) and the external `codex` CLI independently, once each, against the same diff/PR/file, then reconcile the two reads into an attributed triage table — agree-block (both models independently flagged it, higher confidence), disagree (both positions stated, not resolved by picking a side), single-model-flag (worth a second look, not dropped and not silently promoted), and praise. Mirrors `jstack:review-counsel`'s reconciliation discipline (its Prime Directives 4, 8, and 10) applied across MODELS instead of personas. Use when a diff/PR/file is worth a second, independently-reasoning model's read and a single one-shot comparison is enough. Do NOT use for a negotiated back-and-forth with codex across multiple rounds (fix / push-back / escalate, applying edits, resuming a thread) — that is `jstack:review-codex-review`'s job; this skill runs each side exactly once and never edits anything. Do NOT use for multi-persona (CEO/PM/eng/QA/ design) synthesis — that is `jstack:review-counsel`. Do NOT use on a trivial one-line/rename-only change — say so and decline rather than manufacturing findings.",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"

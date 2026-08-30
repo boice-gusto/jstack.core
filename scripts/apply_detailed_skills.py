@@ -124,6 +124,12 @@ SKIP = {
     # generator has no per-key data for any of this and would flatten it to generic write-skill
     # boilerplate.
     SKILLS / "pe" / "pe-recon" / "SKILL.md",
+    # Same gap, missed when pe-recon was pinned above: hand-tuned `[no data]`-per-figure Step 2/4
+    # text and a report-specific failure-mode table (missing metric, tone mismatch). The generator
+    # has no per-key SAFE_PATH/VALIDATION data for this key either -- confirmed live (2026-08-29):
+    # a real `apply_detailed_skills.py` run flattened it to generic write-skill boilerplate with no
+    # report-specific content at all. Pin here instead of writing the missing per-key data blind.
+    SKILLS / "pe" / "report-context" / "SKILL.md",
     # Hand-authored (2026-08): `pe` router updated with a real two-child disambiguation rule
     # (report-context vs pe-recon) now that it has a second real destination. The generator has
     # no per-key data for this routing distinction and would regenerate the old single-child text.
@@ -257,8 +263,8 @@ ORCH_CHILDREN = {
     "research": "technical, competitive, user, explain-codebase, spike",
     "reports": "team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish",
     "self": "diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr",
-    "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder",
-    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review",
+    "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder, reflect",
+    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate",
     "session": "init, end",
     "metrics": "my-metrics, team-metrics",
     "routines": "standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff",
@@ -531,6 +537,7 @@ POLICY_LOADS = {
         "prompts/personas/engineer.md",
         "prompts/personas/qa.md",
         "prompts/personas/designer.md",
+        "prompts/personas/security.md",
     ],
     # Chain DEFINITIONS, loaded by the routine/skill that executes them. `validate-chains` resolves
     # their steps, but nothing loaded the file itself, so the declared order was never in context for

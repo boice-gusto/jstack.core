@@ -1,0 +1,38 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-knowledge-reflect** (path: `knowledge/reflect`).
+
+  Category: knowledge.
+
+  Skill description: Mine THIS session's own transcript for durable, reusable lessons once a task
+  has landed — not mid-task. Runs 2–3 independent adversarial reviewer passes over every candidate
+  lesson (did it actually work, was the approach sound, was there a cheaper way), then one synthesis
+  pass that buckets each candidate into Accepted / Rejected / Backlog, and stops for explicit human
+  confirmation before handing the Accepted list to `jstack:team-knowledge` or
+  `jstack:self-knowledge` for the actual write — this skill never writes to gbrain itself. Use after
+  a hard debug, a long multi-step task, or a project wrap-up to ask "what should a future session
+  already know so it doesn't repeat this mistake or redo this work." Trigger phrases: "reflect on
+  this," "what did we learn," "do a retro before we close this out," "mine this session for
+  lessons," "capture what we just learned." Not for knowledge pasted in from outside this session —
+  use `jstack:knowledge-intake`; not for the write itself — use `jstack:knowledge-process`,
+  `jstack:team-knowledge`, or `jstack:self-knowledge`; not for reading back logged history across
+  many past sessions — use `jstack:skill-creator-retro`.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Writing to gbrain/Notion
+  itself.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Writing
+    to gbrain/Notion itself
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:knowledge-search)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts
