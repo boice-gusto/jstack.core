@@ -104,6 +104,10 @@ The wizard is a single self-contained HTML file. It runs entirely locally — no
 network — and stops at a proposed config for your review before anything is written. It keeps
 personal values out of a shared team config and refuses input that looks like a credential.
 
+New to jstack? [`docs/guide/`](docs/guide/README.md) walks a first real task end to end — setup,
+routing, multi-lens review, and the verification/eval commands — with real prompts, not a feature
+list.
+
 Prefer to stay in the terminal, or in a chat session:
 
 ```bash

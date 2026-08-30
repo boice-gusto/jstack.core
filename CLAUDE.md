@@ -90,6 +90,10 @@ To add a wizard to a skill: replace the prose "ask once if unclear" pattern in t
 - Don't auto-commit. Wait for the user to ask for a commit or PR.
 - Don't push to `main` directly. All work goes through a PR.
 
+## Principles
+
+`docs/jstack-principles.md` names and indexes rules jstack.core already practices (disclose coverage not completeness, prove it works, build the lever, guard the context window, and others) with a pointer to the file each was extracted from. When a directive you're writing is a restatement of one of these, link it there instead of re-deriving the rationale inline.
+
 ## Dogfood
 
 When you've made a substantive change to a skill or to the CLI surface that affects users, run `bun run cli/src/index.ts claude-md scan --output prose` from a real project to see whether this very file (`CLAUDE.md`) needs updating. If you can name a recurring correction or stale rule, propose an edit before merging.
