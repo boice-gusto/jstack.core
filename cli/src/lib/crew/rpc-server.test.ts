@@ -108,6 +108,13 @@ describe("rpc-server", () => {
     expect(prompted.ok).toBe(true);
     expect(prompted.text).toBe("rpc reply");
 
+    const remembered = (await rpcCall(handle.sockPath, "session/remember", {
+      id: created.id,
+      content: "The user's Q3 deadline is October 15.",
+    })) as { agentId: string; content: string };
+    expect(remembered.agentId).toBe("ralph");
+    expect(remembered.content).toContain("October 15");
+
     const status = (await rpcCall(handle.sockPath, "status")) as {
       tasks: number;
       enabled: boolean;
@@ -119,6 +126,23 @@ describe("rpc-server", () => {
       id: created.id,
     })) as { ok: boolean };
     expect(cancelled.ok).toBe(true);
+  });
+
+  test("session/remember rejects an invalid kind over the wire", async () => {
+    restorePath = installFakeClaude().restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+    const created = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+    await expect(
+      rpcCall(handle.sockPath, "session/remember", {
+        id: created.id,
+        content: "x",
+        kind: "not-a-kind",
+      }),
+    ).rejects.toThrow(/kind must be one of/);
   });
 
   test("an unknown method returns an error over the wire, not a dropped connection", async () => {

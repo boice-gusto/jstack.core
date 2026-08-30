@@ -5,14 +5,17 @@ import {
   cancelManualSession,
   createManualSession,
   promptManualSession,
+  rememberInSession,
 } from "./session.js";
+import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
 
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
  * 2.0-shaped requests/responses. Method names (`session/new`, `session/prompt`,
- * `session/cancel`) intentionally mirror the Agent Client Protocol's session verbs, even though
+ * `session/cancel`, `session/remember`) intentionally mirror the Agent Client Protocol's session
+ * verbs, even though
  * this transport isn't literally ACP -- see the AgentProvider extraction's own note on this
  * (cli/src/lib/agent-providers/provider.ts) for why: it keeps the message shapes stable if a
  * real ACP transport (or a UI client) replaces this later.
@@ -88,6 +91,30 @@ async function dispatch(
         }
         cancelManualSession(store, p.id);
         return { ok: true };
+      }
+      case "session/remember": {
+        if (typeof p.id !== "string" || typeof p.content !== "string") {
+          throw new Error(
+            "session/remember requires { id: string, content: string }",
+          );
+        }
+        const kind = typeof p.kind === "string" ? p.kind : "fact";
+        const source = typeof p.source === "string" ? p.source : "user-stated";
+        if (!MEMORY_KINDS.includes(kind as (typeof MEMORY_KINDS)[number])) {
+          throw new Error(`kind must be one of: ${MEMORY_KINDS.join(", ")}`);
+        }
+        if (
+          !MEMORY_SOURCES.includes(source as (typeof MEMORY_SOURCES)[number])
+        ) {
+          throw new Error(
+            `source must be one of: ${MEMORY_SOURCES.join(", ")}`,
+          );
+        }
+        return rememberInSession(store, cfg, p.id, {
+          kind: kind as (typeof MEMORY_KINDS)[number],
+          source: source as (typeof MEMORY_SOURCES)[number],
+          content: p.content,
+        });
       }
       case "status": {
         const stats = store.stats();
