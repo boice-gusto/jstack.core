@@ -20,10 +20,11 @@ import {
   mkdirSync,
 } from "node:fs";
 import { join } from "node:path";
-import { CrewConfigSchema } from "./lib/crew/types.js";
+import { CrewConfigSchema, type CrewConfig } from "./lib/crew/types.js";
 import { tick } from "./lib/crew/tick.js";
 import { expandHome, snapshotPath } from "./lib/crew/store.js";
 import { isTccProtected } from "./lib/crew/launchd.js";
+import { startRpcServer, type RpcServerHandle } from "./lib/crew/rpc-server.js";
 
 /**
  * DESIGN NOTE -- why this daemon needs no Full Disk Access grant.
@@ -251,36 +252,21 @@ function preflightAccess(): { ok: boolean; detail: string } {
   return { ok: false, detail: out };
 }
 
-async function main(): Promise<number> {
-  if (process.env.JSTACK_CREW_TCC_PROBE === "1") return tccProbe();
-
-  /**
-   * Preflight ONLY the fallback path, and only when it is actually taken.
-   *
-   * With a snapshot present this process touches nothing protected, so there is nothing to
-   * preflight -- running it anyway is what made every tick cost 20s and then refuse to work.
-   * Without a snapshot we must read the project config, which may sit in ~/Documents and
-   * would block forever, so that single case still gets a bounded child probe.
-   */
-  const usingSnapshot = existsSync(snapshotPath());
-  if (!usingSnapshot && process.env.JSTACK_CREW_SKIP_PREFLIGHT !== "1") {
-    const pre = preflightAccess();
-    if (!pre.ok) {
-      console.error(
-        `${stamp()} crewd: PREFLIGHT FAILED, skipping tick. ${pre.detail}`,
-      );
-      // Exit 0: a non-zero exit invites launchd to treat this as a crash and throttle the
-      // job into permanent death, which is the very failure this check exists to prevent.
-      return 0;
-    }
-  }
-
+/**
+ * One load-config -> write-health -> tick cycle. Exactly today's one-shot `main()` body,
+ * extracted so the resident loop below can call it repeatedly instead of duplicating it --
+ * behavior for the existing launchd-interval install is unchanged, byte for byte.
+ */
+async function runOneCycle(): Promise<{
+  cfg: CrewConfig;
+  source: string;
+} | null> {
   const loaded = loadConfig();
   if ("error" in loaded) {
     // A malformed config must not crash-loop: launchd throttles repeated fatal starts and
     // will eventually stop the job permanently, which looks exactly like silent death.
     console.error(`${stamp()} crewd: ${loaded.error}`);
-    return 0;
+    return null;
   }
   const cfg = loaded.cfg;
   const configSource = loaded.source;
@@ -307,12 +293,101 @@ async function main(): Promise<number> {
         (s.backlogSkipped ? " backlog_skipped" : "") +
         (s.halted ? ` HALTED=${s.halted}` : ""),
     );
-    // Exit 0 even when halted: a non-zero exit invites launchd to treat it as a crash.
-    return 0;
   } catch (e) {
     console.error(`${stamp()} crewd: tick threw: ${(e as Error).message}`);
-    return 0;
   }
+  return { cfg, source: configSource };
+}
+
+/**
+ * Resident mode: the same `runOneCycle()` in a loop, plus the manual-session RPC socket.
+ *
+ * Unlike the one-shot mode, a bad config reload here must NOT tear down the socket or stop the
+ * loop -- there is no launchd re-invocation to recover a resident process, so it has to keep
+ * trying on its own. `getConfig` always serves the last cycle that loaded successfully, so an
+ * in-flight `session/prompt` (or a transient bad reload) never sees a null config.
+ *
+ * The RPC server starts lazily, once a config (and therefore a `state_dir` to put the socket
+ * in) is actually available -- there is no stable place to bind it before that.
+ *
+ * `maxIterations` and `runCycle` exist for tests only: `maxIterations` bounds an otherwise
+ * -infinite loop, and `runCycle` substitutes a fake cycle so a test never has to go through
+ * `loadConfig()` -- which checks the real, hardcoded `~/.jstack/crew/config.snapshot.json`
+ * before anything else, with no override hook. That path can hold a real user's actual crew
+ * state (it does on this machine), so no test may exercise the real `runOneCycle` here.
+ */
+export async function runResident(opts: {
+  intervalMs: number;
+  maxIterations?: number;
+  runCycle?: () => Promise<{ cfg: CrewConfig; source: string } | null>;
+}): Promise<void> {
+  const cycle = opts.runCycle ?? runOneCycle;
+  let lastGoodConfig: CrewConfig | undefined;
+  let rpc: RpcServerHandle | undefined;
+  const getConfig = (): CrewConfig => {
+    if (!lastGoodConfig) throw new Error("crew: no config loaded yet");
+    return lastGoodConfig;
+  };
+
+  try {
+    for (
+      let i = 0;
+      opts.maxIterations === undefined || i < opts.maxIterations;
+      i++
+    ) {
+      const result = await cycle();
+      if (result) {
+        lastGoodConfig = result.cfg;
+        if (!rpc) {
+          const stateDir = expandHome(result.cfg.state_dir);
+          rpc = startRpcServer({ stateDir, getConfig });
+          console.log(`${stamp()} crewd: rpc listening at ${rpc.sockPath}`);
+        }
+      }
+      const isLast =
+        opts.maxIterations !== undefined && i === opts.maxIterations - 1;
+      if (!isLast) await Bun.sleep(opts.intervalMs);
+    }
+  } finally {
+    rpc?.stop();
+  }
+}
+
+async function main(): Promise<number> {
+  if (process.env.JSTACK_CREW_TCC_PROBE === "1") return tccProbe();
+
+  /**
+   * Preflight ONLY the fallback path, and only when it is actually taken.
+   *
+   * With a snapshot present this process touches nothing protected, so there is nothing to
+   * preflight -- running it anyway is what made every tick cost 20s and then refuse to work.
+   * Without a snapshot we must read the project config, which may sit in ~/Documents and
+   * would block forever, so that single case still gets a bounded child probe.
+   */
+  const usingSnapshot = existsSync(snapshotPath());
+  if (!usingSnapshot && process.env.JSTACK_CREW_SKIP_PREFLIGHT !== "1") {
+    const pre = preflightAccess();
+    if (!pre.ok) {
+      console.error(
+        `${stamp()} crewd: PREFLIGHT FAILED, skipping tick. ${pre.detail}`,
+      );
+      // Exit 0: a non-zero exit invites launchd to treat this as a crash and throttle the
+      // job into permanent death, which is the very failure this check exists to prevent.
+      return 0;
+    }
+  }
+
+  if (process.env.JSTACK_CREW_RESIDENT === "1") {
+    const intervalMs = Number(
+      process.env.JSTACK_CREW_TICK_INTERVAL_MS ?? "60000",
+    );
+    await runResident({ intervalMs });
+    return 0; // unreachable while the loop runs; kept so main()'s return type stays honest
+  }
+
+  // Exit 0 even when halted: a non-zero exit invites launchd to treat it as a crash.
+  await runOneCycle();
+  return 0;
 }
 
 /**
