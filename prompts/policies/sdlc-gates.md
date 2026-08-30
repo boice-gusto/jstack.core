@@ -1,11 +1,18 @@
 # SDLC gate policy
 
-> **Maintainer:** Engineering manager or tech lead.
+> **Maintainer of this markdown file:** Engineering manager or tech lead. This is who edits
+> *this document* when the team's gate rules change — it is not an org's real risk-acceptance
+> approver, and must never be presented as one. Do not answer "who approves the bypass" or
+> "who is empowered to accept this risk" with this line; that identity comes only from the
+> conversation or `jstack.config.json`, and is unknown until one of those actually names it.
 
 This file is injected verbatim into prompts. It contains no invented gate criteria or
 environment names beyond what already ships in this repo's own templates — treat any
 org-specific value not present in config or the conversation as unknown, and ask rather than
-assume.
+assume. This includes the feature-flag requirement below: it is conditional ("user-facing
+changes that cannot be safely reverted by rollback alone"), not automatic — state it as a
+question to confirm ("is this user-facing and not rollback-safe?"), never as an already-met
+requirement, unless the conversation has actually established that the change meets it.
 
 ## Gate definitions
 
