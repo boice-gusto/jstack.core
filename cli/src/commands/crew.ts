@@ -54,6 +54,11 @@ import {
   writePlist,
 } from "../lib/crew/launchd.js";
 import { findProjectRoot } from "../lib/config.js";
+import {
+  cancelManualSession,
+  createManualSession,
+  promptManualSession,
+} from "../lib/crew/session.js";
 
 const CONFIG_KEY = "crew";
 
@@ -602,6 +607,66 @@ export function runCrewSession(taskIdArg: string, json: boolean): void {
       `    ${agent?.sigils[0] ?? "!agent"} #${t.id} <your next question>`,
     );
   }
+}
+
+/* ---------------------------------------------------------------- sessions ---- */
+
+/**
+ * Manual (non-Slack) sessions: today, one CLI invocation per prompt (headless, no daemon/socket
+ * yet -- see `session.ts`). Each command opens its own `CrewStore`/closes it, matching every
+ * other crew command's lifecycle; there is no held-open connection between invocations.
+ */
+export function runSessionNew(agentId: string, json: boolean): void {
+  const cfg = loadCrewConfig();
+  const store = new CrewStore(cfg.state_dir);
+  const { id, sessionId } = createManualSession(store, cfg, agentId);
+  store.close();
+  if (json) {
+    console.log(JSON.stringify({ ok: true, id, sessionId, agentId }, null, 2));
+    return;
+  }
+  console.log(
+    chalk.green(`Created session ${id}`) + chalk.dim(` (${agentId})`),
+  );
+  console.log(chalk.dim(`  jstackc crew sessions prompt ${id} "..."`));
+}
+
+export async function runSessionPrompt(
+  id: string,
+  message: string,
+  json: boolean,
+): Promise<void> {
+  const cfg = loadCrewConfig();
+  const store = new CrewStore(cfg.state_dir);
+  let result: Awaited<ReturnType<typeof promptManualSession>>;
+  try {
+    result = await promptManualSession(store, cfg, id, message);
+  } finally {
+    store.close();
+  }
+  if (json) {
+    console.log(JSON.stringify({ ...result }, null, 2));
+    return;
+  }
+  if (!result.ok) {
+    console.error(chalk.red(result.text));
+    process.exitCode = 1;
+    return;
+  }
+  console.log(result.text);
+  console.log(chalk.dim(`\n  ($${result.costUsd.toFixed(4)})`));
+}
+
+export function runSessionCancel(id: string, json: boolean): void {
+  const cfg = loadCrewConfig();
+  const store = new CrewStore(cfg.state_dir);
+  cancelManualSession(store, id);
+  store.close();
+  if (json) {
+    console.log(JSON.stringify({ ok: true, id }, null, 2));
+    return;
+  }
+  console.log(chalk.green(`Cancelled ${id}`));
 }
 
 /* -------------------------------------------------------------------- eval ---- */
@@ -2140,6 +2205,40 @@ export function registerCrewCommand(program: Command): void {
     .action(
       safeAction((taskIdArg: string, o: { json: boolean }) =>
         runCrewSession(taskIdArg, o.json),
+      ),
+    );
+
+  const sess = crew
+    .command("sessions")
+    .description("Manual (non-Slack) interactive sessions with a crew agent");
+
+  sess
+    .command("new <agentId>")
+    .description("Create a new manual session with an agent")
+    .option("--json", "machine-readable", false)
+    .action(
+      safeAction((agentId: string, o: { json: boolean }) =>
+        runSessionNew(agentId, o.json),
+      ),
+    );
+
+  sess
+    .command("prompt <id> <message>")
+    .description("Send one message to a manual session and print the reply")
+    .option("--json", "machine-readable", false)
+    .action(
+      safeAction((id: string, message: string, o: { json: boolean }) =>
+        runSessionPrompt(id, message, o.json),
+      ),
+    );
+
+  sess
+    .command("cancel <id>")
+    .description("Close a manual session")
+    .option("--json", "machine-readable", false)
+    .action(
+      safeAction((id: string, o: { json: boolean }) =>
+        runSessionCancel(id, o.json),
       ),
     );
 }
