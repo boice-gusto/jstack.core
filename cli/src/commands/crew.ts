@@ -391,13 +391,24 @@ export function runCrewStatus(json: boolean): void {
   }
 }
 
-/** StartInterval out of the installed plist, so the UI shows the real cadence. */
-function schedInterval(plistPath: string): number | null {
+/**
+ * The real tick cadence out of the installed plist, in seconds, so the UI (and doctor's
+ * staleness math below) reflects the real schedule rather than assuming one. A resident
+ * install (see launchd.ts's `PlistOptions.resident`) has no `StartInterval` -- it ticks on
+ * `JSTACK_CREW_TICK_INTERVAL_MS` inside crewd.ts's own loop instead -- so that env var is the
+ * fallback read, converted back to seconds to keep this function's unit consistent either way.
+ */
+export function schedInterval(plistPath: string): number | null {
   try {
-    const m = readFileSync(plistPath, "utf8").match(
+    const xml = readFileSync(plistPath, "utf8");
+    const interval = xml.match(
       /<key>StartInterval<\/key>\s*<integer>(\d+)<\/integer>/,
     );
-    return m ? Number(m[1]) : null;
+    if (interval) return Number(interval[1]);
+    const residentMs = xml.match(
+      /<key>JSTACK_CREW_TICK_INTERVAL_MS<\/key>\s*<string>(\d+)<\/string>/,
+    );
+    return residentMs ? Math.round(Number(residentMs[1]) / 1000) : null;
   } catch {
     return null;
   }
