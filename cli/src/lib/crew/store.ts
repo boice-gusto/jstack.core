@@ -425,6 +425,25 @@ export class CrewStore {
       .all(limit) as Array<Record<string, unknown>>;
   }
 
+  /** Same shape as `recentTasks()`, scoped to one `channel_id` -- session.ts's manual sessions
+   * use `MANUAL_CHANNEL_ID` here to list themselves without CrewStore needing to know that
+   * concept exists. Ordered by `started_at DESC, rowid DESC`: `started_at` is millisecond
+   * resolution (`Date.now()`), so two sessions created in the same tick (measured: e.g. back-
+   * to-back in a test, or in a single RPC burst) tie on it, and `rowid` (always present on a
+   * table without `WITHOUT ROWID`, monotonically increasing with insertion order) is what makes
+   * "newest first" deterministic rather than whatever order SQLite happens to pick for a tie. */
+  tasksByChannel(
+    channelId: string,
+    limit = 50,
+  ): Array<Record<string, unknown>> {
+    return this.db
+      .query(
+        "SELECT id, agent_id, state, turns, cost_usd, source_ts, started_at, last_at, ended_at FROM task " +
+          "WHERE channel_id = ? ORDER BY started_at DESC, rowid DESC LIMIT ?",
+      )
+      .all(channelId, limit) as Array<Record<string, unknown>>;
+  }
+
   recentEvents(limit = 60): Array<Record<string, unknown>> {
     return this.db
       .query(

@@ -128,6 +128,27 @@ describe("rpc-server", () => {
     expect(cancelled.ok).toBe(true);
   });
 
+  test("session/list returns manual sessions newest first", async () => {
+    restorePath = installFakeClaude().restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const a = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+    const b = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+
+    const sessions = (await rpcCall(handle.sockPath, "session/list")) as Array<{
+      id: string;
+      agentId: string;
+    }>;
+    expect(sessions.map((s) => s.id)).toEqual([b.id, a.id]);
+    expect(sessions[0]?.agentId).toBe("ralph");
+  });
+
   test("session/remember rejects an invalid kind over the wire", async () => {
     restorePath = installFakeClaude().restorePath;
     const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));

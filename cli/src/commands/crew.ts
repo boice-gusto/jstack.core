@@ -57,6 +57,7 @@ import { findProjectRoot } from "../lib/config.js";
 import {
   cancelManualSession,
   createManualSession,
+  listManualSessions,
   promptManualSession,
   rememberInSession,
 } from "../lib/crew/session.js";
@@ -656,6 +657,28 @@ export function runSessionNew(agentId: string, json: boolean): void {
     chalk.green(`Created session ${id}`) + chalk.dim(` (${agentId})`),
   );
   console.log(chalk.dim(`  jstackc crew sessions prompt ${id} "..."`));
+}
+
+export function runSessionList(json: boolean): void {
+  const cfg = loadCrewConfig();
+  const store = new CrewStore(cfg.state_dir);
+  const sessions = listManualSessions(store, cfg);
+  store.close();
+  if (json) {
+    console.log(JSON.stringify({ ok: true, sessions }, null, 2));
+    return;
+  }
+  if (sessions.length === 0) {
+    console.log(
+      chalk.dim("No manual sessions yet. jstackc crew sessions new <agentId>"),
+    );
+    return;
+  }
+  for (const s of sessions) {
+    console.log(
+      `${chalk.bold(s.id)}  ${s.agentId}  ${s.state}  turns=${s.turns}  $${s.costUsd.toFixed(4)}`,
+    );
+  }
 }
 
 export async function runSessionPrompt(
@@ -2289,6 +2312,12 @@ export function registerCrewCommand(program: Command): void {
         runSessionNew(agentId, o.json),
       ),
     );
+
+  sess
+    .command("list", { isDefault: true })
+    .description("List manual sessions, newest first")
+    .option("--json", "machine-readable", false)
+    .action(safeAction((o: { json: boolean }) => runSessionList(o.json)));
 
   sess
     .command("prompt <id> <message>")

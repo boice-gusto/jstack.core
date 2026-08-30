@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   runSessionCancel,
+  runSessionList,
   runSessionNew,
   runSessionPrompt,
   runSessionRemember,
@@ -180,5 +181,19 @@ describe("crew sessions CLI: new -> prompt -> cancel", () => {
     const promptResult = JSON.parse(logs.at(-1) ?? "{}") as { ok: boolean };
     expect(promptResult.ok).toBe(true);
     expect(errors).toHaveLength(0);
+  });
+
+  test("list shows created sessions newest first", () => {
+    runSessionNew("ralph", true);
+    const a = JSON.parse(logs.at(-1) ?? "{}") as { id: string };
+    runSessionNew("ralph", true);
+    const b = JSON.parse(logs.at(-1) ?? "{}") as { id: string };
+
+    logs = [];
+    runSessionList(true);
+    const listed = JSON.parse(logs.at(-1) ?? "{}") as {
+      sessions: Array<{ id: string }>;
+    };
+    expect(listed.sessions.map((s) => s.id)).toEqual([b.id, a.id]);
   });
 });

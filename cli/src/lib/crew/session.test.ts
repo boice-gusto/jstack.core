@@ -9,6 +9,7 @@ import {
   cancelManualSession,
   createManualSession,
   DisabledAgentError,
+  listManualSessions,
   promptManualSession,
   rememberInSession,
   UnknownAgentError,
@@ -232,6 +233,49 @@ describe("promptManualSession memory recall", () => {
 
     const sentArgv = readFileSync(fake.argvFile, "utf8");
     expect(sentArgv).not.toContain("Relevant memory:");
+    store.close();
+  });
+});
+
+describe("listManualSessions", () => {
+  test("lists sessions newest first with derived state and turn count", () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const a = createManualSession(store, cfg, "ralph");
+    const b = createManualSession(store, cfg, "ralph");
+
+    const sessions = listManualSessions(store, cfg);
+    expect(sessions.map((s) => s.id)).toEqual([b.id, a.id]);
+    expect(sessions[0]?.agentId).toBe("ralph");
+    expect(sessions[0]?.turns).toBe(1);
+    store.close();
+  });
+
+  test("does not include Slack-originated tasks", () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    createManualSession(store, cfg, "ralph");
+    // A Slack task uses a real channel id, never MANUAL_CHANNEL_ID.
+    store.createTask(
+      "slk-1234",
+      "D0TESTDM001",
+      "1.1",
+      "1.1",
+      "some-session",
+      "ralph",
+    );
+
+    const sessions = listManualSessions(store, cfg);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.id).not.toBe("slk-1234");
+    store.close();
+  });
+
+  test("respects the limit parameter", () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    for (let i = 0; i < 5; i++) createManualSession(store, cfg, "ralph");
+    expect(listManualSessions(store, cfg, 2)).toHaveLength(2);
     store.close();
   });
 });

@@ -4,6 +4,7 @@ import type { Socket } from "bun";
 import {
   cancelManualSession,
   createManualSession,
+  listManualSessions,
   promptManualSession,
   rememberInSession,
 } from "./session.js";
@@ -13,7 +14,7 @@ import type { CrewConfig } from "./types.js";
 
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
- * 2.0-shaped requests/responses. Method names (`session/new`, `session/prompt`,
+ * 2.0-shaped requests/responses. Method names (`session/new`, `session/list`, `session/prompt`,
  * `session/cancel`, `session/remember`) intentionally mirror the Agent Client Protocol's session
  * verbs, even though
  * this transport isn't literally ACP -- see the AgentProvider extraction's own note on this
@@ -76,6 +77,10 @@ async function dispatch(
           throw new Error("session/new requires { agentId: string }");
         }
         return createManualSession(store, cfg, p.agentId);
+      }
+      case "session/list": {
+        const limit = typeof p.limit === "number" ? p.limit : undefined;
+        return listManualSessions(store, cfg, limit);
       }
       case "session/prompt": {
         if (typeof p.id !== "string" || typeof p.message !== "string") {

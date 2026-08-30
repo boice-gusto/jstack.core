@@ -1,5 +1,5 @@
 import { taskId, runWorker } from "./tick.js";
-import { CrewStore, expandHome } from "./store.js";
+import { CrewStore, deriveTaskDisplayStatus, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
@@ -153,6 +153,40 @@ export function cancelManualSession(store: CrewStore, id: string): void {
   const task = store.findTaskById(id);
   if (!task) throw new UnknownSessionError(`no such session: ${id}`);
   store.finishTask(id, "cancelled", 0);
+}
+
+export type ManualSessionSummary = {
+  id: string;
+  agentId: string;
+  state: string;
+  turns: number;
+  costUsd: number;
+};
+
+/**
+ * Lists manual sessions (newest first), for a UI session switcher. `state` is the same derived
+ * display status `crew status` already computes (`deriveTaskDisplayStatus`) rather than the raw
+ * DB column -- a session whose first turn finished isn't "closed," it's just idle until the next
+ * prompt, and the raw `state` column alone can't tell those apart (see promptManualSession's own
+ * comment on why `state='done'` doesn't mean "can't be resumed").
+ */
+export function listManualSessions(
+  store: CrewStore,
+  cfg: CrewConfig,
+  limit = 50,
+): ManualSessionSummary[] {
+  const nowMs = Date.now();
+  return store.tasksByChannel(MANUAL_CHANNEL_ID, limit).map((row) => ({
+    id: String(row.id),
+    agentId: String(row.agent_id ?? ""),
+    state: deriveTaskDisplayStatus(
+      row as { state: unknown; ended_at: unknown; last_at: unknown },
+      nowMs,
+      cfg.slack.thread_active_ms,
+    ),
+    turns: Number(row.turns ?? 0),
+    costUsd: Number(row.cost_usd ?? 0),
+  }));
 }
 
 /**
