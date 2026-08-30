@@ -48,7 +48,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Nothing executes here, so the safety question is what this file will do when someone else runs it unattended months from now. Every `click` and `fill` needs a preceding `wait` on its own selector — a step that races the page is the defect that only ever reproduces in CI. Secrets are env references, never literals, because this file gets committed.
 
 ### Step 3 — Execute
-Write a JSON definition to `config/workflows/<id>.json` matching `WorkflowDefinitionSchema` (`cli/src/types/workflow.ts`): `id`, `name`, `steps[]` (the start URL derives from `steps[0]`, not a separate field), where each step is `{id, kind, selector?, value?, url?, notes?}`.
+Write a JSON definition to `config/workflows/<id>.json` matching `WorkflowDefinitionSchema` (`cli/src/types/workflow.ts`): `id`, `name`, `start_url`, `steps[]`, where each step is `{id, kind, selector?, value?, url?, notes?}`.
 - `kind` is one of `goto`, `click`, `fill`, `wait`, `screenshot`, `ai`. There is **no assertion kind** — express a check as a `wait` on a selector that only exists in the desired state, plus a `screenshot` for evidence.
 - No credentials in the file: a `fill` whose value is a secret is written as `env:VAR_NAME`, never a literal — the executor resolves it from the environment at run time.
 

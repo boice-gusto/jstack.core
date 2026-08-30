@@ -36,7 +36,10 @@ from the rendered output.
 
 1. **A missing metric is written as `[no data]` — never interpolated, never silently dropped.** Omission in
    an authoritative-looking report is exactly as misleading as fabrication — both let the reader believe
-   something was measured when it wasn't.
+   something was measured when it wasn't. State both halves every time: why it's missing (the specific
+   cause — integration not connected, source unreachable) AND what would fill it (connect the integration,
+   paste a manual count). The remedy half is not optional polish — a `[no data]` cell with a reason but no
+   stated fix just tells the reader the gap exists, not what to do about it.
 2. **Every figure states its provenance and as-of time.** `meta.generated_at` is the report's own as-of time;
    any figure sourced differently (a stale export, a different pull time) states that explicitly in its
    section, not just in the report header.

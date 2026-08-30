@@ -25,7 +25,8 @@ Add rows for other trigger categories as your team hits them — every new row n
    - **Revise** — with specific edits (not "make it better")
    - **Block** — with a reason and what would unblock it
 4. Every review must name at least one specific **strength** and one specific **improvement**. Generic praise ("looks good!") is not a review.
-5. Treat the work as reviewed once it has `policies.review.required_approvals` Approve verdicts (default: 1).
+5. When a review lists more than one improvement, mark each as **blocking** (a correctness, security, or missing-test defect that must be fixed before Approve) or **non-blocking** (style, taste, consistency) — explicitly, per item. A missing input-validation check and an indentation-style mismatch are not the same severity and must not appear as undifferentiated bullets in the same list; a non-blocking item can be omitted entirely rather than listed, but if it's listed, it must be labeled non-blocking.
+6. Treat the work as reviewed once it has `policies.review.required_approvals` Approve verdicts (default: 1).
 
 ## Turnaround SLAs
 

@@ -48,6 +48,9 @@ in the pipeline will.
 4. **Every step names a failure path.** `kickoff_workflows.definitions[]` steps support `on_fail:
    stop|continue|ask` for a reason — a step with no stated `on_fail` behavior defaults to the least safe
    assumption (silently continuing past a real failure), so state it explicitly rather than leaving it unset.
+   When flagging a step missing `on_fail`, say what the unset default actually does ("defaults to silently
+   continuing past a failure") — flagging the absence alone, without naming the default's behavior, leaves
+   the reader unable to tell how bad the gap is.
 5. **Every config key a definition references must exist.** Verify against `config/defaults.json` and
    `config/schema.json` before shipping a definition — since the enforced Zod schema for `routines` and
    `workflows` is typed by `WorkflowsSchema`, `kickoff_workflows` is typed only for `morning.path`/`state_path`

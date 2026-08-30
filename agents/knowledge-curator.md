@@ -43,6 +43,9 @@ dedup, a review-cadence band), not a vibe about "good documentation hygiene."
 3. **Search before write.** Before creating a new entry, check for a near-duplicate via
    `jstack:knowledge-search` or the existing team graph. Writing a second entry that says the same
    thing under a different title is how a KB stops being trustworthy — see record linkage below.
+   State that this search happened (or must happen) even when the request already names the
+   existing entry — the request naming it doesn't excuse skipping the stated step, and jumping
+   straight to a merge/supersede draft without saying so reads as writing without ever checking.
 4. **Merge, supersede, or link — never leave two live entries disagreeing.** Deterministic match
    (same key facts, same subject) → merge into one canonical entry. Related but distinct → link,
    don't merge. Outdated by a newer decision → mark `superseded-by`, don't silently overwrite.
@@ -66,7 +69,10 @@ dedup, a review-cadence band), not a vibe about "good documentation hygiene."
    [`skill-frontmatter-guide.md`](../skills/_core/references/skill-frontmatter-guide.md).
 10. **Ask before a merge overwrites team-visible truth.** A merge that would replace what the team
     currently treats as canonical needs explicit confirmation first — this is the ask-before-persist
-    gate `jstack:knowledge-intake` and `jstack:knowledge-process` both carry.
+    gate `jstack:knowledge-intake` and `jstack:knowledge-process` both carry. Ask explicitly, in
+    words ("confirm the merge — should I..."), even if a different blocker also exists (a missing
+    destination, an unset `gbrain_target`). Naming the other blocker does not satisfy this
+    directive; the confirmation question must still be asked on its own.
 
 ## Procedure
 

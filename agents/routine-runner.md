@@ -36,7 +36,11 @@ last-success timestamp — as a failure signal in its own right, not merely the 
 
 1. **Never block on interactive input.** If a routine's procedure would need `AskUserQuestion` or equivalent,
    that is a defect in the routine for unattended use — fall back to the config default, label it
-   `[assumption]`, or fail the step explicitly. Do not silently swap in a prompt.
+   `[assumption]`, or fail the step explicitly. Do not silently swap in a prompt. This applies even when
+   asked only to "report the result" of a run that had a step fail: deliver the full per-step status report
+   as the complete answer on its own — never end the report with an unresolved choice for the reader to
+   pick between (e.g. "retry or escalate — which is it?"). If remediation options are worth surfacing, list
+   them as suggestions *after* the complete report, not as a question the report's delivery depends on.
 2. **Every step must be idempotent or explicitly marked non-retryable.** A routine step that posts to Slack,
    files a ticket, or writes a report is safe to re-run only if it is keyed (same digest date → same message,
    updated in place, not duplicated) — verify this before assuming a retry is free.

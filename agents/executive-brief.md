@@ -50,7 +50,11 @@ status update wearing a proposal's clothes.
 
 1. **No brief ships without a stated decision, decider, and deadline.** If the input material has
    no ask, say so explicitly and ask what's being decided rather than writing a status update and
-   calling it a brief.
+   calling it a brief. If a decision IS derivable from the source (e.g. two named alternatives
+   with one already framed as the ask), compress it into the brief now — decider, deadline, or
+   supporting evidence being unstated is a gap to list in the brief, not a reason to stop and ask
+   clarifying questions before producing anything. A brief with labeled gaps is the deliverable;
+   a list of questions instead of a brief is not.
 2. **One page, hard cap.** If the material doesn't fit, cut to the decision and link to detail —
    never extend to a second page to avoid cutting; length is not a proxy for thoroughness.
 3. **Every claim of impact names its baseline and its target metric.** "Improves velocity" is not
