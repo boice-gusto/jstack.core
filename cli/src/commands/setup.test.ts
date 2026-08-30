@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { mock } from "bun:test";
 
@@ -35,7 +35,11 @@ describe("runSetup cancellation", () => {
       "..",
       "jstack.config.json",
     );
-    const before = readFileSync(cfgPath, "utf8");
+    // jstack.config.json is gitignored at the repo root (a machine-local fixture, never
+    // committed -- see .gitignore) so a fresh CI checkout has none. Treat "absent" as a valid
+    // before-state rather than assuming a dev machine's local config is always present.
+    const existedBefore = existsSync(cfgPath);
+    const before = existedBefore ? readFileSync(cfgPath, "utf8") : null;
     const originalExitCode = process.exitCode;
     try {
       await runSetup({ reconfigure: true });
@@ -43,6 +47,10 @@ describe("runSetup cancellation", () => {
     } finally {
       process.exitCode = originalExitCode;
     }
-    expect(readFileSync(cfgPath, "utf8")).toBe(before);
+    if (before !== null) {
+      expect(readFileSync(cfgPath, "utf8")).toBe(before);
+    } else {
+      expect(existsSync(cfgPath)).toBe(false);
+    }
   });
 });
