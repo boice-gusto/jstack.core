@@ -1,4 +1,4 @@
-import type { StreamJsonEvent } from "./claude-stream-json";
+import type { StreamJsonEvent } from "./claude-stream-json.js";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -88,7 +88,11 @@ export function mapCodexStreamJsonLine(line: string): StreamJsonEvent[] {
     return [{ kind: "result", result: undefined, usage, total_cost_usd: 0 }];
   }
 
-  if (event.type === "thread.started" || event.type === "turn.started" || event.type === "item.started") {
+  if (
+    event.type === "thread.started" ||
+    event.type === "turn.started" ||
+    event.type === "item.started"
+  ) {
     return [];
   }
 

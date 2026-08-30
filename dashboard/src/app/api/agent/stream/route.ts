@@ -6,8 +6,14 @@ import { z } from "zod";
 
 import { AgentMessageSchema, AgentStreamBodySchema } from "@/lib/agent-request-schema";
 import { resolveAgentCwd } from "@/lib/agent-cwd";
-import { extractSessionId, mapStreamJsonLine } from "@/lib/claude-stream-json";
-import { extractCodexSessionId, mapCodexStreamJsonLine } from "@/lib/codex-stream-json";
+import {
+  extractSessionId,
+  mapStreamJsonLine,
+} from "@jstack/cli/src/lib/agent-providers/claude-stream-json";
+import {
+  extractCodexSessionId,
+  mapCodexStreamJsonLine,
+} from "@jstack/cli/src/lib/agent-providers/codex-stream-json";
 import { loadSkillMarkdownById } from "@/lib/skills-catalog";
 import { recordDashboardAgentRun } from "@/lib/dashboard-telemetry";
 import { getDashboardEnv } from "@/server/env";

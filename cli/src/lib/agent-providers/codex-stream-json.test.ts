@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
-import { extractCodexSessionId, mapCodexStreamJsonLine } from "@/lib/codex-stream-json";
+import {
+  extractCodexSessionId,
+  mapCodexStreamJsonLine,
+} from "./codex-stream-json.js";
 
 describe("mapCodexStreamJsonLine", () => {
   it("returns empty for blank or invalid JSON", () => {
@@ -14,7 +17,9 @@ describe("mapCodexStreamJsonLine", () => {
       type: "item.completed",
       item: { id: "item_0", type: "agent_message", text: "PONG" },
     });
-    expect(mapCodexStreamJsonLine(line)).toEqual([{ kind: "assistant_text", text: "PONG" }]);
+    expect(mapCodexStreamJsonLine(line)).toEqual([
+      { kind: "assistant_text", text: "PONG" },
+    ]);
   });
 
   it("maps a completed command_execution item to tool_use", () => {
@@ -45,26 +50,41 @@ describe("mapCodexStreamJsonLine", () => {
   it("maps turn.completed to a result event with usage and zero cost", () => {
     const line = JSON.stringify({
       type: "turn.completed",
-      usage: { input_tokens: 21119, cached_input_tokens: 17152, output_tokens: 6 },
+      usage: {
+        input_tokens: 21119,
+        cached_input_tokens: 17152,
+        output_tokens: 6,
+      },
     });
     expect(mapCodexStreamJsonLine(line)).toEqual([
       {
         kind: "result",
         result: undefined,
-        usage: { input_tokens: 21119, cached_input_tokens: 17152, output_tokens: 6 },
+        usage: {
+          input_tokens: 21119,
+          cached_input_tokens: 17152,
+          output_tokens: 6,
+        },
         total_cost_usd: 0,
       },
     ]);
   });
 
   it("treats thread.started/turn.started/item.started as no-ops", () => {
-    expect(mapCodexStreamJsonLine(JSON.stringify({ type: "thread.started", thread_id: "x" }))).toEqual(
-      [],
-    );
-    expect(mapCodexStreamJsonLine(JSON.stringify({ type: "turn.started" }))).toEqual([]);
     expect(
       mapCodexStreamJsonLine(
-        JSON.stringify({ type: "item.started", item: { id: "item_1", type: "command_execution" } }),
+        JSON.stringify({ type: "thread.started", thread_id: "x" }),
+      ),
+    ).toEqual([]);
+    expect(
+      mapCodexStreamJsonLine(JSON.stringify({ type: "turn.started" })),
+    ).toEqual([]);
+    expect(
+      mapCodexStreamJsonLine(
+        JSON.stringify({
+          type: "item.started",
+          item: { id: "item_1", type: "command_execution" },
+        }),
       ),
     ).toEqual([]);
   });
@@ -82,7 +102,9 @@ describe("mapCodexStreamJsonLine", () => {
   it("wraps an unknown top-level type as raw", () => {
     const line = JSON.stringify({ type: "some.future.event" });
     const out = mapCodexStreamJsonLine(line);
-    expect(out).toEqual([{ kind: "raw", event: { type: "some.future.event" } }]);
+    expect(out).toEqual([
+      { kind: "raw", event: { type: "some.future.event" } },
+    ]);
   });
 });
 
@@ -93,15 +115,22 @@ describe("extractCodexSessionId", () => {
   });
 
   it("reads thread_id off a thread.started line", () => {
-    const line = JSON.stringify({ type: "thread.started", thread_id: "01a04c1b-abc" });
+    const line = JSON.stringify({
+      type: "thread.started",
+      thread_id: "01a04c1b-abc",
+    });
     expect(extractCodexSessionId(line)).toBe("01a04c1b-abc");
   });
 
   it("returns null when no thread_id is present", () => {
-    expect(extractCodexSessionId(JSON.stringify({ type: "turn.started" }))).toBeNull();
+    expect(
+      extractCodexSessionId(JSON.stringify({ type: "turn.started" })),
+    ).toBeNull();
   });
 
   it("ignores a non-string thread_id", () => {
-    expect(extractCodexSessionId(JSON.stringify({ thread_id: 12345 }))).toBeNull();
+    expect(
+      extractCodexSessionId(JSON.stringify({ thread_id: 12345 })),
+    ).toBeNull();
   });
 });

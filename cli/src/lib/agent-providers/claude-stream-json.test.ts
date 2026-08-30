@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
-import { extractSessionId, mapStreamJsonLine } from "@/lib/claude-stream-json";
+import { extractSessionId, mapStreamJsonLine } from "./claude-stream-json.js";
 
 describe("mapStreamJsonLine", () => {
   it("returns empty for blank or invalid JSON", () => {
@@ -24,9 +24,7 @@ describe("mapStreamJsonLine", () => {
     const line = JSON.stringify({
       type: "assistant",
       message: {
-        content: [
-          { type: "tool_use", name: "Read", input: { path: "/x" } },
-        ],
+        content: [{ type: "tool_use", name: "Read", input: { path: "/x" } }],
       },
     });
     const out = mapStreamJsonLine(line);
@@ -76,7 +74,9 @@ describe("mapStreamJsonLine", () => {
       message: { content: "Plain string reply" },
     });
     const out = mapStreamJsonLine(line);
-    expect(out).toEqual([{ kind: "assistant_text", text: "Plain string reply" }]);
+    expect(out).toEqual([
+      { kind: "assistant_text", text: "Plain string reply" },
+    ]);
   });
 
   it("extracts nested result.result string", () => {

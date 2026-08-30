@@ -32,7 +32,11 @@ export function extractSessionId(line: string): string | null {
   const direct = parsed.session_id;
   if (typeof direct === "string" && direct.length > 0) return direct;
   const inner = parsed.event;
-  if (isRecord(inner) && typeof inner.session_id === "string" && inner.session_id.length > 0) {
+  if (
+    isRecord(inner) &&
+    typeof inner.session_id === "string" &&
+    inner.session_id.length > 0
+  ) {
     return inner.session_id;
   }
   return null;
