@@ -668,6 +668,28 @@ tel
   .command("test")
   .description("Write a local self-test JSONL line + show paths (privacy-safe)")
   .action(() => runTelemetry("test"));
+tel
+  .command("record")
+  .description(
+    "Record one telemetry event (no-op unless telemetry.enabled in jstack.config.json)",
+  )
+  .requiredOption("--skill <name>", "skill identifier, e.g. jstack-jira-create")
+  .option("--category <category>", "skill category")
+  .option("--success <bool>", "true or false", "true")
+  .option("--latency-ms <n>", "elapsed time in milliseconds")
+  .option("--token-input <n>", "input token count")
+  .option("--token-output <n>", "output token count")
+  .option("--error-type <type>", "set when --success=false")
+  .action((o: Record<string, string | undefined>) => {
+    const args: string[] = ["--skill", o.skill as string];
+    if (o.category) args.push("--category", o.category);
+    args.push("--success", o.success ?? "true");
+    if (o.latencyMs) args.push("--latency-ms", o.latencyMs);
+    if (o.tokenInput) args.push("--token-input", o.tokenInput);
+    if (o.tokenOutput) args.push("--token-output", o.tokenOutput);
+    if (o.errorType) args.push("--error-type", o.errorType);
+    runTelemetry("record", args);
+  });
 
 /**
  * Bare `jstack` prints a hint; an UNKNOWN command is an error.

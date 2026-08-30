@@ -4,13 +4,15 @@ import { join } from "node:path";
 import chalk from "chalk";
 import { findPluginRoot } from "../lib/config.js";
 
-export function runTelemetry(action: string): void {
+export function runTelemetry(action: string, extraArgs: string[] = []): void {
   const script = join(findPluginRoot(), "telemetry", "cli.ts");
   if (!existsSync(script)) {
     console.error(chalk.red("telemetry/cli.ts missing"));
     process.exitCode = 1;
     return;
   }
-  const res = spawnSync("bun", [script, action], { stdio: "inherit" });
+  const res = spawnSync("bun", [script, action, ...extraArgs], {
+    stdio: "inherit",
+  });
   process.exitCode = res.status ?? 0;
 }
