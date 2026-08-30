@@ -80,3 +80,10 @@ export function rememberInSession(
 export function daemonStatus(): Promise<DaemonStatus> {
   return invoke("daemon_status");
 }
+
+/** Poll-based, not push/streamed -- see rpc-server.ts's own note on why (one request/response
+ * per socket connection, no server-initiated messages). A UI wanting "live" logs polls this on
+ * an interval rather than subscribing. */
+export function recentLogs(limit?: number): Promise<{ lines: string[] }> {
+  return invoke("recent_logs", { limit });
+}

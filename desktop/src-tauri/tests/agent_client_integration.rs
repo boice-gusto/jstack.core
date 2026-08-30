@@ -185,7 +185,9 @@ async fn real_crewd_session_new_prompt_and_status_round_trip() {
     let lines = logs["lines"].as_array().expect("lines is an array");
     assert!(!lines.is_empty(), "expected at least one buffered log line");
     assert!(
-        lines.iter().any(|l| l.as_str().unwrap_or("").contains("tick read=")),
+        lines
+            .iter()
+            .any(|l| l.as_str().unwrap_or("").contains("tick read=")),
         "expected a tick summary line in the buffer, got: {lines:?}"
     );
 }

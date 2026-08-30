@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import App from "./App";
@@ -153,5 +153,58 @@ describe("App", () => {
     expect(screen.getByDisplayValue("scout")).toBeTruthy();
     expect(sessionNewCalls).toBe(0);
     expect(screen.getByText("ral-old1").closest("button")?.className).toContain("active");
+  });
+
+  test("debug logs are fetched only after 'Show debug logs' is clicked, not on load", async () => {
+    let recentLogsCalls = 0;
+    mockIPC(
+      withStatusDefault((cmd) => {
+        if (cmd === "session_list") return [];
+        if (cmd === "recent_logs") {
+          recentLogsCalls++;
+          return { lines: ["line one", "line two"] };
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(<App />);
+    await waitFor(() => screen.getByText("No sessions yet"));
+    expect(recentLogsCalls).toBe(0);
+
+    fireEvent.click(screen.getByText("Show debug logs"));
+    await waitFor(() => screen.getByText("line one"));
+    expect(screen.getByText("line two")).toBeTruthy();
+    expect(recentLogsCalls).toBeGreaterThanOrEqual(1);
+  });
+
+  test("debug logs stop polling once hidden again", async () => {
+    vi.useFakeTimers();
+    try {
+      let recentLogsCalls = 0;
+      mockIPC(
+        withStatusDefault((cmd) => {
+          if (cmd === "session_list") return [];
+          if (cmd === "recent_logs") {
+            recentLogsCalls++;
+            return { lines: [`call ${recentLogsCalls}`] };
+          }
+          throw new Error(`unexpected command: ${cmd}`);
+        }),
+      );
+      render(<App />);
+
+      fireEvent.click(screen.getByText("Show debug logs"));
+      await vi.waitFor(() => expect(recentLogsCalls).toBe(1));
+
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(recentLogsCalls).toBe(2);
+
+      fireEvent.click(screen.getByText("Hide debug logs"));
+      const callsWhenHidden = recentLogsCalls;
+      await vi.advanceTimersByTimeAsync(10000);
+      expect(recentLogsCalls).toBe(callsWhenHidden);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

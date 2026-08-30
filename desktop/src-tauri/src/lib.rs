@@ -66,6 +66,11 @@ async fn daemon_status() -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "status", json!({})).await
 }
 
+#[tauri::command]
+async fn recent_logs(limit: Option<u32>) -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "logs/recent", json!({ "limit": limit })).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -101,6 +106,7 @@ pub fn run() {
             session_cancel,
             session_remember,
             daemon_status,
+            recent_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

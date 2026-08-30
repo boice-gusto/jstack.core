@@ -4,10 +4,15 @@ import {
   listSessions,
   newSession,
   promptSession,
+  recentLogs,
   type DaemonStatus,
   type PromptResult,
   type SessionSummary,
 } from "./lib/agent";
+
+/** How often the debug panel polls logs/recent while open. The RPC transport has no
+ * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
+const LOG_POLL_MS = 3000;
 import "./App.css";
 
 type ChatMessage =
@@ -32,6 +37,9 @@ function App() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [status, setStatus] = useState<DaemonStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [logError, setLogError] = useState<string | null>(null);
 
   async function refreshSessions(): Promise<void> {
     try {
@@ -55,6 +63,28 @@ function App() {
     refreshSessions();
     refreshStatus();
   }, []);
+
+  useEffect(() => {
+    if (!showDebug) return;
+    let cancelled = false;
+    const poll = async (): Promise<void> => {
+      try {
+        const { lines } = await recentLogs();
+        if (!cancelled) {
+          setLogLines(lines);
+          setLogError(null);
+        }
+      } catch (e) {
+        if (!cancelled) setLogError(e instanceof Error ? e.message : String(e));
+      }
+    };
+    poll();
+    const interval = setInterval(poll, LOG_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [showDebug]);
 
   async function handleNewSession(): Promise<void> {
     setSessionError(null);
@@ -145,6 +175,23 @@ function App() {
           <button type="button" onClick={refreshStatus}>
             Refresh
           </button>
+        </div>
+
+        <div className="debug-panel" aria-label="debug logs">
+          <button type="button" onClick={() => setShowDebug((v) => !v)}>
+            {showDebug ? "Hide debug logs" : "Show debug logs"}
+          </button>
+          {showDebug && (
+            <>
+              {logError && <p className="error">{logError}</p>}
+              <ul className="log-list">
+                {logLines.length === 0 && <li className="empty">No log lines yet</li>}
+                {logLines.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </aside>
 
