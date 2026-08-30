@@ -169,4 +169,10 @@ async fn real_crewd_session_new_prompt_and_status_round_trip() {
         .await
         .expect("status failed");
     assert!(status["tasks"].as_i64().unwrap_or(0) >= 1);
+
+    let sessions = desktop_lib::agent_client::call(&sock, "session/list", json!({}))
+        .await
+        .expect("session/list failed");
+    let sessions = sessions.as_array().expect("session/list returns an array");
+    assert!(sessions.iter().any(|s| s["id"] == json!(id)));
 }

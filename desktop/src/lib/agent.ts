@@ -37,8 +37,27 @@ export interface DaemonStatus {
   mode: string;
 }
 
+export interface SessionSummary {
+  id: string;
+  agentId: string;
+  state: string;
+  turns: number;
+  costUsd: number;
+}
+
 export function newSession(agentId: string): Promise<NewSessionResult> {
   return invoke("session_new", { agentId });
+}
+
+/**
+ * Newest first (matches session.ts's listManualSessions). Doesn't carry conversation history --
+ * crew's store persists task/session metadata (state, turns, cost), not the actual message
+ * text -- so switching to a listed session resumes it (the daemon still has the real
+ * claude/codex session id) but the UI's own message list only shows what's been sent since this
+ * app started, not the session's full past transcript.
+ */
+export function listSessions(): Promise<SessionSummary[]> {
+  return invoke("session_list");
 }
 
 export function promptSession(id: string, message: string): Promise<PromptResult> {
