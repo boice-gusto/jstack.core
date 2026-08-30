@@ -175,4 +175,17 @@ async fn real_crewd_session_new_prompt_and_status_round_trip() {
         .expect("session/list failed");
     let sessions = sessions.as_array().expect("session/list returns an array");
     assert!(sessions.iter().any(|s| s["id"] == json!(id)));
+
+    // Real proof the resident loop's log buffer (crewd.ts's runResident -> LogBuffer) is wired
+    // up end to end, not just reachable-but-empty: by now several real tick cycles have logged
+    // "tick read=..." lines (JSTACK_CREW_TICK_INTERVAL_MS=500 in spawn_isolated_crewd).
+    let logs = desktop_lib::agent_client::call(&sock, "logs/recent", json!({}))
+        .await
+        .expect("logs/recent failed");
+    let lines = logs["lines"].as_array().expect("lines is an array");
+    assert!(!lines.is_empty(), "expected at least one buffered log line");
+    assert!(
+        lines.iter().any(|l| l.as_str().unwrap_or("").contains("tick read=")),
+        "expected a tick summary line in the buffer, got: {lines:?}"
+    );
 }

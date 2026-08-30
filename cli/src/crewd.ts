@@ -25,6 +25,7 @@ import { tick } from "./lib/crew/tick.js";
 import { expandHome, snapshotPath } from "./lib/crew/store.js";
 import { isTccProtected } from "./lib/crew/launchd.js";
 import { startRpcServer, type RpcServerHandle } from "./lib/crew/rpc-server.js";
+import { LogBuffer } from "./lib/crew/log-buffer.js";
 
 /**
  * DESIGN NOTE -- why this daemon needs no Full Disk Access grant.
@@ -255,17 +256,32 @@ function preflightAccess(): { ok: boolean; detail: string } {
 /**
  * One load-config -> write-health -> tick cycle. Exactly today's one-shot `main()` body,
  * extracted so the resident loop below can call it repeatedly instead of duplicating it --
- * behavior for the existing launchd-interval install is unchanged, byte for byte.
+ * behavior for the existing launchd-interval install is unchanged, byte for byte, when `sink`
+ * is omitted (the one-shot path never passes one).
+ *
+ * `sink`, when given, receives every line this cycle would otherwise only print -- resident
+ * mode uses it to also feed a `LogBuffer` (see log-buffer.ts) that `logs/recent` serves over the
+ * RPC socket, so a UI client can see what the daemon has been doing without reading launchd's
+ * redirected stdout/stderr files off disk.
  */
-async function runOneCycle(): Promise<{
+async function runOneCycle(sink?: (line: string) => void): Promise<{
   cfg: CrewConfig;
   source: string;
 } | null> {
+  const log = (line: string): void => {
+    console.log(line);
+    sink?.(line);
+  };
+  const logErr = (line: string): void => {
+    console.error(line);
+    sink?.(line);
+  };
+
   const loaded = loadConfig();
   if ("error" in loaded) {
     // A malformed config must not crash-loop: launchd throttles repeated fatal starts and
     // will eventually stop the job permanently, which looks exactly like silent death.
-    console.error(`${stamp()} crewd: ${loaded.error}`);
+    logErr(`${stamp()} crewd: ${loaded.error}`);
     return null;
   }
   const cfg = loaded.cfg;
@@ -286,15 +302,15 @@ async function runOneCycle(): Promise<{
   try {
     const s = await tick({
       config: cfg,
-      log: (l) => console.log(`${stamp()} ${l}`),
+      log: (l) => log(`${stamp()} ${l}`),
     });
-    console.log(
+    log(
       `${stamp()} tick read=${s.read} handled=${s.handled} dropped=${s.dropped.length} cost=$${s.costUsd.toFixed(4)}` +
         (s.backlogSkipped ? " backlog_skipped" : "") +
         (s.halted ? ` HALTED=${s.halted}` : ""),
     );
   } catch (e) {
-    console.error(`${stamp()} crewd: tick threw: ${(e as Error).message}`);
+    logErr(`${stamp()} crewd: tick threw: ${(e as Error).message}`);
   }
   return { cfg, source: configSource };
 }
@@ -321,7 +337,9 @@ export async function runResident(opts: {
   maxIterations?: number;
   runCycle?: () => Promise<{ cfg: CrewConfig; source: string } | null>;
 }): Promise<void> {
-  const cycle = opts.runCycle ?? runOneCycle;
+  const logBuffer = new LogBuffer();
+  const cycle =
+    opts.runCycle ?? (() => runOneCycle((line) => logBuffer.push(line)));
   let lastGoodConfig: CrewConfig | undefined;
   let rpc: RpcServerHandle | undefined;
   const getConfig = (): CrewConfig => {
@@ -340,7 +358,11 @@ export async function runResident(opts: {
         lastGoodConfig = result.cfg;
         if (!rpc) {
           const stateDir = expandHome(result.cfg.state_dir);
-          rpc = startRpcServer({ stateDir, getConfig });
+          rpc = startRpcServer({
+            stateDir,
+            getConfig,
+            getLogs: (limit) => logBuffer.recent(limit),
+          });
           console.log(`${stamp()} crewd: rpc listening at ${rpc.sockPath}`);
         }
       }

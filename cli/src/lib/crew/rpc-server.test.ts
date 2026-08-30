@@ -90,6 +90,36 @@ describe("rpc-server", () => {
     expect(mode).toBe(0o600);
   });
 
+  test("logs/recent defaults to [] when the server wasn't given a getLogs callback", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+    const result = (await rpcCall(handle.sockPath, "logs/recent")) as {
+      lines: string[];
+    };
+    expect(result.lines).toEqual([]);
+  });
+
+  test("logs/recent returns whatever getLogs provides, honoring the limit param", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({
+      stateDir,
+      getConfig: () => cfg,
+      getLogs: (limit) => ["a", "b", "c"].slice(-(limit ?? 3)),
+    });
+    const all = (await rpcCall(handle.sockPath, "logs/recent")) as {
+      lines: string[];
+    };
+    expect(all.lines).toEqual(["a", "b", "c"]);
+    const limited = (await rpcCall(handle.sockPath, "logs/recent", {
+      limit: 1,
+    })) as {
+      lines: string[];
+    };
+    expect(limited.lines).toEqual(["c"]);
+  });
+
   test("session/new -> session/prompt -> status -> session/cancel end to end", async () => {
     restorePath = installFakeClaude().restorePath;
     const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));

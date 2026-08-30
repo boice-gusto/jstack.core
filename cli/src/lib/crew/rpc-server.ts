@@ -15,8 +15,8 @@ import type { CrewConfig } from "./types.js";
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
  * 2.0-shaped requests/responses. Method names (`session/new`, `session/list`, `session/prompt`,
- * `session/cancel`, `session/remember`) intentionally mirror the Agent Client Protocol's session
- * verbs, even though
+ * `session/cancel`, `session/remember`, `logs/recent`) intentionally mirror the Agent Client
+ * Protocol's session verbs, even though
  * this transport isn't literally ACP -- see the AgentProvider extraction's own note on this
  * (cli/src/lib/agent-providers/provider.ts) for why: it keeps the message shapes stable if a
  * real ACP transport (or a UI client) replaces this later.
@@ -67,6 +67,7 @@ async function dispatch(
   stateDir: string,
   method: string,
   params: unknown,
+  getLogs: (limit?: number) => string[],
 ): Promise<unknown> {
   const p = (params ?? {}) as Record<string, unknown>;
   const store = new CrewStore(stateDir);
@@ -125,6 +126,10 @@ async function dispatch(
         const stats = store.stats();
         return { ...stats, enabled: cfg.enabled, mode: cfg.mode };
       }
+      case "logs/recent": {
+        const limit = typeof p.limit === "number" ? p.limit : undefined;
+        return { lines: getLogs(limit) };
+      }
       default:
         throw new Error(`unknown method: ${method}`);
     }
@@ -140,7 +145,11 @@ export function socketPath(stateDir: string): string {
 export function startRpcServer(opts: {
   stateDir: string;
   getConfig: () => CrewConfig;
+  /** Defaults to always answering [] -- one-shot/interval installs have no daemon log buffer
+   * to serve (see crewd.ts's runResident, the only caller that supplies a real one). */
+  getLogs?: (limit?: number) => string[];
 }): RpcServerHandle {
+  const getLogs = opts.getLogs ?? (() => []);
   const dir = expandHome(opts.stateDir);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const sockPath = socketPath(opts.stateDir);
@@ -172,7 +181,13 @@ export function startRpcServer(opts: {
       respond(socket, null, { error: req.error });
       return;
     }
-    dispatch(opts.getConfig(), opts.stateDir, req.method, req.params).then(
+    dispatch(
+      opts.getConfig(),
+      opts.stateDir,
+      req.method,
+      req.params,
+      getLogs,
+    ).then(
       (result) => respond(socket, req.id, { result }),
       (e: unknown) =>
         respond(socket, req.id, {
