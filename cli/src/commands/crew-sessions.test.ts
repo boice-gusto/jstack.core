@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runSessionCancel, runSessionNew, runSessionPrompt } from "./crew.js";
+import {
+  runSessionCancel,
+  runSessionNew,
+  runSessionPrompt,
+  runSessionRemember,
+} from "./crew.js";
 import { CrewStore } from "../lib/crew/store.js";
 
 /**
@@ -122,5 +127,58 @@ describe("crew sessions CLI: new -> prompt -> cancel", () => {
 
   test("prompting an unknown session id fails cleanly", async () => {
     await expect(runSessionPrompt("ral-zzzz", "hi", true)).rejects.toThrow();
+  });
+
+  test("remember rejects an invalid kind before touching the store", () => {
+    runSessionNew("ralph", true);
+    const created = JSON.parse(logs.at(-1) ?? "{}") as { id: string };
+    expect(() =>
+      runSessionRemember(
+        created.id,
+        "some fact",
+        "not-a-kind",
+        "user-stated",
+        true,
+      ),
+    ).toThrow(/kind must be one of/);
+  });
+
+  test("remember rejects an invalid source", () => {
+    runSessionNew("ralph", true);
+    const created = JSON.parse(logs.at(-1) ?? "{}") as { id: string };
+    expect(() =>
+      runSessionRemember(created.id, "some fact", "fact", "not-a-source", true),
+    ).toThrow(/source must be one of/);
+  });
+
+  test("a remembered fact is recalled in a later prompt for the same agent (real end-to-end path)", async () => {
+    runSessionNew("ralph", true);
+    const created = JSON.parse(logs.at(-1) ?? "{}") as { id: string };
+
+    logs = [];
+    runSessionRemember(
+      created.id,
+      "The user's Q3 deadline is October 15.",
+      "fact",
+      "user-stated",
+      true,
+    );
+    const remembered = JSON.parse(logs.at(-1) ?? "{}") as {
+      ok: boolean;
+      entry: { content: string };
+    };
+    expect(remembered.ok).toBe(true);
+    expect(remembered.entry.content).toContain("October 15");
+
+    // The fake claude binary always answers "fake reply" regardless of what it was sent, so this
+    // doesn't re-assert on prompt content (cli/src/lib/crew/session.test.ts's argv-capturing
+    // fake already pins that the "Relevant memory:" block reaches the child) -- it's here to
+    // prove the full CLI path (loadCrewConfig -> CrewStore -> session.ts -> memory) doesn't
+    // throw end to end.
+    logs = [];
+    await runSessionPrompt(created.id, "When is the deadline?", true);
+    const promptResult = JSON.parse(logs.at(-1) ?? "{}") as { ok: boolean };
+    expect(promptResult.ok).toBe(true);
+    expect(errors).toHaveLength(0);
   });
 });

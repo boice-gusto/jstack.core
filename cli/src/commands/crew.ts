@@ -58,7 +58,9 @@ import {
   cancelManualSession,
   createManualSession,
   promptManualSession,
+  rememberInSession,
 } from "../lib/crew/session.js";
+import { MEMORY_KINDS, MEMORY_SOURCES } from "../lib/memory-store.js";
 
 const CONFIG_KEY = "crew";
 
@@ -692,6 +694,38 @@ export function runSessionCancel(id: string, json: boolean): void {
     return;
   }
   console.log(chalk.green(`Cancelled ${id}`));
+}
+
+export function runSessionRemember(
+  id: string,
+  content: string,
+  kind: string,
+  source: string,
+  json: boolean,
+): void {
+  if (!MEMORY_KINDS.includes(kind as (typeof MEMORY_KINDS)[number])) {
+    throw new Error(`kind must be one of: ${MEMORY_KINDS.join(", ")}`);
+  }
+  if (!MEMORY_SOURCES.includes(source as (typeof MEMORY_SOURCES)[number])) {
+    throw new Error(`source must be one of: ${MEMORY_SOURCES.join(", ")}`);
+  }
+  const cfg = loadCrewConfig();
+  const store = new CrewStore(cfg.state_dir);
+  let entry: ReturnType<typeof rememberInSession>;
+  try {
+    entry = rememberInSession(store, cfg, id, {
+      kind: kind as (typeof MEMORY_KINDS)[number],
+      source: source as (typeof MEMORY_SOURCES)[number],
+      content,
+    });
+  } finally {
+    store.close();
+  }
+  if (json) {
+    console.log(JSON.stringify({ ok: true, entry }, null, 2));
+    return;
+  }
+  console.log(chalk.green(`Remembered for ${entry.agentId}: ${entry.content}`));
 }
 
 /* -------------------------------------------------------------------- eval ---- */
@@ -2273,6 +2307,28 @@ export function registerCrewCommand(program: Command): void {
     .action(
       safeAction((id: string, o: { json: boolean }) =>
         runSessionCancel(id, o.json),
+      ),
+    );
+
+  sess
+    .command("remember <id> <content>")
+    .description(
+      `Store a fact in the session's agent memory (kinds: ${MEMORY_KINDS.join(", ")})`,
+    )
+    .option("--kind <k>", "memory kind", "fact")
+    .option(
+      "--source <s>",
+      `one of: ${MEMORY_SOURCES.join(", ")}`,
+      "user-stated",
+    )
+    .option("--json", "machine-readable", false)
+    .action(
+      safeAction(
+        (
+          id: string,
+          content: string,
+          o: { kind: string; source: string; json: boolean },
+        ) => runSessionRemember(id, content, o.kind, o.source, o.json),
       ),
     );
 }

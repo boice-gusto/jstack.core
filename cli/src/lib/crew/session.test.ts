@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { afterEach, describe, expect, test } from "bun:test";
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CrewStore } from "./store.js";
@@ -10,6 +10,7 @@ import {
   createManualSession,
   DisabledAgentError,
   promptManualSession,
+  rememberInSession,
   UnknownAgentError,
   UnknownSessionError,
 } from "./session.js";
@@ -131,6 +132,106 @@ describe("cancelManualSession", () => {
     expect(() => cancelManualSession(store, "ral-zzzz")).toThrow(
       UnknownSessionError,
     );
+    store.close();
+  });
+});
+
+/** Fake `claude` that dumps its own argv (which ends in the prompt, per runClaude's `-- prompt`
+ * convention) to a file, so a test can inspect what was actually sent instead of only what the
+ * fake chose to answer. */
+function installArgvCapturingFakeClaude(): {
+  restorePath: string;
+  argvFile: string;
+} {
+  const dir = mkdtempSync(join(tmpdir(), "fake-claude-argv-capture-"));
+  const argvFile = join(dir, "argv.txt");
+  writeFileSync(
+    join(dir, "claude"),
+    [
+      "#!/bin/sh",
+      `printf '%s\\n' "$@" > ${argvFile}`,
+      'echo \'{"is_error":false,"result":"ok","total_cost_usd":0.001}\'',
+    ].join("\n"),
+  );
+  chmodSync(join(dir, "claude"), 0o755);
+  const restorePath = process.env.PATH ?? "";
+  process.env.PATH = `${dir}:${restorePath}`;
+  return { restorePath, argvFile };
+}
+
+describe("promptManualSession memory recall", () => {
+  let restorePath: string | undefined;
+
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("a fact remembered for an agent is injected into a later prompt for that same agent", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    rememberInSession(store, cfg, id, {
+      kind: "fact",
+      source: "user-stated",
+      content: "The user's Q3 deadline is October 15.",
+    });
+
+    await promptManualSession(store, cfg, id, "When is the deadline?");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("Relevant memory:");
+    expect(sentArgv).toContain("October 15");
+    store.close();
+  });
+
+  test("a fact remembered for one agent is not injected into a different agent's session", async () => {
+    const store = freshStore();
+    const cfg = baseConfig({
+      agents: {
+        ...baseConfig().agents,
+        scout: { name: "Scout", sigils: ["!scout"], workspace: "/tmp/ws" },
+      },
+    });
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const ralphSession = createManualSession(store, cfg, "ralph");
+    rememberInSession(store, cfg, ralphSession.id, {
+      kind: "fact",
+      source: "user-stated",
+      content: "Ralph-only fact about zephyr-42.",
+    });
+
+    const scoutSession = createManualSession(store, cfg, "scout");
+    // Deliberately doesn't repeat "zephyr-42" here -- asserting on it below would be confounded
+    // by it appearing in this very question, not by a real recall leak.
+    await promptManualSession(
+      store,
+      cfg,
+      scoutSession.id,
+      "anything interesting to report?",
+    );
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).not.toContain("Relevant memory:");
+    expect(sentArgv).not.toContain("zephyr-42");
+    store.close();
+  });
+
+  test("no memory yet: the prompt is sent unchanged, with no 'Relevant memory' block", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hello");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).not.toContain("Relevant memory:");
     store.close();
   });
 });
