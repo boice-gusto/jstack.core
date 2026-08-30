@@ -1,6 +1,6 @@
 ---
 name: jstack-engineering-health
-description: Summarize engineering health — CI status, PR queue, flaky tests, revert risk — from configured repos only.
+description: DORA-banded engineering health — the four keys (deploy frequency, lead time, change-failure rate, MTTR) reported as independent bands with the metric, measurement window, and threshold behind each, paired with leading indicators (PR review latency, CI flake trend). For a quick composite snapshot without DORA bands or trend context, use jstack:engineering instead.
 category: engineering
 agent: Explore
 context: fork

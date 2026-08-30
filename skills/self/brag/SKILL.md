@@ -17,7 +17,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Assemble a daily or weekly brag entry from Slack, GitHub, and Jira activity mapped to configured impact dimensions, weighting significance with tiered PR labels. Save to the personal gbrain by default.
-- **Out of scope:** Formal performance-review narratives — use `jstack:self-eval` or `jstack:self-report`.
+- **Out of scope:** Formal performance-review narratives — use `jstack:self-eval`.
 
 ## Domain rules — brag
 

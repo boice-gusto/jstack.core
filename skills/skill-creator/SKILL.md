@@ -9,7 +9,7 @@ disable-model-invocation: true
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config, target_skill_path? -->
 <!-- outputs: draft_skill_or_diff, checklist_result -->
-<!-- chains-to: jstack:update-config (if persisting new defaults only) -->
+<!-- chains-to: jstack:update-config -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -35,7 +35,7 @@ Read the setup preamble first:
 | Frontmatter value shape | Must be an inline scalar; a YAML block list (`- item` lines) is silently dropped by the line-based parser | `scripts/apply_detailed_skills.py` `read_front_matter`; see `CLAUDE.md` "Frontmatter values must be inline scalars" |
 | Hand-maintained skill | Must be added to `SKIP` in `scripts/apply_detailed_skills.py` before the first hand-edit, or the next regeneration overwrites the body | `CLAUDE.md` "Skill authoring" |
 | `description` / `when_to_use` length | ≤1,536 chars each before `/doctor` reports skill-listing budget overflow | `CLAUDE.md` "Skill context budget" |
-| Chain reference validity | Every `<!-- chains-to: jstack:<slug> -->` must resolve to a live skill in the catalog. Use the `<slug>` form in prose — a concrete example token here would itself have to resolve | `bun run validate-chains` |
+| Chain reference validity | Every chains-to comment (the `chains-to:` HTML comment naming a `jstack:` skill id) must resolve to a live skill in the catalog | `bun run validate-chains` |
 
 ### Named anti-patterns
 

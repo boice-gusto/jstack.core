@@ -56,26 +56,60 @@ export const ReportChartSchema = z.object({
     .optional(),
 });
 
-export const ReportSectionSchema = z
-  .object({
-    id: z.string().optional(),
-    title: z.string().optional(),
-    body_markdown: z.string().optional(),
-    chart: ReportChartSchema.optional(),
-  })
-  .passthrough()
-  .refine(
-    (s) =>
-      s.chart != null ||
-      (typeof s.body_markdown === "string" &&
-        s.body_markdown.trim().length > 0),
-    { message: "Section must include chart and/or non-empty body_markdown" },
-  );
+const ReportSectionCommonSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().optional(),
+});
+
+const nonEmptyBodyMarkdown = z
+  .string()
+  .refine((v) => v.trim().length > 0, { message: "must be non-empty" });
+
+/**
+ * A section needs a chart and/or non-empty body_markdown -- expressed as a union of the two
+ * valid shapes (rather than an unconstrained object plus a `.refine`) so the exported
+ * `ReportSection` TYPE also forbids "neither," not just the runtime parse. A plain object +
+ * refine validates the same inputs correctly but its `z.infer`'d type still allows `{}`, which
+ * forced a defensive third UI branch in the dashboard's report-viewer purely to handle a state
+ * the schema itself already rejects.
+ */
+export const ReportSectionSchema = z.union(
+  [
+    ReportSectionCommonSchema.extend({
+      chart: ReportChartSchema,
+      body_markdown: z.string().optional(),
+    }).passthrough(),
+    ReportSectionCommonSchema.extend({
+      chart: ReportChartSchema.optional(),
+      body_markdown: nonEmptyBodyMarkdown,
+    }).passthrough(),
+  ],
+  {
+    errorMap: () => ({
+      message: "Section must include chart and/or non-empty body_markdown",
+    }),
+  },
+);
+
+/**
+ * `min(1)` alone (the original fix for the missing-url case) still accepted
+ * `javascript:alert(1)` -- report-viewer.tsx and the static shell templates both assign this
+ * value directly to `a.href`, so an unallowlisted scheme is click-to-execute from a report
+ * rendered off untrusted/LLM-generated JSON. Restrict to the schemes an external link actually
+ * needs.
+ */
+const ALLOWED_LINK_URL_PATTERN = /^(https?:|mailto:)/i;
 
 export const ReportLinkSchema = z
   .object({
     label: z.string().optional(),
-    url: z.string().optional(),
+    url: z
+      .string()
+      .min(1)
+      .regex(
+        ALLOWED_LINK_URL_PATTERN,
+        "url must start with http:, https:, or mailto:",
+      ),
   })
   .passthrough();
 

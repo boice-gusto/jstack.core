@@ -128,9 +128,11 @@ function str(v: unknown, max = 400): string {
  */
 function parseFrontmatter(md: string, rel: string): Record<string, unknown> {
   const parsed = parseYamlFrontmatter(md);
-  if (parsed.error) {
+  if (parsed.status !== "ok") {
+    const reason =
+      parsed.status === "invalid" ? parsed.error : "missing YAML frontmatter";
     console.error(
-      `generate-skill-evals: ${rel}/SKILL.md frontmatter failed to parse (${parsed.error}) — ` +
+      `generate-skill-evals: ${rel}/SKILL.md frontmatter failed to parse (${reason}) — ` +
         "using empty frontmatter for this skill's paraphrase-routing case.",
     );
     return {};

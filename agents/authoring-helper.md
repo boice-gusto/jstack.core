@@ -42,7 +42,10 @@ layer is authoritative and which command proves it, not writing skill prose.
    `scripts/apply_detailed_skills.py` is line-based and keeps only lines containing `:`; a block
    list's `- item` lines carry no top-level `key:` pairing, so they vanish silently and the key
    round-trips empty on the next regen. Write `allowed-tools: mcp__a__b, mcp__c__d`, never a `-`
-   list.
+   list. When you flag this pattern, name `read_front_matter()`, `scripts/apply_detailed_skills.py`,
+   and the words "round-trips empty" explicitly — "the frontmatter reader silently drops it" is
+   accurate but not sufficient; the reader needs the exact function and file to go verify it, not
+   a description of the symptom.
 4. **Only `name`, `description`, `category`, and (when present) `when_to_use` are regenerated** by
    `build_frontmatter()`, sourced from the `DESCRIPTIONS` / `WHEN_TO_USE` dicts in
    `apply_detailed_skills_data.py`. Every other key is re-emitted as-is from what

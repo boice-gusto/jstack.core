@@ -14,7 +14,8 @@ Anonymous usage metrics only: skill name, token counts, latency, success, option
 
 ## CLI
 
-- `jstack telemetry status` / `flush` — buffer and config.
+- `jstack telemetry status` / `flush` — buffer and config. The buffer is a durable JSONL file at `~/.jstack/telemetry-buffer.jsonl` (override with `JSTACK_TELEMETRY_BUFFER_PATH`), not an in-memory array — every `jstack` invocation is a fresh process, so anything held only in memory would be empty by the next command.
+- `jstack telemetry record --skill <name> [--category <c>] [--success true|false] [--latency-ms <n>] [--token-input <n>] [--token-output <n>]` — record one event. No-ops (prints `{"recorded": false, "reason": "telemetry disabled"}`) unless `telemetry.enabled` is true in `jstack.config.json`; a disabled call never queues for later. This is the actual pipe a skill's own procedure or a CLI command can call into — nothing calls it automatically yet, so wiring it into a specific skill or command is a separate, deliberate step.
 - `jstack telemetry test` — one anonymous self-test line to `~/.jstack/jstack.telemetry.selftest.jsonl` and path summary (no remote required).
 - Full help: `jstack --help-json` for structured metadata.
 

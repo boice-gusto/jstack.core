@@ -58,8 +58,16 @@ async function main(): Promise<void> {
     const rel = relative(REPO_ROOT, abs).split("\\").join("/");
     return mdByRelPath[rel] ?? (await readFile(abs, "utf8"));
   };
+  // Derived from the walk above instead of a second, near-identical tree walk inside
+  // buildSkillRecords -- SKILL.md is exactly the .md files whose basename matches.
+  const skillMdAbs = allMdAbs.filter((abs) => abs.endsWith("/SKILL.md"));
 
-  const records = await buildSkillRecords(REPO_ROOT, SKILLS_ROOT, readCached);
+  const records = await buildSkillRecords(
+    REPO_ROOT,
+    SKILLS_ROOT,
+    readCached,
+    skillMdAbs,
+  );
   const payload = buildSkillsPayload(records);
 
   const skillHtml: Record<string, string> = {};

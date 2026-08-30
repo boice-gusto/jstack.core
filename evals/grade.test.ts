@@ -9,7 +9,11 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { gradeCase, mergeAssertsIntoGrading } from "./grade.js";
+import {
+  buildExecutionFailureGrading,
+  gradeCase,
+  mergeAssertsIntoGrading,
+} from "./grade.js";
 import type { GlobalEvalEnv } from "./eval-config.js";
 import type { EvalCase } from "./eval-config.js";
 import type { ExecuteResult } from "./execute.js";
@@ -204,5 +208,43 @@ describe("mergeAssertsIntoGrading", () => {
     };
     const merged = mergeAssertsIntoGrading(caseDef(), execResult(), grader);
     expect(merged).toEqual(grader);
+  });
+});
+
+describe("buildExecutionFailureGrading", () => {
+  test("every criterion fails with 'Execution <status>' and is persisted, like gradeCase's branches", () => {
+    const { dir, caseDir } = mkFixture();
+    cleanupDirs.push(dir);
+    const result = buildExecutionFailureGrading(
+      caseDef({ criteria: ["a", "b"] }),
+      execResult({ status: "timeout", response: "" }),
+      caseDir,
+    );
+    expect(result.summary).toEqual({
+      passed: 0,
+      failed: 2,
+      total: 2,
+      pass_rate: 0,
+    });
+    expect(
+      result.expectations.every((e) => e.evidence === "Execution timeout"),
+    ).toBe(true);
+    const persisted = JSON.parse(
+      readFileSync(join(caseDir, "grading.json"), "utf8"),
+    );
+    expect(persisted).toEqual(result);
+  });
+
+  test("merges the case's assert block into the totals, same as a completed run would (regression: this used to be skipped on timeout/error)", () => {
+    const { dir, caseDir } = mkFixture();
+    cleanupDirs.push(dir);
+    const result = buildExecutionFailureGrading(
+      caseDef({ criteria: ["a"], assert: { response_contains: ["hello"] } }),
+      execResult({ status: "error", response: "" }),
+      caseDir,
+    );
+    // 1 criterion + 1 assert row = 2 total, not 1 -- proves assert-merging now happens here too.
+    expect(result.summary.total).toBe(2);
+    expect(result.expectations).toHaveLength(2);
   });
 });

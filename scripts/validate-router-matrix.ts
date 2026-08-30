@@ -16,6 +16,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadScenarioPackFromPath } from "../evals/scenario-pack.js";
+import { loadOrchRegistry } from "./lib/orch-registry.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
@@ -43,25 +44,11 @@ function sortedCopy(xs: string[]): string[] {
  * counted here; only skills that actually route to something belong in the eval matrix.
  */
 function loadOrchestratorsWithChildren(): Set<string> {
-  const genSrc = readFileSync(
-    join(root, "scripts", "apply_detailed_skills.py"),
-    "utf8",
-  );
-  const orchMatch = genSrc.match(/ORCHESTRATORS\s*=\s*\{([\s\S]*?)\}/);
-  const childrenMatch = genSrc.match(/ORCH_CHILDREN\s*=\s*\{([\s\S]*?)\n\}/);
-  if (!orchMatch || !childrenMatch) {
-    throw new Error(
-      "could not find ORCHESTRATORS/ORCH_CHILDREN in apply_detailed_skills.py",
-    );
-  }
-  const orchestrators = new Set(
-    [...orchMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]),
-  );
+  const { orchestrators, children } = loadOrchRegistry(root);
   const withChildren = new Set<string>();
-  for (const line of childrenMatch[1].split("\n")) {
-    const kv = line.match(/^\s*"([^"]+)":\s*"([^"]*)"/);
-    if (kv && kv[2].trim().length > 0 && orchestrators.has(kv[1])) {
-      withChildren.add(kv[1]);
+  for (const [router, listed] of children) {
+    if (listed.trim().length > 0 && orchestrators.has(router)) {
+      withChildren.add(router);
     }
   }
   return withChildren;

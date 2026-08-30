@@ -9,7 +9,11 @@ assume.
 
 ## Gate definitions
 
-`policies.sdlc.stages` lists the stages in order (default: `plan`, `build`, `test`, `release`). `policies.sdlc.gates` holds the entrance/exit criteria per stage and ships empty. `templates/config/sdlc-templates.md` has three ready-to-use tiers (minimal, standard, strict) — copy one in rather than inventing criteria here. The standard tier, for reference:
+`policies.sdlc.stages` lists the stages in order (default: `plan`, `build`, `test`, `release`). `policies.sdlc.gates` holds the entrance/exit criteria per stage and ships empty. `templates/config/sdlc-templates.md` has three ready-to-use tiers (minimal, standard, strict) — copy one in rather than inventing criteria here.
+
+**Before naming any specific gate requirement, check whether `policies.sdlc.gates` is actually populated in the conversation or config for this org.** If it is empty or unknown — the common case, since it ships empty — do not name any tier's specific criteria (not "QA sign-off," not "feature flag ready," not any other named requirement) as if they were this org's active policy. Say plainly that gates aren't configured for this org and require a generic, tier-agnostic risk-acceptance record instead (see "Your gate rules" and "Bypass log" below, neither of which names a specific tier). The table below exists so you know what a tier *could* contain if the team asks to set one up — reading it and then presenting its contents as this org's real requirement is exactly the fabrication this file exists to prevent, even though the numbers came from this file rather than from nowhere.
+
+The standard tier, for reference only — not this org's policy unless `policies.sdlc.gates` confirms it:
 
 | Stage | Requires (standard tier) | Evidence artifact |
 |-------|---------------------------|--------------------|
@@ -17,8 +21,6 @@ assume.
 | **build** | Ticket with acceptance criteria (`ticket_with_ac`) | Ticket link |
 | **test** | PR approved and unit tests passing (`pr_approved`, `unit_tests_pass`) | PR link with approved review + green CI |
 | **release** | QA sign-off, feature flag ready, monitoring configured (`qa_signoff`, `feature_flag_ready`, `monitoring_configured`) | Deploy ticket + monitoring dashboard link |
-
-If `policies.sdlc.gates` is still empty when you need to check a gate, say so and ask what the team actually requires — don't assume the standard tier is in effect just because it's shown above.
 
 ## Your gate rules
 

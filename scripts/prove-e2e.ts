@@ -14,32 +14,15 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ENCODING_UTF8, JSTACK_CONFIG_FILE } from "../constants/paths.js";
+import { isRecord, runBun, runStepOrExit } from "./lib/proc-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = join(__dirname, "..");
 const cliEntry = join(pluginRoot, "cli/src/index.ts");
-
-function runBun(
-  args: string[],
-  cwd: string,
-  env: Record<string, string | undefined>,
-): {
-  status: number;
-  out: string;
-} {
-  const r = spawnSync("bun", args, {
-    cwd,
-    env: { ...process.env, ...env },
-    encoding: ENCODING_UTF8,
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  return { status: r.status ?? 1, out: (r.stdout ?? "") + (r.stderr ?? "") };
-}
 
 async function main(): Promise<void> {
   console.log("=== jstack prove-e2e ===\n");
@@ -49,13 +32,11 @@ async function main(): Promise<void> {
   mkdirSync(diskKb, { recursive: true });
 
   console.log("1) jstack setup --ci (non-interactive fixture)\n");
-  const e1 = runBun(
+  runStepOrExit(
     ["run", cliEntry, "setup", "--ci", "--disk-fallback-root", diskKb],
     tmpProject,
     { CLAUDE_PLUGIN_ROOT: pluginRoot },
   );
-  console.log(e1.out);
-  if (e1.status !== 0) process.exit(1);
 
   if (process.env.JSTACK_MOCK_MCP === "1") {
     console.log(
@@ -78,27 +59,18 @@ async function main(): Promise<void> {
       JSON.stringify(parsed, null, 2) + "\n",
       ENCODING_UTF8,
     );
-    const em = runBun(
-      ["run", cliEntry, "mcp", "add", "jstack-mock"],
-      tmpProject,
-      {
-        CLAUDE_PLUGIN_ROOT: pluginRoot,
-      },
-    );
-    console.log(em.out);
-    if (em.status !== 0) process.exit(1);
+    runStepOrExit(["run", cliEntry, "mcp", "add", "jstack-mock"], tmpProject, {
+      CLAUDE_PLUGIN_ROOT: pluginRoot,
+    });
     console.log("   OK mock MCP preset registered\n");
   }
 
-  function isRecordJson(x: unknown): x is Record<string, unknown> {
-    return typeof x === "object" && x !== null && !Array.isArray(x);
-  }
   const rawCfg: unknown = JSON.parse(
     readFileSync(join(tmpProject, JSTACK_CONFIG_FILE), ENCODING_UTF8),
   );
-  const cfg = isRecordJson(rawCfg) ? rawCfg : {};
+  const cfg = isRecord(rawCfg) ? rawCfg : {};
   const ks = cfg["knowledge_storage"];
-  const ksObj = isRecordJson(ks) ? ks : {};
+  const ksObj = isRecord(ks) ? ks : {};
   const diskRoot = ksObj["disk_fallback_root"];
   if (diskRoot !== diskKb) {
     console.error(
@@ -113,11 +85,9 @@ async function main(): Promise<void> {
   );
 
   console.log("2) jstack doctor\n");
-  const e2 = runBun(["run", cliEntry, "doctor"], tmpProject, {
+  runStepOrExit(["run", cliEntry, "doctor"], tmpProject, {
     CLAUDE_PLUGIN_ROOT: pluginRoot,
   });
-  console.log(e2.out);
-  if (e2.status !== 0) process.exit(1);
   console.log("   OK doctor exit 0\n");
 
   console.log(

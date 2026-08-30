@@ -1,6 +1,6 @@
 ---
 name: jstack-report-design
-description: Map org brand to semantic report tokens (colors, type, radius) for static HTML shells and jstack report render. User wants report HTML/PDF to match brand; configure reports.branding and related defaults.
+description: Choose a report's shape before its content — audience, sections, and which figures earn a place — before jstack:reports assembles the finished report. Use when the report's structure isn't decided yet, not for filling an already-decided shape with data.
 category: reports
 data_class: internal
 disable-model-invocation: true

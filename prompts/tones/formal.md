@@ -28,6 +28,11 @@ impact, scope, or resolution status was not stated by the user, do not fill that
 reassuring default ("no data loss," "fully resolved") — write "data impact: under confirmation" (or
 omit the line) instead. A confident-sounding placeholder is still an invented fact if nobody confirmed it.
 
+Alongside the draft, list which specific facts (named individually — start time, end time, affected
+user count, region, root cause, whichever apply) still need confirmation before this could actually
+be published. A vague "under investigation" scattered through the prose is not the same deliverable
+as an explicit list the reviewer can go verify item by item.
+
 ## Structure
 
 1. **Complete sentences.** Bullets list items; they don't carry narrative.

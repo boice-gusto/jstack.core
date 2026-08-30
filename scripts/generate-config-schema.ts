@@ -39,21 +39,11 @@ const generated = zodToJsonSchema(JstackConfigSchema, {
 
 // zodToJsonSchema wraps the result in {$ref, definitions:{JstackConfig:{...}}} when `name` is set.
 // Unwrap to keep the file a plain schema for the config object, matching what it has always been.
-const body =
-  (generated as Record<string, unknown>).definitions &&
-  (
-    (generated as Record<string, unknown>).definitions as Record<
-      string,
-      unknown
-    >
-  ).JstackConfig
-    ? ((
-        (generated as Record<string, unknown>).definitions as Record<
-          string,
-          unknown
-        >
-      ).JstackConfig as Record<string, unknown>)
-    : (generated as Record<string, unknown>);
+const g = generated as { definitions?: Record<string, unknown> };
+const unwrapped = g.definitions?.["JstackConfig"] as
+  | Record<string, unknown>
+  | undefined;
+const body = unwrapped ?? (generated as Record<string, unknown>);
 
 const schema = {
   $schema: "http://json-schema.org/draft-07/schema#",

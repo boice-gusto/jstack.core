@@ -1,6 +1,6 @@
 ---
 name: jstack-jira-append
-description: Append structured content (meeting notes, checklist, update block) to an existing Jira issue description or comment.
+description: Append a structured content block (meeting notes, checklist, update block) to an existing Jira issue's description or as a formatted comment. For a plain one-line comment, use jira/update instead.
 category: jira
 argument-hint: "[PROJ-123]"
 arguments: "[ticket_id]"

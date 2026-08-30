@@ -23,11 +23,26 @@
  * costing 20-90s of nested-session overhead, that added up to 30-60+ minutes end to end. Async
  * spawns let the runner (run.ts) fan multiple cases out concurrently instead.
  */
-import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  type BackendOptions,
+  type ModelBackend,
+  invokeBackend,
+} from "./backends.js";
+import { MAX_BUFFER, spawnAsync, type SpawnAsyncResult } from "./spawn.js";
 
-export type SubjectKind = "cli" | "hook" | "file" | "agentic" | "script";
+// Re-exported for existing callers (run.ts, tests) that import these from subjects.ts.
+export { MAX_BUFFER, spawnAsync, type SpawnAsyncResult };
+
+export const SUBJECT_KINDS = [
+  "cli",
+  "hook",
+  "file",
+  "agentic",
+  "script",
+] as const;
+export type SubjectKind = (typeof SUBJECT_KINDS)[number];
 
 export interface SubjectSpec {
   kind: SubjectKind;
@@ -54,97 +69,27 @@ export interface SubjectOutput {
   error?: string;
 }
 
-/**
- * 120s is comfortable for a raw-API judge but marginal when the subject is exercised through a
- * nested Claude Code CLI session (JSTACK_ALLOW_CLI_JUDGE), which carries startup and tool-loading
- * overhead an API call does not. A subject that times out reports as a hard assertion failure
- * ("subject could not be exercised"), which is indistinguishable at a glance from the subject
- * actually behaving wrongly — so make the budget tunable rather than letting infrastructure
- * latency masquerade as a behavioral finding.
- */
-const TIMEOUT_MS = Number(process.env.JSTACK_EVAL_TIMEOUT_MS ?? 120_000);
-const MAX_BUFFER = 8 * 1024 * 1024;
-
-interface SpawnAsyncResult {
-  stdout: string;
-  stderr: string;
-  status: number | null;
-  error?: Error;
+/** The subject never ran at all (missing config, missing file, spawn failure never reached). */
+function subjectError(message: string): SubjectOutput {
+  return { text: "", exitCode: null, stdout: "", stderr: "", error: message };
 }
 
 /**
- * Async equivalent of `child_process.spawnSync`, matching the fields this file's callers already
- * read off a `spawnSync` result (`stdout`, `stderr`, `status`, `error`). Using `spawn` instead of
- * `spawnSync` is the whole point: it lets the event loop run other cases' children concurrently
- * instead of blocking on this one until it exits.
+ * Shared by runCli/runHook/runScript: they spawn a real child and just want its combined
+ * output as one blob. (runCandidate, the agentic path, is intentionally NOT included here --
+ * it wants stdout alone, not stdout+stderr joined, and a different no-output message; folding
+ * it in would just relocate its divergence rather than remove any real duplication.)
  */
-function spawnAsync(
-  cmd: string,
-  args: string[],
-  opts: {
-    cwd?: string;
-    input?: string;
-    env?: NodeJS.ProcessEnv;
-    timeoutMs?: number;
-  },
-): Promise<SpawnAsyncResult> {
-  return new Promise((resolve) => {
-    let child: ReturnType<typeof spawn>;
-    try {
-      child = spawn(cmd, args, {
-        cwd: opts.cwd,
-        env: opts.env,
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-    } catch (e) {
-      resolve({ stdout: "", stderr: "", status: null, error: e as Error });
-      return;
-    }
-
-    let stdout = "";
-    let stderr = "";
-    let settled = false;
-    const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      child.kill("SIGTERM");
-      settle({
-        stdout,
-        stderr,
-        status: null,
-        error: new Error(`ETIMEDOUT after ${timeoutMs}ms`),
-      });
-    }, timeoutMs);
-
-    function settle(result: SpawnAsyncResult): void {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      resolve(result);
-    }
-
-    child.stdout?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => {
-      if (stdout.length < MAX_BUFFER) stdout += chunk;
-    });
-    child.stderr?.setEncoding("utf8");
-    child.stderr?.on("data", (chunk: string) => {
-      if (stderr.length < MAX_BUFFER) stderr += chunk;
-    });
-    child.on("error", (err) => {
-      settle({ stdout, stderr, status: null, error: err });
-    });
-    child.on("close", (code) => {
-      settle({ stdout, stderr, status: code });
-    });
-
-    if (opts.input !== undefined && child.stdin) {
-      child.stdin.write(opts.input);
-      child.stdin.end();
-    } else {
-      child.stdin?.end();
-    }
-  });
+function toSubjectOutput(r: SpawnAsyncResult): SubjectOutput {
+  const stdout = r.stdout ?? "";
+  const stderr = r.stderr ?? "";
+  return {
+    stdout,
+    stderr,
+    exitCode: r.status,
+    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
+    error: r.error ? String(r.error.message ?? r.error) : undefined,
+  };
 }
 
 /**
@@ -160,13 +105,7 @@ export async function runCli(
   spec: SubjectSpec,
 ): Promise<SubjectOutput> {
   if (spec.command === undefined) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "cli subject has no command",
-    };
+    return subjectError("cli subject has no command");
   }
   const argv = spec.command;
   // The entrypoint must be ABSOLUTE. It was relative, which silently broke the documented
@@ -188,15 +127,7 @@ export async function runCli(
       } as NodeJS.ProcessEnv,
     },
   );
-  const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
-  return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
-    error: r.error ? String(r.error.message ?? r.error) : undefined,
-  };
+  return toSubjectOutput(r);
 }
 
 /**
@@ -208,38 +139,18 @@ export async function runHook(
   spec: SubjectSpec,
 ): Promise<SubjectOutput> {
   if (!spec.script) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "hook subject has no script",
-    };
+    return subjectError("hook subject has no script");
   }
   const abs = join(pluginRoot, spec.script);
   if (!existsSync(abs)) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: `hook script not found: ${spec.script}`,
-    };
+    return subjectError(`hook script not found: ${spec.script}`);
   }
   const r = await spawnAsync("bash", [abs], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
     input: spec.stdin ?? "",
     env: { ...process.env, ...(spec.env ?? {}) },
   });
-  const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
-  return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
-    error: r.error ? String(r.error.message ?? r.error) : undefined,
-  };
+  return toSubjectOutput(r);
 }
 
 /** Read artifacts so assertions and judges can inspect them. */
@@ -249,25 +160,13 @@ export function readFiles(
 ): SubjectOutput {
   const paths = spec.paths ?? [];
   if (paths.length === 0) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "file subject has no paths",
-    };
+    return subjectError("file subject has no paths");
   }
   const parts: string[] = [];
   for (const rel of paths) {
     const abs = join(pluginRoot, rel);
     if (!existsSync(abs)) {
-      return {
-        text: "",
-        exitCode: null,
-        stdout: "",
-        stderr: "",
-        error: `file not found: ${rel}`,
-      };
+      return subjectError(`file not found: ${rel}`);
     }
     parts.push(`===== ${rel} =====\n${readFileSync(abs, "utf8")}`);
   }
@@ -280,28 +179,34 @@ export function readFiles(
  *
  * The artifacts are injected verbatim, which is the point: a persona or policy file only
  * matters if it actually changes what a model does, and this is the only way to observe that.
+ *
+ * `backend` selects which model CLI runs the candidate (see backends.ts) -- this is what a
+ * multi-model run fans out over, running the SAME prompt through each backend in turn so the
+ * case file itself never needs to know which model it's being graded against.
  */
 export async function runCandidate(
   pluginRoot: string,
   spec: SubjectSpec,
-  claudeBin: string,
-  apiKey: string | undefined,
+  backend: ModelBackend,
+  backendOpts: BackendOptions,
 ): Promise<SubjectOutput> {
   const artifacts = readFiles(pluginRoot, spec);
   if (artifacts.error) return artifacts;
   if (!spec.task) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "agentic subject has no task",
-    };
+    return subjectError("agentic subject has no task");
   }
 
   const prompt = [
     "You are being given project instructions followed by a task. Follow the instructions as",
     "though they were your operating guidance for this turn.",
+    "",
+    "Answer from the instructions and task below only. Do not read, list, or explore any other",
+    "file or directory in this repository (including .git/, .claude/, other skills/ or agents/",
+    "files) to inform your answer -- a real user of this artifact would not have handed you the",
+    "rest of the repo either, and wandering into it would test what you can discover, not what",
+    "this artifact actually does. If a tool call reveals what looks like a real credential,",
+    "token, or secret (in a file, an env var, or anywhere else), do not quote or reproduce it in",
+    "your reply -- name that a secret-shaped value was encountered without repeating its value.",
     "",
     "## Instructions in scope",
     artifacts.text,
@@ -310,29 +215,13 @@ export async function runCandidate(
     spec.task,
   ].join("\n");
 
-  const r = await spawnAsync(
-    claudeBin,
-    ["-p", prompt, "--output-format", "text"],
-    {
-      cwd: pluginRoot,
-      env: {
-        ...process.env,
-        ANTHROPIC_API_KEY: apiKey ?? process.env.ANTHROPIC_API_KEY ?? "",
-      },
-    },
-  );
-  const stdout = (r.stdout ?? "").trim();
-  const stderr = (r.stderr ?? "").trim();
+  const r = await invokeBackend(backend, prompt, backendOpts);
   return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: stdout,
-    error: r.error
-      ? String(r.error.message ?? r.error)
-      : stdout === ""
-        ? "candidate produced no output"
-        : undefined,
+    stdout: r.text,
+    stderr: "",
+    exitCode: r.exitCode,
+    text: r.text,
+    error: r.error,
   };
 }
 
@@ -349,34 +238,20 @@ export async function runScript(
 ): Promise<SubjectOutput> {
   const name = spec.script;
   if (!name) {
-    return {
-      text: "",
-      exitCode: null,
-      stdout: "",
-      stderr: "",
-      error: "script subject has no script name",
-    };
+    return subjectError("script subject has no script name");
   }
   const r = await spawnAsync("bun", ["run", name, ...(spec.command ?? [])], {
     cwd: spec.cwd ? join(pluginRoot, spec.cwd) : pluginRoot,
     env: { ...process.env, ...(spec.env ?? {}) },
   });
-  const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
-  return {
-    stdout,
-    stderr,
-    exitCode: r.status,
-    text: [stdout, stderr].filter(Boolean).join("\n").trim(),
-    error: r.error ? String(r.error.message ?? r.error) : undefined,
-  };
+  return toSubjectOutput(r);
 }
 
 export async function exerciseSubject(
   pluginRoot: string,
   spec: SubjectSpec,
-  claudeBin: string,
-  apiKey: string | undefined,
+  backend: ModelBackend,
+  backendOpts: BackendOptions,
 ): Promise<SubjectOutput> {
   switch (spec.kind) {
     case "cli":
@@ -388,14 +263,8 @@ export async function exerciseSubject(
     case "script":
       return runScript(pluginRoot, spec);
     case "agentic":
-      return runCandidate(pluginRoot, spec, claudeBin, apiKey);
+      return runCandidate(pluginRoot, spec, backend, backendOpts);
     default:
-      return {
-        text: "",
-        exitCode: null,
-        stdout: "",
-        stderr: "",
-        error: `unknown subject kind: ${spec.kind}`,
-      };
+      return subjectError(`unknown subject kind: ${spec.kind}`);
   }
 }

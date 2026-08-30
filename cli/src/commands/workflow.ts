@@ -20,7 +20,10 @@ import {
   saveWorkflow,
   workflowsDir,
 } from "../lib/workflow-engine.js";
-import type { WorkflowDefinition } from "../types/workflow.js";
+import {
+  workflowStartUrl,
+  type WorkflowDefinition,
+} from "../types/workflow.js";
 
 export async function runWorkflowList(opts: { json?: boolean }): Promise<void> {
   const root = findProjectRoot();
@@ -32,7 +35,7 @@ export async function runWorkflowList(opts: { json?: boolean }): Promise<void> {
         ? {
             id: def.id,
             name: def.name,
-            start_url: def.start_url,
+            start_url: workflowStartUrl(def) ?? "",
             steps: def.steps.length,
             created_at: def.created_at,
           }
@@ -104,6 +107,19 @@ export async function runWorkflowRun(
     console.log("");
     console.log(chalk.dim("--- prompt ---"));
     console.log(prompt);
+    return;
+  }
+
+  // `--json` implies programmatic use, same as the non-interactive branch below: never print the
+  // "Preview" heading or block on an interactive confirm, both of which would put prose (and, via
+  // @clack/prompts, its own UI) onto stdout ahead of the JSON payload this mode promises.
+  if (opts.json && !opts.yes) {
+    console.error(
+      chalk.red(
+        "--json requires --yes (no interactive confirm in JSON mode). ",
+      ) + chalk.dim(nonInteractiveHint("--yes / --dry-run")),
+    );
+    process.exitCode = 1;
     return;
   }
 
@@ -184,7 +200,6 @@ export async function runWorkflowCreate(
   const def: WorkflowDefinition = {
     id,
     name: nameLabel,
-    start_url: url,
     steps: [{ id: "s1", kind: "goto", url }],
     created_at: new Date().toISOString(),
   };
@@ -271,11 +286,20 @@ export function runWorkflowEdit(
     steps[0] = { ...steps[0], url: newUrl };
   } else if (newUrl && steps.length === 0) {
     steps = [{ id: "s1", kind: "goto", url: newUrl }];
+  } else if (newUrl) {
+    // steps[0] exists but isn't a goto -- there's no single "start URL" slot to update, so
+    // say so instead of silently dropping the requested change (the old two-field shape would
+    // have updated the now-removed start_url field alone here, disagreeing with steps[0]).
+    console.warn(
+      chalk.yellow(
+        `--start-url ignored: this workflow's first step is "${steps[0]?.kind}", not "goto" -- ` +
+          `edit steps[0] directly (config/workflows/${id}.json) to change where it starts.`,
+      ),
+    );
   }
   const next: WorkflowDefinition = {
     ...def,
     name: o.name?.trim() ? o.name.trim() : def.name,
-    start_url: newUrl ?? def.start_url,
     steps,
   };
   saveWorkflow(root, next);

@@ -36,7 +36,10 @@ from the rendered output.
 
 1. **A missing metric is written as `[no data]` — never interpolated, never silently dropped.** Omission in
    an authoritative-looking report is exactly as misleading as fabrication — both let the reader believe
-   something was measured when it wasn't.
+   something was measured when it wasn't. State both halves every time: why it's missing (the specific
+   cause — integration not connected, source unreachable) AND what would fill it (connect the integration,
+   paste a manual count). The remedy half is not optional polish — a `[no data]` cell with a reason but no
+   stated fix just tells the reader the gap exists, not what to do about it.
 2. **Every figure states its provenance and as-of time.** `meta.generated_at` is the report's own as-of time;
    any figure sourced differently (a stale export, a different pull time) states that explicitly in its
    section, not just in the report header.
@@ -137,6 +140,11 @@ from the rendered output.
    half-applied brand.
 4. **Integrations (Jira/Notion/etc.)** — only pull when the report brief explicitly requires that source;
    otherwise stay markdown-from-user-input so no section implies a data source that wasn't actually used.
+5. **`skill_defaults.reports`** (`default_audience`, `html_theme`, `include_raw_tables`, `redact_ic_names`) —
+   quality-gate defaults for confidentiality and report-kind rendering; unset → fall back to each field's
+   documented default (`config/defaults.json`) rather than guessing an audience or redaction stance.
+6. **`notion_defaults`** — publish target when a report is bound for Notion rather than static HTML; unset
+   → markdown/HTML output only, no implied Notion publish.
 
 ## Evidence chain (internal)
 

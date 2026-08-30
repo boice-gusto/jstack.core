@@ -1,7 +1,8 @@
 ---
 name: jstack-setup
-description: "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or broken jstack.config.json after onboarding was skipped, or re-run MCP server discovery. No secrets in chat. Not for a brand-new user's first-time walkthrough — use jstack:onboarding for that. Also for a jstack doctor failure, a missing or corrupted jstack.config.json on a project that was previously working, or MCP integration health checks. Not for a new user's first-time onboarding conversation (jstack:onboarding) or editing an already-working config (jstack:update-config)."
+description: "Repair an existing jstack setup: interpret a jstack doctor failure, fix a missing or corrupted jstack.config.json on a project that was previously working, or re-run MCP server discovery/health checks. No secrets in chat. Not for a brand-new user's first-time walkthrough (use jstack:onboarding) or editing an already-working config (use jstack:update-config)."
 category: setup
+disable-model-invocation: true
 effort: low
 ---
 
@@ -13,8 +14,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Walk the user through first-time onboarding: `jstack setup` wizard, config creation, `jstack doctor` validation, dashboard pointers.
-- **Out of scope:** Writing secrets to markdown or logging tokens. If the user pastes a token, tell them to move it to an env/secret store and rotate.
+Repair an existing jstack setup: interpret a `jstack doctor` failure, fix a missing or broken `jstack.config.json` on a project that was previously working, or re-run MCP server discovery.
+- **Out of scope:** Writing secrets to markdown or logging tokens. If the user pastes a token, tell them to move it to an env/secret store and rotate. Also out of scope: a brand-new user's first-time walkthrough (`jstack:onboarding`) and editing an already-working config (`jstack:update-config`).
 
 ## Domain rules — setup
 - **Team + personal:** `gbrain.team` and `gbrain.personal` are both in schema; `session.default_gbrain_target` picks default. If files/repos are missing, bootstrap from `config/defaults.json` and `config/personal.example.json` — see `${CLAUDE_PLUGIN_ROOT}/skills/_core/references/config-team-vs-personal.md`.

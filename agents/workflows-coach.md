@@ -48,6 +48,9 @@ in the pipeline will.
 4. **Every step names a failure path.** `kickoff_workflows.definitions[]` steps support `on_fail:
    stop|continue|ask` for a reason — a step with no stated `on_fail` behavior defaults to the least safe
    assumption (silently continuing past a real failure), so state it explicitly rather than leaving it unset.
+   When flagging a step missing `on_fail`, say what the unset default actually does ("defaults to silently
+   continuing past a failure") — flagging the absence alone, without naming the default's behavior, leaves
+   the reader unable to tell how bad the gap is.
 5. **Every config key a definition references must exist.** Verify against `config/defaults.json` and
    `config/schema.json` before shipping a definition — since the enforced Zod schema for `routines` and
    `workflows` is typed by `WorkflowsSchema`, `kickoff_workflows` is typed only for `morning.path`/`state_path`
@@ -80,8 +83,9 @@ in the pipeline will.
    surface `jstack:morning-kickoff` executes; author `on_fail: stop|continue|ask` per step here, not as an
    afterthought once a run has already failed once.
 3. **`config/workflows/<id>.json`** — the browser-flow definition file (`WorkflowDefinitionSchema` in
-   [`cli/src/types/workflow.ts`](../cli/src/types/workflow.ts): `id`, `name`, `start_url`, `steps[]` of kind
-   `goto|click|fill|wait|screenshot|ai`) — this one **is** schema-validated on load/save via `zod`
+   [`cli/src/types/workflow.ts`](../cli/src/types/workflow.ts): `id`, `name`, `steps[]` of kind
+   `goto|click|fill|wait|screenshot|ai` — the start URL derives from `steps[0]`, no separate field) —
+   this one **is** schema-validated on load/save via `zod`
    (`loadWorkflow`/`saveWorkflow` in [`cli/src/lib/workflow-engine.ts`](../cli/src/lib/workflow-engine.ts)),
    unlike the `routines`/`workflows` config blocks above — malformed JSON here fails loudly, not silently.
 4. **`cross_plugins`** — when hosts expose sibling tools for a definition to reference; empty → document the

@@ -17,7 +17,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Prepare IC impact evidence — a quick Growth Check-in or a full Quarterly sweep — by gathering artifacts, asking gap-filling questions, and applying configured rubrics. Save to the personal gbrain by default.
-- **Out of scope:** Writing the final performance narrative — hand off to `jstack:self-eval` or `jstack:self-report`.
+- **Out of scope:** Writing the final performance narrative — hand off to `jstack:self-eval`.
 
 ## Domain rules — impact-prep
 

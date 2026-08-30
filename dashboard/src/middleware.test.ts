@@ -69,4 +69,17 @@ describe("middleware — login rate limiting", () => {
       expect(res.status).not.toBe(429);
     }
   });
+
+  it("rate-limits unauthenticated hits on a protected page route, not just API routes", async () => {
+    const middleware = await freshMiddleware();
+
+    const first = await middleware(req("/"));
+    expect(first.status).toBe(307); // redirect to /login, not rate-limited yet
+
+    const second = await middleware(req("/"));
+    // With DASHBOARD_RATE_LIMIT_MAX=1, the second unauthenticated hit on the same identity
+    // must be throttled before the auth check ever runs -- previously this returned another
+    // unthrottled redirect, since page routes checked auth before rate limiting.
+    expect(second.status).toBe(429);
+  });
 });

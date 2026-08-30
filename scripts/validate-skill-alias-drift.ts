@@ -151,4 +151,11 @@ function main(): void {
   }
 }
 
-main();
+/**
+ * Guard needed because `validateSkillAliasDrift` is also imported by `cli/src/commands/doctor.ts`
+ * (and transitively by every test that imports doctor.ts, including via `bun test cli/src`):
+ * without it, merely importing this module re-runs the whole check against the *importer's own*
+ * process.argv and can call process.exit(1) as a side effect of import -- the same bug already
+ * fixed this session in `evals/run-evals.ts` and previously in `cli/src/crewd.ts`.
+ */
+if (import.meta.main) main();

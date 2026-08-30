@@ -2,17 +2,19 @@
  * Shared Markdown → safe DOM (marked + DOMPurify from jsDelivr). Used by md-preview.js and docs.js.
  */
 
-/** @type {{ parse: (src: string) => string } | null} */
-let markedApi = null;
-
-/** @type {((dirty: string, cfg: { RETURN_DOM_FRAGMENT: boolean }) => DocumentFragment) | null} */
-let purifyToFragment = null;
+/**
+ * @type {{
+ *   parse: (src: string) => string,
+ *   sanitize: (dirty: string, cfg: { RETURN_DOM_FRAGMENT: boolean }) => DocumentFragment,
+ * } | null}
+ */
+let libs = null;
 
 /**
  * @returns {Promise<void>}
  */
 export async function ensureMarkdownLibs() {
-  if (markedApi && purifyToFragment) {
+  if (libs) {
     return;
   }
   // Pinned versions: keep in sync with the npm-installed versions used by the
@@ -28,9 +30,11 @@ export async function ensureMarkdownLibs() {
   ]);
   const marked = markedMod.marked;
   marked.setOptions({ gfm: true, breaks: false });
-  markedApi = { parse: (src) => marked.parse(src) };
   const purify = domMod.default;
-  purifyToFragment = (dirty, cfg) => purify.sanitize(dirty, cfg);
+  libs = {
+    parse: (src) => marked.parse(src),
+    sanitize: (dirty, cfg) => purify.sanitize(dirty, cfg),
+  };
 }
 
 /**
@@ -56,13 +60,13 @@ export function stripYamlFrontmatter(raw) {
  */
 export async function markdownToSafeFragment(markdown) {
   await ensureMarkdownLibs();
-  if (!markedApi || !purifyToFragment) {
+  if (!libs) {
     throw new Error(
       "Markdown libraries failed to load (offline or blocked CDN).",
     );
   }
-  const rawHtml = markedApi.parse(markdown);
-  const frag = purifyToFragment(rawHtml, { RETURN_DOM_FRAGMENT: true });
+  const rawHtml = libs.parse(markdown);
+  const frag = libs.sanitize(rawHtml, { RETURN_DOM_FRAGMENT: true });
   if (!(frag instanceof DocumentFragment)) {
     throw new Error("Sanitizer did not return a fragment.");
   }

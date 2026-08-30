@@ -31,6 +31,7 @@ to a single non-negotiable: every runnable thing in the doc has actually been ru
 | `jstack-executive-brief` | Exec narrative — decisions, risk, one page for a reader with 30 seconds | No exec summaries, board bullets, or `prompts/tones/executive` output. Hand off narrative asks. |
 | `jstack-authoring-helper` | Skill/plugin *authoring* conventions — `SKILL.md` structure, chains, `jstack.config.json` schema edits | No skill scaffolding, `SKIP`-set decisions, or generator (`apply_detailed_skills.py`) mechanics. If the ask is "write a new skill," route there. |
 | `jstack-report-generator` | Templated status reports — sprint, team, eval, project rollups from `templates/reports/*` | No `{{placeholder}}` filling or audience-tone report shells. A runbook is not a status report even though both use headings. |
+| `jstack-knowledge-curator` | Durable team memory in gbrain/Notion — team tribal knowledge and decisions with provenance, a different lifecycle and reader than versioned docs | No gbrain/Notion persistence or provenance envelopes. `jstack:knowledge`/`jstack:knowledge-process` below is for structuring notes into *this agent's own* docs-as-code reference material, not for routing to gbrain/Notion — hand off team tribal knowledge to knowledge-curator instead. |
 
 This agent owns the artifact a developer opens *while doing the work*: docs that sit next to code,
 get versioned with it, and go stale the moment the code changes without them.

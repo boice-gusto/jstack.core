@@ -53,7 +53,7 @@ Personal target by default; write to a shared store only when the user asks expl
 
 ### Step 3 — Execute
 From tasks + gbrain: 2-3 focus blocks, one explicit non-goal, and a timebox suggestion.
-- Structure around top 3 outcomes, blockers, first next step tomorrow: !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/reflection-patterns.md
+- Structure per the Focus pattern: !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/reflection-patterns.md
 
 ### Step 4 — Validate
 Confirm the write went to the personal target unless explicitly told otherwise, and that no other person's PII or performance data is present.

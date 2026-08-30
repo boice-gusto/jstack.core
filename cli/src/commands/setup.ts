@@ -14,7 +14,41 @@ import {
 } from "../lib/config.js";
 import { discoverFromMcpJson, mergeMcpRegistry } from "../lib/mcp-discovery.js";
 import { asRecord, extractSetupSlices } from "../lib/setup-defaults-slices.js";
+import { PROMPT_CANCELLED } from "../lib/schema-prompt.js";
 import { JstackConfigSchema } from "../types/config.js";
+
+/**
+ * `await p.text(...)` / `p.confirm(...)` / `p.select(...)` followed by
+ * `if (p.isCancel(x)) throw PROMPT_CANCELLED;` repeats 40+ times in this file. Forgetting that
+ * check on a newly added prompt is a real, already-shipped bug class here -- see the B4 comment
+ * in `runSetup`'s catch block, which exists specifically because this file once let a
+ * cancellation propagate as an uncaught raw value instead of the clean exit `PROMPT_CANCELLED`
+ * enables. These wrappers make the check structurally part of asking, not a step a caller can
+ * skip. (The two sites that intentionally treat cancel-or-no as "skip this section," not
+ * "abort setup" -- `promptTeamRosterSection`'s intro confirm and the reconfigure-anyway confirm
+ * in `runSetupInner` -- call `p.confirm` directly and are unaffected.)
+ */
+async function askText(opts: Parameters<typeof p.text>[0]): Promise<string> {
+  const v = await p.text(opts);
+  if (p.isCancel(v)) throw PROMPT_CANCELLED;
+  return String(v);
+}
+
+async function askConfirm(
+  opts: Parameters<typeof p.confirm>[0],
+): Promise<boolean> {
+  const v = await p.confirm(opts);
+  if (p.isCancel(v)) throw PROMPT_CANCELLED;
+  return v;
+}
+
+async function askSelect<T>(
+  opts: Parameters<typeof p.select<T>>[0],
+): Promise<T> {
+  const v = await p.select<T>(opts);
+  if (p.isCancel(v)) throw PROMPT_CANCELLED;
+  return v;
+}
 
 function parseRootsInput(raw: string, fallback: string[]): string[] {
   const parts = raw
@@ -60,7 +94,7 @@ async function promptTeamRosterSection(
     (defaultsTeam?.canonical_group as Record<string, unknown> | undefined) ??
     {};
 
-  const modeRaw = await p.select({
+  const modeRaw = await askSelect({
     message:
       "Canonical team identity mode (how tools resolve the team beyond this file)",
     options: [
@@ -77,7 +111,6 @@ async function promptTeamRosterSection(
     ],
     initialValue: String(defCg.mode ?? "manual_list"),
   });
-  if (p.isCancel(modeRaw)) throw new Error("cancelled");
   const mode = String(modeRaw);
 
   let slack_user_group_id = String(defCg.slack_user_group_id ?? "");
@@ -85,39 +118,35 @@ async function promptTeamRosterSection(
   let google_group_email = String(defCg.google_group_email ?? "");
 
   if (mode === "slack_user_group") {
-    const sid = await p.text({
+    const sid = await askText({
       message:
         "Slack user group ID (often starts with S…; find via Slack UI or API — see team-canonical-identity.md)",
       initialValue: slack_user_group_id,
       placeholder: "S01234567",
     });
-    if (p.isCancel(sid)) throw new Error("cancelled");
     slack_user_group_id = String(sid).trim();
-    const sh = await p.text({
+    const sh = await askText({
       message: "Slack handle for the group (optional, e.g. @eng-platform)",
       initialValue: slack_handle,
       placeholder: "@eng-platform",
     });
-    if (p.isCancel(sh)) throw new Error("cancelled");
     slack_handle = String(sh).trim();
   }
 
   if (mode === "google_group") {
-    const ge = await p.text({
+    const ge = await askText({
       message: "Google Group email (e.g. eng-platform@company.com)",
       initialValue: google_group_email,
       placeholder: "team@company.com",
     });
-    if (p.isCancel(ge)) throw new Error("cancelled");
     google_group_email = String(ge).trim();
   }
 
-  const display_name = await p.text({
+  const display_name = await askText({
     message: "Team display label for reports (optional)",
     initialValue: String(defCg.display_name ?? ""),
     placeholder: "Platform Engineering",
   });
-  if (p.isCancel(display_name)) throw new Error("cancelled");
 
   const canonical_group = mergeDeep(defCg, {
     mode,
@@ -128,109 +157,94 @@ async function promptTeamRosterSection(
   });
 
   const members: Record<string, unknown>[] = [];
-  let addMember = await p.confirm({
+  let addMember = await askConfirm({
     message:
       "Add a team member now (id, metadata, GitHub, email, Jira, Slack, Notion 1:1s, optional misc)?",
     initialValue: true,
   });
-  if (p.isCancel(addMember)) throw new Error("cancelled");
 
   while (addMember) {
-    const id = await p.text({
+    const id = await askText({
       message: "Member id (slug, no spaces — e.g. alex-k)",
       placeholder: "alex-k",
     });
-    if (p.isCancel(id)) throw new Error("cancelled");
     const idTrim = String(id).trim();
     if (!idTrim) {
       p.log.warn("Skipped empty member id.");
       break;
     }
 
-    const displayName = await p.text({
+    const displayName = await askText({
       message: "Display name (optional, stored under metadata.name)",
       placeholder: "Alex Kim",
     });
-    if (p.isCancel(displayName)) throw new Error("cancelled");
 
-    const level = await p.text({
+    const level = await askText({
       message: "Level (optional, e.g. L5 — stored under metadata.level)",
       placeholder: "L5",
     });
-    if (p.isCancel(level)) throw new Error("cancelled");
 
-    const role = await p.text({
+    const role = await askText({
       message: "Role (optional — stored under metadata.role)",
       placeholder: "Staff Engineer",
     });
-    if (p.isCancel(role)) throw new Error("cancelled");
 
-    const title = await p.text({
+    const title = await askText({
       message: "Job title (optional — stored under metadata.title)",
       placeholder: "Senior Software Engineer",
     });
-    if (p.isCancel(title)) throw new Error("cancelled");
 
-    const githubLogin = await p.text({
+    const githubLogin = await askText({
       message: "GitHub username (optional — github.login)",
       placeholder: "alex-kim",
     });
-    if (p.isCancel(githubLogin)) throw new Error("cancelled");
 
-    const emailPrimary = await p.text({
+    const emailPrimary = await askText({
       message: "Work email (optional — email.primary)",
       placeholder: "alex@company.com",
     });
-    if (p.isCancel(emailPrimary)) throw new Error("cancelled");
 
-    const jiraAccountId = await p.text({
+    const jiraAccountId = await askText({
       message:
         "Jira account id (optional — jira.account_id; from Jira profile/API)",
       placeholder: "",
     });
-    if (p.isCancel(jiraAccountId)) throw new Error("cancelled");
 
-    const slackHandle = await p.text({
+    const slackHandle = await askText({
       message: "Slack handle (optional — slack.handle, e.g. @alex)",
       placeholder: "@alex",
     });
-    if (p.isCancel(slackHandle)) throw new Error("cancelled");
 
-    const slackUserId = await p.text({
+    const slackUserId = await askText({
       message: "Slack user id (optional — slack.user_id, often U…)",
       placeholder: "",
     });
-    if (p.isCancel(slackUserId)) throw new Error("cancelled");
 
-    const miscNote = await p.text({
+    const miscNote = await askText({
       message:
         "Misc one-line note (optional — misc.note; add more keys in config by hand)",
       placeholder: "",
     });
-    if (p.isCancel(miscNote)) throw new Error("cancelled");
 
     p.log.info(
       chalk.dim(
         "Notion IDs: paste from page URLs (UUID with dashes). Leave empty to fill later — do not invent ids.",
       ),
     );
-    const oneOnOneParent = await p.text({
+    const oneOnOneParent = await askText({
       message: "Notion 1:1 section parent page ID (optional)",
       placeholder: "",
     });
-    if (p.isCancel(oneOnOneParent)) throw new Error("cancelled");
 
-    const templatePage = await p.text({
+    const templatePage = await askText({
       message: "Notion template page ID for this person (optional)",
       placeholder: "",
     });
-    if (p.isCancel(templatePage)) throw new Error("cancelled");
 
-    const hubPage = await p.text({
+    const hubPage = await askText({
       message: "Notion person hub page ID (optional)",
       placeholder: "",
     });
-    if (p.isCancel(hubPage)) throw new Error("cancelled");
 
     const notion: Record<string, unknown> = {};
     const oop = String(oneOnOneParent).trim();
@@ -285,11 +299,10 @@ async function promptTeamRosterSection(
 
     members.push(row);
 
-    const more = await p.confirm({
+    const more = await askConfirm({
       message: "Add another team member?",
       initialValue: false,
     });
-    if (p.isCancel(more)) throw new Error("cancelled");
     addMember = more;
   }
 
@@ -310,10 +323,10 @@ export async function runSetup(opts: {
   try {
     return await runSetupInner(opts);
   } catch (err) {
-    // B4 fix: cancellation propagates as an Error("cancelled") from the per-prompt
-    // isCancel checks. Translate that into a clean exit instead of a stack trace.
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg === "cancelled") {
+    // B4 fix: cancellation propagates as PROMPT_CANCELLED (same unforgeable sentinel
+    // schema-prompt.ts uses) from the per-prompt isCancel checks. Translate that into a
+    // clean exit instead of a stack trace.
+    if (err === PROMPT_CANCELLED) {
       p.cancel("Cancelled. No config changes.");
       process.exitCode = 130;
       return;
@@ -360,21 +373,19 @@ async function runSetupInner(opts: {
   const defaultKb = s.defaultKb;
   const defaultGbrain = s.defaultGbrain;
 
-  const teamName = await p.text({
+  const teamName = await askText({
     message: "Team name",
     placeholder:
       typeof s.defaultsTeam.name === "string" ? s.defaultsTeam.name : undefined,
   });
-  if (p.isCancel(teamName)) throw new Error("cancelled");
 
-  const tz = await p.text({
+  const tz = await askText({
     message: "Timezone (IANA)",
     initialValue:
       typeof s.defaultsTeam.timezone === "string"
         ? s.defaultsTeam.timezone
         : "UTC",
   });
-  if (p.isCancel(tz)) throw new Error("cancelled");
 
   const defaultsTeam = s.defaultsTeam;
   let teamForDraft = mergeDeep(defaultsTeam, {
@@ -388,41 +399,36 @@ async function runSetupInner(opts: {
     teamForDraft = mergeDeep(teamForDraft, rosterPatch);
   }
 
-  const jiraKey = await p.text({
+  const jiraKey = await askText({
     message: "JIRA project key (optional)",
     placeholder: "ENG",
   });
-  if (p.isCancel(jiraKey)) throw new Error("cancelled");
 
-  const jiraUrl = await p.text({
+  const jiraUrl = await askText({
     message: "JIRA base URL (optional)",
     placeholder: "https://yourorg.atlassian.net",
   });
-  if (p.isCancel(jiraUrl)) throw new Error("cancelled");
 
-  const telemetry = await p.confirm({
+  const telemetry = await askConfirm({
     message:
       "Enable anonymous plugin telemetry? (batched metadata only; machine id in ~/.jstack; eval JSONL uses JSTACK_TELEMETRY — see docs/TELEMETRY_NOTION.md)",
     initialValue: false,
   });
-  if (p.isCancel(telemetry)) throw new Error("cancelled");
 
-  const debug = await p.confirm({
+  const debug = await askConfirm({
     message: "Enable debug logging in skills?",
     initialValue: false,
   });
-  if (p.isCancel(debug)) throw new Error("cancelled");
 
   let gbrainKbPatch: Record<string, unknown> = {};
 
   let runGbrainKb = opts.withGbrainKb === true;
   if (!runGbrainKb) {
-    const adv = await p.confirm({
+    const adv = await askConfirm({
       message:
         "Configure GBrain URLs and local knowledge_base roots? (team/personal memory + git-tracked docs paths)",
       initialValue: true,
     });
-    if (p.isCancel(adv)) throw new Error("cancelled");
     runGbrainKb = adv;
   }
 
@@ -433,20 +439,18 @@ async function runSetupInner(opts: {
       ),
     );
 
-    const teamGbrainUrl = await p.text({
+    const teamGbrainUrl = await askText({
       message: "GBrain team base URL (optional; paste from GBrain team space)",
       initialValue: defaultGbrain.team?.url ?? "",
       placeholder: "https://…",
     });
-    if (p.isCancel(teamGbrainUrl)) throw new Error("cancelled");
 
-    const personalGbrainUrl = await p.text({
+    const personalGbrainUrl = await askText({
       message:
         "GBrain personal base URL (optional; often set only in a private overlay — see outro)",
       initialValue: defaultGbrain.personal?.url ?? "",
       placeholder: "https://…",
     });
-    if (p.isCancel(personalGbrainUrl)) throw new Error("cancelled");
 
     const defKs = s.defKs;
     const defKsTeam = asRecord(s.defKs.team);
@@ -458,49 +462,44 @@ async function runSetupInner(opts: {
       ),
     );
 
-    const teamKbGit = await p.text({
+    const teamKbGit = await askText({
       message:
         "Team knowledge Git repo URL (optional; shared GitHub org repo your team clones and pushes)",
       initialValue: String(defKsTeam.git_remote ?? ""),
       placeholder: "https://github.com/org/team-knowledge.git",
     });
-    if (p.isCancel(teamKbGit)) throw new Error("cancelled");
 
-    const teamKbPath = await p.text({
+    const teamKbPath = await askText({
       message:
         "Team KB local checkout (optional; path relative to workspace, e.g. team-knowledge). Empty = team markdown may go only to disk fallback until you clone and set this.",
       initialValue: String(defKsTeam.local_checkout ?? ""),
       placeholder: "team-knowledge",
     });
-    if (p.isCancel(teamKbPath)) throw new Error("cancelled");
 
-    const personalKbGit = await p.text({
+    const personalKbGit = await askText({
       message:
         "Personal knowledge Git repo URL (optional; private repo — often in personal overlay only)",
       initialValue: String(defKsPersonal.git_remote ?? ""),
       placeholder: "https://github.com/you/jstack-personal-kb.git",
     });
-    if (p.isCancel(personalKbGit)) throw new Error("cancelled");
 
-    const personalKbPath = await p.text({
+    const personalKbPath = await askText({
       message:
         "Personal KB local checkout (optional; relative to workspace). Empty = personal markdown may use disk fallback only.",
       initialValue: String(defKsPersonal.local_checkout ?? ""),
       placeholder: "personal-knowledge",
     });
-    if (p.isCancel(personalKbPath)) throw new Error("cancelled");
 
-    const diskFallback = await p.text({
+    const diskFallback = await askText({
       message:
         "Disk fallback root for markdown when no local_checkout is set (team|personal subfolders, then category, then .md)",
       initialValue: String(defKs.disk_fallback_root ?? "/tmp/knowledgebase"),
     });
-    if (p.isCancel(diskFallback)) throw new Error("cancelled");
 
     const sessionTargetRaw = s.defSession.default_gbrain_target;
     const sessionTargetInit: "team" | "personal" =
       sessionTargetRaw === "personal" ? "personal" : "team";
-    const target = await p.select({
+    const target = await askSelect({
       message: "Default session GBrain target for new sessions",
       options: [
         { value: "team", label: "team — shared team space" },
@@ -508,17 +507,15 @@ async function runSetupInner(opts: {
       ],
       initialValue: sessionTargetInit,
     });
-    if (p.isCancel(target)) throw new Error("cancelled");
 
     const rootsHint =
       (defaultKb.roots ?? ["docs", "README.md"]).join(", ") +
       ", sessions, plans, tmp";
-    const rootsRaw = await p.text({
+    const rootsRaw = await askText({
       message:
         "Knowledge base roots (comma-separated, relative to workspace root)",
       initialValue: rootsHint,
     });
-    if (p.isCancel(rootsRaw)) throw new Error("cancelled");
 
     const roots = uniqRoots([
       ...parseRootsInput(
@@ -529,24 +526,25 @@ async function runSetupInner(opts: {
       String(personalKbPath).trim(),
     ]);
 
-    const includeGbrainInSearch = await p.confirm({
+    const includeGbrainInSearch = await askConfirm({
       message:
         "Also query GBrain on knowledge-search when paths/URLs are used? (knowledge_base.gbrain.include)",
       initialValue: defaultKb.gbrain?.include === true,
     });
-    if (p.isCancel(includeGbrainInSearch)) throw new Error("cancelled");
 
     gbrainKbPatch = {
-      gbrain: mergeDeep(s.defGbrain, {
+      gbrain: mergeDeep(defaultGbrain as Record<string, unknown>, {
         team: { url: String(teamGbrainUrl).trim() },
         personal: { url: String(personalGbrainUrl).trim() },
       }),
       session: mergeDeep(s.defSession, {
         default_gbrain_target: target,
       }),
-      knowledge_base: mergeDeep(s.defKb, {
+      knowledge_base: mergeDeep(defaultKb as Record<string, unknown>, {
         roots,
-        gbrain: mergeDeep(s.defKbGbrain, { include: includeGbrainInSearch }),
+        gbrain: mergeDeep(asRecord(defaultKb.gbrain), {
+          include: includeGbrainInSearch,
+        }),
       }),
       knowledge_storage: mergeDeep(defKs, {
         disk_fallback_root: String(diskFallback).trim() || "/tmp/knowledgebase",
@@ -583,21 +581,18 @@ async function runSetupInner(opts: {
 
   if (opts.pe) {
     p.log.info(chalk.bold("PE / team management"));
-    const teamsRaw = await p.text({
+    const teamsRaw = await askText({
       message: "PE team refs (comma-separated slugs; no default teams in core)",
       placeholder: "team-nova, team-pulse",
     });
-    if (p.isCancel(teamsRaw)) throw new Error("cancelled");
-    const keysRaw = await p.text({
+    const keysRaw = await askText({
       message: "Jira project keys for PE reporting (comma-separated, optional)",
       placeholder: "ENG,PLT",
     });
-    if (p.isCancel(keysRaw)) throw new Error("cancelled");
-    const windowDays = await p.text({
+    const windowDays = await askText({
       message: "Default reporting window (days)",
       initialValue: "14",
     });
-    if (p.isCancel(windowDays)) throw new Error("cancelled");
     const teams = String(teamsRaw)
       .split(/[,\n]+/)
       .map((s) => s.trim())
@@ -678,11 +673,11 @@ export async function runSetupCi(opts: {
       default_gbrain_target: "team",
       current_session_id: "",
     }),
-    gbrain: mergeDeep(s.defGbrain, {
+    gbrain: mergeDeep(s.defaultGbrain as Record<string, unknown>, {
       team: { url: "" },
       personal: { url: "" },
     }),
-    knowledge_base: mergeDeep(s.defKb, {
+    knowledge_base: mergeDeep(s.defaultKb as Record<string, unknown>, {
       roots: ["docs"],
       gbrain: { include: false },
     }),

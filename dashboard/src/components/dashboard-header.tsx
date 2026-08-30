@@ -14,7 +14,6 @@ export function DashboardHeader() {
   const router = useRouter();
   const { query, setQuery } = useRouteFilter();
   const showFilter = pathname === "/";
-  const showLogout = pathname !== "/login";
 
   async function handleLogout(): Promise<void> {
     try {
@@ -65,11 +64,11 @@ export function DashboardHeader() {
           </div>
         ) : null}
 
-        {showLogout ? (
-          <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => void handleLogout()}>
-            Log out
-          </Button>
-        ) : null}
+        {/* DashboardHeader is only ever mounted outside "/login" -- AppShell early-returns
+            a bare shell (no header) for the login route, so there's no case here to gate on. */}
+        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => void handleLogout()}>
+          Log out
+        </Button>
       </div>
     </header>
   );

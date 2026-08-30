@@ -14,7 +14,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Route a note-storage request to the personal or team child skill based on the session gbrain target.
-- **Out of scope:** Writing content directly — routes to `jstack:meetings-store-note-personal` or `jstack:meetings-store-note-team`.
+- **Out of scope:** Writing content directly — routes to `jstack:meetings-store-personal` or `jstack:meetings-store-team`.
 
 ## Domain rules — meetings
 - Privacy: mark sensitive transcript segments; offer redacted summary for public channels.

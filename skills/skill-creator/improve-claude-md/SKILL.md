@@ -2,13 +2,14 @@
 name: jstack-improve-claude-md
 description: Audit a project's CLAUDE.md against commits, session transcripts, and working-tree state, then propose ranked edits as a unified diff. Read-only by default; --apply is opt-in. Use when CLAUDE.md feels stale, when you have been correcting Claude on the same thing, or as a monthly hygiene routine.
 category: skill-creator
+disable-model-invocation: true
 effort: high
 ---
 
 <!-- Chain Contract -->
 <!-- inputs: user_request, jstack_config, project_root -->
 <!-- outputs: structured_result (recommendations, filtered_out, patch_path) -->
-<!-- chains-to: jstack:update-config (if persisting new defaults only) -->
+<!-- chains-to: jstack:update-config -->
 
 Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
@@ -46,6 +47,7 @@ Read the setup preamble first:
 ## Config and references
 
 - `jstack.config.json` keys: `claude_md_improver.{enabled, transcript_lookback_days, commit_lookback_count, min_priority, persona_threshold, report_path, patch_path, high_correction_session_threshold}`.
+- Chains to `jstack:update-config` only when an accepted recommendation needs a new persisted default, not on every run.
 - Detectors: `${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/improve-claude-md/references/detectors.md`
 - Scoring: `${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/improve-claude-md/references/scoring.md`
 - Persona rubric: `${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/improve-claude-md/references/persona-review.md`

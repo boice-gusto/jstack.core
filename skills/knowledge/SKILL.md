@@ -23,7 +23,7 @@ Route a knowledge request to the right sub-skill: capture (`intake`), reconcile 
 - Deduplication: merge duplicates; keep the oldest decision link as canonical.
 
 ## Sub-skills (pick the most specific)
-**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder
+**Under `skills/knowledge/`:** intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder, reflect
 
 If the user is vague, ask **one** question to disambiguate, then route to the child skill. Do not execute every sub-skill in one turn unless the user asked for a chain.
 

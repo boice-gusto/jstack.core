@@ -11,6 +11,7 @@ import {
   JstackConfigSchema,
   formatConfigIssues,
 } from "../cli/src/types/config.js";
+import { mergeDeep } from "../cli/src/lib/config.js";
 import {
   INTEGRATION_CHECK_PATHS,
   isIntegrationConfigured,
@@ -32,26 +33,7 @@ const defaults = existsSync(defaultsPath)
   ? JSON.parse(readFileSync(defaultsPath, ENCODING_UTF8))
   : {};
 
-function isObject(x: unknown): x is Record<string, unknown> {
-  return typeof x === "object" && x !== null && !Array.isArray(x);
-}
-
-function merge(
-  a: Record<string, unknown>,
-  b: Record<string, unknown>,
-): Record<string, unknown> {
-  const out = { ...a };
-  for (const [k, v] of Object.entries(b)) {
-    if (isObject(v) && isObject(out[k] as unknown)) {
-      out[k] = merge(out[k] as Record<string, unknown>, v);
-    } else if (!(k in out)) {
-      out[k] = v;
-    }
-  }
-  return out;
-}
-
-const merged = merge(
+const merged = mergeDeep(
   defaults as Record<string, unknown>,
   cfg as Record<string, unknown>,
 );

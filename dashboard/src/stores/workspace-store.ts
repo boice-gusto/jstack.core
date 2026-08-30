@@ -3,11 +3,22 @@ import { create } from "zustand";
 import type { WorkspaceData } from "@/lib/workspace-data";
 import { defaultWorkspaceData } from "@/lib/workspace-data";
 
+/** A load failure and a load-in-progress used to be two independent booleans plus a
+ * nullable error string, which let the UI render "Loading…" and an error message at
+ * the same time (a failed load leaves `loaded=false` forever, with no in-flight state
+ * to distinguish "still loading" from "already failed"). This union makes that
+ * combination unrepresentable. */
+export type WorkspaceStatus =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "ready" }
+  | { kind: "load-error"; message: string }
+  | { kind: "saving" }
+  | { kind: "save-error"; message: string };
+
 type WorkspaceState = {
   data: WorkspaceData;
-  loaded: boolean;
-  saving: boolean;
-  error: string | null;
+  status: WorkspaceStatus;
   load: () => Promise<void>;
   save: () => Promise<void>;
   patch: (partial: Partial<WorkspaceData>) => void;
@@ -18,29 +29,27 @@ type WorkspaceState = {
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   data: defaultWorkspaceData(),
-  loaded: false,
-  saving: false,
-  error: null,
+  status: { kind: "idle" },
 
   load: async () => {
-    set({ error: null });
+    set({ status: { kind: "loading" } });
     try {
       const res = await fetch("/api/workspace", { credentials: "include" });
       if (!res.ok) {
         const t = await res.text();
-        set({ error: `Load failed: ${t.slice(0, 200)}` });
+        set({ status: { kind: "load-error", message: `Load failed: ${t.slice(0, 200)}` } });
         return;
       }
       const json = (await res.json()) as WorkspaceData;
-      set({ data: json, loaded: true });
+      set({ data: json, status: { kind: "ready" } });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Load error";
-      set({ error: msg });
+      set({ status: { kind: "load-error", message: msg } });
     }
   },
 
   save: async () => {
-    set({ saving: true, error: null });
+    set({ status: { kind: "saving" } });
     try {
       const res = await fetch("/api/workspace", {
         method: "PUT",
@@ -50,13 +59,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       });
       if (!res.ok) {
         const t = await res.text();
-        set({ saving: false, error: `Save failed: ${t.slice(0, 200)}` });
+        set({ status: { kind: "save-error", message: `Save failed: ${t.slice(0, 200)}` } });
         return;
       }
-      set({ saving: false });
+      set({ status: { kind: "ready" } });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Save error";
-      set({ saving: false, error: msg });
+      set({ status: { kind: "save-error", message: msg } });
     }
   },
 

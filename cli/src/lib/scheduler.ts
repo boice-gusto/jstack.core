@@ -12,10 +12,17 @@ export interface RoutineRow {
   chain: string[];
 }
 
+/** The raw shape of `cfg.routines`, shared by every call site below instead of each one
+ * independently re-asserting its own (previously slightly inconsistent) belief about it. */
+export type RawRoutineEntry = {
+  cron?: string;
+  enabled?: boolean;
+  chain?: string[];
+};
+export type RawRoutines = Record<string, RawRoutineEntry>;
+
 export function listRoutinesFromConfig(cfg: JstackConfig): RoutineRow[] {
-  const r = cfg.routines as
-    | Record<string, { cron?: string; enabled?: boolean; chain?: string[] }>
-    | undefined;
+  const r = cfg.routines as RawRoutines | undefined;
   if (!r) return [];
   return Object.entries(r).map(([id, v]) => ({
     id,
@@ -44,8 +51,8 @@ export function patchRoutine(
   patch: { cron?: string; chain?: string[]; enabled?: boolean },
   mode: "merge" | "overwrite" = "merge",
 ): JstackConfig {
-  const routines = {
-    ...(cfg.routines as Record<string, Record<string, unknown>> | undefined),
+  const routines: RawRoutines = {
+    ...(cfg.routines as RawRoutines | undefined),
   };
   const existing = mode === "merge" ? routines[id] : undefined;
   routines[id] = { ...existing, ...patch };
@@ -119,12 +126,7 @@ export function loadWellKnownRoutine(
   pluginRoot: string,
   id: string,
 ): WellKnownRoutine | null {
-  const defaults = loadDefaults(pluginRoot) as {
-    routines?: Record<
-      string,
-      { cron?: string; chain?: string[]; enabled?: boolean }
-    >;
-  };
+  const defaults = loadDefaults(pluginRoot) as { routines?: RawRoutines };
   const d = defaults.routines?.[id];
   if (!d) return null;
 

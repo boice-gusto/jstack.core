@@ -124,6 +124,12 @@ SKIP = {
     # generator has no per-key data for any of this and would flatten it to generic write-skill
     # boilerplate.
     SKILLS / "pe" / "pe-recon" / "SKILL.md",
+    # Same gap, missed when pe-recon was pinned above: hand-tuned `[no data]`-per-figure Step 2/4
+    # text and a report-specific failure-mode table (missing metric, tone mismatch). The generator
+    # has no per-key SAFE_PATH/VALIDATION data for this key either -- confirmed live (2026-08-29):
+    # a real `apply_detailed_skills.py` run flattened it to generic write-skill boilerplate with no
+    # report-specific content at all. Pin here instead of writing the missing per-key data blind.
+    SKILLS / "pe" / "report-context" / "SKILL.md",
     # Hand-authored (2026-08): `pe` router updated with a real two-child disambiguation rule
     # (report-context vs pe-recon) now that it has a second real destination. The generator has
     # no per-key data for this routing distinction and would regenerate the old single-child text.
@@ -250,11 +256,6 @@ def skill_key(p: Path) -> str:
     return str(r.parent) if r.name == "SKILL.md" else str(r)
 
 
-ORCHESTRATORS = {
-    "jira", "notion", "meetings", "research", "reports", "self",
-    "knowledge", "review", "session", "metrics", "routines", "workflows", "incident",
-    "sop", "sprint", "computer-use", "design", "pe", "shortcuts",
-}
 ORCH_CHILDREN = {
     "jira": "get, create, update, intake, transition, notify, append",
     "notion": "update, planning, sprint, project, report, adr, article, team-note, standup, team-report, performance, one-on-one, setup",
@@ -262,8 +263,8 @@ ORCH_CHILDREN = {
     "research": "technical, competitive, user, explain-codebase, spike",
     "reports": "team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish",
     "self": "diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr",
-    "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder",
-    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review",
+    "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder, reflect",
+    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate",
     "session": "init, end",
     "metrics": "my-metrics, team-metrics",
     "routines": "standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff",
@@ -276,6 +277,19 @@ ORCH_CHILDREN = {
     "shortcuts": "ceo-brainstorm, executive-research-brief",
     "sprint": "prep, refinement, planning",
 }
+ORCHESTRATORS = set(ORCH_CHILDREN.keys())
+
+
+def deep_lookup(table: dict, key: str, category: str, default=""):
+    """Specific key wins, else category, else default -- the "specific key overrides its
+    category's generic default" idiom used by MISSIONS/CATEGORY_DEEP/POLICY_LOADS. One of
+    the four sites that needed this (FAILURE_EXTRAS) had the precedence reversed (category
+    checked before key), which is invisible unless a skill's key and category are both present
+    in that specific table with different values -- true today for skills/update-config
+    (key "update-config", category "setup"), so this fix does change its generated Failure
+    modes section on the next real regeneration run, not just its type-level shape.
+    """
+    return table.get(key) or table.get(category) or default
 
 
 def build_description(key: str, fm: dict) -> str:
@@ -324,13 +338,11 @@ def build_body(key: str, fm: dict) -> str:
 
     # --- mission (unique per skill) ---
     desc = build_description(key, fm)
-    mission_text = MISSIONS.get(key, "")
-    if not mission_text:
-        mission_text = MISSIONS.get(category, desc)
+    mission_text = deep_lookup(MISSIONS, key, category, desc)
     scope_block = f"## What this skill is for\n{mission_text}"
 
     # --- domain detail: prefer skill-key block, else category (e.g. update-config vs setup) ---
-    cat_detail = CATEGORY_DEEP.get(key, CATEGORY_DEEP.get(category, "")).strip()
+    cat_detail = deep_lookup(CATEGORY_DEEP, key, category).strip()
 
     # --- path-specific addendum ---
     path_detail = path_extras(key).strip()
@@ -430,7 +442,7 @@ def build_body(key: str, fm: dict) -> str:
     )
 
     # --- failure modes (category-aware) ---
-    extra_rows = FAILURE_EXTRAS.get(category, FAILURE_EXTRAS.get(key, ""))
+    extra_rows = deep_lookup(FAILURE_EXTRAS, key, category)
     fail_table = (
         "## Failure modes\n\n"
         "| Symptom | Recovery |\n"
@@ -525,6 +537,7 @@ POLICY_LOADS = {
         "prompts/personas/engineer.md",
         "prompts/personas/qa.md",
         "prompts/personas/designer.md",
+        "prompts/personas/security.md",
     ],
     # Chain DEFINITIONS, loaded by the routine/skill that executes them. `validate-chains` resolves
     # their steps, but nothing loaded the file itself, so the declared order was never in context for
@@ -546,7 +559,7 @@ POLICY_LOADS = {
 
 def policy_loads_for(key: str, category: str) -> str:
     """Emit `!cat` lines for the policy files this skill's domain is supposed to obey."""
-    paths = POLICY_LOADS.get(key) or POLICY_LOADS.get(category) or []
+    paths = deep_lookup(POLICY_LOADS, key, category, [])
     existing = [p for p in paths if (SKILLS.parent / p).exists()]
     if not existing:
         return ""
@@ -595,14 +608,36 @@ def write_skill(path: Path) -> None:
     path.write_text(hdr + "\n" + body + "\n", encoding="utf-8")
 
 
+def is_self_declared_skip(p: Path) -> bool:
+    """A SKILL.md can opt out of regeneration itself via `generator: skip` in its own
+    frontmatter, in addition to being listed in SKIP above. The "is this skill hand-maintained"
+    fact used to live ONLY in this second, disjoint file -- forgetting to add a newly
+    hand-edited skill here has repeatedly caused real edits to be silently reverted on the next
+    run (see CLAUDE.md's "Skill authoring" section). This is additive, not a replacement: SKIP
+    still works exactly as before.
+    """
+    try:
+        fm = read_front_matter(p)
+    except SystemExit:
+        return False
+    return fm.get("generator") == "skip"
+
+
 def main() -> None:
     n = 0
+    self_declared = 0
     for p in sorted(SKILLS.rglob("SKILL.md")):
         if p in SKIP:
             continue
+        if is_self_declared_skip(p):
+            self_declared += 1
+            continue
         write_skill(p)
         n += 1
-    print(f"Wrote {n} skills. Skipped {len(SKIP)} hand-maintained.")
+    print(
+        f"Wrote {n} skills. Skipped {len(SKIP)} hand-maintained (SKIP set) "
+        f"+ {self_declared} self-declared (generator: skip)."
+    )
 
 
 if __name__ == "__main__":

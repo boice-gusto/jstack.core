@@ -67,27 +67,33 @@ export type ClaudeMdApplyOpts = {
   yes: boolean;
 };
 
-export async function runClaudeMdApply(opts: ClaudeMdApplyOpts) {
+export type ClaudeMdApplyResult =
+  | { status: "stale"; reason: string }
+  | { status: "needs-confirmation"; reason: string }
+  | { status: "ready"; command: string };
+
+export async function runClaudeMdApply(
+  opts: ClaudeMdApplyOpts,
+): Promise<ClaudeMdApplyResult> {
   const claudePath = join(opts.projectRoot, "CLAUDE.md");
   const currentMtime = statSync(claudePath).mtimeMs;
   // Allow up to 1s clock skew tolerance.
   if (currentMtime - opts.scanMtimeMs > 1000) {
     return {
-      applied: false,
+      status: "stale",
       reason: "CLAUDE.md changed since scan — re-run the improver.",
     };
   }
   if (!opts.yes) {
     return {
-      applied: false,
+      status: "needs-confirmation",
       reason: "--apply requires --yes (or interactive confirmation).",
     };
   }
   // Defer the actual `git apply` to the SKILL.md so the CLI does not assume a git repo state.
   // Return the command for the caller to run.
   return {
-    applied: false,
-    reason: "ready",
+    status: "ready",
     command: `git -C ${opts.projectRoot} apply ${opts.patchPath} && git -C ${opts.projectRoot} add CLAUDE.md && git -C ${opts.projectRoot} commit -m "chore: apply CLAUDE.md improver patch"`,
   };
 }
@@ -138,8 +144,7 @@ export function registerClaudeMdCommand(program: Command): void {
           scanMtimeMs: Number(o.scanMtime ?? "0"),
           yes: !!o.yes,
         });
-        if (result.applied) process.stdout.write("applied\n");
-        else process.stdout.write(JSON.stringify(result) + "\n");
+        process.stdout.write(JSON.stringify(result) + "\n");
       },
     );
 }

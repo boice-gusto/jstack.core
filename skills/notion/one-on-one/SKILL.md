@@ -14,7 +14,7 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Route Notion requests to the most specific sub-skill. Do not write pages directly from the orchestrator.
+Create or update a 1:1 page in Notion: date, topics, and action items via `templates/notion/one-on-one.json`, respecting private-manager defaults.
 - **Transcript-driven 1:1 cycle:** For **paired prep + after** notes grounded in **configured transcript paths**, AI-generated content with **attribution**, and **Lattice vs Notion** routing, use **`jstack-meetings-one-on-one-transcript`** first; chain here for the Notion page shape and properties.
 - **Out of scope:** Workspace membership, public sharing, or export settings.
 
@@ -71,7 +71,7 @@ Use a domain-appropriate heading, then:
 | Property type mismatch | Show expected vs actual type; suggest manual Notion fix or config update. |
 
 ## Chaining
-Complete the work here. If a natural follow-up exists (e.g. `jstack:jira-intake` then `jstack:jira-create`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
+Complete the work here. If a natural follow-up exists (e.g. `jstack-notion-planning` then `jstack-notion-sprint`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
 
 ## User request
 

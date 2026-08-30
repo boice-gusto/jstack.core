@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { configPath, findProjectRoot } from "../cli/src/lib/config.js";
 import { ENCODING_UTF8, TELEMETRY_CLI } from "../constants/paths.js";
-import { clearBuffer, bufferSize, snapshotBuffer } from "./collector.js";
+import { clearPersisted, readPersisted, recordEvent } from "./collector.js";
 import { telemetryInstanceHash16 } from "./instance-id.js";
 import { sendBatch } from "./sender.js";
 
@@ -29,20 +29,33 @@ function loadTelemetryCfg(root: string): TelemetryCfg {
   }
 }
 
+/** Parses `--key value` pairs from argv following the action word. Unknown flags are ignored
+ * rather than rejected -- this is an internal, best-effort recorder, not a user-facing surface
+ * that needs strict validation (the Zod schema in ./schema.js is the real gate, applied when the
+ * event is constructed below). */
+function parseFlags(argv: string[]): Record<string, string> {
+  const flags: Record<string, string> = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg?.startsWith("--")) {
+      const key = arg.slice(2);
+      const value = argv[i + 1];
+      if (value !== undefined && !value.startsWith("--")) {
+        flags[key] = value;
+        i++;
+      }
+    }
+  }
+  return flags;
+}
+
 const action = process.argv[2] ?? TELEMETRY_CLI.ACTIONS.STATUS;
 
-// The in-memory buffer in ./collector.ts has no callers of recordEvent() anywhere in
-// this codebase, and each `status`/`flush` invocation runs in its own fresh `bun`
-// process (spawned by cli/src/commands/telemetry.ts), so the buffer is always empty —
-// not because telemetry ran and captured nothing, but because nothing wires events
-// into it in the first place. Report that explicitly so an operator reading `buffer: 0`
-// can't mistake "unused pipeline" for "broken pipeline". Update RECORDING_WIRED_UP (and
-// the message below) if a real caller of recordEvent() is ever added.
-const RECORDING_WIRED_UP = false;
-const NOT_WIRED_UP_MESSAGE =
-  "Telemetry recording is not currently wired up in this process — no code path calls " +
-  "recordEvent(), so the buffer is always empty. This reflects an unused pipeline, not " +
-  "a broken one.";
+// `jstack telemetry record` (below) is the first real caller of recordEvent() in this codebase --
+// a skill's own preamble/procedure can `!bun ${CLAUDE_PLUGIN_ROOT}/telemetry/cli.ts record ...` the
+// same way it already `!cat`s the setup preamble. No skill does this YET; wiring individual
+// skills to call it is a separate follow-up, tracked apart from making the pipe itself real.
+const RECORDING_WIRED_UP = true;
 
 if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
   const root = findProjectRoot(import.meta.dir);
@@ -50,9 +63,8 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
   console.log(
     JSON.stringify(
       {
-        buffer: bufferSize(),
+        buffer: readPersisted().length,
         recording_wired_up: RECORDING_WIRED_UP,
-        message: NOT_WIRED_UP_MESSAGE,
         cwd: root,
         telemetry_config: {
           enabled: cfg.enabled,
@@ -64,28 +76,56 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
     ),
   );
 } else if (action === TELEMETRY_CLI.ACTIONS.RESET) {
-  clearBuffer();
+  clearPersisted();
   console.log("buffer cleared");
 } else if (action === TELEMETRY_CLI.ACTIONS.FLUSH) {
   const root = findProjectRoot(import.meta.dir);
   const cfg = loadTelemetryCfg(root);
   let endpoint: string | undefined;
   if (cfg.enabled && cfg.endpoint.length > 0) endpoint = cfg.endpoint;
-  const events = snapshotBuffer();
-  clearBuffer();
+  const events = readPersisted();
   const ok = await sendBatch(endpoint, events);
+  clearPersisted();
   console.log(
     JSON.stringify(
       {
         sent: events.length,
         ok,
         recording_wired_up: RECORDING_WIRED_UP,
-        message: NOT_WIRED_UP_MESSAGE,
       },
       null,
       2,
     ),
   );
+} else if (action === TELEMETRY_CLI.ACTIONS.RECORD) {
+  const root = findProjectRoot(import.meta.dir);
+  const cfg = loadTelemetryCfg(root);
+  if (!cfg.enabled) {
+    // Opt-in, off by default -- a disabled caller's event is silently dropped, not queued for
+    // later, so enabling telemetry never retroactively "finds" events from before it was on.
+    console.log(
+      JSON.stringify({ recorded: false, reason: "telemetry disabled" }),
+    );
+  } else {
+    const flags = parseFlags(process.argv.slice(3));
+    const tokenInput = Number(flags["token-input"] ?? 0);
+    const tokenOutput = Number(flags["token-output"] ?? 0);
+    recordEvent({
+      timestamp: new Date().toISOString(),
+      plugin_version: flags["plugin-version"] ?? "unknown",
+      skill_name: flags.skill ?? "unknown",
+      skill_category: flags.category ?? "unknown",
+      token_input: Number.isFinite(tokenInput) ? tokenInput : 0,
+      token_output: Number.isFinite(tokenOutput) ? tokenOutput : 0,
+      token_total: Number.isFinite(tokenInput + tokenOutput)
+        ? tokenInput + tokenOutput
+        : 0,
+      latency_ms: Number(flags["latency-ms"] ?? 0) || 0,
+      success: flags.success !== "false",
+      error_type: flags["error-type"],
+    });
+    console.log(JSON.stringify({ recorded: true }));
+  }
 } else if (action === TELEMETRY_CLI.ACTIONS.TEST) {
   const root = findProjectRoot(import.meta.dir);
   const cfg = loadTelemetryCfg(root);

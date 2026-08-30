@@ -2,4 +2,4 @@
 
 - **Diary**: situation → emotion → learning → next experiment.
 - **Lookback**: wins, misses, surprises, one habit to change.
-- **Focus**: top 3 outcomes, blockers, first next step tomorrow.
+- **Focus**: 2-3 focus blocks (specific, time-boxed, tied to one deliverable), one explicit non-goal, one timebox suggestion.

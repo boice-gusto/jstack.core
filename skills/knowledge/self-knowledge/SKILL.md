@@ -2,8 +2,10 @@
 name: jstack-self-knowledge
 description: Link personal GitHub activity and gbrain entries. No scraping private repos without token scope.
 category: knowledge
+data_class: internal
 disable-model-invocation: true
 effort: high
+gbrain_destination: personal
 ---
 
 <!-- Chain Contract -->
@@ -49,7 +51,7 @@ Link the user's own activity and gbrain entries into a retrievable personal grap
 - *Sharp:* "Captured 2026-07-26, source: self-reported in this session's notes. Retrieval tag: `review-style-preference` (matches how a future search would phrase it). Checked for duplicates under `review`/`pairing` tags: none found. Not synced to the team store — this is a personal working-style note, not a team process decision."
 
 ### What this skill must not do
-- Does not build or maintain the team-wide knowledge graph — that's `jstack:knowledge-team-knowledge`.
+- Does not build or maintain the team-wide knowledge graph — that's `jstack:team-knowledge`.
 - Does not write personal data into a shared store under any default path.
 - Does not scrape private repos or org data beyond the configured token's actual scope.
 

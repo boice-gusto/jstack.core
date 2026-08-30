@@ -2,30 +2,22 @@ import { create } from "zustand";
 
 import type { AgentStreamBody } from "@/lib/agent-request-schema";
 import {
-  appendStderrToDraft,
-  extractResultCost,
-  extractResultTokenTotal,
-  extractToolEventName,
+  applyAgentStreamEvent,
+  initialAgentRunSlice,
   newRunId,
   nextRunStateForDraft,
-  pushSeries,
   type RunState,
+  type ToolEvent,
 } from "@/lib/agent-run-shared";
 import { runAgentStream, type AgentStreamEvent } from "@/lib/agent-stream-runner";
 
 export type { AgentStreamEvent } from "@/lib/agent-stream-runner";
-export type { RunState } from "@/lib/agent-run-shared";
+export type { RunState, ToolEvent } from "@/lib/agent-run-shared";
 
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
-};
-
-export type ToolEvent = {
-  id: string;
-  name: string;
-  input: unknown;
 };
 
 export type AgentRunContext = {
@@ -44,28 +36,27 @@ type ChatState = {
   skillId: string;
   expectStructuredJson: boolean;
   structuredJsonText: string | null;
-  /** `claude` session id from the last run's `start` event; lets the next turn `--resume` instead
-   *  of resending the whole transcript. Cleared by `resetConversation`. */
+  /** `claude`/`codex` session id from the last run's `start` event; lets the next turn resume
+   *  instead of resending the whole transcript. Cleared by `resetConversation` and by
+   *  `setBackend` (a session id from one backend means nothing to the other's CLI). */
   claudeSessionId: string | null;
+  /** Which model CLI runs the next turn. Defaults to `claude`. */
+  backend: "claude" | "codex";
   appendUser: (content: string) => void;
   resetConversation: () => void;
   setSkillId: (id: string) => void;
   setExpectStructuredJson: (v: boolean) => void;
+  setBackend: (b: "claude" | "codex") => void;
   runAgent: () => Promise<void>;
 };
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
-  run: { status: "idle" },
-  toolEvents: [],
-  streamEvents: [],
+  ...initialAgentRunSlice(),
   lastRunContext: null,
-  costSeries: [],
-  tokenSeries: [],
   skillId: "",
   expectStructuredJson: false,
-  structuredJsonText: null,
-  claudeSessionId: null,
+  backend: "claude",
 
   appendUser: (content: string) => {
     const trimmed = content.trim();
@@ -83,22 +74,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   resetConversation: () => {
     set({
       messages: [],
-      run: { status: "idle" },
-      toolEvents: [],
-      streamEvents: [],
+      ...initialAgentRunSlice(),
       lastRunContext: null,
-      costSeries: [],
-      tokenSeries: [],
-      structuredJsonText: null,
-      claudeSessionId: null,
     });
   },
 
   setSkillId: (id: string) => set({ skillId: id }),
   setExpectStructuredJson: (v: boolean) => set({ expectStructuredJson: v }),
+  setBackend: (b: "claude" | "codex") =>
+    set((s) => (s.backend === b ? s : { backend: b, claudeSessionId: null })),
 
   runAgent: async () => {
-    const { messages, skillId, expectStructuredJson, run, claudeSessionId } = get();
+    const { messages, skillId, expectStructuredJson, run, claudeSessionId, backend } = get();
     if (run.status === "streaming") {
       return;
     }
@@ -107,7 +94,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    // Resuming an existing `claude` session: it already holds every earlier turn, so only the
+    // Resuming an existing session: the backend already holds every earlier turn, so only the
     // newest message needs to go over the wire. A fresh run (no session yet) still sends the
     // full transcript once, which is what establishes that session in the first place.
     const messagesToSend =
@@ -122,6 +109,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       expectStructuredJson: expectStructuredJson || undefined,
       surface: "agent",
       resumeSessionId: claudeSessionId ?? undefined,
+      backend,
     };
 
     set({
@@ -134,17 +122,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     let draft = "";
 
-    // Keep updating the draft text as it streams in, without reviving a
-    // "streaming" status once an error event has already flipped us to
-    // "error" (the error stays visible; only the attached draft refreshes).
-    const setDraft = (): void => {
-      set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
-    };
-
     const onEvent = (evt: AgentStreamEvent): void => {
-      set((s) => ({ streamEvents: [...s.streamEvents, evt] }));
-      const type = evt.type;
-      if (type === "start" && typeof evt.cwd === "string") {
+      const current = get();
+      const applied = applyAgentStreamEvent(evt, draft, current);
+      draft = applied.draft;
+      set(applied.patch);
+
+      // Extras that only apply to this surface, not shared with wizard-store:
+      if (evt.type === "start" && typeof evt.cwd === "string") {
         const sid = evt.skillId;
         set({
           lastRunContext: {
@@ -153,47 +138,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
           },
         });
       }
-      if (type === "session" && typeof evt.sessionId === "string" && evt.sessionId.length > 0) {
-        set({ claudeSessionId: evt.sessionId });
-      }
-      if (type === "text" && typeof evt.text === "string") {
-        draft += evt.text;
-        setDraft();
-      }
-      if (type === "error" && typeof evt.message === "string") {
-        set({ run: { status: "error", message: evt.message, draft } });
-      }
-      if (type === "stderr" && typeof evt.text === "string") {
-        const next = appendStderrToDraft(draft, evt.text);
-        if (next !== draft) {
-          draft = next;
-          setDraft();
-        }
-      }
-      if (type === "tool_use") {
-        const name = extractToolEventName(evt);
-        const input = evt.input;
-        set((s) => ({
-          toolEvents: [
-            ...s.toolEvents,
-            { id: newRunId(), name, input },
-          ],
-        }));
-      }
-      if (type === "result") {
-        const cost = extractResultCost(evt);
-        if (cost !== null) {
-          set((s) => ({ costSeries: pushSeries(s.costSeries, cost) }));
-        }
-        const tokenTotal = extractResultTokenTotal(evt);
-        if (tokenTotal !== null) {
-          set((s) => ({ tokenSeries: pushSeries(s.tokenSeries, tokenTotal) }));
-        }
+      if (evt.type === "result") {
         const resultText =
           typeof evt.result === "string" ? evt.result.trim() : "";
         if (resultText.length > 0 && draft.trim().length === 0) {
           draft += resultText;
-          setDraft();
+          set((s) => ({ run: nextRunStateForDraft(s.run, draft) }));
         }
       }
     };
@@ -208,6 +158,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
+    if (get().run.status === "error") {
+      // Same rule as wizard-store: a server-reported "error" event doesn't throw --
+      // runAgentStream resolves normally -- so a partial draft can exist alongside a real
+      // error. Committing it as a successful assistant message would hide the error and
+      // flip status to "done" as if the run had actually succeeded.
+      return;
+    }
+
     const finalContent = draft.trim();
     set((s) => {
       if (finalContent.length > 0) {
@@ -218,11 +176,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ],
           run: { status: "done" as const },
         };
-      }
-      if (s.run.status === "error") {
-        // A server-side error already explains why there's no content;
-        // leave it in place rather than overwriting it with "done".
-        return {};
       }
       if (exitCode !== null && exitCode !== 0) {
         return {

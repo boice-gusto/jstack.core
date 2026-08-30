@@ -13,7 +13,6 @@ export async function GET(): Promise<Response> {
     const payload = skills.map((s) => ({
       id: s.id,
       name: s.name,
-      path: s.path,
       relPath: s.relPath,
       gateId: s.gateId,
       description: s.description,

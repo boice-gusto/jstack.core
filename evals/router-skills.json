@@ -3,7 +3,6 @@
   "routers": [
     "jira",
     "notion",
-    "federated-search",
     "meetings",
     "research",
     "reports",
@@ -19,6 +18,7 @@
     "sprint",
     "computer-use",
     "design",
-    "pe"
+    "pe",
+    "shortcuts"
   ]
 }

@@ -56,7 +56,8 @@ interface S {
 const skills: S[] = [];
 for (const rel of discoverAllSkillRelativePaths(skillsRoot)) {
   const raw = readFileSync(join(skillsRoot, rel, "SKILL.md"), "utf8");
-  const { meta } = parseYamlFrontmatter(raw);
+  const parsedFm = parseYamlFrontmatter(raw);
+  const meta = parsedFm.status === "ok" ? parsedFm.meta : {};
   const name = typeof meta.name === "string" ? meta.name : "";
   const desc = typeof meta.description === "string" ? meta.description : "";
   if (name) skills.push({ rel, name, desc });

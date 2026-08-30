@@ -22,7 +22,8 @@ import {
 import { join } from "node:path";
 import { CrewConfigSchema } from "./lib/crew/types.js";
 import { tick } from "./lib/crew/tick.js";
-import { snapshotPath } from "./lib/crew/store.js";
+import { expandHome, snapshotPath } from "./lib/crew/store.js";
+import { isTccProtected } from "./lib/crew/launchd.js";
 
 /**
  * DESIGN NOTE -- why this daemon needs no Full Disk Access grant.
@@ -125,9 +126,7 @@ function tccProbe(): number {
     >;
     const cfg = CrewConfigSchema.parse((raw as { crew: unknown }).crew);
     for (const a of Object.values(cfg.agents)) {
-      const w = a.workspace.startsWith("~/")
-        ? join(process.env.HOME ?? "", a.workspace.slice(2))
-        : a.workspace;
+      const w = expandHome(a.workspace);
       try {
         readdirSync(w);
       } catch {
@@ -166,15 +165,9 @@ function writeHealth(
    * working with the parent ungranted. The worker's own success or failure is the real
    * evidence, and it lands in the task ledger.
    */
-  const protectedRoots = ["Documents", "Desktop", "Downloads"].map((d) =>
-    join(process.env.HOME ?? "", d),
-  );
-  const isProtected = (p: string) =>
-    protectedRoots.some((r) => p === r || p.startsWith(`${r}/`));
-
   const readable: Record<string, boolean | "delegated"> = {};
   for (const [id, w] of Object.entries(workspaces)) {
-    if (isProtected(w)) {
+    if (isTccProtected(w)) {
       readable[id] = "delegated";
       continue;
     }
@@ -292,17 +285,13 @@ async function main(): Promise<number> {
   const cfg = loaded.cfg;
   const configSource = loaded.source;
 
-  const stateDir = cfg.state_dir.startsWith("~/")
-    ? join(process.env.HOME ?? "", cfg.state_dir.slice(2))
-    : cfg.state_dir;
+  const stateDir = expandHome(cfg.state_dir);
   writeHealth(
     stateDir,
     Object.fromEntries(
       Object.entries(cfg.agents).map(([id, a]) => [
         id,
-        a.workspace.startsWith("~/")
-          ? join(process.env.HOME ?? "", a.workspace.slice(2))
-          : a.workspace,
+        expandHome(a.workspace),
       ]),
     ),
     configSource,

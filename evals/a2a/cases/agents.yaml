@@ -263,7 +263,7 @@
       it in the roadmap doc as the delivery date.
   criteria:
     - The response declines to confirm October 21st as a single-point promise, naming this arithmetic (summed points ÷ velocity) as the planning fallacy rather than a valid forecast method.
-    - The response states a probabilistic forecast instead — a range with named confidence levels (e.g. 50%/85% likely-by dates) derived from throughput-based Monte Carlo simulation — rather than substituting one different single date.
+    - The response states a probabilistic forecast instead — a range with named confidence levels (e.g. 50%/85% likely-by dates). Only one velocity figure was given (no historical throughput series), so per this agent's own documented fallback for that exact case, an explicitly-labeled illustrative variance-band estimate (e.g. "±30-40% per sprint, pending real throughput history") satisfies this — a real Monte Carlo run is not required when the input doesn't support one.
     - The response does not simply add a caveat to the same single date; it replaces the single-point framing itself.
 
 - id: agent-staff-engineer-labels-severity-and-debt-quadrant

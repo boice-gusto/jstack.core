@@ -31,6 +31,27 @@ const DependencyIssueSchema = z.object({
 
 const IssuesPayloadSchema = z.array(DependencyIssueSchema);
 
+/**
+ * This schema is a hand-mirrored copy of dependency-resolver.ts's RepairAction/DependencyIssue
+ * union -- nothing ties them together, so the two could drift silently (a new RepairAction kind
+ * added there would compile fine here and then get rejected at runtime by this file's own
+ * schema, or vice versa). These two never-called functions check assignability in both
+ * directions; if either type gains/loses a field or a union member the other doesn't have,
+ * one of the two `return x` statements below fails to compile.
+ */
+function _assertDependencyIssueAssignableToSchemaOutput(
+  x: DependencyIssue,
+): z.infer<typeof DependencyIssueSchema> {
+  return x;
+}
+function _assertSchemaOutputAssignableToDependencyIssue(
+  x: z.infer<typeof DependencyIssueSchema>,
+): DependencyIssue {
+  return x;
+}
+void _assertDependencyIssueAssignableToSchemaOutput;
+void _assertSchemaOutputAssignableToDependencyIssue;
+
 export function serializeRepairs(issues: DependencyIssue[]): string {
   return JSON.stringify(issues, null, 2);
 }

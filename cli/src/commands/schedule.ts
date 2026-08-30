@@ -29,6 +29,7 @@ import {
   validateChain,
   wellKnownRoutineIds,
   type CronPresetKey,
+  type RawRoutines,
   type RoutineRow,
   type ScheduleRunRecord,
 } from "../lib/scheduler.js";
@@ -301,8 +302,8 @@ export async function runScheduleSetup(
   const root = findProjectRoot();
   const pluginRoot = findPluginRoot();
   const cfg = readConfig(root);
-  const routines = {
-    ...(cfg.routines as Record<string, Record<string, unknown>> | undefined),
+  const routines: RawRoutines = {
+    ...(cfg.routines as RawRoutines | undefined),
   };
 
   const interactive = isInteractive();
