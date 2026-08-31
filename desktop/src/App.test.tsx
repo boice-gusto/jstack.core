@@ -228,7 +228,9 @@ describe("App", () => {
     render(<App />);
     await waitFor(() => screen.getByText("ral-old1"));
     expect(screen.getByText("idle")).toBeTruthy();
-    expect(screen.getByText(/ralph/)).toBeTruthy();
+    // Sessions are grouped under a per-agent heading now, rather than repeating the agent id
+    // inline on every session item.
+    expect(screen.getByRole("button", { name: /Ralph \(1\)/ })).toBeTruthy();
     expect(screen.getByText(/3 turns/)).toBeTruthy();
   });
 

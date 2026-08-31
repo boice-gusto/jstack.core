@@ -36,6 +36,12 @@ import {
   CollapsibleTrigger,
 } from "./components/ui/collapsible";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "./components/ui/context-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -67,6 +73,7 @@ const LAST_SESSION_KEY = "jstack.lastSessionId";
  */
 const FOLDERS_KEY = "jstack.folders";
 const SESSION_FOLDER_KEY = "jstack.sessionFolder";
+const SESSION_NAME_KEY = "jstack.sessionName";
 const SIDEBAR_COLLAPSED_KEY = "jstack.sidebarCollapsed";
 const UNFILED = "unfiled";
 
@@ -85,9 +92,9 @@ function loadFolders(): Folder[] {
   }
 }
 
-function loadSessionFolder(): Record<string, string> {
+function loadStringMap(key: string): Record<string, string> {
   try {
-    const raw = localStorage.getItem(SESSION_FOLDER_KEY);
+    const raw = localStorage.getItem(key);
     const parsed = raw ? JSON.parse(raw) : {};
     return typeof parsed === "object" && parsed !== null ? parsed : {};
   } catch {
@@ -119,16 +126,22 @@ function App() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [folders, setFolders] = useState<Folder[]>(() => loadFolders());
   const [sessionFolder, setSessionFolder] = useState<Record<string, string>>(() =>
-    loadSessionFolder(),
+    loadStringMap(SESSION_FOLDER_KEY),
+  );
+  const [sessionNames, setSessionNames] = useState<Record<string, string>>(() =>
+    loadStringMap(SESSION_NAME_KEY),
   );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1",
   );
 
-  const sessionsByFolder = useMemo(() => {
+  /** Splits a list of sessions (already scoped to one agent) into user-created folders vs.
+   * Unfiled -- reused per-agent, since folders organize within an agent's chats, not across
+   * agents (that's what the agent grouping itself is for). */
+  function splitByFolder(list: SessionSummary[]) {
     const byFolder = new Map<string, SessionSummary[]>();
     const unfiled: SessionSummary[] = [];
-    for (const s of sessions) {
+    for (const s of list) {
       const fid = sessionFolder[s.id];
       if (fid && folders.some((f) => f.id === fid)) {
         const bucket = byFolder.get(fid) ?? [];
@@ -139,7 +152,17 @@ function App() {
       }
     }
     return { byFolder, unfiled };
-  }, [sessions, sessionFolder, folders]);
+  }
+
+  const sessionsByAgent = useMemo(() => {
+    const map = new Map<string, SessionSummary[]>();
+    for (const s of sessions) {
+      const bucket = map.get(s.agentId) ?? [];
+      bucket.push(s);
+      map.set(s.agentId, bucket);
+    }
+    return map;
+  }, [sessions]);
 
   function handleToggleSidebar(): void {
     setSidebarCollapsed((v) => {
@@ -179,6 +202,18 @@ function App() {
       if (folderId === UNFILED) delete next[sessionIdToMove];
       else next[sessionIdToMove] = folderId;
       localStorage.setItem(SESSION_FOLDER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function handleRenameSession(id: string): void {
+    const name = window.prompt("Rename session", sessionNames[id] ?? "")?.trim();
+    if (name === undefined) return; // cancelled, as opposed to cleared with an empty string
+    setSessionNames((prev) => {
+      const next = { ...prev };
+      if (name) next[id] = name;
+      else delete next[id]; // empty name reverts to showing the raw session id
+      localStorage.setItem(SESSION_NAME_KEY, JSON.stringify(next));
       return next;
     });
   }
@@ -276,28 +311,33 @@ function App() {
     switchToSession(s.id, s.agentId);
   }
 
-  async function handleCloseSession(): Promise<void> {
-    if (sessionId === null || busy) return;
-    const closingId = sessionId;
+  /** Closes any session, not just the active one -- the context menu on a listed session needs
+   * to close it without first switching to it, which the old "Close session" button (bound to
+   * whatever `sessionId` happened to be active) couldn't do. */
+  async function handleCloseSessionById(id: string): Promise<void> {
+    if (busy) return;
+    const wasActive = id === sessionId;
     setBusy(true);
     try {
-      const { retro } = await cancelSession(closingId);
-      const learned = retro.saved.map((m) => `(${m.kind}) ${m.content}`);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "system",
-          text:
-            learned.length > 0
-              ? `Session closed. Learned:\n${learned.join("\n")}`
-              : "Session closed.",
-        },
-      ]);
-      localStorage.removeItem(LAST_SESSION_KEY);
-      setSessionId(null);
+      const { retro } = await cancelSession(id);
+      if (wasActive) {
+        const learned = retro.saved.map((m) => `(${m.kind}) ${m.content}`);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "system",
+            text:
+              learned.length > 0
+                ? `Session closed. Learned:\n${learned.join("\n")}`
+                : "Session closed.",
+          },
+        ]);
+        localStorage.removeItem(LAST_SESSION_KEY);
+        setSessionId(null);
+      }
       await refreshSessions();
     } catch (e) {
-      console.error(`[jstack] cancelSession(${closingId}) failed:`, e);
+      console.error(`[jstack] cancelSession(${id}) failed:`, e);
       setSessionError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
@@ -337,24 +377,32 @@ function App() {
   }
 
   function renderSessionItem(s: SessionSummary) {
+    const displayName = sessionNames[s.id] ?? s.id;
     return (
       <li key={s.id}>
-        <button
-          type="button"
-          onClick={() => handleSwitchSession(s)}
-          className={`flex w-full flex-col items-start gap-1 rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
-            s.id === sessionId ? "border-primary bg-accent" : "border-transparent"
-          }`}
-        >
-          <span className="font-medium">{s.id}</span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            {s.agentId}
-            <Badge variant="secondary" className="text-[10px]">
-              {s.state}
-            </Badge>
-            {s.turns} turn{s.turns === 1 ? "" : "s"}
-          </span>
-        </button>
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <button
+              type="button"
+              onClick={() => handleSwitchSession(s)}
+              className={`flex w-full flex-col items-start gap-1 rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
+                s.id === sessionId ? "border-primary bg-accent" : "border-transparent"
+              }`}
+            >
+              <span className="font-medium">{displayName}</span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Badge variant="secondary" className="text-[10px]">
+                  {s.state}
+                </Badge>
+                {s.turns} turn{s.turns === 1 ? "" : "s"}
+              </span>
+            </button>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onClick={() => handleRenameSession(s.id)}>Rename</ContextMenuItem>
+            <ContextMenuItem onClick={() => handleCloseSessionById(s.id)}>Close</ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
         {folders.length > 0 && (
           <Select
             value={sessionFolder[s.id] ?? UNFILED}
@@ -461,53 +509,71 @@ function App() {
               </Select>
             )}
 
-            <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
-              {folders.map((f) => {
-                const items = sessionsByFolder.byFolder.get(f.id) ?? [];
+            <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
+              {sessions.length === 0 && (
+                <p className="text-sm text-muted-foreground">No sessions yet</p>
+              )}
+              {/* Known agents first, then any agentId a session references that isn't in the
+                  current agent list (a deleted or renamed agent) -- a session must never just
+                  silently vanish from the sidebar because its agent no longer exists. */}
+              {[
+                ...agents.map((a) => ({ id: a.id, name: a.name })),
+                ...[...sessionsByAgent.keys()]
+                  .filter((aid) => !agents.some((a) => a.id === aid))
+                  .map((aid) => ({ id: aid, name: aid })),
+              ].map((group) => {
+                const items = sessionsByAgent.get(group.id) ?? [];
+                if (items.length === 0) return null;
+                const { byFolder, unfiled } = splitByFolder(items);
                 return (
-                  <Collapsible key={f.id} defaultOpen className="group">
-                    <div className="flex items-center justify-between gap-1">
-                      <CollapsibleTrigger className="flex flex-1 items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
-                        <ChevronRightIcon className="size-3 transition-transform group-data-[state=open]:rotate-90" />
-                        <FolderIcon className="size-3" />
-                        {f.name} ({items.length})
-                      </CollapsibleTrigger>
-                      <button
-                        type="button"
-                        title="Delete folder"
-                        onClick={() => handleDeleteFolder(f.id)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <XIcon className="size-3" />
-                      </button>
-                    </div>
+                  <Collapsible key={group.id} defaultOpen className="group/agent">
+                    <CollapsibleTrigger className="flex w-full items-center gap-1 text-xs font-semibold text-foreground">
+                      <ChevronRightIcon className="size-3 transition-transform group-data-[state=open]/agent:rotate-90" />
+                      {group.name} ({items.length})
+                    </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <ul className="mt-1 ml-4 flex flex-col gap-1">
-                        {items.length === 0 ? (
-                          <li className="text-xs text-muted-foreground">Empty</li>
-                        ) : (
-                          items.map((s) => renderSessionItem(s))
+                      <div className="mt-1 ml-4 flex flex-col gap-3">
+                        {folders.map((f) => {
+                          const folderItems = byFolder.get(f.id) ?? [];
+                          return (
+                            <Collapsible key={f.id} defaultOpen className="group/folder">
+                              <div className="flex items-center justify-between gap-1">
+                                <CollapsibleTrigger className="flex flex-1 items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+                                  <ChevronRightIcon className="size-3 transition-transform group-data-[state=open]/folder:rotate-90" />
+                                  <FolderIcon className="size-3" />
+                                  {f.name} ({folderItems.length})
+                                </CollapsibleTrigger>
+                                <button
+                                  type="button"
+                                  title="Delete folder"
+                                  onClick={() => handleDeleteFolder(f.id)}
+                                  className="text-muted-foreground hover:text-destructive"
+                                >
+                                  <XIcon className="size-3" />
+                                </button>
+                              </div>
+                              <CollapsibleContent>
+                                <ul className="mt-1 ml-4 flex flex-col gap-1">
+                                  {folderItems.length === 0 ? (
+                                    <li className="text-xs text-muted-foreground">Empty</li>
+                                  ) : (
+                                    folderItems.map((s) => renderSessionItem(s))
+                                  )}
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          );
+                        })}
+                        {unfiled.length > 0 && (
+                          <ul className="flex flex-col gap-1">
+                            {unfiled.map((s) => renderSessionItem(s))}
+                          </ul>
                         )}
-                      </ul>
+                      </div>
                     </CollapsibleContent>
                   </Collapsible>
                 );
               })}
-
-              <div>
-                {folders.length > 0 && (
-                  <h3 className="mb-1 text-xs font-medium text-muted-foreground">Unfiled</h3>
-                )}
-                {sessionsByFolder.unfiled.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    {folders.length > 0 ? "Nothing unfiled" : "No sessions yet"}
-                  </p>
-                ) : (
-                  <ul className="flex flex-col gap-1">
-                    {sessionsByFolder.unfiled.map((s) => renderSessionItem(s))}
-                  </ul>
-                )}
-              </div>
             </div>
           </>
         )}
@@ -523,8 +589,14 @@ function App() {
         )}
         {sessionId && (
           <div className="mb-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <span>session {sessionId}</span>
-            <Button type="button" variant="ghost" size="sm" onClick={handleCloseSession} disabled={busy}>
+            <span>session {sessionNames[sessionId] ?? sessionId}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleCloseSessionById(sessionId)}
+              disabled={busy}
+            >
               Close session
             </Button>
           </div>
