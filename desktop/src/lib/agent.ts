@@ -112,6 +112,40 @@ export function daemonStatus(): Promise<DaemonStatus> {
   return invoke("daemon_status");
 }
 
+export interface AgentSummary {
+  id: string;
+  name: string;
+  enabled: boolean;
+  model: string;
+  persona: string;
+  tools: string[];
+  mcp: "none" | "inherit";
+}
+
+/** Every agent configured in `jstack.config.json`'s `crew.agents` -- an empty list is the
+ * onboarding wizard's trigger condition (see App.tsx), not an error state. */
+export function listAgents(): Promise<AgentSummary[]> {
+  return invoke("agent_list");
+}
+
+export interface CreateAgentInput {
+  id: string;
+  name: string;
+  persona?: string;
+  model?: string;
+  tools?: string[];
+  mcp?: "none" | "inherit";
+}
+
+/** Writes a new agent to the real project config and splices it into the running daemon's
+ * in-memory config immediately -- usable via `newSession` the moment this resolves, no restart
+ * or wait for the next tick needed (see rpc-server.ts's own note on why that matters). */
+export function createAgent(
+  input: CreateAgentInput,
+): Promise<{ id: string; agent: Omit<AgentSummary, "id"> }> {
+  return invoke("agent_create", { ...input });
+}
+
 /** Poll-based, not push/streamed -- see rpc-server.ts's own note on why (one request/response
  * per socket connection, no server-initiated messages). A UI wanting "live" logs polls this on
  * an interval rather than subscribing. */

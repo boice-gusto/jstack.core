@@ -67,6 +67,35 @@ async fn session_remember(
 }
 
 #[tauri::command]
+async fn agent_list() -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "agent/list", json!({})).await
+}
+
+#[tauri::command]
+async fn agent_create(
+    id: String,
+    name: String,
+    persona: Option<String>,
+    model: Option<String>,
+    tools: Option<Vec<String>>,
+    mcp: Option<String>,
+) -> Result<Value, String> {
+    agent_client::call(
+        &resolve_socket()?,
+        "agent/create",
+        json!({
+            "id": id,
+            "name": name,
+            "persona": persona,
+            "model": model,
+            "tools": tools,
+            "mcp": mcp,
+        }),
+    )
+    .await
+}
+
+#[tauri::command]
 async fn daemon_status() -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "status", json!({})).await
 }
@@ -111,6 +140,8 @@ pub fn run() {
             session_prompt,
             session_cancel,
             session_remember,
+            agent_list,
+            agent_create,
             daemon_status,
             recent_logs,
         ])

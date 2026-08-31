@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   cancelSession,
-  daemonStatus,
   getSessionHistory,
+  listAgents,
   listSessions,
   newSession,
   promptSession,
-  recentLogs,
-  type DaemonStatus,
+  type AgentSummary,
   type PromptResult,
   type SessionSummary,
   type ToolCallEvent,
 } from "./lib/agent";
+import { Onboarding } from "./components/Onboarding";
+import { SettingsDialog } from "./components/SettingsDialog";
 import {
   Conversation,
   ConversationContent,
@@ -53,9 +54,6 @@ import {
   XIcon,
 } from "lucide-react";
 
-/** How often the debug panel polls logs/recent while open. The RPC transport has no
- * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
-const LOG_POLL_MS = 3000;
 /** Remembers which session was open across app restarts -- the daemon already persists every
  * session's transcript (transcript.ts); this is just which one to reopen without asking. */
 const LAST_SESSION_KEY = "jstack.lastSessionId";
@@ -111,18 +109,14 @@ type ChatMessage =
  * features this app doesn't use.
  */
 function App() {
-  const [agentId, setAgentId] = useState("ralph");
+  const [agents, setAgents] = useState<AgentSummary[] | null>(null);
+  const [agentId, setAgentId] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
-  const [status, setStatus] = useState<DaemonStatus | null>(null);
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
-  const [logLines, setLogLines] = useState<string[]>([]);
-  const [logError, setLogError] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>(() => loadFolders());
   const [sessionFolder, setSessionFolder] = useState<Record<string, string>>(() =>
     loadSessionFolder(),
@@ -237,50 +231,31 @@ function App() {
     }
   }
 
-  async function refreshStatus(): Promise<void> {
+  async function refreshAgents(): Promise<AgentSummary[]> {
     try {
-      setStatus(await daemonStatus());
-      setStatusError(null);
+      const list = await listAgents();
+      setAgents(list);
+      return list;
     } catch (e) {
-      console.error("[jstack] daemonStatus failed:", e);
-      setStatusError(e instanceof Error ? e.message : String(e));
+      console.error("[jstack] listAgents failed:", e);
+      setAgents([]);
+      return [];
     }
   }
 
   useEffect(() => {
     (async () => {
+      const agentList = await refreshAgents();
+      if (agentList.length > 0) setAgentId((prev) => prev || agentList[0]!.id);
       const list = await refreshSessions();
       const lastId = localStorage.getItem(LAST_SESSION_KEY);
       const last = lastId ? list.find((s) => s.id === lastId) : undefined;
       if (last) await switchToSession(last.id, last.agentId);
     })();
-    refreshStatus();
   }, []);
 
-  useEffect(() => {
-    if (!showDebug) return;
-    let cancelled = false;
-    const poll = async (): Promise<void> => {
-      try {
-        const { lines } = await recentLogs();
-        if (!cancelled) {
-          setLogLines(lines);
-          setLogError(null);
-        }
-      } catch (e) {
-        console.error("[jstack] recentLogs failed:", e);
-        if (!cancelled) setLogError(e instanceof Error ? e.message : String(e));
-      }
-    };
-    poll();
-    const interval = setInterval(poll, LOG_POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [showDebug]);
-
   async function handleNewSession(): Promise<void> {
+    if (!agentId) return;
     setSessionError(null);
     setBusy(true);
     try {
@@ -358,7 +333,6 @@ function App() {
     } finally {
       setBusy(false);
       await refreshSessions();
-      await refreshStatus();
     }
   }
 
@@ -402,6 +376,20 @@ function App() {
       </li>
     );
   }
+
+  // `agents === null` means "still loading," not "none configured" -- render nothing rather
+  // than flash the onboarding wizard for a moment on every launch.
+  if (agents !== null && agents.length === 0) {
+    return (
+      <Onboarding
+        onCreated={(agent) => {
+          setAgents([agent]);
+          setAgentId(agent.id);
+        }}
+      />
+    );
+  }
+  if (agents === null) return null;
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -452,11 +440,27 @@ function App() {
                 <PanelLeftCloseIcon className="size-4" />
               )}
             </Button>
+            {!sidebarCollapsed && <SettingsDialog onRefresh={refreshSessions} />}
           </div>
         </div>
 
         {!sidebarCollapsed && (
           <>
+            {agents && agents.length > 1 && (
+              <Select value={agentId} onValueChange={(v) => v && setAgentId(v)}>
+                <SelectTrigger size="sm" className="w-full" aria-label="agent for new chats">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
               {folders.map((f) => {
                 const items = sessionsByFolder.byFolder.get(f.id) ?? [];
@@ -505,74 +509,15 @@ function App() {
                 )}
               </div>
             </div>
-
-            <div aria-label="daemon status">
-              <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Status</h2>
-              {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
-              {status && (
-                <ul className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
-                  <li>enabled: {String(status.enabled)}</li>
-                  <li>mode: {status.mode}</li>
-                  <li>tasks: {status.tasks}</li>
-                  <li>spent today: ${status.spentToday.toFixed(4)}</li>
-                </ul>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  refreshStatus();
-                  refreshSessions();
-                }}
-              >
-                Refresh
-              </Button>
-            </div>
-
-            <div aria-label="debug logs">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDebug((v) => !v)}
-              >
-                {showDebug ? "Hide debug logs" : "Show debug logs"}
-              </Button>
-              {showDebug && (
-                <>
-                  {logError && <p className="mt-2 text-sm text-destructive">{logError}</p>}
-                  <ul className="mt-2 max-h-60 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs break-all">
-                    {logLines.length === 0 && (
-                      <li className="text-muted-foreground">No log lines yet</li>
-                    )}
-                    {logLines.map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
           </>
         )}
       </aside>
 
       <main className="flex flex-1 flex-col overflow-hidden p-4">
-        <h1 className="mb-4 text-center text-xl font-semibold">jstack</h1>
+        <h1 className="mb-4 text-center text-xl font-semibold">
+          {agents?.find((a) => a.id === agentId)?.name ?? "jstack"}
+        </h1>
 
-        <div className="mb-2 flex justify-center gap-2">
-          <Input
-            aria-label="agent id"
-            value={agentId}
-            onChange={(e) => setAgentId(e.currentTarget.value)}
-            placeholder="agent id (e.g. ralph)"
-            disabled={busy}
-            className="max-w-xs"
-          />
-          <Button type="button" onClick={handleNewSession} disabled={busy}>
-            New session
-          </Button>
-        </div>
         {sessionError && (
           <p className="text-center text-sm text-destructive">{sessionError}</p>
         )}
@@ -591,7 +536,7 @@ function App() {
               <ConversationEmptyState
                 icon={<PlayCircleIcon className="size-8" />}
                 title="No session yet"
-                description="Pick an agent above and click New session to start chatting."
+                description="Click the + in the sidebar to start chatting."
               />
             ) : messages.length === 0 ? (
               <ConversationEmptyState

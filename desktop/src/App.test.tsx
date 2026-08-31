@@ -18,16 +18,27 @@ afterEach(() => {
   localStorage.clear();
 });
 
+const RALPH = {
+  id: "ralph",
+  name: "Ralph",
+  enabled: true,
+  model: "claude-sonnet-5",
+  persona: "",
+  tools: ["Read", "Grep", "Glob"],
+  mcp: "none" as const,
+};
+
 /**
- * App calls daemon_status on mount (the sidebar's status panel) on top of whatever the test is
- * actually exercising. Only daemon_status gets a blanket default here -- session_list is what
- * several of these tests exercise directly, so each test's own handler answers it explicitly
- * rather than risking a shared default silently shadowing a per-test override.
+ * `agent_list` (mount) and `daemon_status` (opened lazily from the settings dialog) both get a
+ * blanket default here so most tests don't have to answer commands they aren't exercising.
+ * `session_list` is what most tests care about directly, so it always has to come from the
+ * test's own handler, never a shared default.
  */
-function withStatusDefault(
+function withDefaults(
   handler: (cmd: string, payload?: unknown) => unknown,
 ): (cmd: string, payload?: unknown) => unknown {
   return (cmd, payload) => {
+    if (cmd === "agent_list") return [RALPH];
     if (cmd === "daemon_status") {
       return { tasks: 0, outbox: 0, spentToday: 0, watermarks: 0, enabled: true, mode: "dry_run" };
     }
@@ -35,10 +46,19 @@ function withStatusDefault(
   };
 }
 
+function clickNewChat(): void {
+  fireEvent.click(screen.getByTitle("New chat"));
+}
+
+async function openSettings(): Promise<void> {
+  fireEvent.click(screen.getByTitle("Settings"));
+  await screen.findByText("Status");
+}
+
 describe("App", () => {
   test("creating a session, sending a message, and seeing a real reply", async () => {
     mockIPC(
-      withStatusDefault((cmd, payload) => {
+      withDefaults((cmd, payload) => {
         if (cmd === "session_list") return [];
         if (cmd === "session_new") {
           expect(payload).toEqual({ agentId: "ralph" });
@@ -53,8 +73,8 @@ describe("App", () => {
     );
 
     render(<App />);
-
-    fireEvent.click(screen.getByText("New session"));
+    await waitFor(() => screen.getByTitle("New chat"));
+    clickNewChat();
     await waitFor(() => screen.getByText(/session ral-abcd/));
 
     fireEvent.change(screen.getByLabelText("message"), {
@@ -71,7 +91,7 @@ describe("App", () => {
 
   test("a session_prompt error result is shown as an error message, not silently dropped", async () => {
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") return [];
         if (cmd === "session_new") return { id: "ral-fail", sessionId: "x" };
         if (cmd === "session_prompt") {
@@ -82,7 +102,8 @@ describe("App", () => {
     );
 
     render(<App />);
-    fireEvent.click(screen.getByText("New session"));
+    await waitFor(() => screen.getByTitle("New chat"));
+    clickNewChat();
     await waitFor(() => screen.getByText(/session ral-fail/));
 
     fireEvent.change(screen.getByLabelText("message"), {
@@ -95,7 +116,7 @@ describe("App", () => {
 
   test("a transport failure (daemon not running) surfaces as a session error, not a crash", async () => {
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") return [];
         if (cmd === "session_new") {
           throw new Error("could not connect to /Users/x/.jstack/crew/agent.sock: No such file");
@@ -105,26 +126,28 @@ describe("App", () => {
     );
 
     render(<App />);
-    fireEvent.click(screen.getByText("New session"));
+    await waitFor(() => screen.getByTitle("New chat"));
+    clickNewChat();
 
     await waitFor(() => screen.getByText(/could not connect/));
   });
 
-  test("Send is disabled until a session exists", () => {
+  test("Send is disabled until a session exists", async () => {
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") return [];
-        throw new Error(`no session command should fire before New session is clicked: ${cmd}`);
+        throw new Error(`no session command should fire before New chat is clicked: ${cmd}`);
       }),
     );
     render(<App />);
+    await waitFor(() => screen.getByLabelText("message"));
     expect(screen.getByLabelText("message")).toBeDisabled();
     expect(screen.getByText("Send")).toBeDisabled();
   });
 
   test("shows a 'no session yet' empty state before any session exists, and a 'say something' one right after creating one", async () => {
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") return [];
         if (cmd === "session_new") return { id: "ral-empty", sessionId: "z" };
         throw new Error(`unexpected command: ${cmd}`);
@@ -133,14 +156,14 @@ describe("App", () => {
     render(<App />);
     await waitFor(() => screen.getByText("No session yet"));
 
-    fireEvent.click(screen.getByText("New session"));
+    clickNewChat();
     await waitFor(() => screen.getByText("Say something to get started"));
     expect(screen.queryByText("No session yet")).toBeNull();
   });
 
   test("creating a folder shows it with a count and lists both sessions as Unfiled", async () => {
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") {
           return [
             { id: "ral-aaaa", agentId: "ralph", state: "idle", turns: 1, costUsd: 0 },
@@ -168,7 +191,7 @@ describe("App", () => {
   });
 
   test("declining the folder-name prompt creates no folder", async () => {
-    mockIPC(withStatusDefault((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
+    mockIPC(withDefaults((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
     const promptSpy = vi.spyOn(window, "prompt").mockReturnValue(null);
     render(<App />);
     await waitFor(() => screen.getByText("No sessions yet"));
@@ -180,14 +203,14 @@ describe("App", () => {
     promptSpy.mockRestore();
   });
 
-  test("collapsing the sidebar hides the session list and status panel", async () => {
-    mockIPC(withStatusDefault((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
+  test("collapsing the sidebar hides the session list and folder controls", async () => {
+    mockIPC(withDefaults((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
     render(<App />);
     await waitFor(() => screen.getByText("No sessions yet"));
 
     fireEvent.click(screen.getByTitle("Collapse sidebar"));
     expect(screen.queryByText("No sessions yet")).toBeNull();
-    expect(screen.queryByText("Status")).toBeNull();
+    expect(screen.queryByTitle("Settings")).toBeNull();
 
     fireEvent.click(screen.getByTitle("Expand sidebar"));
     expect(screen.getByText("No sessions yet")).toBeTruthy();
@@ -195,7 +218,7 @@ describe("App", () => {
 
   test("existing sessions render in the sidebar on load", async () => {
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") {
           return [{ id: "ral-old1", agentId: "ralph", state: "idle", turns: 3, costUsd: 0.01 }];
         }
@@ -212,7 +235,7 @@ describe("App", () => {
   test("clicking a listed session switches to it, loads its history, and marks it active without a new session_new call", async () => {
     let sessionNewCalls = 0;
     mockIPC(
-      withStatusDefault((cmd, payload) => {
+      withDefaults((cmd, payload) => {
         if (cmd === "session_list") {
           return [{ id: "ral-old1", agentId: "scout", state: "idle", turns: 2, costUsd: 0.02 }];
         }
@@ -250,7 +273,6 @@ describe("App", () => {
     fireEvent.click(screen.getByText("ral-old1"));
 
     await waitFor(() => screen.getByText(/session ral-old1/));
-    expect(screen.getByDisplayValue("scout")).toBeTruthy();
     expect(sessionNewCalls).toBe(0);
     expect(screen.getByText("ral-old1").closest("button")?.className).toContain(
       "border-primary",
@@ -267,7 +289,7 @@ describe("App", () => {
 
   test("closing a session reports what the self-retro learned and clears the active session", async () => {
     mockIPC(
-      withStatusDefault((cmd, payload) => {
+      withDefaults((cmd, payload) => {
         if (cmd === "session_list") return [];
         if (cmd === "session_new") return { id: "ral-close", sessionId: "z" };
         if (cmd === "session_cancel") {
@@ -286,7 +308,8 @@ describe("App", () => {
     );
 
     render(<App />);
-    fireEvent.click(screen.getByText("New session"));
+    await waitFor(() => screen.getByTitle("New chat"));
+    clickNewChat();
     await waitFor(() => screen.getByText(/session ral-close/));
 
     fireEvent.click(screen.getByText("Close session"));
@@ -296,10 +319,59 @@ describe("App", () => {
     expect(screen.queryByText(/session ral-close/)).toBeNull();
   });
 
-  test("debug logs are fetched only after 'Show debug logs' is clicked, not on load", async () => {
+  test("the header shows the active agent's name instead of a hardcoded 'jstack'", async () => {
+    mockIPC(withDefaults((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
+    render(<App />);
+    await waitFor(() => screen.getByRole("heading", { name: "Ralph" }));
+  });
+
+  test("no agents configured shows the onboarding wizard instead of the chat layout", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "agent_list") return [];
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    render(<App />);
+    await waitFor(() => screen.getByText("Create your first agent"));
+    expect(screen.queryByTitle("New chat")).toBeNull();
+  });
+
+  test("submitting the onboarding form creates the agent and drops into the normal chat view", async () => {
+    mockIPC((cmd, payload) => {
+      if (cmd === "agent_list") return [];
+      if (cmd === "agent_create") {
+        expect(payload).toMatchObject({ id: "scout", name: "Scout" });
+        return {
+          id: "scout",
+          agent: {
+            name: "Scout",
+            enabled: true,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: ["Read", "Grep", "Glob"],
+            mcp: "none",
+          },
+        };
+      }
+      if (cmd === "session_list") return [];
+      if (cmd === "daemon_status") {
+        return { tasks: 0, outbox: 0, spentToday: 0, watermarks: 0, enabled: true, mode: "dry_run" };
+      }
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    render(<App />);
+    await waitFor(() => screen.getByText("Create your first agent"));
+
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Scout" } });
+    fireEvent.click(screen.getByText("Create agent"));
+
+    await waitFor(() => screen.getByTitle("New chat"));
+    expect(screen.getByRole("heading", { name: "Scout" })).toBeTruthy();
+  });
+
+  test("settings dialog: status and debug logs are behind the gear icon, not always visible", async () => {
     let recentLogsCalls = 0;
     mockIPC(
-      withStatusDefault((cmd) => {
+      withDefaults((cmd) => {
         if (cmd === "session_list") return [];
         if (cmd === "recent_logs") {
           recentLogsCalls++;
@@ -310,7 +382,11 @@ describe("App", () => {
     );
     render(<App />);
     await waitFor(() => screen.getByText("No sessions yet"));
+    expect(screen.queryByText("Status")).toBeNull();
     expect(recentLogsCalls).toBe(0);
+
+    await openSettings();
+    expect(screen.getByText(/enabled: true/)).toBeTruthy();
 
     fireEvent.click(screen.getByText("Show debug logs"));
     await waitFor(() => screen.getByText("line one"));
@@ -323,7 +399,7 @@ describe("App", () => {
     try {
       let recentLogsCalls = 0;
       mockIPC(
-        withStatusDefault((cmd) => {
+        withDefaults((cmd) => {
           if (cmd === "session_list") return [];
           if (cmd === "recent_logs") {
             recentLogsCalls++;
@@ -333,6 +409,9 @@ describe("App", () => {
         }),
       );
       render(<App />);
+      await vi.waitFor(() => screen.getByTitle("Settings"));
+      fireEvent.click(screen.getByTitle("Settings"));
+      await vi.waitFor(() => screen.getByText("Show debug logs"));
 
       fireEvent.click(screen.getByText("Show debug logs"));
       await vi.waitFor(() => expect(recentLogsCalls).toBe(1));
