@@ -62,9 +62,11 @@ function App() {
       const list = await listSessions();
       setSessions(list);
       return list;
-    } catch {
+    } catch (e) {
       // Session list is a convenience panel; a daemon that's briefly unreachable shouldn't
-      // block the rest of the UI the way a failed chat action does.
+      // block the rest of the UI the way a failed chat action does -- still logged, though, so
+      // a silent daemon-connection problem doesn't go unnoticed.
+      console.error("[jstack] refreshSessions failed:", e);
       return [];
     }
   }
@@ -93,6 +95,7 @@ function App() {
       const history = await getSessionHistory(id);
       setMessages(transcriptToMessages(history));
     } catch (e) {
+      console.error(`[jstack] getSessionHistory(${id}) failed:`, e);
       setMessages([
         {
           role: "system",
@@ -107,6 +110,7 @@ function App() {
       setStatus(await daemonStatus());
       setStatusError(null);
     } catch (e) {
+      console.error("[jstack] daemonStatus failed:", e);
       setStatusError(e instanceof Error ? e.message : String(e));
     }
   }
@@ -132,6 +136,7 @@ function App() {
           setLogError(null);
         }
       } catch (e) {
+        console.error("[jstack] recentLogs failed:", e);
         if (!cancelled) setLogError(e instanceof Error ? e.message : String(e));
       }
     };
@@ -153,6 +158,7 @@ function App() {
       localStorage.setItem(LAST_SESSION_KEY, created.id);
       await refreshSessions();
     } catch (e) {
+      console.error(`[jstack] newSession(${agentId}) failed:`, e);
       setSessionError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
@@ -184,6 +190,7 @@ function App() {
       setSessionId(null);
       await refreshSessions();
     } catch (e) {
+      console.error(`[jstack] cancelSession(${closingId}) failed:`, e);
       setSessionError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
@@ -198,6 +205,7 @@ function App() {
     setBusy(true);
     try {
       const result: PromptResult = await promptSession(sessionId, text);
+      if (!result.ok) console.error(`[jstack] promptSession(${sessionId}) returned ok:false:`, result.text);
       setMessages((prev) => [
         ...prev,
         result.ok
@@ -210,6 +218,7 @@ function App() {
           : { role: "error", text: result.text },
       ]);
     } catch (e) {
+      console.error(`[jstack] promptSession(${sessionId}) failed:`, e);
       setMessages((prev) => [
         ...prev,
         { role: "error", text: e instanceof Error ? e.message : String(e) },
