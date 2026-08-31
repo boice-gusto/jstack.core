@@ -95,8 +95,13 @@ export async function runClaude(
 }
 
 export interface ToolCallEvent {
+  id?: string;
   name: string;
   input: unknown;
+  /** Filled in from the matching `tool_result` event once it arrives -- undefined if the turn
+   * ended (or the stream was cut off) before the result came back. */
+  output?: string;
+  isError?: boolean;
 }
 
 export interface ClaudeStreamingResult extends ClaudeResult {
@@ -197,7 +202,19 @@ export async function runClaudeStreaming(
       if (evt.kind === "assistant_text") {
         text += evt.text;
       } else if (evt.kind === "tool_use") {
-        toolEvents.push({ name: evt.name, input: evt.input });
+        toolEvents.push({ id: evt.id, name: evt.name, input: evt.input });
+      } else if (evt.kind === "tool_result") {
+        // Matched by id when the CLI provides one; otherwise falls back to the most recent
+        // tool call still missing output, which covers every real observed case (claude emits
+        // tool_use/tool_result in strict pairs even for parallel calls -- each pair completes
+        // before the next tool_use of the same turn appears).
+        const match = evt.toolUseId
+          ? toolEvents.find((t) => t.id === evt.toolUseId)
+          : [...toolEvents].reverse().find((t) => t.output === undefined);
+        if (match) {
+          match.output = evt.content;
+          match.isError = evt.isError;
+        }
       } else if (evt.kind === "result") {
         sawResult = true;
         costUsd = evt.total_cost_usd;

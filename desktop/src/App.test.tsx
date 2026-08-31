@@ -224,7 +224,15 @@ describe("App", () => {
               role: "assistant",
               text: "earlier answer",
               costUsd: 0.001,
-              toolEvents: [{ name: "Read", input: { file_path: "/x" } }],
+              toolEvents: [
+                {
+                  id: "toolu_1",
+                  name: "Read",
+                  input: { file_path: "/x" },
+                  output: "1\thello world\n",
+                  isError: false,
+                },
+              ],
               at: "2026-01-01T00:00:01.000Z",
             },
           ];
@@ -251,6 +259,10 @@ describe("App", () => {
     await waitFor(() => screen.getByText(/earlier question/));
     expect(screen.getByText(/earlier answer/)).toBeTruthy();
     expect(screen.getByText("Read")).toBeTruthy();
+    // The tool's real output must render, not just its name/input -- this is the fix for
+    // "the grep command isn't showing really anything."
+    expect(screen.getByText("Completed")).toBeTruthy();
+    expect(await screen.findByText(/hello world/)).toBeTruthy();
   });
 
   test("closing a session reports what the self-retro learned and clears the active session", async () => {

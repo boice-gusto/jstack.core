@@ -392,7 +392,13 @@ describe("runClaudeStreaming", () => {
       "The file \`/tmp/jd-tool-test.txt\` contains: \`hello world content\`",
     );
     expect(result.toolEvents).toEqual([
-      { name: "Read", input: { file_path: "/tmp/jd-tool-test.txt" } },
+      {
+        id: "toolu_01XtZcoFyRHuPt5vneHqAXcr",
+        name: "Read",
+        input: { file_path: "/tmp/jd-tool-test.txt" },
+        output: "1\thello world content\n2\t",
+        isError: false,
+      },
     ]);
     expect(result.costUsd).toBeCloseTo(0.030172, 6);
   });

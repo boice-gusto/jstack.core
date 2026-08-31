@@ -12,8 +12,11 @@ export interface NewSessionResult {
 }
 
 export interface ToolCallEvent {
+  id?: string;
   name: string;
   input: unknown;
+  output?: string;
+  isError?: boolean;
 }
 
 export interface PromptResult {

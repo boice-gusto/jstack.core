@@ -19,7 +19,13 @@ import {
   ConversationScrollButton,
 } from "./components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "./components/ai-elements/message";
-import { Tool, ToolContent, ToolHeader, ToolInput } from "./components/ai-elements/tool";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "./components/ai-elements/tool";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
@@ -625,14 +631,26 @@ function App() {
               return (
                 <Message key={i} from="assistant" data-role="assistant">
                   {m.toolEvents.map((t, j) => (
-                    <Tool key={j}>
+                    <Tool key={j} defaultOpen>
                       <ToolHeader
                         type="dynamic-tool"
                         toolName={t.name}
-                        state="output-available"
+                        state={
+                          t.output === undefined
+                            ? "input-available"
+                            : t.isError
+                              ? "output-error"
+                              : "output-available"
+                        }
                       />
                       <ToolContent>
                         <ToolInput input={t.input} />
+                        {t.output !== undefined && (
+                          <ToolOutput
+                            output={t.output}
+                            errorText={t.isError ? t.output : undefined}
+                          />
+                        )}
                       </ToolContent>
                     </Tool>
                   ))}

@@ -1,6 +1,16 @@
 export type StreamJsonEvent =
   | { kind: "assistant_text"; text: string }
-  | { kind: "tool_use"; name: string; input: unknown }
+  | { kind: "tool_use"; id?: string; name: string; input: unknown }
+  | {
+      /** A tool's real output, reported back to claude as a "user" role message -- claude-code's
+       * own convention for tool results, not something a human typed. `toolUseId` matches the
+       * `id` on the `tool_use` event this completes, since multiple tool calls in one turn (or
+       * parallel calls) aren't otherwise distinguishable in the stream. */
+      kind: "tool_result";
+      toolUseId?: string;
+      content: string;
+      isError: boolean;
+    }
   | {
       kind: "result";
       result?: string;
@@ -119,10 +129,47 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
         const name = block.name;
         out.push({
           kind: "tool_use",
+          id: typeof block.id === "string" ? block.id : undefined,
           name: typeof name === "string" ? name : "tool",
           input: block.input,
         });
       }
+    }
+    return out;
+  }
+
+  if (event.type === "user") {
+    const message = event.message;
+    if (!isRecord(message)) {
+      out.push({ kind: "raw", event });
+      return out;
+    }
+    const content = message.content;
+    if (!Array.isArray(content)) {
+      out.push({ kind: "raw", event });
+      return out;
+    }
+    for (const block of content) {
+      if (!isRecord(block) || block.type !== "tool_result") continue;
+      const raw = block.content;
+      let text: string;
+      if (typeof raw === "string") {
+        text = raw;
+      } else if (Array.isArray(raw)) {
+        text = raw
+          .filter(isRecord)
+          .filter((b) => b.type === "text" && typeof b.text === "string")
+          .map((b) => b.text as string)
+          .join("\n");
+      } else {
+        text = "";
+      }
+      out.push({
+        kind: "tool_result",
+        toolUseId: typeof block.tool_use_id === "string" ? block.tool_use_id : undefined,
+        content: text,
+        isError: block.is_error === true,
+      });
     }
     return out;
   }
