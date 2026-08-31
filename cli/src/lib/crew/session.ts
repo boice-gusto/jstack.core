@@ -1,6 +1,7 @@
-import { taskId, runWorker } from "./tick.js";
+import { taskId, runWorkerStreaming } from "./tick.js";
 import { CrewStore, deriveTaskDisplayStatus, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
+import type { ToolCallEvent } from "./slack.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import {
@@ -9,6 +10,11 @@ import {
   type AgentMemoryEntry,
   type AgentMemoryInput,
 } from "../memory/index.js";
+import {
+  appendTranscriptEntry,
+  readTranscript,
+  type TranscriptEntry,
+} from "./transcript.js";
 
 /**
  * Manual (non-Slack) sessions: an interactive conversation with a crew agent, driven directly
@@ -90,6 +96,7 @@ export type ManualPromptResult = {
   ok: boolean;
   text: string;
   costUsd: number;
+  toolEvents: ToolCallEvent[];
 };
 
 /**
@@ -99,6 +106,12 @@ export type ManualPromptResult = {
  * `turns > 1 || endedAt !== null` is the "has a turn actually run" signal because
  * `store.createTask` always starts a row at `turns=1` with `ended_at` unset -- neither field
  * moves until the first `bumpTurn`/`finishTask` call this function itself makes.
+ *
+ * Every prompt and reply is appended to the session's transcript (transcript.ts) -- CrewStore's
+ * `turns`/`cost_usd` columns are bookkeeping, not history, so without this a session reopened
+ * later (or switched back to) had nothing to show but "2 turns, $0.04," not what was actually
+ * said. Uses `runWorkerStreaming` (not `runWorker`) so the transcript -- and the caller -- also
+ * get the tool calls the turn made, not just the final text.
  */
 export async function promptManualSession(
   store: CrewStore,
@@ -116,10 +129,16 @@ export async function promptManualSession(
     );
   }
 
+  appendTranscriptEntry(cfg.state_dir, id, {
+    role: "user",
+    text: message,
+    at: new Date().toISOString(),
+  });
+
   const hasRunTurn = task.turns > 1 || task.endedAt !== null;
   const nonce = Math.random().toString(36).slice(2, 10);
   const messageWithMemory = withRecalledMemory(cfg, task.agentId, message);
-  const w = await runWorker(cfg, agent, messageWithMemory, nonce, {
+  const w = await runWorkerStreaming(cfg, agent, messageWithMemory, nonce, {
     id: task.sessionId,
     resume: hasRunTurn,
   });
@@ -140,7 +159,33 @@ export async function promptManualSession(
     );
   }
 
-  return { ok: w.ok, text: w.text, costUsd: w.cost };
+  appendTranscriptEntry(
+    cfg.state_dir,
+    id,
+    w.ok
+      ? {
+          role: "assistant",
+          text: w.text,
+          costUsd: w.cost,
+          toolEvents: w.toolEvents,
+          at: new Date().toISOString(),
+        }
+      : { role: "error", text: w.text, at: new Date().toISOString() },
+  );
+
+  return { ok: w.ok, text: w.text, costUsd: w.cost, toolEvents: w.toolEvents };
+}
+
+/** A manual session's message history, oldest first -- what the UI renders as the chat log when
+ * a session is reopened or switched back to. */
+export function getSessionHistory(
+  store: CrewStore,
+  cfg: CrewConfig,
+  id: string,
+): TranscriptEntry[] {
+  const task = store.findTaskById(id);
+  if (!task) throw new UnknownSessionError(`no such session: ${id}`);
+  return readTranscript(cfg.state_dir, id);
 }
 
 /**

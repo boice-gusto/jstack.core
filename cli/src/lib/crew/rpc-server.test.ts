@@ -24,12 +24,14 @@ function baseConfig(): CrewConfig {
   });
 }
 
-/** Same technique crew-sessions.test.ts uses: runWorker spawns the literal "claude" name. */
+/** Same technique crew-sessions.test.ts uses: runWorkerStreaming spawns the literal "claude"
+ * name. Emits a stream-json "result" line, not the older blocking-JSON shape -- promptManualSession
+ * parses NDJSON stream-json now. */
 function installFakeClaude(): { restorePath: string } {
   const dir = mkdtempSync(join(tmpdir(), "fake-claude-bin-rpc-"));
   writeFileSync(
     join(dir, "claude"),
-    '#!/bin/sh\necho \'{"is_error":false,"result":"rpc reply","total_cost_usd":0.002}\'\n',
+    '#!/bin/sh\necho \'{"type":"result","is_error":false,"result":"rpc reply","total_cost_usd":0.002}\'\n',
   );
   chmodSync(join(dir, "claude"), 0o755);
   const restorePath = process.env.PATH ?? "";

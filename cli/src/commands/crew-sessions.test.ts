@@ -12,17 +12,21 @@ import {
 import { CrewStore } from "../lib/crew/store.js";
 
 /**
- * `runWorker` (via `slack.ts`'s `runClaude`) spawns the literal binary name `"claude"`,
- * resolved through `PATH` -- not overridable via env or config. Prepending a temp dir holding
- * a fake `claude` script to `PATH` is the only way to exercise `runSessionPrompt`'s full path
- * (including `runWorker`'s flag-building) without a real `claude` CLI/API key, mirroring how
+ * `runWorkerStreaming` (via `slack.ts`'s `runClaudeStreaming`) spawns the literal binary name
+ * `"claude"`, resolved through `PATH` -- not overridable via env or config. Prepending a temp
+ * dir holding a fake `claude` script to `PATH` is the only way to exercise `runSessionPrompt`'s
+ * full path (including the flag-building) without a real `claude` CLI/API key, mirroring how
  * `provider.test.ts` fakes `claude`/`codex` binaries directly rather than mocking spawn.
+ *
+ * Emits a single `--output-format stream-json` "result" line (not the older blocking-JSON
+ * shape) -- promptManualSession runs turns through runWorkerStreaming now, which parses
+ * NDJSON stream-json, not one blocking JSON blob.
  */
 function installFakeClaude(): { dir: string; restorePath: string } {
   const dir = mkdtempSync(join(tmpdir(), "fake-claude-bin-"));
   const script = [
     "#!/bin/sh",
-    'echo \'{"is_error":false,"result":"fake reply","total_cost_usd":0.001,"session_id":"11111111-1111-1111-1111-111111111111"}\'',
+    'echo \'{"type":"result","is_error":false,"result":"fake reply","total_cost_usd":0.001,"session_id":"11111111-1111-1111-1111-111111111111"}\'',
   ].join("\n");
   writeFileSync(join(dir, "claude"), `${script}\n`);
   chmodSync(join(dir, "claude"), 0o755);

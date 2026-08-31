@@ -9,6 +9,7 @@ import {
   cancelManualSession,
   createManualSession,
   DisabledAgentError,
+  getSessionHistory,
   listManualSessions,
   promptManualSession,
   rememberInSession,
@@ -137,9 +138,10 @@ describe("cancelManualSession", () => {
   });
 });
 
-/** Fake `claude` that dumps its own argv (which ends in the prompt, per runClaude's `-- prompt`
+/** Fake `claude` that dumps its own argv (which ends in the prompt, per the CLI's own `-- prompt`
  * convention) to a file, so a test can inspect what was actually sent instead of only what the
- * fake chose to answer. */
+ * fake chose to answer. Emits a stream-json "result" line -- promptManualSession runs turns
+ * through runWorkerStreaming now, which parses NDJSON stream-json, not blocking JSON. */
 function installArgvCapturingFakeClaude(): {
   restorePath: string;
   argvFile: string;
@@ -151,7 +153,7 @@ function installArgvCapturingFakeClaude(): {
     [
       "#!/bin/sh",
       `printf '%s\\n' "$@" > ${argvFile}`,
-      'echo \'{"is_error":false,"result":"ok","total_cost_usd":0.001}\'',
+      'echo \'{"type":"result","is_error":false,"result":"ok","total_cost_usd":0.001}\'',
     ].join("\n"),
   );
   chmodSync(join(dir, "claude"), 0o755);
@@ -276,6 +278,81 @@ describe("listManualSessions", () => {
     const cfg = baseConfig();
     for (let i = 0; i < 5; i++) createManualSession(store, cfg, "ralph");
     expect(listManualSessions(store, cfg, 2)).toHaveLength(2);
+    store.close();
+  });
+});
+
+function installFakeClaudeWithToolUse(): { restorePath: string } {
+  const dir = mkdtempSync(join(tmpdir(), "fake-claude-tooluse-"));
+  const lines = [
+    JSON.stringify({
+      type: "assistant",
+      message: {
+        content: [
+          { type: "tool_use", name: "Read", input: { file_path: "/x" } },
+        ],
+      },
+    }),
+    JSON.stringify({
+      type: "assistant",
+      message: { content: [{ type: "text", text: "here you go" }] },
+    }),
+    JSON.stringify({ type: "result", is_error: false, total_cost_usd: 0.005 }),
+  ];
+  writeFileSync(
+    join(dir, "claude"),
+    `#!/bin/sh\n${lines.map((l) => `echo '${l}'`).join("\n")}\n`,
+  );
+  chmodSync(join(dir, "claude"), 0o755);
+  const restorePath = process.env.PATH ?? "";
+  process.env.PATH = `${dir}:${restorePath}`;
+  return { restorePath };
+}
+
+describe("promptManualSession transcript persistence", () => {
+  let restorePath: string | undefined;
+
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("persists the user message and the assistant reply (with tool events)", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    restorePath = installFakeClaudeWithToolUse().restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    const result = await promptManualSession(store, cfg, id, "read the file");
+    expect(result.ok).toBe(true);
+    expect(result.text).toBe("here you go");
+    expect(result.toolEvents).toEqual([
+      { name: "Read", input: { file_path: "/x" } },
+    ]);
+
+    const history = getSessionHistory(store, cfg, id);
+    expect(history).toHaveLength(2);
+    expect(history[0]).toMatchObject({ role: "user", text: "read the file" });
+    expect(history[1]).toMatchObject({
+      role: "assistant",
+      text: "here you go",
+      toolEvents: [{ name: "Read", input: { file_path: "/x" } }],
+    });
+    store.close();
+  });
+
+  test("getSessionHistory returns [] for a session with no prompts yet", () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const { id } = createManualSession(store, cfg, "ralph");
+    expect(getSessionHistory(store, cfg, id)).toEqual([]);
+    store.close();
+  });
+
+  test("getSessionHistory throws UnknownSessionError for an unknown id", () => {
+    const store = freshStore();
+    expect(() => getSessionHistory(store, baseConfig(), "ral-zzzz")).toThrow(
+      UnknownSessionError,
+    );
     store.close();
   });
 });

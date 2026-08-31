@@ -57,9 +57,11 @@ fn short_tmp_dir(prefix: &str) -> PathBuf {
 
 fn write_fake_claude(dir: &Path) {
     let script = dir.join("claude");
+    // promptManualSession runs turns through runWorkerStreaming (--output-format stream-json),
+    // not the older blocking-JSON format -- this must be a valid NDJSON "result" line.
     fs::write(
         &script,
-        "#!/bin/sh\necho '{\"is_error\":false,\"result\":\"integration reply\",\"total_cost_usd\":0.001}'\n",
+        "#!/bin/sh\necho '{\"type\":\"result\",\"is_error\":false,\"result\":\"integration reply\",\"total_cost_usd\":0.001}'\n",
     )
     .unwrap();
     let mut perms = fs::metadata(&script).unwrap().permissions();

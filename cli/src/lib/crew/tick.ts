@@ -26,6 +26,8 @@ import {
   recoverSentTs,
   stripServerSuffix,
   runClaude,
+  runClaudeStreaming,
+  type ToolCallEvent,
 } from "./slack.js";
 import {
   defaultRunTurn,
@@ -250,18 +252,19 @@ function renderResult(
  * follow-up cold, which is exactly how the first live conversation failed.
  */
 /**
- * Runs one turn for `agent` with the same sandboxing every Slack-triggered turn gets (no MCP,
- * no Bash, workspace-scoped, untrusted-content wrapping) -- exported so `session.ts`'s manual
- * (non-Slack) sessions reuse this instead of a second, looser turn-runner that would silently
- * regress that sandboxing for anything not routed through Slack.
+ * Builds the args/prompt every worker turn shares -- the sandboxing (no MCP, no Bash, workspace-
+ * scoped, untrusted-content wrapping) and system prompt are identical whether the turn runs
+ * blocking (`runWorker`, Slack-triggered) or streaming (`runWorkerStreaming`, manual sessions).
+ * Kept as one function so those two call sites can never silently diverge in what they allow the
+ * model to do.
  */
-export async function runWorker(
+function buildWorkerInvocation(
   cfg: CrewConfig,
   agent: AgentConfig,
   request: string,
   nonce: string,
   session: { id: string; resume: boolean },
-): Promise<{ ok: boolean; text: string; cost: number; sessionId?: string }> {
+): { args: string[]; prompt: string } {
   const mcpNone = join(expandHome(cfg.state_dir), "no-mcp.json");
   writeFileSync(mcpNone, JSON.stringify({ mcpServers: {} }));
 
@@ -289,36 +292,92 @@ export async function runWorker(
 
   const prompt = `<untrusted_${nonce}>\n${request}\n</untrusted_${nonce}>`;
 
-  const r = await runClaude(
-    [
-      ...(session.resume
-        ? ["--resume", session.id]
-        : ["--session-id", session.id]),
-      "--model",
-      agent.model,
-      "--tools",
-      ...agent.tools,
-      "--strict-mcp-config",
-      "--mcp-config",
-      mcpNone,
-      "--disallowedTools",
-      "Bash",
-      "--permission-mode",
-      "dontAsk",
-      "--setting-sources",
-      "",
-      "--disable-slash-commands",
-      "--max-budget-usd",
-      String(cfg.budget.per_task_usd),
-      "--append-system-prompt",
-      system,
-      "--add-dir",
-      expandHome(agent.workspace),
-    ],
-    prompt,
-    agent.task_timeout_ms,
+  const args = [
+    ...(session.resume
+      ? ["--resume", session.id]
+      : ["--session-id", session.id]),
+    "--model",
+    agent.model,
+    "--tools",
+    ...agent.tools,
+    "--strict-mcp-config",
+    "--mcp-config",
+    mcpNone,
+    "--disallowedTools",
+    "Bash",
+    "--permission-mode",
+    "dontAsk",
+    "--setting-sources",
+    "",
+    "--disable-slash-commands",
+    "--max-budget-usd",
+    String(cfg.budget.per_task_usd),
+    "--append-system-prompt",
+    system,
+    "--add-dir",
+    expandHome(agent.workspace),
+  ];
+  return { args, prompt };
+}
+
+/**
+ * Runs one turn for `agent` with the same sandboxing every Slack-triggered turn gets -- exported
+ * so `session.ts`'s manual (non-Slack) sessions could reuse this instead of a second, looser
+ * turn-runner that would silently regress that sandboxing for anything not routed through Slack.
+ * Blocking (`--output-format json` via `runClaude`); see `runWorkerStreaming` for the tool-call-
+ * visible variant manual sessions actually use.
+ */
+export async function runWorker(
+  cfg: CrewConfig,
+  agent: AgentConfig,
+  request: string,
+  nonce: string,
+  session: { id: string; resume: boolean },
+): Promise<{ ok: boolean; text: string; cost: number; sessionId?: string }> {
+  const { args, prompt } = buildWorkerInvocation(
+    cfg,
+    agent,
+    request,
+    nonce,
+    session,
   );
+  const r = await runClaude(args, prompt, agent.task_timeout_ms);
   return { ok: r.ok, text: r.text, cost: r.costUsd, sessionId: r.sessionId };
+}
+
+/**
+ * Same sandboxing and system prompt as `runWorker` (via the shared builder above), but through
+ * `runClaudeStreaming` so the caller also gets the tool calls the turn made. Manual sessions use
+ * this; the Slack-triggered path keeps using the plain `runWorker` above, unchanged.
+ */
+export async function runWorkerStreaming(
+  cfg: CrewConfig,
+  agent: AgentConfig,
+  request: string,
+  nonce: string,
+  session: { id: string; resume: boolean },
+): Promise<{
+  ok: boolean;
+  text: string;
+  cost: number;
+  sessionId?: string;
+  toolEvents: ToolCallEvent[];
+}> {
+  const { args, prompt } = buildWorkerInvocation(
+    cfg,
+    agent,
+    request,
+    nonce,
+    session,
+  );
+  const r = await runClaudeStreaming(args, prompt, agent.task_timeout_ms);
+  return {
+    ok: r.ok,
+    text: r.text,
+    cost: r.costUsd,
+    sessionId: r.sessionId,
+    toolEvents: r.toolEvents,
+  };
 }
 
 export async function tick(opts: TickOptions): Promise<TickSummary> {
