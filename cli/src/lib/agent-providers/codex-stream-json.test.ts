@@ -66,6 +66,7 @@ describe("mapCodexStreamJsonLine", () => {
           output_tokens: 6,
         },
         total_cost_usd: 0,
+        isError: false,
       },
     ]);
   });

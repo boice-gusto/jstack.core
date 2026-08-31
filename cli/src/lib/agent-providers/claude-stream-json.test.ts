@@ -48,6 +48,26 @@ describe("mapStreamJsonLine", () => {
         result: undefined,
         usage: { input_tokens: 10, output_tokens: 5 },
         total_cost_usd: 0.02,
+        isError: false,
+      },
+    ]);
+  });
+
+  it("maps is_error: true onto the result event", () => {
+    const line = JSON.stringify({
+      type: "result",
+      usage: {},
+      total_cost_usd: 0,
+      is_error: true,
+    });
+    const out = mapStreamJsonLine(line);
+    expect(out).toEqual([
+      {
+        kind: "result",
+        result: undefined,
+        usage: {},
+        total_cost_usd: 0,
+        isError: true,
       },
     ]);
   });
@@ -93,6 +113,7 @@ describe("mapStreamJsonLine", () => {
         result: "Final answer only here",
         usage: {},
         total_cost_usd: 0,
+        isError: false,
       },
     ]);
   });

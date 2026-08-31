@@ -85,7 +85,18 @@ export function mapCodexStreamJsonLine(line: string): StreamJsonEvent[] {
       : {};
     // `codex exec --json` reports token usage but no computed dollar cost (unlike Claude's
     // `total_cost_usd`) -- 0 here means "not reported," not "free."
-    return [{ kind: "result", result: undefined, usage, total_cost_usd: 0 }];
+    // `turn.completed` has no error concept of its own here (Codex signals failure elsewhere in
+    // the stream), so `isError` is always false for this backend -- present only to satisfy the
+    // shared StreamJsonEvent union both mappers produce.
+    return [
+      {
+        kind: "result",
+        result: undefined,
+        usage,
+        total_cost_usd: 0,
+        isError: false,
+      },
+    ];
   }
 
   if (

@@ -6,6 +6,10 @@ export type StreamJsonEvent =
       result?: string;
       usage: Record<string, number>;
       total_cost_usd: number;
+      /** `is_error` off the raw event -- `subtype` stays "success" even when this is true, so
+       * a consumer gating on success/failure (session.ts's runClaudeStreaming) must read this,
+       * not `subtype`. */
+      isError: boolean;
     }
   | { kind: "raw"; event: Record<string, unknown> };
 
@@ -153,6 +157,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
       result: resultText,
       usage,
       total_cost_usd: typeof cost === "number" ? cost : Number(cost ?? 0),
+      isError: event.is_error === true,
     });
     return out;
   }
