@@ -42,6 +42,12 @@ import {
   ContextMenuTrigger,
 } from "./components/ui/context-menu";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -56,6 +62,7 @@ import {
   PanelLeftCloseIcon,
   PanelLeftIcon,
   PlayCircleIcon,
+  UserIcon,
   PlusIcon,
   XIcon,
 } from "lucide-react";
@@ -475,6 +482,29 @@ function App() {
             >
               <PlusIcon className="size-4" />
             </Button>
+            {!sidebarCollapsed && agents.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title={`Agent for new chats: ${agents.find((a) => a.id === agentId)?.name ?? agentId}`}
+                    >
+                      <UserIcon className="size-4" />
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent>
+                  {agents.map((a) => (
+                    <DropdownMenuItem key={a.id} onClick={() => setAgentId(a.id)}>
+                      {a.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -494,21 +524,6 @@ function App() {
 
         {!sidebarCollapsed && (
           <>
-            {agents && agents.length > 1 && (
-              <Select value={agentId} onValueChange={(v) => v && setAgentId(v)}>
-                <SelectTrigger size="sm" className="w-full" aria-label="agent for new chats">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {agents.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
               {sessions.length === 0 && (
                 <p className="text-sm text-muted-foreground">No sessions yet</p>
