@@ -511,7 +511,15 @@ function App() {
                   <li>spent today: ${status.spentToday.toFixed(4)}</li>
                 </ul>
               )}
-              <Button type="button" variant="outline" size="sm" onClick={refreshStatus}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  refreshStatus();
+                  refreshSessions();
+                }}
+              >
                 Refresh
               </Button>
             </div>
