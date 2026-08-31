@@ -54,6 +54,7 @@ import {
   writePlist,
 } from "../lib/crew/launchd.js";
 import { findProjectRoot } from "../lib/config.js";
+import { mutateAgents } from "../lib/crew/agent-config.js";
 import {
   cancelManualSession,
   createManualSession,
@@ -1390,21 +1391,6 @@ export async function runCrewUi(port: number, open: boolean): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ agents ---- */
-
-function mutateAgents(
-  fn: (agents: Record<string, Record<string, unknown>>) => void,
-): void {
-  const root = findProjectRoot();
-  const path = join(root, "jstack.config.json");
-  const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-  const crew = raw[CONFIG_KEY] as Record<string, unknown> | undefined;
-  if (!crew) throw new Error(`no "${CONFIG_KEY}" key. Run: jstackc crew init`);
-  const agents = (crew.agents ?? {}) as Record<string, Record<string, unknown>>;
-  fn(agents);
-  crew.agents = agents;
-  CrewConfigSchema.parse(crew); // never write a config that would not load
-  writeFileSync(path, `${JSON.stringify(raw, null, 2)}\n`);
-}
 
 export function runAgentsList(json: boolean): void {
   const cfg = loadCrewConfig();

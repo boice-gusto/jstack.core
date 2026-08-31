@@ -77,14 +77,40 @@ async function rpcCall(
   });
 }
 
+/** `agent/create` mutates real project state via `agent-config.ts`'s `findProjectRoot()`, unlike
+ * every other method here which only ever touches the isolated `stateDir` -- needs its own
+ * `jstack.config.json` fixture and `JSTACK_PROJECT_ROOT` override. */
+function withProjectRoot(cfg: CrewConfig): {
+  root: string;
+  restore: () => void;
+} {
+  const root = mkdtempSync(join(tmpdir(), "crew-rpc-project-"));
+  writeFileSync(
+    join(root, "jstack.config.json"),
+    JSON.stringify({ crew: cfg }),
+  );
+  const saved = process.env.JSTACK_PROJECT_ROOT;
+  process.env.JSTACK_PROJECT_ROOT = root;
+  return {
+    root,
+    restore: () => {
+      if (saved === undefined) delete process.env.JSTACK_PROJECT_ROOT;
+      else process.env.JSTACK_PROJECT_ROOT = saved;
+    },
+  };
+}
+
 describe("rpc-server", () => {
   let handle: RpcServerHandle | undefined;
   let restorePath: string | undefined;
+  let restoreProjectRoot: (() => void) | undefined;
 
   afterEach(() => {
     handle?.stop();
     handle = undefined;
     if (restorePath !== undefined) process.env.PATH = restorePath;
+    restoreProjectRoot?.();
+    restoreProjectRoot = undefined;
   });
 
   test("creates the socket with 0600 permissions", () => {
@@ -162,6 +188,66 @@ describe("rpc-server", () => {
       id: created.id,
     })) as { ok: boolean };
     expect(cancelled.ok).toBe(true);
+  });
+
+  test("agent/list returns the configured agents", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const agents = (await rpcCall(handle.sockPath, "agent/list")) as Array<{
+      id: string;
+      name: string;
+      enabled: boolean;
+    }>;
+    expect(agents).toEqual([
+      expect.objectContaining({ id: "ralph", name: "Ralph", enabled: true }),
+    ]);
+  });
+
+  test("agent/create writes a new agent and it's immediately usable via session/new", async () => {
+    restorePath = installFakeClaude().restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const project = withProjectRoot(cfg);
+    restoreProjectRoot = project.restore;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const created = (await rpcCall(handle.sockPath, "agent/create", {
+      id: "scout",
+      name: "Scout",
+      persona: "Terse and cites sources.",
+      mcp: "inherit",
+    })) as { id: string; agent: { name: string; mcp: string } };
+    expect(created.id).toBe("scout");
+    expect(created.agent).toMatchObject({ name: "Scout", mcp: "inherit" });
+
+    // No daemon reload happened -- this proves the in-memory cfg was spliced immediately,
+    // not just the file on disk.
+    const session = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "scout",
+    })) as { id: string };
+    expect(session.id).toMatch(/^sco-/);
+
+    const agents = (await rpcCall(handle.sockPath, "agent/list")) as Array<{
+      id: string;
+    }>;
+    expect(agents.map((a) => a.id)).toContain("scout");
+  });
+
+  test("agent/create rejects a duplicate id over the wire", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const project = withProjectRoot(cfg);
+    restoreProjectRoot = project.restore;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    await expect(
+      rpcCall(handle.sockPath, "agent/create", {
+        id: "ralph",
+        name: "Ralph 2",
+      }),
+    ).rejects.toThrow(/already exists/);
   });
 
   test("session/history returns the transcript from a prior session/prompt", async () => {

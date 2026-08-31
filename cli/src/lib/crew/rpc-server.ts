@@ -9,6 +9,7 @@ import {
   promptManualSession,
   rememberInSession,
 } from "./session.js";
+import { createAgent } from "./agent-config.js";
 import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
@@ -16,8 +17,9 @@ import type { CrewConfig } from "./types.js";
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
  * 2.0-shaped requests/responses. Method names (`session/new`, `session/list`, `session/history`,
- * `session/prompt`, `session/cancel`, `session/remember`, `logs/recent`) intentionally mirror
- * the Agent Client Protocol's session verbs, even though this transport isn't literally ACP --
+ * `session/prompt`, `session/cancel`, `session/remember`, `agent/list`, `agent/create`,
+ * `logs/recent`) intentionally mirror the Agent Client Protocol's session verbs, even though
+ * this transport isn't literally ACP --
  * see the AgentProvider extraction's own note on this (cli/src/lib/agent-providers/provider.ts)
  * for why: it keeps the message shapes stable if a real ACP transport (or a UI client) replaces
  * this later.
@@ -133,6 +135,43 @@ async function dispatch(
           source: source as (typeof MEMORY_SOURCES)[number],
           content: p.content,
         });
+      }
+      case "agent/list": {
+        return Object.entries(cfg.agents).map(([id, a]) => ({
+          id,
+          name: a.name,
+          enabled: a.enabled,
+          model: a.model,
+          persona: a.persona,
+          tools: a.tools,
+          mcp: a.mcp,
+        }));
+      }
+      case "agent/create": {
+        if (typeof p.id !== "string" || typeof p.name !== "string") {
+          throw new Error("agent/create requires { id: string, name: string }");
+        }
+        const mcp = p.mcp === "inherit" ? "inherit" : "none";
+        const workspace =
+          typeof p.workspace === "string" && p.workspace.length > 0
+            ? p.workspace
+            : join(expandHome(cfg.state_dir), "workspaces", p.id);
+        mkdirSync(workspace, { recursive: true });
+        const created = createAgent({
+          id: p.id,
+          name: p.name,
+          workspace,
+          persona: typeof p.persona === "string" ? p.persona : undefined,
+          model: typeof p.model === "string" ? p.model : undefined,
+          tools: Array.isArray(p.tools) ? (p.tools as string[]) : undefined,
+          mcp,
+        });
+        // Splice the new agent into the RUNNING daemon's in-memory config immediately -- cfg
+        // is read fresh from a snapshot at most once per tick interval (see crewd.ts's
+        // runResident), so without this the agent onboarding just wrote would be invisible to
+        // session/new for up to that whole interval.
+        cfg.agents[created.id] = created.agent;
+        return created;
       }
       case "status": {
         const stats = store.stats();
