@@ -138,6 +138,61 @@ describe("App", () => {
     expect(screen.queryByText("No session yet")).toBeNull();
   });
 
+  test("creating a folder shows it with a count and lists both sessions as Unfiled", async () => {
+    mockIPC(
+      withStatusDefault((cmd) => {
+        if (cmd === "session_list") {
+          return [
+            { id: "ral-aaaa", agentId: "ralph", state: "idle", turns: 1, costUsd: 0 },
+            { id: "ral-bbbb", agentId: "ralph", state: "idle", turns: 1, costUsd: 0 },
+          ];
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("Work");
+    render(<App />);
+    await waitFor(() => screen.getByText("ral-aaaa"));
+
+    fireEvent.click(screen.getByTitle("New folder"));
+    expect(promptSpy).toHaveBeenCalled();
+    await waitFor(() => screen.getByText(/Work \(0\)/));
+
+    // Neither session has been assigned yet, so both still list under Unfiled, each with its
+    // own folder-assignment control now that a folder exists to move them into.
+    expect(screen.getByText("ral-aaaa")).toBeTruthy();
+    expect(screen.getByText("ral-bbbb")).toBeTruthy();
+    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+
+    promptSpy.mockRestore();
+  });
+
+  test("declining the folder-name prompt creates no folder", async () => {
+    mockIPC(withStatusDefault((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue(null);
+    render(<App />);
+    await waitFor(() => screen.getByText("No sessions yet"));
+
+    fireEvent.click(screen.getByTitle("New folder"));
+    expect(promptSpy).toHaveBeenCalled();
+    expect(screen.queryByRole("combobox")).toBeNull();
+
+    promptSpy.mockRestore();
+  });
+
+  test("collapsing the sidebar hides the session list and status panel", async () => {
+    mockIPC(withStatusDefault((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
+    render(<App />);
+    await waitFor(() => screen.getByText("No sessions yet"));
+
+    fireEvent.click(screen.getByTitle("Collapse sidebar"));
+    expect(screen.queryByText("No sessions yet")).toBeNull();
+    expect(screen.queryByText("Status")).toBeNull();
+
+    fireEvent.click(screen.getByTitle("Expand sidebar"));
+    expect(screen.getByText("No sessions yet")).toBeTruthy();
+  });
+
   test("existing sessions render in the sidebar on load", async () => {
     mockIPC(
       withStatusDefault((cmd) => {

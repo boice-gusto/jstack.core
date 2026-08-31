@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   cancelSession,
   daemonStatus,
@@ -23,7 +23,29 @@ import { Tool, ToolContent, ToolHeader, ToolInput } from "./components/ai-elemen
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
-import { MessageCircleIcon, PlayCircleIcon } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "./components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select";
+import {
+  ChevronRightIcon,
+  FolderIcon,
+  FolderPlusIcon,
+  MessageCircleIcon,
+  PanelLeftCloseIcon,
+  PanelLeftIcon,
+  PlayCircleIcon,
+  PlusIcon,
+  XIcon,
+} from "lucide-react";
 
 /** How often the debug panel polls logs/recent while open. The RPC transport has no
  * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
@@ -31,6 +53,43 @@ const LOG_POLL_MS = 3000;
 /** Remembers which session was open across app restarts -- the daemon already persists every
  * session's transcript (transcript.ts); this is just which one to reopen without asking. */
 const LAST_SESSION_KEY = "jstack.lastSessionId";
+
+/**
+ * Session folders are a client-side organizational overlay, not a daemon concept -- crew's
+ * store has no notion of "folders," and every session still belongs to exactly one real crew
+ * agent regardless of which folder it's filed under. Persisted in localStorage (survives app
+ * restarts, same durability tier as `LAST_SESSION_KEY`) rather than round-tripped through the
+ * daemon, since grouping is purely a UI convenience over data the daemon already owns.
+ */
+const FOLDERS_KEY = "jstack.folders";
+const SESSION_FOLDER_KEY = "jstack.sessionFolder";
+const SIDEBAR_COLLAPSED_KEY = "jstack.sidebarCollapsed";
+const UNFILED = "unfiled";
+
+interface Folder {
+  id: string;
+  name: string;
+}
+
+function loadFolders(): Folder[] {
+  try {
+    const raw = localStorage.getItem(FOLDERS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function loadSessionFolder(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(SESSION_FOLDER_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 type ChatMessage =
   | { role: "user"; text: string }
@@ -58,6 +117,71 @@ function App() {
   const [showDebug, setShowDebug] = useState(false);
   const [logLines, setLogLines] = useState<string[]>([]);
   const [logError, setLogError] = useState<string | null>(null);
+  const [folders, setFolders] = useState<Folder[]>(() => loadFolders());
+  const [sessionFolder, setSessionFolder] = useState<Record<string, string>>(() =>
+    loadSessionFolder(),
+  );
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1",
+  );
+
+  const sessionsByFolder = useMemo(() => {
+    const byFolder = new Map<string, SessionSummary[]>();
+    const unfiled: SessionSummary[] = [];
+    for (const s of sessions) {
+      const fid = sessionFolder[s.id];
+      if (fid && folders.some((f) => f.id === fid)) {
+        const bucket = byFolder.get(fid) ?? [];
+        bucket.push(s);
+        byFolder.set(fid, bucket);
+      } else {
+        unfiled.push(s);
+      }
+    }
+    return { byFolder, unfiled };
+  }, [sessions, sessionFolder, folders]);
+
+  function handleToggleSidebar(): void {
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
+
+  function handleCreateFolder(): void {
+    const name = window.prompt("Folder name?")?.trim();
+    if (!name) return;
+    const next = [...folders, { id: crypto.randomUUID(), name }];
+    setFolders(next);
+    localStorage.setItem(FOLDERS_KEY, JSON.stringify(next));
+  }
+
+  function handleDeleteFolder(folderId: string): void {
+    setFolders((prev) => {
+      const next = prev.filter((f) => f.id !== folderId);
+      localStorage.setItem(FOLDERS_KEY, JSON.stringify(next));
+      return next;
+    });
+    setSessionFolder((prev) => {
+      const next = { ...prev };
+      for (const sid of Object.keys(next)) {
+        if (next[sid] === folderId) delete next[sid];
+      }
+      localStorage.setItem(SESSION_FOLDER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function handleAssignFolder(sessionIdToMove: string, folderId: string): void {
+    setSessionFolder((prev) => {
+      const next = { ...prev };
+      if (folderId === UNFILED) delete next[sessionIdToMove];
+      else next[sessionIdToMove] = folderId;
+      localStorage.setItem(SESSION_FOLDER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
 
   async function refreshSessions(): Promise<SessionSummary[]> {
     try {
@@ -232,81 +356,191 @@ function App() {
     }
   }
 
+  function renderSessionItem(s: SessionSummary) {
+    return (
+      <li key={s.id}>
+        <button
+          type="button"
+          onClick={() => handleSwitchSession(s)}
+          className={`flex w-full flex-col items-start gap-1 rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
+            s.id === sessionId ? "border-primary bg-accent" : "border-transparent"
+          }`}
+        >
+          <span className="font-medium">{s.id}</span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            {s.agentId}
+            <Badge variant="secondary" className="text-[10px]">
+              {s.state}
+            </Badge>
+            {s.turns} turn{s.turns === 1 ? "" : "s"}
+          </span>
+        </button>
+        {folders.length > 0 && (
+          <Select
+            value={sessionFolder[s.id] ?? UNFILED}
+            onValueChange={(v) => handleAssignFolder(s.id, v ?? UNFILED)}
+          >
+            <SelectTrigger size="sm" className="mt-1 h-6 w-full text-[10px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={UNFILED}>Unfiled</SelectItem>
+              {folders.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </li>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       <aside
         aria-label="sessions"
-        className="flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r p-4"
+        className={
+          sidebarCollapsed
+            ? "flex w-14 shrink-0 flex-col items-center gap-2 border-r p-2"
+            : "flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r p-4"
+        }
       >
-        <div>
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Sessions</h2>
-          {sessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sessions yet</p>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {sessions.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchSession(s)}
-                    className={`flex w-full flex-col items-start gap-1 rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
-                      s.id === sessionId ? "border-primary bg-accent" : "border-transparent"
-                    }`}
-                  >
-                    <span className="font-medium">{s.id}</span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      {s.agentId}
-                      <Badge variant="secondary" className="text-[10px]">
-                        {s.state}
-                      </Badge>
-                      {s.turns} turn{s.turns === 1 ? "" : "s"}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+        <div className="flex w-full items-center justify-between gap-1">
+          {!sidebarCollapsed && (
+            <h2 className="text-sm font-semibold text-muted-foreground">Sessions</h2>
           )}
+          <div className="flex items-center gap-1">
+            {!sidebarCollapsed && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                title="New folder"
+                onClick={handleCreateFolder}
+              >
+                <FolderPlusIcon className="size-4" />
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="New chat"
+              onClick={handleNewSession}
+              disabled={busy}
+            >
+              <PlusIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              onClick={handleToggleSidebar}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftIcon className="size-4" />
+              ) : (
+                <PanelLeftCloseIcon className="size-4" />
+              )}
+            </Button>
+          </div>
         </div>
 
-        <div aria-label="daemon status">
-          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Status</h2>
-          {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
-          {status && (
-            <ul className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
-              <li>enabled: {String(status.enabled)}</li>
-              <li>mode: {status.mode}</li>
-              <li>tasks: {status.tasks}</li>
-              <li>spent today: ${status.spentToday.toFixed(4)}</li>
-            </ul>
-          )}
-          <Button type="button" variant="outline" size="sm" onClick={refreshStatus}>
-            Refresh
-          </Button>
-        </div>
+        {!sidebarCollapsed && (
+          <>
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+              {folders.map((f) => {
+                const items = sessionsByFolder.byFolder.get(f.id) ?? [];
+                return (
+                  <Collapsible key={f.id} defaultOpen className="group">
+                    <div className="flex items-center justify-between gap-1">
+                      <CollapsibleTrigger className="flex flex-1 items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+                        <ChevronRightIcon className="size-3 transition-transform group-data-[state=open]:rotate-90" />
+                        <FolderIcon className="size-3" />
+                        {f.name} ({items.length})
+                      </CollapsibleTrigger>
+                      <button
+                        type="button"
+                        title="Delete folder"
+                        onClick={() => handleDeleteFolder(f.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <XIcon className="size-3" />
+                      </button>
+                    </div>
+                    <CollapsibleContent>
+                      <ul className="mt-1 ml-4 flex flex-col gap-1">
+                        {items.length === 0 ? (
+                          <li className="text-xs text-muted-foreground">Empty</li>
+                        ) : (
+                          items.map((s) => renderSessionItem(s))
+                        )}
+                      </ul>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
 
-        <div aria-label="debug logs">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDebug((v) => !v)}
-          >
-            {showDebug ? "Hide debug logs" : "Show debug logs"}
-          </Button>
-          {showDebug && (
-            <>
-              {logError && <p className="mt-2 text-sm text-destructive">{logError}</p>}
-              <ul className="mt-2 max-h-60 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs break-all">
-                {logLines.length === 0 && (
-                  <li className="text-muted-foreground">No log lines yet</li>
+              <div>
+                {folders.length > 0 && (
+                  <h3 className="mb-1 text-xs font-medium text-muted-foreground">Unfiled</h3>
                 )}
-                {logLines.map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
+                {sessionsByFolder.unfiled.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {folders.length > 0 ? "Nothing unfiled" : "No sessions yet"}
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-1">
+                    {sessionsByFolder.unfiled.map((s) => renderSessionItem(s))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div aria-label="daemon status">
+              <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Status</h2>
+              {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
+              {status && (
+                <ul className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  <li>enabled: {String(status.enabled)}</li>
+                  <li>mode: {status.mode}</li>
+                  <li>tasks: {status.tasks}</li>
+                  <li>spent today: ${status.spentToday.toFixed(4)}</li>
+                </ul>
+              )}
+              <Button type="button" variant="outline" size="sm" onClick={refreshStatus}>
+                Refresh
+              </Button>
+            </div>
+
+            <div aria-label="debug logs">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDebug((v) => !v)}
+              >
+                {showDebug ? "Hide debug logs" : "Show debug logs"}
+              </Button>
+              {showDebug && (
+                <>
+                  {logError && <p className="mt-2 text-sm text-destructive">{logError}</p>}
+                  <ul className="mt-2 max-h-60 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs break-all">
+                    {logLines.length === 0 && (
+                      <li className="text-muted-foreground">No log lines yet</li>
+                    )}
+                    {logLines.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </>
+        )}
       </aside>
 
       <main className="flex flex-1 flex-col overflow-hidden p-4">
