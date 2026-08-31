@@ -134,6 +134,19 @@ export const AgentSchema = z
      * config keeps working unchanged. See `ProactiveCheckSchema` above and `proactive.ts`.
      */
     proactive_checks: z.array(ProactiveCheckSchema).default([]),
+    /**
+     * `"none"` (default): the worker gets `--strict-mcp-config` pointed at an empty config, so
+     * it has exactly the tools in `tools` above and nothing else -- the original, deliberate
+     * sandboxing (see `buildWorkerInvocation` in tick.ts). `"inherit"`: omit those flags
+     * entirely, so `claude` resolves MCP servers exactly as the interactive CLI does (e.g. a
+     * configured Glean server), giving this agent the same MCP access as whoever runs `claude`
+     * on this machine. Opt-in and per-agent: turning it on for a manual-session-only agent has
+     * a very different risk profile than turning it on for one a Slack DM message can trigger,
+     * since Slack-sourced requests are untrusted input by design (see the `<untrusted_N>`
+     * wrapping in `buildWorkerInvocation`) -- an MCP tool is one more thing that content could
+     * try to steer.
+     */
+    mcp: z.enum(["none", "inherit"]).default("none"),
   })
   .strict();
 

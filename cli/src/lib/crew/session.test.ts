@@ -248,6 +248,54 @@ describe("promptManualSession memory recall", () => {
   });
 });
 
+describe("agent.mcp controls MCP passthrough", () => {
+  let restorePath: string | undefined;
+
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("default agent (mcp: none) gets --strict-mcp-config pointed at an empty config", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("--strict-mcp-config");
+    expect(sentArgv).toContain("--mcp-config");
+    store.close();
+  });
+
+  test("an agent with mcp: inherit omits the empty-MCP flags, so claude resolves its own config", async () => {
+    const store = freshStore();
+    const cfg = baseConfig({
+      agents: {
+        ...baseConfig().agents,
+        glean_agent: {
+          name: "Glean Agent",
+          sigils: ["!glean"],
+          workspace: "/tmp/ws",
+          mcp: "inherit",
+        },
+      },
+    });
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "glean_agent");
+    await promptManualSession(store, cfg, id, "hi");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).not.toContain("--strict-mcp-config");
+    expect(sentArgv).not.toContain("--mcp-config");
+    store.close();
+  });
+});
+
 describe("listManualSessions", () => {
   test("lists sessions newest first with derived state and turn count", () => {
     const store = freshStore();

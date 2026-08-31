@@ -606,6 +606,7 @@ const CrewAgentSchema = section({
   persona: z.string().optional(),
   persona_file: z.string().optional(),
   proactive_checks: z.array(CrewProactiveCheckSchema).optional(),
+  mcp: z.enum(["none", "inherit"]).optional(),
 });
 
 const CrewSchema = section({

@@ -1058,6 +1058,13 @@
                   },
                   "additionalProperties": true
                 }
+              },
+              "mcp": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "inherit"
+                ]
               }
             },
             "additionalProperties": true

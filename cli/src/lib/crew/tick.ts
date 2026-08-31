@@ -267,6 +267,10 @@ function buildWorkerInvocation(
 ): { args: string[]; prompt: string } {
   const mcpNone = join(expandHome(cfg.state_dir), "no-mcp.json");
   writeFileSync(mcpNone, JSON.stringify({ mcpServers: {} }));
+  const mcpArgs: string[] =
+    agent.mcp === "inherit"
+      ? []
+      : ["--strict-mcp-config", "--mcp-config", mcpNone];
 
   const persona = resolvePersona(agent);
   const system =
@@ -300,9 +304,7 @@ function buildWorkerInvocation(
     agent.model,
     "--tools",
     ...agent.tools,
-    "--strict-mcp-config",
-    "--mcp-config",
-    mcpNone,
+    ...mcpArgs,
     "--disallowedTools",
     "Bash",
     "--permission-mode",
