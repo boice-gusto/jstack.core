@@ -125,7 +125,7 @@ describe("crew sessions CLI: new -> prompt -> cancel", () => {
     store.close();
 
     logs = [];
-    runSessionCancel(created.id, true);
+    await runSessionCancel(created.id, true);
     const cancelResult = JSON.parse(logs.at(-1) ?? "{}") as { ok: boolean };
     expect(cancelResult.ok).toBe(true);
   });

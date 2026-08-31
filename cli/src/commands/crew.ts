@@ -707,16 +707,30 @@ export async function runSessionPrompt(
   console.log(chalk.dim(`\n  ($${result.costUsd.toFixed(4)})`));
 }
 
-export function runSessionCancel(id: string, json: boolean): void {
+export async function runSessionCancel(
+  id: string,
+  json: boolean,
+): Promise<void> {
   const cfg = loadCrewConfig();
   const store = new CrewStore(cfg.state_dir);
-  cancelManualSession(store, id);
-  store.close();
+  let result: Awaited<ReturnType<typeof cancelManualSession>>;
+  try {
+    result = await cancelManualSession(store, cfg, id);
+  } finally {
+    store.close();
+  }
   if (json) {
-    console.log(JSON.stringify({ ok: true, id }, null, 2));
+    console.log(JSON.stringify({ ok: true, id, ...result }, null, 2));
     return;
   }
   console.log(chalk.green(`Cancelled ${id}`));
+  if (result.retro.saved.length > 0) {
+    console.log(
+      chalk.dim(
+        `  learned ${result.retro.saved.length} thing(s) from this session`,
+      ),
+    );
+  }
 }
 
 export function runSessionRemember(

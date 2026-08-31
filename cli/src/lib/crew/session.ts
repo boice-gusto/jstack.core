@@ -15,6 +15,7 @@ import {
   readTranscript,
   type TranscriptEntry,
 } from "./transcript.js";
+import { runSelfRetro, type SelfRetroResult } from "./retro.js";
 
 /**
  * Manual (non-Slack) sessions: an interactive conversation with a crew agent, driven directly
@@ -193,11 +194,34 @@ export function getSessionHistory(
  * synchronous, one CLI invocation per prompt) -- that arrives with the resident daemon, which
  * will `AgentRunHandle.cancel()` a live run before calling this. Safe to call on a session with
  * no active run, which is every manual session today.
+ *
+ * Runs a self-retro (retro.ts) over the closing session's transcript before marking it done --
+ * this is the automatic half of learning: `rememberInSession` is the explicit write path, this
+ * is what makes a session "smarter next time" without anyone having to ask for it. Awaited (not
+ * fired-and-forgotten) because the caller's `store` is closed right after this returns (see
+ * rpc-server.ts's per-request `CrewStore` lifecycle) -- retro must finish using it first. If the
+ * session's agent no longer exists in config, the session still closes; it just skips retro
+ * rather than failing the whole cancel.
  */
-export function cancelManualSession(store: CrewStore, id: string): void {
+export async function cancelManualSession(
+  store: CrewStore,
+  cfg: CrewConfig,
+  id: string,
+): Promise<{ retro: SelfRetroResult }> {
   const task = store.findTaskById(id);
   if (!task) throw new UnknownSessionError(`no such session: ${id}`);
-  store.finishTask(id, "cancelled", 0);
+  const agent = cfg.agents[task.agentId];
+  const retro = agent
+    ? await runSelfRetro(
+        store,
+        cfg,
+        agent,
+        task.agentId,
+        readTranscript(cfg.state_dir, id),
+      )
+    : { ran: false, saved: [], costUsd: 0 };
+  store.finishTask(id, "cancelled", retro.costUsd);
+  return { retro };
 }
 
 export type ManualSessionSummary = {

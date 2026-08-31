@@ -34,6 +34,10 @@ import type { CrewConfig } from "./types.js";
  * this transport is one request/response per connection, not a persistent one a server could
  * push updates over. A client wanting to watch a turn in progress would need a transport
  * redesign, not just a session.ts change.
+ *
+ * `session/cancel` also runs a self-retro (retro.ts) over the closing session's transcript
+ * before responding, so it can take as long as one more agent turn -- the `{ retro }` in its
+ * response says what (if anything) got saved to the agent's memory.
  */
 
 type SocketData = { buffer: string };
@@ -103,8 +107,8 @@ async function dispatch(
         if (typeof p.id !== "string") {
           throw new Error("session/cancel requires { id: string }");
         }
-        cancelManualSession(store, p.id);
-        return { ok: true };
+        const { retro } = await cancelManualSession(store, cfg, p.id);
+        return { ok: true, retro };
       }
       case "session/remember": {
         if (typeof p.id !== "string" || typeof p.content !== "string") {
