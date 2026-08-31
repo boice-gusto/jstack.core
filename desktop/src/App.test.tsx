@@ -122,6 +122,22 @@ describe("App", () => {
     expect(screen.getByText("Send")).toBeDisabled();
   });
 
+  test("shows a 'no session yet' empty state before any session exists, and a 'say something' one right after creating one", async () => {
+    mockIPC(
+      withStatusDefault((cmd) => {
+        if (cmd === "session_list") return [];
+        if (cmd === "session_new") return { id: "ral-empty", sessionId: "z" };
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(<App />);
+    await waitFor(() => screen.getByText("No session yet"));
+
+    fireEvent.click(screen.getByText("New session"));
+    await waitFor(() => screen.getByText("Say something to get started"));
+    expect(screen.queryByText("No session yet")).toBeNull();
+  });
+
   test("existing sessions render in the sidebar on load", async () => {
     mockIPC(
       withStatusDefault((cmd) => {

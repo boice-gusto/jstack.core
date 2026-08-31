@@ -15,6 +15,7 @@ import {
 import {
   Conversation,
   ConversationContent,
+  ConversationEmptyState,
   ConversationScrollButton,
 } from "./components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "./components/ai-elements/message";
@@ -22,6 +23,7 @@ import { Tool, ToolContent, ToolHeader, ToolInput } from "./components/ai-elemen
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
+import { MessageCircleIcon, PlayCircleIcon } from "lucide-react";
 
 /** How often the debug panel polls logs/recent while open. The RPC transport has no
  * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
@@ -337,6 +339,19 @@ function App() {
 
         <Conversation aria-label="messages">
           <ConversationContent>
+            {sessionId === null ? (
+              <ConversationEmptyState
+                icon={<PlayCircleIcon className="size-8" />}
+                title="No session yet"
+                description="Pick an agent above and click New session to start chatting."
+              />
+            ) : messages.length === 0 ? (
+              <ConversationEmptyState
+                icon={<MessageCircleIcon className="size-8" />}
+                title="Say something to get started"
+                description={`Chatting with ${agentId}`}
+              />
+            ) : null}
             {messages.map((m, i) => {
               if (m.role === "system") {
                 return (
