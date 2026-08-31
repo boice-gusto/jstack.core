@@ -160,6 +160,31 @@ describe("rpc-server", () => {
     expect(cancelled.ok).toBe(true);
   });
 
+  test("session/history returns the transcript from a prior session/prompt", async () => {
+    restorePath = installFakeClaude().restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const created = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+    await rpcCall(handle.sockPath, "session/prompt", {
+      id: created.id,
+      message: "hello",
+    });
+
+    const history = (await rpcCall(handle.sockPath, "session/history", {
+      id: created.id,
+    })) as Array<{ role: string; text: string }>;
+    expect(history).toHaveLength(2);
+    expect(history[0]).toMatchObject({ role: "user", text: "hello" });
+    expect(history[1]).toMatchObject({
+      role: "assistant",
+      text: "rpc reply",
+    });
+  });
+
   test("session/list returns manual sessions newest first", async () => {
     restorePath = installFakeClaude().restorePath;
     const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));

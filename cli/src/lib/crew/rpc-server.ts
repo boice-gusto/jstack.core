@@ -4,6 +4,7 @@ import type { Socket } from "bun";
 import {
   cancelManualSession,
   createManualSession,
+  getSessionHistory,
   listManualSessions,
   promptManualSession,
   rememberInSession,
@@ -14,24 +15,25 @@ import type { CrewConfig } from "./types.js";
 
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
- * 2.0-shaped requests/responses. Method names (`session/new`, `session/list`, `session/prompt`,
- * `session/cancel`, `session/remember`, `logs/recent`) intentionally mirror the Agent Client
- * Protocol's session verbs, even though
- * this transport isn't literally ACP -- see the AgentProvider extraction's own note on this
- * (cli/src/lib/agent-providers/provider.ts) for why: it keeps the message shapes stable if a
- * real ACP transport (or a UI client) replaces this later.
+ * 2.0-shaped requests/responses. Method names (`session/new`, `session/list`, `session/history`,
+ * `session/prompt`, `session/cancel`, `session/remember`, `logs/recent`) intentionally mirror
+ * the Agent Client Protocol's session verbs, even though this transport isn't literally ACP --
+ * see the AgentProvider extraction's own note on this (cli/src/lib/agent-providers/provider.ts)
+ * for why: it keeps the message shapes stable if a real ACP transport (or a UI client) replaces
+ * this later.
  *
  * A Unix socket (0600, user-only) is the access control -- unlike `ui-server.ts`'s
  * browser-reachable HTTP surface, there's no CSRF/DNS-rebinding threat model here to defend
  * against, since nothing but a local process holding the right file permissions can ever open
  * this socket.
  *
- * `session/prompt` runs the real turn synchronously (crew's turn-runner is blocking
- * `--output-format json`, not token-streaming -- see session.ts/tick.ts) and only replies once
- * it's done, which can be up to `task_timeout_ms` (minutes). That's a real, current limitation:
- * there is no `session/update` streaming notification yet, because there is nothing to stream
- * from underneath it. A future move to stream-json turns would add one without changing this
- * dispatch shape.
+ * `session/prompt` runs the real turn via `runWorkerStreaming` (stream-json, with tool-call
+ * events collected) but still replies only once the whole turn is done, which can be up to
+ * `task_timeout_ms` (minutes) -- session.ts collects the stream, it doesn't forward it live.
+ * That's a real, current limitation: there is no `session/update` push notification, because
+ * this transport is one request/response per connection, not a persistent one a server could
+ * push updates over. A client wanting to watch a turn in progress would need a transport
+ * redesign, not just a session.ts change.
  */
 
 type SocketData = { buffer: string };
@@ -82,6 +84,12 @@ async function dispatch(
       case "session/list": {
         const limit = typeof p.limit === "number" ? p.limit : undefined;
         return listManualSessions(store, cfg, limit);
+      }
+      case "session/history": {
+        if (typeof p.id !== "string") {
+          throw new Error("session/history requires { id: string }");
+        }
+        return getSessionHistory(store, cfg, p.id);
       }
       case "session/prompt": {
         if (typeof p.id !== "string" || typeof p.message !== "string") {
