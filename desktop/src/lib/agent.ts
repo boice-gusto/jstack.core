@@ -82,7 +82,17 @@ export function promptSession(id: string, message: string): Promise<PromptResult
   return invoke("session_prompt", { id, message });
 }
 
-export function cancelSession(id: string): Promise<{ ok: boolean }> {
+export interface SelfRetroResult {
+  ran: boolean;
+  saved: MemoryEntry[];
+  costUsd: number;
+}
+
+/** Closing a session also runs a self-retro (retro.ts) over its transcript, so `retro.saved`
+ * says what -- if anything -- the agent just learned before this session went away. */
+export function cancelSession(
+  id: string,
+): Promise<{ ok: boolean; retro: SelfRetroResult }> {
   return invoke("session_cancel", { id });
 }
 

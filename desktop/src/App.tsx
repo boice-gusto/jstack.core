@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  cancelSession,
   daemonStatus,
   getSessionHistory,
   listSessions,
@@ -152,6 +153,33 @@ function App() {
     switchToSession(s.id, s.agentId);
   }
 
+  async function handleCloseSession(): Promise<void> {
+    if (sessionId === null || busy) return;
+    const closingId = sessionId;
+    setBusy(true);
+    try {
+      const { retro } = await cancelSession(closingId);
+      const learned = retro.saved.map((m) => `(${m.kind}) ${m.content}`);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "system",
+          text:
+            learned.length > 0
+              ? `Session closed. Learned:\n${learned.join("\n")}`
+              : "Session closed.",
+        },
+      ]);
+      localStorage.removeItem(LAST_SESSION_KEY);
+      setSessionId(null);
+      await refreshSessions();
+    } catch (e) {
+      setSessionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSend(): Promise<void> {
     const text = draft.trim();
     if (text.length === 0 || sessionId === null || busy) return;
@@ -255,7 +283,14 @@ function App() {
           </button>
         </div>
         {sessionError && <p className="error">{sessionError}</p>}
-        {sessionId && <p className="session-id">session {sessionId}</p>}
+        {sessionId && (
+          <p className="session-id">
+            session {sessionId}{" "}
+            <button type="button" onClick={handleCloseSession} disabled={busy}>
+              Close session
+            </button>
+          </p>
+        )}
 
         <ul className="messages" aria-label="messages">
           {messages.map((m, i) => (

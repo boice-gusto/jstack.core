@@ -176,6 +176,37 @@ describe("App", () => {
     expect(screen.getByText("Read")).toBeTruthy();
   });
 
+  test("closing a session reports what the self-retro learned and clears the active session", async () => {
+    mockIPC(
+      withStatusDefault((cmd, payload) => {
+        if (cmd === "session_list") return [];
+        if (cmd === "session_new") return { id: "ral-close", sessionId: "z" };
+        if (cmd === "session_cancel") {
+          expect(payload).toEqual({ id: "ral-close" });
+          return {
+            ok: true,
+            retro: {
+              ran: true,
+              costUsd: 0.002,
+              saved: [{ id: "m1", agentId: "ralph", kind: "preference", content: "Prefers terse replies." }],
+            },
+          };
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByText("New session"));
+    await waitFor(() => screen.getByText(/session ral-close/));
+
+    fireEvent.click(screen.getByText("Close session"));
+
+    await waitFor(() => screen.getByText(/Session closed\. Learned:/));
+    expect(screen.getByText(/Prefers terse replies\./)).toBeTruthy();
+    expect(screen.queryByText(/session ral-close/)).toBeNull();
+  });
+
   test("debug logs are fetched only after 'Show debug logs' is clicked, not on load", async () => {
     let recentLogsCalls = 0;
     mockIPC(
