@@ -1,5 +1,9 @@
 import type { InboundMessage } from "./types.js";
 import { hasServerSuffix } from "./guards.js";
+import {
+  extractSessionId,
+  mapStreamJsonLine,
+} from "../agent-providers/claude-stream-json.js";
 
 /**
  * Slack access, via a short `claude -p` shelling out to the Slack MCP.
@@ -88,6 +92,135 @@ export async function runClaude(
     );
     return { ok: false, text: detail, costUsd: 0, isError: true };
   }
+}
+
+export interface ToolCallEvent {
+  name: string;
+  input: unknown;
+}
+
+export interface ClaudeStreamingResult extends ClaudeResult {
+  toolEvents: ToolCallEvent[];
+}
+
+/**
+ * Same contract as `runClaude`, plus the tool calls the turn made along the way -- for manual
+ * sessions, which want to show "used tool X" in the UI, not just the final text.
+ *
+ * Deliberately requests `--output-format stream-json --verbose` WITHOUT
+ * `--include-partial-messages`. Measured against a real `claude -p` call: with that flag,
+ * assistant text arrives BOTH as incremental `stream_event`/`text_delta` chunks AND as a
+ * separate, complete `assistant` message event for the same content -- `mapStreamJsonLine` maps
+ * both to the same `assistant_text` kind, so naively concatenating every occurrence double-counts
+ * the reply (confirmed: a two-character reply came back as `PONGPONG`). Without that flag, only
+ * the complete `assistant` event appears, once, so accumulating across (possibly several,
+ * multi-step-tool-use) `assistant` events is correct. This function has no use for token-level
+ * partial updates anyway -- it collects everything and returns once, the same as `runClaude`.
+ */
+function spawnClaudeStreaming(argv: string[]) {
+  return Bun.spawn(argv, {
+    stdin: "ignore" as const,
+    stdout: "pipe" as const,
+    stderr: "pipe" as const,
+    env: { ...process.env },
+  });
+}
+
+export async function runClaudeStreaming(
+  args: string[],
+  prompt: string,
+  timeoutMs: number,
+): Promise<ClaudeStreamingResult> {
+  let proc: ReturnType<typeof spawnClaudeStreaming>;
+  try {
+    // Bun.spawn throws SYNCHRONOUSLY on a missing executable (confirmed: an empty PATH here
+    // throws ENOENT immediately, unlike Node's child_process.spawn, which reports it later via
+    // an async 'error' event) -- caught here so a misconfigured/missing `claude` binary is a
+    // normal failure result, not an unhandled rejection out of an RPC dispatch call.
+    proc = spawnClaudeStreaming([
+      "claude",
+      "-p",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      ...args,
+      "--",
+      prompt,
+    ]);
+  } catch (e) {
+    return {
+      ok: false,
+      text: `could not start claude: ${e instanceof Error ? e.message : String(e)}`,
+      costUsd: 0,
+      isError: true,
+      toolEvents: [],
+    };
+  }
+
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    proc.kill();
+  }, timeoutMs);
+
+  const [out, err] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  await proc.exited;
+  clearTimeout(timer);
+
+  if (timedOut) {
+    return {
+      ok: false,
+      text: `timed out after ${Math.round(timeoutMs / 1000)}s`,
+      costUsd: 0,
+      isError: true,
+      toolEvents: [],
+    };
+  }
+
+  let text = "";
+  let sessionId: string | undefined;
+  let costUsd = 0;
+  let isError = false;
+  let sawResult = false;
+  const toolEvents: ToolCallEvent[] = [];
+
+  for (const line of out.split("\n")) {
+    if (line.trim().length === 0) continue;
+    if (!sessionId) {
+      const sid = extractSessionId(line);
+      if (sid !== null) sessionId = sid;
+    }
+    for (const evt of mapStreamJsonLine(line)) {
+      if (evt.kind === "assistant_text") {
+        text += evt.text;
+      } else if (evt.kind === "tool_use") {
+        toolEvents.push({ name: evt.name, input: evt.input });
+      } else if (evt.kind === "result") {
+        sawResult = true;
+        costUsd = evt.total_cost_usd;
+        isError = evt.isError;
+        // The result event's own text (when present) is the authoritative final answer -- prefer
+        // it over the accumulated assistant-message text, mirroring runClaude's `d.result` read.
+        if (evt.result !== undefined && evt.result.length > 0) {
+          text = evt.result;
+        }
+      }
+    }
+  }
+
+  if (!sawResult) {
+    // Surface whichever stream has content, so a failure is never a blank message.
+    const detail = (text.trim() || err.trim() || "no output from claude").slice(
+      0,
+      500,
+    );
+    return { ok: false, text: detail, costUsd: 0, isError: true, toolEvents };
+  }
+
+  return { ok: !isError, text, costUsd, isError, sessionId, toolEvents };
 }
 
 /**

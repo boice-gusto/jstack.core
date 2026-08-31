@@ -1,10 +1,14 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   interpretToolResult,
   looksLikeNoToolOutput,
   parseReadResponse,
   parseSendResponse,
   parseThreadResponse,
+  runClaudeStreaming,
   toolMissing,
   unwrapToolText,
 } from "./slack.js";
@@ -318,5 +322,91 @@ describe("parseThreadResponse — constructed thread-shaped input", () => {
     const wrapped = JSON.stringify({ messages: raw });
     const fromWrapped = parseThreadResponse(wrapped, "D0TESTDM001");
     expect(fromWrapped).toHaveLength(3);
+  });
+});
+
+/**
+ * Fixtures below are trimmed real recordings from a live `claude -p --output-format
+ * stream-json --verbose` call (system/hook_* preamble lines dropped -- irrelevant noise
+ * mapStreamJsonLine treats as `raw` anyway, and that preamble is where org/plugin-identifying
+ * metadata lives, which has no business in this repo's fixtures). Confirmed live and load-
+ * bearing: WITHOUT --include-partial-messages, only a complete "assistant" event carries text,
+ * once -- WITH it, the same text also arrives as incremental stream_event/text_delta chunks
+ * first, and naively accumulating every assistant_text event doubles it (measured: a two-
+ * character reply came back "PONGPONG"). runClaudeStreaming deliberately omits that flag.
+ */
+const REAL_STREAM_TEXT_ONLY = `
+{"type":"assistant","message":{"model":"claude-sonnet-5","id":"msg_011Cea6n26LmSL98APeSAE6z","type":"message","role":"assistant","content":[{"type":"text","text":"PONG"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":2,"cache_creation_input_tokens":9438,"cache_read_input_tokens":20136,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":9438},"output_tokens":1,"service_tier":"standard","inference_geo":"global"},"diagnostics":null,"context_management":null},"parent_tool_use_id":null,"session_id":"2a9e7dea-d038-45cc-a8de-a5b6ed5e9af0","uuid":"59934219-fa27-4f03-a426-c9cae5575f12","timestamp":"2026-08-31T03:16:20.046Z","request_id":"req_011Cea6mzwtTyjhqwykHGZxV"}
+{"type":"rate_limit_event","rate_limit_info":{"status":"allowed","resetsAt":1788220800,"rateLimitType":"overage","overageStatus":"allowed","overageResetsAt":1788220800,"isUsingOverage":false,"overageInUse":true},"uuid":"a4bea8be-9d8a-4bdd-94e4-6f3357a66d39","session_id":"2a9e7dea-d038-45cc-a8de-a5b6ed5e9af0"}
+{"duration_api_ms":1447,"stop_reason":"end_turn","session_id":"2a9e7dea-d038-45cc-a8de-a5b6ed5e9af0","total_cost_usd":0.0418332,"usage":{"input_tokens":2,"cache_creation_input_tokens":9438,"cache_read_input_tokens":20136,"output_tokens":5,"output_tokens_details":{"thinking_tokens":0},"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":9438,"ephemeral_5m_input_tokens":0},"inference_geo":"global","iterations":[{"input_tokens":2,"output_tokens":5,"cache_read_input_tokens":20136,"cache_creation_input_tokens":9438,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":9438},"type":"message"}],"speed":"standard"},"modelUsage":{"claude-sonnet-5":{"inputTokens":2,"outputTokens":5,"cacheReadInputTokens":20136,"cacheCreationInputTokens":9438,"webSearchRequests":0,"costUSD":0.0418332,"contextWindow":1000000,"maxOutputTokens":64000,"canonicalModel":"claude-sonnet-5","provider":"firstParty","costBasis":"list"}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","fast_mode_disabled_reason":"sdk_opt_in_required","subagent_stats":{"spawned":0,"requested":{"background":0,"foreground":0,"unset":0},"started_in_background":0,"max_depth":0,"spawned_by_subagents":0,"completed":0,"failed":0,"killed":{"parent":0,"user":0,"system":0},"refused":{"depth_limit":0,"concurrency_limit":0,"budget":0},"by_type":{}},"is_error":false,"num_turns":1,"subtype":"success","api_error_status":null,"result":"PONG","ttft_ms":1858,"type":"result","duration_ms":2558,"uuid":"03509eb9-dde3-40dd-b853-7df22d94c4c1","ttft_stream_ms":1779,"time_to_request_ms":426,"queued_turn_count":0}`.trim();
+
+const REAL_STREAM_WITH_TOOL_USE = `
+{"type":"assistant","message":{"model":"claude-sonnet-5","id":"msg_011Cea6ns59DY7KUt5jjesJN","type":"message","role":"assistant","content":[{"type":"text","text":"I'll read that file now."}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":2,"cache_creation_input_tokens":6288,"cache_read_input_tokens":5611,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":6288},"output_tokens":3,"service_tier":"standard","inference_geo":"global"},"diagnostics":null,"context_management":null},"parent_tool_use_id":null,"session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","uuid":"c5c54f34-e1a9-44a0-ab78-9f30b95d0303","timestamp":"2026-08-31T03:16:32.021Z","request_id":"req_011Cea6nr7r9nsQo87KJtcng"}
+{"type":"assistant","message":{"model":"claude-sonnet-5","id":"msg_011Cea6ns59DY7KUt5jjesJN","type":"message","role":"assistant","content":[{"type":"tool_use","id":"toolu_01XtZcoFyRHuPt5vneHqAXcr","name":"Read","input":{"file_path":"/tmp/jd-tool-test.txt"},"caller":{"type":"direct"}}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":2,"cache_creation_input_tokens":6288,"cache_read_input_tokens":5611,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":6288},"output_tokens":3,"service_tier":"standard","inference_geo":"global"},"diagnostics":null,"context_management":null},"parent_tool_use_id":null,"session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","uuid":"fb28395e-7075-4985-ab68-67181912f0b9","timestamp":"2026-08-31T03:16:32.034Z","request_id":"req_011Cea6nr7r9nsQo87KJtcng"}
+{"type":"user","message":{"role":"user","content":[{"tool_use_id":"toolu_01XtZcoFyRHuPt5vneHqAXcr","type":"tool_result","content":"1\\thello world content\\n2\\t"}]},"parent_tool_use_id":null,"session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","uuid":"31726a49-7163-4243-b7c5-f8ec2ac6383a","timestamp":"2026-08-31T03:16:32.047Z","tool_use_result":{"type":"text","file":{"filePath":"/tmp/jd-tool-test.txt","content":"hello world content\\n","numLines":2,"startLine":1,"totalLines":2}}}
+{"type":"rate_limit_event","rate_limit_info":{"status":"allowed","resetsAt":1788220800,"rateLimitType":"overage","overageStatus":"allowed","overageResetsAt":1788220800,"isUsingOverage":false,"overageInUse":true},"uuid":"cc273cd9-77f4-45b3-bd55-44a3c29ae056","session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f"}
+{"type":"assistant","message":{"model":"claude-sonnet-5","id":"msg_011Cea6o1VQjbchTj7NjrUJA","type":"message","role":"assistant","content":[{"type":"text","text":"The file \`/tmp/jd-tool-test.txt\` contains: \`hello world content\`"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":2,"cache_creation_input_tokens":125,"cache_read_input_tokens":11899,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":125},"output_tokens":1,"service_tier":"standard","inference_geo":"global"},"diagnostics":null,"context_management":null},"parent_tool_use_id":null,"session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","uuid":"3331c659-1a58-4078-b03e-c660878d4697","timestamp":"2026-08-31T03:16:33.878Z","request_id":"req_011Cea6nzQRW1fvnWbYKSpcB"}
+{"duration_api_ms":3940,"stop_reason":"end_turn","session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","total_cost_usd":0.030172,"usage":{"input_tokens":4,"cache_creation_input_tokens":6413,"cache_read_input_tokens":17510,"output_tokens":101,"output_tokens_details":{"thinking_tokens":0},"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":6413,"ephemeral_5m_input_tokens":0},"inference_geo":"global","iterations":[{"input_tokens":2,"output_tokens":30,"cache_read_input_tokens":11899,"cache_creation_input_tokens":125,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":125},"type":"message"}],"speed":"standard"},"modelUsage":{"claude-sonnet-5":{"inputTokens":4,"outputTokens":101,"cacheReadInputTokens":17510,"cacheCreationInputTokens":6413,"webSearchRequests":0,"costUSD":0.030172,"contextWindow":1000000,"maxOutputTokens":64000,"canonicalModel":"claude-sonnet-5","provider":"firstParty","costBasis":"list"}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","fast_mode_disabled_reason":"sdk_opt_in_required","subagent_stats":{"spawned":0,"requested":{"background":0,"foreground":0,"unset":0},"started_in_background":0,"max_depth":0,"spawned_by_subagents":0,"completed":0,"failed":0,"killed":{"parent":0,"user":0,"system":0},"refused":{"depth_limit":0,"concurrency_limit":0,"budget":0},"by_type":{}},"is_error":false,"num_turns":2,"subtype":"success","api_error_status":null,"result":"The file \`/tmp/jd-tool-test.txt\` contains: \`hello world content\`","ttft_ms":2332,"type":"result","duration_ms":5046,"uuid":"f58cce24-8cf3-410e-a94f-e8f3c68048fb","ttft_stream_ms":1810,"time_to_request_ms":416,"queued_turn_count":0}`.trim();
+
+function installFakeStreamingClaude(fixture: string): { restorePath: string } {
+  const dir = mkdtempSync(join(tmpdir(), "fake-claude-streaming-"));
+  writeFileSync(
+    join(dir, "claude"),
+    `#!/bin/sh\ncat <<'FIXTURE_EOF'\n${fixture}\nFIXTURE_EOF\n`,
+  );
+  chmodSync(join(dir, "claude"), 0o755);
+  const restorePath = process.env.PATH ?? "";
+  process.env.PATH = `${dir}:${restorePath}`;
+  return { restorePath };
+}
+
+describe("runClaudeStreaming", () => {
+  let restorePath: string | undefined;
+
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("a real text-only stream maps to the final text, cost, and session id", async () => {
+    restorePath = installFakeStreamingClaude(REAL_STREAM_TEXT_ONLY).restorePath;
+    const result = await runClaudeStreaming(
+      [],
+      "Reply with exactly: PONG",
+      5000,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.isError).toBe(false);
+    expect(result.text).toBe("PONG");
+    expect(result.costUsd).toBeCloseTo(0.0418332, 6);
+    expect(result.sessionId).toBe("2a9e7dea-d038-45cc-a8de-a5b6ed5e9af0");
+    expect(result.toolEvents).toEqual([]);
+  });
+
+  test("a real stream with a tool call surfaces the tool event and the final text (not doubled)", async () => {
+    restorePath = installFakeStreamingClaude(
+      REAL_STREAM_WITH_TOOL_USE,
+    ).restorePath;
+    const result = await runClaudeStreaming([], "read the file", 5000);
+    expect(result.ok).toBe(true);
+    expect(result.text).toBe(
+      "The file \`/tmp/jd-tool-test.txt\` contains: \`hello world content\`",
+    );
+    expect(result.toolEvents).toEqual([
+      { name: "Read", input: { file_path: "/tmp/jd-tool-test.txt" } },
+    ]);
+    expect(result.costUsd).toBeCloseTo(0.030172, 6);
+  });
+
+  test("a spawn failure reports as an error result, not a throw", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fake-claude-missing-"));
+    const previousPath = process.env.PATH ?? "";
+    process.env.PATH = dir;
+    try {
+      const result = await runClaudeStreaming([], "hi", 2000);
+      expect(result.ok).toBe(false);
+      expect(result.isError).toBe(true);
+    } finally {
+      process.env.PATH = previousPath;
+    }
   });
 });
