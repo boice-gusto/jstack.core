@@ -12,6 +12,14 @@ import {
   type SessionSummary,
   type ToolCallEvent,
 } from "./lib/agent";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "./components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "./components/ai-elements/message";
+import { Tool, ToolContent, ToolHeader, ToolInput } from "./components/ai-elements/tool";
+import { Button } from "./components/ui/button";
 
 /** How often the debug panel polls logs/recent while open. The RPC transport has no
  * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
@@ -28,10 +36,10 @@ type ChatMessage =
   | { role: "system"; text: string };
 
 /**
- * Minimal, functional-first chat view: proves the daemon round trip works end to end (create a
- * session, send a message, see a real reply, switch between sessions) before any visual polish.
- * Deliberately plain CSS, not shadcn/AI Elements yet -- that pass is pending real jstack
- * branding assets and is a separate concern from whether the plumbing works.
+ * The chat view: Vercel AI Elements (Conversation/Message/Tool, on shadcn/ui + Tailwind) render
+ * the transcript, including tool-call events inline on assistant turns -- the composer and
+ * sidebar (sessions/status/debug) stay plain markup, since AI Elements' full PromptInput brings
+ * attachments/model-selector/speech-input features this app doesn't have.
  */
 function App() {
   const [agentId, setAgentId] = useState("ralph");
@@ -267,8 +275,8 @@ function App() {
         </div>
       </aside>
 
-      <main className="container">
-        <h1>jstack</h1>
+      <main className="flex flex-1 flex-col overflow-hidden p-4">
+        <h1 className="mb-2 text-center text-xl font-semibold">jstack</h1>
 
         <div className="row">
           <input
@@ -292,27 +300,63 @@ function App() {
           </p>
         )}
 
-        <ul className="messages" aria-label="messages">
-          {messages.map((m, i) => (
-            <li key={i} className={`message message-${m.role}`}>
-              {m.role === "assistant" && m.toolEvents.length > 0 && (
-                <ul className="tool-events" aria-label="tool calls">
+        <Conversation aria-label="messages">
+          <ConversationContent>
+            {messages.map((m, i) => {
+              if (m.role === "system") {
+                return (
+                  <p
+                    key={i}
+                    data-role="system"
+                    className="text-center text-xs italic text-muted-foreground whitespace-pre-line"
+                  >
+                    {m.text}
+                  </p>
+                );
+              }
+              if (m.role === "user") {
+                return (
+                  <Message key={i} from="user" data-role="user">
+                    <MessageContent>{m.text}</MessageContent>
+                  </Message>
+                );
+              }
+              if (m.role === "error") {
+                return (
+                  <Message key={i} from="assistant" data-role="error">
+                    <MessageContent className="bg-destructive/10 text-destructive">
+                      {m.text}
+                    </MessageContent>
+                  </Message>
+                );
+              }
+              return (
+                <Message key={i} from="assistant" data-role="assistant">
                   {m.toolEvents.map((t, j) => (
-                    <li key={j} className="tool-event">
-                      <span aria-hidden="true">🔧</span>
-                      <span className="tool-event-name">{t.name}</span>
-                      <code>{JSON.stringify(t.input)}</code>
-                    </li>
+                    <Tool key={j}>
+                      <ToolHeader
+                        type="dynamic-tool"
+                        toolName={t.name}
+                        state="output-available"
+                      />
+                      <ToolContent>
+                        <ToolInput input={t.input} />
+                      </ToolContent>
+                    </Tool>
                   ))}
-                </ul>
-              )}
-              {m.text}
-              {m.role === "assistant" && (
-                <span className="cost"> (${m.costUsd.toFixed(4)})</span>
-              )}
-            </li>
-          ))}
-        </ul>
+                  <MessageContent>
+                    <MessageResponse>{m.text}</MessageResponse>
+                    <span className="cost text-xs text-muted-foreground">
+                      {" "}
+                      (${m.costUsd.toFixed(4)})
+                    </span>
+                  </MessageContent>
+                </Message>
+              );
+            })}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
 
         <form
           className="row"
@@ -328,9 +372,9 @@ function App() {
             placeholder={sessionId ? "Say something..." : "Start a session first"}
             disabled={sessionId === null || busy}
           />
-          <button type="submit" disabled={sessionId === null || busy}>
+          <Button type="submit" disabled={sessionId === null || busy}>
             {busy ? "..." : "Send"}
-          </button>
+          </Button>
         </form>
       </main>
     </div>

@@ -63,7 +63,9 @@ describe("App", () => {
     fireEvent.click(screen.getByText("Send"));
 
     await waitFor(() => screen.getByText(/hi! how can I help\?/));
-    expect(screen.getByText(/hello there/).className).toContain("message-user");
+    expect(
+      screen.getByText(/hello there/).closest('[data-role="user"]'),
+    ).toBeTruthy();
     expect(screen.getByText(/\$0\.0042/)).toBeTruthy();
   });
 
