@@ -133,7 +133,9 @@ describe("App", () => {
     );
     render(<App />);
     await waitFor(() => screen.getByText("ral-old1"));
-    expect(screen.getByText(/ralph · idle · 3 turns/)).toBeTruthy();
+    expect(screen.getByText("idle")).toBeTruthy();
+    expect(screen.getByText(/ralph/)).toBeTruthy();
+    expect(screen.getByText(/3 turns/)).toBeTruthy();
   });
 
   test("clicking a listed session switches to it, loads its history, and marks it active without a new session_new call", async () => {
@@ -171,7 +173,9 @@ describe("App", () => {
     await waitFor(() => screen.getByText(/session ral-old1/));
     expect(screen.getByDisplayValue("scout")).toBeTruthy();
     expect(sessionNewCalls).toBe(0);
-    expect(screen.getByText("ral-old1").closest("button")?.className).toContain("active");
+    expect(screen.getByText("ral-old1").closest("button")?.className).toContain(
+      "border-primary",
+    );
 
     await waitFor(() => screen.getByText(/earlier question/));
     expect(screen.getByText(/earlier answer/)).toBeTruthy();

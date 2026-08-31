@@ -19,7 +19,9 @@ import {
 } from "./components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "./components/ai-elements/message";
 import { Tool, ToolContent, ToolHeader, ToolInput } from "./components/ai-elements/tool";
+import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
 
 /** How often the debug panel polls logs/recent while open. The RPC transport has no
  * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
@@ -27,7 +29,6 @@ const LOG_POLL_MS = 3000;
 /** Remembers which session was open across app restarts -- the daemon already persists every
  * session's transcript (transcript.ts); this is just which one to reopen without asking. */
 const LAST_SESSION_KEY = "jstack.lastSessionId";
-import "./App.css";
 
 type ChatMessage =
   | { role: "user"; text: string }
@@ -36,10 +37,11 @@ type ChatMessage =
   | { role: "system"; text: string };
 
 /**
- * The chat view: Vercel AI Elements (Conversation/Message/Tool, on shadcn/ui + Tailwind) render
- * the transcript, including tool-call events inline on assistant turns -- the composer and
- * sidebar (sessions/status/debug) stay plain markup, since AI Elements' full PromptInput brings
- * attachments/model-selector/speech-input features this app doesn't have.
+ * The chat view: Vercel AI Elements (Conversation/Message/Tool) render the transcript, including
+ * tool-call events inline on assistant turns; the rest of the chrome (sidebar, composer, session
+ * controls) uses shadcn/ui primitives (Button/Input/Badge) + Tailwind utilities directly, rather
+ * than AI Elements' full PromptInput, which brings attachment/model-selector/speech-input
+ * features this app doesn't use.
  */
 function App() {
   const [agentId, setAgentId] = useState("ralph");
@@ -220,52 +222,73 @@ function App() {
   }
 
   return (
-    <div className="app-layout">
-      <aside className="sidebar" aria-label="sessions">
-        <h2>Sessions</h2>
-        <ul className="session-list">
-          {sessions.length === 0 && <li className="empty">No sessions yet</li>}
-          {sessions.map((s) => (
-            <li key={s.id}>
-              <button
-                type="button"
-                className={s.id === sessionId ? "session-item active" : "session-item"}
-                onClick={() => handleSwitchSession(s)}
-              >
-                <span className="session-item-id">{s.id}</span>
-                <span className="session-item-meta">
-                  {s.agentId} · {s.state} · {s.turns} turn{s.turns === 1 ? "" : "s"}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div className="flex h-screen bg-background text-foreground">
+      <aside
+        aria-label="sessions"
+        className="flex w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r p-4"
+      >
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Sessions</h2>
+          {sessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No sessions yet</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {sessions.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchSession(s)}
+                    className={`flex w-full flex-col items-start gap-1 rounded-md border p-2 text-left text-sm transition-colors hover:bg-accent ${
+                      s.id === sessionId ? "border-primary bg-accent" : "border-transparent"
+                    }`}
+                  >
+                    <span className="font-medium">{s.id}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      {s.agentId}
+                      <Badge variant="secondary" className="text-[10px]">
+                        {s.state}
+                      </Badge>
+                      {s.turns} turn{s.turns === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-        <div className="status-panel" aria-label="daemon status">
-          <h2>Status</h2>
-          {statusError && <p className="error">{statusError}</p>}
+        <div aria-label="daemon status">
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Status</h2>
+          {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
           {status && (
-            <ul className="status-list">
+            <ul className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
               <li>enabled: {String(status.enabled)}</li>
               <li>mode: {status.mode}</li>
               <li>tasks: {status.tasks}</li>
               <li>spent today: ${status.spentToday.toFixed(4)}</li>
             </ul>
           )}
-          <button type="button" onClick={refreshStatus}>
+          <Button type="button" variant="outline" size="sm" onClick={refreshStatus}>
             Refresh
-          </button>
+          </Button>
         </div>
 
-        <div className="debug-panel" aria-label="debug logs">
-          <button type="button" onClick={() => setShowDebug((v) => !v)}>
+        <div aria-label="debug logs">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDebug((v) => !v)}
+          >
             {showDebug ? "Hide debug logs" : "Show debug logs"}
-          </button>
+          </Button>
           {showDebug && (
             <>
-              {logError && <p className="error">{logError}</p>}
-              <ul className="log-list">
-                {logLines.length === 0 && <li className="empty">No log lines yet</li>}
+              {logError && <p className="mt-2 text-sm text-destructive">{logError}</p>}
+              <ul className="mt-2 max-h-60 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs break-all">
+                {logLines.length === 0 && (
+                  <li className="text-muted-foreground">No log lines yet</li>
+                )}
                 {logLines.map((line, i) => (
                   <li key={i}>{line}</li>
                 ))}
@@ -276,28 +299,31 @@ function App() {
       </aside>
 
       <main className="flex flex-1 flex-col overflow-hidden p-4">
-        <h1 className="mb-2 text-center text-xl font-semibold">jstack</h1>
+        <h1 className="mb-4 text-center text-xl font-semibold">jstack</h1>
 
-        <div className="row">
-          <input
+        <div className="mb-2 flex justify-center gap-2">
+          <Input
             aria-label="agent id"
             value={agentId}
             onChange={(e) => setAgentId(e.currentTarget.value)}
             placeholder="agent id (e.g. ralph)"
             disabled={busy}
+            className="max-w-xs"
           />
-          <button type="button" onClick={handleNewSession} disabled={busy}>
+          <Button type="button" onClick={handleNewSession} disabled={busy}>
             New session
-          </button>
+          </Button>
         </div>
-        {sessionError && <p className="error">{sessionError}</p>}
+        {sessionError && (
+          <p className="text-center text-sm text-destructive">{sessionError}</p>
+        )}
         {sessionId && (
-          <p className="session-id">
-            session {sessionId}{" "}
-            <button type="button" onClick={handleCloseSession} disabled={busy}>
+          <div className="mb-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span>session {sessionId}</span>
+            <Button type="button" variant="ghost" size="sm" onClick={handleCloseSession} disabled={busy}>
               Close session
-            </button>
-          </p>
+            </Button>
+          </div>
         )}
 
         <Conversation aria-label="messages">
@@ -346,10 +372,7 @@ function App() {
                   ))}
                   <MessageContent>
                     <MessageResponse>{m.text}</MessageResponse>
-                    <span className="cost text-xs text-muted-foreground">
-                      {" "}
-                      (${m.costUsd.toFixed(4)})
-                    </span>
+                    <span className="text-xs text-muted-foreground"> (${m.costUsd.toFixed(4)})</span>
                   </MessageContent>
                 </Message>
               );
@@ -359,13 +382,13 @@ function App() {
         </Conversation>
 
         <form
-          className="row"
+          className="mt-2 flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
         >
-          <input
+          <Input
             aria-label="message"
             value={draft}
             onChange={(e) => setDraft(e.currentTarget.value)}
