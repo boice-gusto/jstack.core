@@ -25,6 +25,11 @@ function baseConfig(overrides: Record<string, unknown> = {}): CrewConfig {
   return CrewConfigSchema.parse({
     enabled: true,
     mode: "dry_run",
+    // Isolated per test, not the default `~/.jstack/crew` -- memoryRootFor/transcript.ts key
+    // off cfg.state_dir directly (unlike the SQLite ledger, which freshStore() already puts in
+    // its own mkdtemp dir), so leaving this at the default silently writes real markdown memory
+    // and transcript files into the developer's actual daemon home on every test run.
+    state_dir: mkdtempSync(join(tmpdir(), "crew-session-cfg-")),
     slack: { self_user_id: "U0TESTUSER1" },
     agents: {
       ralph: {
@@ -120,20 +125,24 @@ describe("promptManualSession guards", () => {
 });
 
 describe("cancelManualSession", () => {
-  test("marks the session cancelled", () => {
+  test("marks the session cancelled", async () => {
     const store = freshStore();
-    const { id } = createManualSession(store, baseConfig(), "ralph");
-    cancelManualSession(store, id);
+    const cfg = baseConfig();
+    const { id } = createManualSession(store, cfg, "ralph");
+    // No prompts were ever sent, so the transcript is empty and retro short-circuits (`ran:
+    // false`) without needing a claude binary on PATH at all.
+    const { retro } = await cancelManualSession(store, cfg, id);
+    expect(retro.ran).toBe(false);
     const row = store.recentTasks(50).find((r) => r.id === id);
     expect(row?.state).toBe("cancelled");
     store.close();
   });
 
-  test("throws UnknownSessionError for an id that was never created", () => {
+  test("throws UnknownSessionError for an id that was never created", async () => {
     const store = freshStore();
-    expect(() => cancelManualSession(store, "ral-zzzz")).toThrow(
-      UnknownSessionError,
-    );
+    await expect(
+      cancelManualSession(store, baseConfig(), "ral-zzzz"),
+    ).rejects.toThrow(UnknownSessionError);
     store.close();
   });
 });

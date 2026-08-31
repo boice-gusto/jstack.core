@@ -13,6 +13,10 @@ function baseConfig(): CrewConfig {
   return CrewConfigSchema.parse({
     enabled: true,
     mode: "dry_run",
+    // Isolated per test, not the default `~/.jstack/crew` -- memoryRootFor/transcript.ts key
+    // off cfg.state_dir directly, so leaving this at the default silently writes real markdown
+    // memory and transcript files into the developer's actual daemon home on every test run.
+    state_dir: mkdtempSync(join(tmpdir(), "crew-rpc-cfg-")),
     slack: { self_user_id: "U0TESTUSER1" },
     agents: {
       ralph: { name: "Ralph", sigils: ["!ralph"], workspace: "/tmp/ws" },
