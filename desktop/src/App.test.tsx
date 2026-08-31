@@ -12,6 +12,10 @@ import App from "./App";
 afterEach(() => {
   cleanup();
   clearMocks();
+  // switchToSession persists the open session id so it can be restored on the next launch --
+  // without clearing it here, a later test's mount effect could try to restore a session id
+  // left over from an earlier test in this same jsdom environment.
+  localStorage.clear();
 });
 
 /**
@@ -42,7 +46,7 @@ describe("App", () => {
         }
         if (cmd === "session_prompt") {
           expect(payload).toEqual({ id: "ral-abcd", message: "hello there" });
-          return { ok: true, text: "hi! how can I help?", costUsd: 0.0042 };
+          return { ok: true, text: "hi! how can I help?", costUsd: 0.0042, toolEvents: [] };
         }
         throw new Error(`unexpected command: ${cmd}`);
       }),
@@ -69,7 +73,7 @@ describe("App", () => {
         if (cmd === "session_list") return [];
         if (cmd === "session_new") return { id: "ral-fail", sessionId: "x" };
         if (cmd === "session_prompt") {
-          return { ok: false, text: "daily budget cap ($20) reached", costUsd: 0 };
+          return { ok: false, text: "daily budget cap ($20) reached", costUsd: 0, toolEvents: [] };
         }
         throw new Error(`unexpected command: ${cmd}`);
       }),
@@ -130,12 +134,25 @@ describe("App", () => {
     expect(screen.getByText(/ralph · idle · 3 turns/)).toBeTruthy();
   });
 
-  test("clicking a listed session switches to it and marks it active, without a new session_new call", async () => {
+  test("clicking a listed session switches to it, loads its history, and marks it active without a new session_new call", async () => {
     let sessionNewCalls = 0;
     mockIPC(
-      withStatusDefault((cmd) => {
+      withStatusDefault((cmd, payload) => {
         if (cmd === "session_list") {
           return [{ id: "ral-old1", agentId: "scout", state: "idle", turns: 2, costUsd: 0.02 }];
+        }
+        if (cmd === "session_history") {
+          expect(payload).toEqual({ id: "ral-old1" });
+          return [
+            { role: "user", text: "earlier question", at: "2026-01-01T00:00:00.000Z" },
+            {
+              role: "assistant",
+              text: "earlier answer",
+              costUsd: 0.001,
+              toolEvents: [{ name: "Read", input: { file_path: "/x" } }],
+              at: "2026-01-01T00:00:01.000Z",
+            },
+          ];
         }
         if (cmd === "session_new") {
           sessionNewCalls++;
@@ -153,6 +170,10 @@ describe("App", () => {
     expect(screen.getByDisplayValue("scout")).toBeTruthy();
     expect(sessionNewCalls).toBe(0);
     expect(screen.getByText("ral-old1").closest("button")?.className).toContain("active");
+
+    await waitFor(() => screen.getByText(/earlier question/));
+    expect(screen.getByText(/earlier answer/)).toBeTruthy();
+    expect(screen.getByText("Read")).toBeTruthy();
   });
 
   test("debug logs are fetched only after 'Show debug logs' is clicked, not on load", async () => {

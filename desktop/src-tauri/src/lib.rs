@@ -27,6 +27,11 @@ async fn session_list() -> Result<Value, String> {
 }
 
 #[tauri::command]
+async fn session_history(id: String) -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "session/history", json!({ "id": id })).await
+}
+
+#[tauri::command]
 async fn session_prompt(id: String, message: String) -> Result<Value, String> {
     agent_client::call(
         &resolve_socket()?,
@@ -102,6 +107,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             session_new,
             session_list,
+            session_history,
             session_prompt,
             session_cancel,
             session_remember,

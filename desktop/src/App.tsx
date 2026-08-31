@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   daemonStatus,
+  getSessionHistory,
   listSessions,
   newSession,
   promptSession,
@@ -8,16 +9,20 @@ import {
   type DaemonStatus,
   type PromptResult,
   type SessionSummary,
+  type ToolCallEvent,
 } from "./lib/agent";
 
 /** How often the debug panel polls logs/recent while open. The RPC transport has no
  * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
 const LOG_POLL_MS = 3000;
+/** Remembers which session was open across app restarts -- the daemon already persists every
+ * session's transcript (transcript.ts); this is just which one to reopen without asking. */
+const LAST_SESSION_KEY = "jstack.lastSessionId";
 import "./App.css";
 
 type ChatMessage =
   | { role: "user"; text: string }
-  | { role: "assistant"; text: string; costUsd: number }
+  | { role: "assistant"; text: string; costUsd: number; toolEvents: ToolCallEvent[] }
   | { role: "error"; text: string }
   | { role: "system"; text: string };
 
@@ -41,12 +46,48 @@ function App() {
   const [logLines, setLogLines] = useState<string[]>([]);
   const [logError, setLogError] = useState<string | null>(null);
 
-  async function refreshSessions(): Promise<void> {
+  async function refreshSessions(): Promise<SessionSummary[]> {
     try {
-      setSessions(await listSessions());
+      const list = await listSessions();
+      setSessions(list);
+      return list;
     } catch {
       // Session list is a convenience panel; a daemon that's briefly unreachable shouldn't
       // block the rest of the UI the way a failed chat action does.
+      return [];
+    }
+  }
+
+  function transcriptToMessages(
+    history: Awaited<ReturnType<typeof getSessionHistory>>,
+  ): ChatMessage[] {
+    return history.map((entry) =>
+      entry.role === "assistant"
+        ? {
+            role: "assistant",
+            text: entry.text,
+            costUsd: entry.costUsd,
+            toolEvents: entry.toolEvents,
+          }
+        : entry,
+    );
+  }
+
+  async function switchToSession(id: string, agent: string): Promise<void> {
+    setSessionId(id);
+    setAgentId(agent);
+    setSessionError(null);
+    localStorage.setItem(LAST_SESSION_KEY, id);
+    try {
+      const history = await getSessionHistory(id);
+      setMessages(transcriptToMessages(history));
+    } catch (e) {
+      setMessages([
+        {
+          role: "system",
+          text: `Could not load history for ${id}: ${e instanceof Error ? e.message : String(e)}`,
+        },
+      ]);
     }
   }
 
@@ -60,7 +101,12 @@ function App() {
   }
 
   useEffect(() => {
-    refreshSessions();
+    (async () => {
+      const list = await refreshSessions();
+      const lastId = localStorage.getItem(LAST_SESSION_KEY);
+      const last = lastId ? list.find((s) => s.id === lastId) : undefined;
+      if (last) await switchToSession(last.id, last.agentId);
+    })();
     refreshStatus();
   }, []);
 
@@ -93,6 +139,7 @@ function App() {
       const created = await newSession(agentId);
       setSessionId(created.id);
       setMessages([]);
+      localStorage.setItem(LAST_SESSION_KEY, created.id);
       await refreshSessions();
     } catch (e) {
       setSessionError(e instanceof Error ? e.message : String(e));
@@ -102,15 +149,7 @@ function App() {
   }
 
   function handleSwitchSession(s: SessionSummary): void {
-    setSessionId(s.id);
-    setAgentId(s.agentId);
-    setSessionError(null);
-    setMessages([
-      {
-        role: "system",
-        text: `Switched to ${s.id} (${s.agentId}). The daemon remembers this conversation; this window doesn't show its past messages.`,
-      },
-    ]);
+    switchToSession(s.id, s.agentId);
   }
 
   async function handleSend(): Promise<void> {
@@ -124,7 +163,12 @@ function App() {
       setMessages((prev) => [
         ...prev,
         result.ok
-          ? { role: "assistant", text: result.text, costUsd: result.costUsd }
+          ? {
+              role: "assistant",
+              text: result.text,
+              costUsd: result.costUsd,
+              toolEvents: result.toolEvents,
+            }
           : { role: "error", text: result.text },
       ]);
     } catch (e) {
@@ -216,6 +260,17 @@ function App() {
         <ul className="messages" aria-label="messages">
           {messages.map((m, i) => (
             <li key={i} className={`message message-${m.role}`}>
+              {m.role === "assistant" && m.toolEvents.length > 0 && (
+                <ul className="tool-events" aria-label="tool calls">
+                  {m.toolEvents.map((t, j) => (
+                    <li key={j} className="tool-event">
+                      <span aria-hidden="true">🔧</span>
+                      <span className="tool-event-name">{t.name}</span>
+                      <code>{JSON.stringify(t.input)}</code>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {m.text}
               {m.role === "assistant" && (
                 <span className="cost"> (${m.costUsd.toFixed(4)})</span>

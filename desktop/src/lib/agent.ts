@@ -11,11 +11,28 @@ export interface NewSessionResult {
   sessionId: string;
 }
 
+export interface ToolCallEvent {
+  name: string;
+  input: unknown;
+}
+
 export interface PromptResult {
   ok: boolean;
   text: string;
   costUsd: number;
+  toolEvents: ToolCallEvent[];
 }
+
+export type TranscriptEntry =
+  | { role: "user"; text: string; at: string }
+  | {
+      role: "assistant";
+      text: string;
+      costUsd: number;
+      toolEvents: ToolCallEvent[];
+      at: string;
+    }
+  | { role: "error"; text: string; at: string };
 
 export interface MemoryEntry {
   id: string;
@@ -49,15 +66,16 @@ export function newSession(agentId: string): Promise<NewSessionResult> {
   return invoke("session_new", { agentId });
 }
 
-/**
- * Newest first (matches session.ts's listManualSessions). Doesn't carry conversation history --
- * crew's store persists task/session metadata (state, turns, cost), not the actual message
- * text -- so switching to a listed session resumes it (the daemon still has the real
- * claude/codex session id) but the UI's own message list only shows what's been sent since this
- * app started, not the session's full past transcript.
- */
+/** Newest first (matches session.ts's listManualSessions). Metadata only (state, turns, cost) --
+ * call getSessionHistory for the actual message transcript. */
 export function listSessions(): Promise<SessionSummary[]> {
   return invoke("session_list");
+}
+
+/** A session's full message history, oldest first -- what the UI renders as the chat log when a
+ * session is reopened or switched back to (transcript.ts is the backing store). */
+export function getSessionHistory(id: string): Promise<TranscriptEntry[]> {
+  return invoke("session_history", { id });
 }
 
 export function promptSession(id: string, message: string): Promise<PromptResult> {
