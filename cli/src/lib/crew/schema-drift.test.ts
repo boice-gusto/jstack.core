@@ -138,8 +138,10 @@ describe("the enforced schema stays strict and safe by default", () => {
     ).toThrow();
   });
 
-  test("at least one agent is required", () => {
-    expect(() => CrewConfigSchema.parse({ ...minimal, agents: {} })).toThrow();
+  test("zero agents is valid -- the desktop onboarding wizard bootstraps from this state", () => {
+    expect(() =>
+      CrewConfigSchema.parse({ ...minimal, agents: {} }),
+    ).not.toThrow();
   });
 
   test("the documented schema accepts an unknown key, so an older CLI tolerates a newer config", () => {

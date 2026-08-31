@@ -213,12 +213,15 @@ export const CrewConfigSchema = z
      * Named agents, keyed by id. A message routes to the agent whose sigil it matches,
      * so adding one is a config edit rather than a code change. `enabled: false` keeps an
      * agent's definition while taking it out of routing, which is what "disable" means.
+     *
+     * Zero agents is valid (used to require at least one) -- the desktop app's onboarding
+     * wizard needs a resident daemon it can call `agent/create` against before any agent
+     * exists yet, and this config has to parse for that daemon to start at all. Every
+     * Slack-triggered code path already degrades gracefully with no agents (routeToAgent
+     * finds nothing to route to, tick.ts's own thread-owner fallback already tolerates an
+     * empty agents map); this schema was the only thing forbidding the state.
      */
-    agents: z
-      .record(z.string(), AgentSchema)
-      .refine((a) => Object.keys(a).length > 0, {
-        message: "at least one agent must be defined",
-      }),
+    agents: z.record(z.string(), AgentSchema),
     policy: PolicySchema,
   })
   .strict();
