@@ -2,6 +2,7 @@ import { describe, expect, test, afterEach } from "bun:test";
 import {
   chmodSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   statSync,
@@ -451,6 +452,81 @@ describe("rpc-server", () => {
       expect(typeof s.category).toBe("string");
       expect(["core", "overlay"]).toContain(s.origin);
     }
+  });
+
+  describe("skills/index caching (TtlCache, see ttl-cache.ts)", () => {
+    let restorePluginRoot: string | undefined;
+    let restoreTtlEnv: string | undefined;
+
+    afterEach(() => {
+      if (restorePluginRoot !== undefined)
+        process.env.CLAUDE_PLUGIN_ROOT = restorePluginRoot;
+      else delete process.env.CLAUDE_PLUGIN_ROOT;
+      restorePluginRoot = undefined;
+      if (restoreTtlEnv !== undefined)
+        process.env.JSTACK_SKILLS_CACHE_TTL_MINUTES = restoreTtlEnv;
+      else delete process.env.JSTACK_SKILLS_CACHE_TTL_MINUTES;
+      restoreTtlEnv = undefined;
+    });
+
+    function writeSkill(pluginRoot: string, id: string): void {
+      const dir = join(pluginRoot, "skills", id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, "SKILL.md"),
+        `---\nname: jstack-${id}\ndescription: d\n---\nbody\n`,
+      );
+    }
+
+    test("a skill added after the first call isn't visible until the TTL expires", async () => {
+      const pluginRoot = mkdtempSync(join(tmpdir(), "crew-rpc-skills-cache-"));
+      writeSkill(pluginRoot, "one");
+      restorePluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+      process.env.CLAUDE_PLUGIN_ROOT = pluginRoot;
+      restoreTtlEnv = process.env.JSTACK_SKILLS_CACHE_TTL_MINUTES;
+      process.env.JSTACK_SKILLS_CACHE_TTL_MINUTES = "5"; // the default, spelled out for clarity
+
+      const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+      const cfg = baseConfig();
+      handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+      const first = (await rpcCall(handle.sockPath, "skills/index", {})) as {
+        skills: unknown[];
+      };
+      expect(first.skills).toHaveLength(1);
+
+      writeSkill(pluginRoot, "two");
+      const second = (await rpcCall(handle.sockPath, "skills/index", {})) as {
+        skills: unknown[];
+      };
+      // Still 1, not 2 -- the second call hit the cache instead of re-walking disk.
+      expect(second.skills).toHaveLength(1);
+    });
+
+    test("a tiny TTL (env override) picks up a newly-added skill on the next call", async () => {
+      const pluginRoot = mkdtempSync(join(tmpdir(), "crew-rpc-skills-cache-"));
+      writeSkill(pluginRoot, "one");
+      restorePluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+      process.env.CLAUDE_PLUGIN_ROOT = pluginRoot;
+      restoreTtlEnv = process.env.JSTACK_SKILLS_CACHE_TTL_MINUTES;
+      process.env.JSTACK_SKILLS_CACHE_TTL_MINUTES = String(1 / 60_000); // ~1ms
+
+      const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+      const cfg = baseConfig();
+      handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+      const first = (await rpcCall(handle.sockPath, "skills/index", {})) as {
+        skills: unknown[];
+      };
+      expect(first.skills).toHaveLength(1);
+
+      writeSkill(pluginRoot, "two");
+      await new Promise((r) => setTimeout(r, 20));
+      const second = (await rpcCall(handle.sockPath, "skills/index", {})) as {
+        skills: unknown[];
+      };
+      expect(second.skills).toHaveLength(2);
+    });
   });
 
   test("session/history returns the transcript from a prior session/prompt", async () => {

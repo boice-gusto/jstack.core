@@ -18,8 +18,9 @@ import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { AgentConfig, CrewConfig } from "./types.js";
 import type { SessionMode, ThinkingLevel } from "./tick.js";
-import { collectSkills } from "../../commands/skills.js";
+import { collectSkills, type SkillIndexEntry } from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
+import { TtlCache, ttlMsFromEnv } from "../ttl-cache.js";
 import { parseCron } from "./proactive.js";
 import { scheduledPromptId } from "./scheduler.js";
 import { runDiagnostics } from "./diagnostics.js";
@@ -34,6 +35,34 @@ const THINKING_LEVELS: readonly ThinkingLevel[] = [
   "think-harder",
   "ultrathink",
 ];
+
+/**
+ * `skills/index` walks and parses every SKILL.md under the plugin root (140+ files in
+ * jstack.core itself) on every call -- real IO a repeat caller (the desktop app re-opening
+ * Settings, `jstackc skills index` run in a loop) doesn't need to pay for again within a short
+ * window. One TtlCache per distinct (pluginRoot, overlay) pair, since those are the only inputs
+ * that change the result; in practice this daemon only ever sees one such pair per process
+ * lifetime, but keying on it rather than assuming that stays honest if that ever changes.
+ */
+const skillsIndexCache = new Map<string, TtlCache<SkillIndexEntry[]>>();
+const SKILLS_INDEX_TTL_ENV = "JSTACK_SKILLS_CACHE_TTL_MINUTES";
+const SKILLS_INDEX_TTL_DEFAULT_MINUTES = 5;
+
+function cachedSkillsIndex(
+  pluginRoot: string,
+  overlay: string | undefined,
+): SkillIndexEntry[] {
+  const key = `${pluginRoot}::${overlay ?? ""}`;
+  let cache = skillsIndexCache.get(key);
+  if (!cache) {
+    cache = new TtlCache(
+      () => collectSkills(pluginRoot, overlay),
+      ttlMsFromEnv(SKILLS_INDEX_TTL_ENV, SKILLS_INDEX_TTL_DEFAULT_MINUTES),
+    );
+    skillsIndexCache.set(key, cache);
+  }
+  return cache.get();
+}
 
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
@@ -258,7 +287,7 @@ async function dispatch(
           typeof p.overlay === "string" && p.overlay.trim().length > 0
             ? p.overlay.trim()
             : process.env.JSTACK_GUSTO_ROOT?.trim() || undefined;
-        return { skills: collectSkills(findPluginRoot(), overlay) };
+        return { skills: cachedSkillsIndex(findPluginRoot(), overlay) };
       }
       case "status": {
         const stats = store.stats();
