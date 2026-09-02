@@ -66,6 +66,28 @@ describe("discovery", () => {
   });
 });
 
+describe("category", () => {
+  test("extracts the category frontmatter field", () => {
+    skill(
+      root,
+      "jira/create",
+      "---\nname: jstack-jira-create\ndescription: Make a ticket.\ncategory: engineering\n---\nbody\n",
+    );
+    const [e] = collectSkills(root);
+    expect(e!.category).toBe("engineering");
+  });
+
+  test("is an empty string, not undefined, when the skill has no category field", () => {
+    skill(
+      root,
+      "jira/create",
+      "---\nname: jstack-jira-create\ndescription: d\n---\n",
+    );
+    const [e] = collectSkills(root);
+    expect(e!.category).toBe("");
+  });
+});
+
 describe("frontmatter parsing", () => {
   test("strips surrounding quotes from name and description", () => {
     skill(

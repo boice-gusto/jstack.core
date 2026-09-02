@@ -16,6 +16,11 @@ export type SkillIndexEntry = {
   rel: string;
   name: string;
   description: string;
+  /** The skill's `category` frontmatter field -- a folder-name-shaped grouping (see
+   * skills/_core/references/skill-conventions.md), e.g. "engineering", "pm", "qa". Empty string
+   * for a skill missing the field, not undefined, so callers can group/filter without an
+   * extra null check. */
+  category: string;
   origin: "core" | "overlay";
 };
 
@@ -50,11 +55,16 @@ function stripQuotes(v: string): string {
  * `description: >` (e.g. skills/computer-use/cua) showed the literal string ">" as its
  * description. Re-applies the quote-stripping the shared parser deliberately doesn't do,
  * since this command's callers (and its tests) expect quoted values unquoted. */
-function parseFrontmatter(raw: string): { name: string; description: string } {
+function parseFrontmatter(raw: string): {
+  name: string;
+  description: string;
+  category: string;
+} {
   const { meta } = parseFrontmatterFields(raw);
   return {
     name: stripQuotes(meta.name ?? ""),
     description: stripQuotes(meta.description ?? ""),
+    category: stripQuotes(meta.category ?? ""),
   };
 }
 
@@ -75,6 +85,7 @@ export function collectSkills(
       rel: f.rel,
       name: fm.name || f.rel,
       description: fm.description,
+      category: fm.category,
       origin: "core",
     });
   }
@@ -90,6 +101,7 @@ export function collectSkills(
         rel: f.rel,
         name: fm.name || f.rel,
         description: fm.description,
+        category: fm.category,
         origin: "overlay",
       });
     }

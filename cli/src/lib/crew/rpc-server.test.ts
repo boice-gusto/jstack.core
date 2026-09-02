@@ -439,6 +439,7 @@ describe("rpc-server", () => {
         name: string;
         description: string;
         rel: string;
+        category: string;
         origin: string;
       }>;
     };
@@ -447,6 +448,7 @@ describe("rpc-server", () => {
     for (const s of result.skills) {
       expect(typeof s.name).toBe("string");
       expect(typeof s.rel).toBe("string");
+      expect(typeof s.category).toBe("string");
       expect(["core", "overlay"]).toContain(s.origin);
     }
   });
