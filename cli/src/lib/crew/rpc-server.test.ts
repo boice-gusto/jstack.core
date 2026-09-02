@@ -640,4 +640,27 @@ describe("rpc-server", () => {
       ).rejects.toThrow(/unparseable/);
     });
   });
+
+  test("diagnostics/run reports the configured agents and their workspace existence", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const report = (await rpcCall(handle.sockPath, "diagnostics/run")) as {
+      agents: Array<{
+        id: string;
+        workspace: string;
+        workspaceExists: boolean;
+      }>;
+      claudeCli: { found: boolean };
+    };
+    expect(report.agents).toEqual([
+      expect.objectContaining({
+        id: "ralph",
+        workspace: "/tmp/ws",
+        workspaceExists: false,
+      }),
+    ]);
+    expect(typeof report.claudeCli.found).toBe("boolean");
+  });
 });

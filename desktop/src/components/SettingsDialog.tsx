@@ -5,11 +5,13 @@ import {
   deleteSchedule,
   listSchedules,
   recentLogs,
+  runDiagnostics,
   setScheduleEnabled,
   skillsIndex,
   updateAgent,
   type AgentSummary,
   type DaemonStatus,
+  type DiagnosticsReport,
   type ScheduledPrompt,
   type SkillSummary,
 } from "../lib/agent";
@@ -102,6 +104,7 @@ export type SettingsTab =
   | "appearance"
   | "advanced"
   | "schedule"
+  | "diagnostics"
   | "debug"
   | "info";
 
@@ -163,6 +166,9 @@ export function SettingsDialog({
   const [skillsError, setSkillsError] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<ScheduledPrompt[]>([]);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
+  const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [newScheduleAgentId, setNewScheduleAgentId] = useState("");
   const [newSchedulePrompt, setNewSchedulePrompt] = useState("");
   const [newScheduleCron, setNewScheduleCron] = useState("");
@@ -325,9 +331,36 @@ export function SettingsDialog({
     };
   }, [open, activeTab]);
 
+  async function refreshDiagnostics(): Promise<void> {
+    setDiagnosticsLoading(true);
+    try {
+      setDiagnostics(await runDiagnostics());
+      setDiagnosticsError(null);
+    } catch (e) {
+      console.error("[jstack] runDiagnostics failed:", e);
+      setDiagnosticsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  }
+
+  // Fetched once when Diagnostics becomes the visible tab (not polled -- these are point-in-time
+  // checks, e.g. "is claude on PATH right now," not a live stream), plus whenever "Re-run" is
+  // clicked. Deliberately keyed only on [open, activeTab]: including diagnostics/diagnosticsLoading
+  // would re-fire this effect the moment refreshDiagnostics's own setState calls land, since
+  // they're read (not just set) here as a "don't double-fetch" guard.
+  useEffect(() => {
+    if (open && activeTab === "diagnostics" && diagnostics === null && !diagnosticsLoading) {
+      refreshDiagnostics();
+    }
+  }, [open, activeTab]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] max-w-lg flex-col overflow-y-auto">
+      {/* Fixed size regardless of which tab is active -- Schedule's content is much taller than
+          General's, and letting the dialog grow/shrink per tab made switching tabs visually jump
+          around. Each TabsContent scrolls internally (overflow-y-auto) instead. */}
+      <DialogContent className="flex h-[640px] max-h-[85vh] w-[640px] max-w-[90vw] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
@@ -335,6 +368,7 @@ export function SettingsDialog({
         <Tabs
           value={activeTab}
           onValueChange={(v) => onActiveTabChange(v as SettingsTab)}
+          className="flex-1 overflow-hidden"
         >
           <TabsList className="w-full">
             <TabsTrigger value="general" className="flex-1">
@@ -352,6 +386,9 @@ export function SettingsDialog({
             <TabsTrigger value="schedule" className="flex-1">
               Schedule
             </TabsTrigger>
+            <TabsTrigger value="diagnostics" className="flex-1">
+              Diagnostics
+            </TabsTrigger>
             <TabsTrigger value="debug" className="flex-1">
               Debug
             </TabsTrigger>
@@ -360,7 +397,7 @@ export function SettingsDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="flex flex-col gap-4 pt-2">
+          <TabsContent value="general" className="flex h-full flex-col gap-4 overflow-y-auto pt-2">
             {activeAgent && (
               <div aria-label="model">
                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
@@ -440,7 +477,7 @@ export function SettingsDialog({
             )}
           </TabsContent>
 
-          <TabsContent value="agents" className="flex flex-col gap-3 pt-2">
+          <TabsContent value="agents" className="flex h-full flex-col gap-3 overflow-y-auto pt-2">
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground">Agents</h3>
               <p className="text-xs text-muted-foreground">
@@ -474,7 +511,7 @@ export function SettingsDialog({
             </ul>
           </TabsContent>
 
-          <TabsContent value="appearance" className="flex flex-col gap-4 pt-2">
+          <TabsContent value="appearance" className="flex h-full flex-col gap-4 overflow-y-auto pt-2">
             <div aria-label="theme">
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Theme</h3>
               <div className="flex gap-2">
@@ -547,7 +584,7 @@ export function SettingsDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="advanced" className="flex flex-col gap-5 pt-2">
+          <TabsContent value="advanced" className="flex h-full flex-col gap-5 overflow-y-auto pt-2">
             <div aria-label="loaded">
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Agents &amp; skills
@@ -587,7 +624,7 @@ export function SettingsDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="schedule" className="flex flex-col gap-5 pt-2">
+          <TabsContent value="schedule" className="flex h-full flex-col gap-5 overflow-y-auto pt-2">
             <div aria-label="daemon status">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-muted-foreground">Daemon</h3>
@@ -782,7 +819,182 @@ export function SettingsDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="debug" className="flex flex-col gap-2 pt-2">
+          <TabsContent
+            value="diagnostics"
+            className="flex h-full flex-col gap-4 overflow-y-auto pt-2"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground">Diagnostics</h3>
+                <p className="text-xs text-muted-foreground">
+                  Point-in-time checks for "why isn't this working" -- re-run after fixing
+                  something rather than trusting a stale result.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={refreshDiagnostics}
+                disabled={diagnosticsLoading}
+              >
+                {diagnosticsLoading ? "Running..." : "Re-run"}
+              </Button>
+            </div>
+            {diagnosticsError && (
+              <p className="text-sm text-destructive">{diagnosticsError}</p>
+            )}
+            {diagnostics && (
+              <div className="flex flex-col gap-4 text-sm">
+                <div>
+                  <h4 className="mb-1 text-xs font-semibold text-muted-foreground">Claude CLI</h4>
+                  <div className="flex items-start gap-2 rounded-md border p-2">
+                    {diagnostics.claudeCli.found ? (
+                      <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-600 dark:text-green-500" />
+                    ) : (
+                      <XIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    )}
+                    <div className="min-w-0">
+                      {diagnostics.claudeCli.found ? (
+                        <>
+                          <p className="font-medium">{diagnostics.claudeCli.version ?? "found"}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {diagnostics.claudeCli.path}
+                          </p>
+                        </>
+                      ) : (
+                        <p>
+                          Not found on PATH -- the daemon can't run any agent turns until{" "}
+                          <code className="rounded bg-muted px-1 py-0.5">claude</code> is
+                          installed and reachable.
+                        </p>
+                      )}
+                      {diagnostics.claudeCli.error && (
+                        <p className="mt-1 text-xs text-destructive">
+                          {diagnostics.claudeCli.error}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="mb-1 text-xs font-semibold text-muted-foreground">Roots</h4>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-start gap-2 rounded-md border p-2">
+                      {diagnostics.projectRoot.hasConfig ? (
+                        <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-600 dark:text-green-500" />
+                      ) : (
+                        <XIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium">Project root</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {diagnostics.projectRoot.path}
+                        </p>
+                        {!diagnostics.projectRoot.hasConfig && (
+                          <p className="text-xs text-destructive">
+                            No jstack.config.json found here.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-md border p-2">
+                      {diagnostics.pluginRoot.hasSkillsDir ? (
+                        <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-600 dark:text-green-500" />
+                      ) : (
+                        <XIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium">Plugin root</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {diagnostics.pluginRoot.path}
+                        </p>
+                        {!diagnostics.pluginRoot.hasSkillsDir && (
+                          <p className="text-xs text-destructive">No skills/ directory found here.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="mb-1 text-xs font-semibold text-muted-foreground">Skills</h4>
+                  <div className="flex items-start gap-2 rounded-md border p-2">
+                    {diagnostics.skills.error ? (
+                      <XIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                    ) : (
+                      <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-600 dark:text-green-500" />
+                    )}
+                    <p>
+                      {diagnostics.skills.error
+                        ? diagnostics.skills.error
+                        : `${diagnostics.skills.count} skill${diagnostics.skills.count === 1 ? "" : "s"} loaded`}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="mb-1 text-xs font-semibold text-muted-foreground">
+                    Agent workspaces
+                  </h4>
+                  <ul className="flex flex-col gap-1.5">
+                    {diagnostics.agents.map((a) => (
+                      <li
+                        key={a.id}
+                        className="flex items-start gap-2 rounded-md border p-2"
+                      >
+                        {a.workspaceExists ? (
+                          <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-600 dark:text-green-500" />
+                        ) : (
+                          <XIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium">
+                            {a.id}
+                            <span className="ml-2 text-xs font-normal text-muted-foreground">
+                              {a.mcp === "inherit" ? "mcp: inherit" : "mcp: none"}
+                            </span>
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{a.workspace}</p>
+                          {!a.workspaceExists && (
+                            <p className="text-xs text-destructive">
+                              Workspace directory does not exist.
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {diagnostics.mcp.anyAgentInherits && (
+                  <div>
+                    <h4 className="mb-1 text-xs font-semibold text-muted-foreground">MCP</h4>
+                    <div className="flex items-start gap-2 rounded-md border p-2">
+                      {diagnostics.mcp.claudeMcpListOk ? (
+                        <CheckIcon className="mt-0.5 size-4 shrink-0 text-green-600 dark:text-green-500" />
+                      ) : (
+                        <XIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {diagnostics.mcp.claudeMcpListOk ? "claude mcp list succeeded" : "claude mcp list failed"}
+                        </p>
+                        {diagnostics.mcp.claudeMcpListDetail && (
+                          <pre className="mt-1 max-h-24 overflow-y-auto whitespace-pre-wrap rounded bg-muted p-1.5 font-mono text-xs">
+                            {diagnostics.mcp.claudeMcpListDetail}
+                          </pre>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="debug" className="flex h-full flex-col gap-2 overflow-y-auto pt-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground">Debug logs</h3>
               <span className="text-xs text-muted-foreground">
@@ -819,7 +1031,7 @@ export function SettingsDialog({
             </div>
           </TabsContent>
 
-          <TabsContent value="info" className="pt-2">
+          <TabsContent value="info" className="h-full overflow-y-auto pt-2">
             <Accordion defaultValue={["shortcuts"]}>
               <AccordionItem value="shortcuts">
                 <AccordionTrigger>Keyboard shortcuts</AccordionTrigger>

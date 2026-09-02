@@ -289,3 +289,29 @@ export interface TraySession {
 export function updateTrayMenu(agents: TrayAgent[], sessions: TraySession[]): Promise<void> {
   return invoke("update_tray_menu", { agents, sessions });
 }
+
+export interface DiagnosticsReport {
+  claudeCli: { found: boolean; path?: string; version?: string; error?: string };
+  projectRoot: { path: string; hasConfig: boolean };
+  pluginRoot: { path: string; hasSkillsDir: boolean };
+  skills: { count: number; error?: string };
+  agents: Array<{
+    id: string;
+    enabled: boolean;
+    model: string;
+    workspace: string;
+    workspaceExists: boolean;
+    mcp: "none" | "inherit";
+  }>;
+  mcp: {
+    anyAgentInherits: boolean;
+    claudeMcpListOk?: boolean;
+    claudeMcpListDetail?: string;
+  };
+}
+
+/** "Is jstack actually working" checks, run fresh (not cached) each call -- see
+ * diagnostics.ts's own note on how this differs from `jstackc crew doctor`. */
+export function runDiagnostics(): Promise<DiagnosticsReport> {
+  return invoke("run_diagnostics");
+}

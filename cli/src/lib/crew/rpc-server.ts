@@ -22,6 +22,7 @@ import { collectSkills } from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
 import { parseCron } from "./proactive.js";
 import { scheduledPromptId } from "./scheduler.js";
+import { runDiagnostics } from "./diagnostics.js";
 
 const SESSION_MODES: readonly SessionMode[] = ["ask", "full-access"];
 const THINKING_LEVELS: readonly ThinkingLevel[] = [
@@ -319,6 +320,9 @@ async function dispatch(
       case "logs/recent": {
         const limit = typeof p.limit === "number" ? p.limit : undefined;
         return { lines: getLogs(limit) };
+      }
+      case "diagnostics/run": {
+        return runDiagnostics(cfg);
       }
       default:
         throw new Error(`unknown method: ${method}`);

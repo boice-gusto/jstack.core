@@ -169,6 +169,11 @@ async fn schedule_delete(id: String) -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "schedule/delete", json!({ "id": id })).await
 }
 
+#[tauri::command]
+async fn run_diagnostics() -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "diagnostics/run", json!({})).await
+}
+
 #[derive(Deserialize)]
 struct TrayAgentPayload {
     id: String,
@@ -407,6 +412,7 @@ pub fn run() {
             schedule_list,
             schedule_update,
             schedule_delete,
+            run_diagnostics,
             update_tray_menu,
             set_tray_status,
         ])

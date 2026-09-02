@@ -433,4 +433,84 @@ describe("SettingsDialog", () => {
     expect(screen.getByText("Open search / command palette")).toBeTruthy();
     expect(screen.getByText("Send message")).toBeTruthy();
   });
+
+  test("the Diagnostics tab fetches and renders checks once, and Re-run fetches again", async () => {
+    let diagnosticsCalls = 0;
+    mockIPC(
+      withDefaults((cmd) => {
+        if (cmd === "skills_index") return { skills: [] };
+        if (cmd === "run_diagnostics") {
+          diagnosticsCalls++;
+          return {
+            claudeCli: { found: true, path: "/opt/homebrew/bin/claude", version: "2.1.0" },
+            projectRoot: { path: "/Users/x/jstack.core", hasConfig: true },
+            pluginRoot: { path: "/Users/x/jstack.core", hasSkillsDir: true },
+            skills: { count: 42 },
+            agents: [
+              {
+                id: "ralph",
+                enabled: true,
+                model: "claude-sonnet-5",
+                workspace: "/tmp/ws",
+                workspaceExists: false,
+                mcp: "none",
+              },
+            ],
+            mcp: { anyAgentInherits: false },
+          };
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        initialTab="diagnostics"
+      />,
+    );
+
+    await screen.findByText("2.1.0");
+    expect(screen.getByText("42 skills loaded")).toBeTruthy();
+    expect(screen.getByText("ralph")).toBeTruthy();
+    expect(screen.getByText("Workspace directory does not exist.")).toBeTruthy();
+    expect(diagnosticsCalls).toBe(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Re-run" }));
+    await waitFor(() => expect(diagnosticsCalls).toBe(2));
+  });
+
+  test("the Diagnostics tab shows an error state when claude isn't found, without crashing", async () => {
+    mockIPC(
+      withDefaults((cmd) => {
+        if (cmd === "skills_index") return { skills: [] };
+        if (cmd === "run_diagnostics") {
+          return {
+            claudeCli: { found: false },
+            projectRoot: { path: "/Users/x/jstack.core", hasConfig: true },
+            pluginRoot: { path: "/Users/x/jstack.core", hasSkillsDir: true },
+            skills: { count: 0 },
+            agents: [],
+            mcp: { anyAgentInherits: false },
+          };
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        initialTab="diagnostics"
+      />,
+    );
+
+    await screen.findByText(/Not found on PATH/);
+  });
 });
