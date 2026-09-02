@@ -364,6 +364,58 @@ describe("promptManualSession opts (mode, thinkingLevel)", () => {
   });
 });
 
+describe("system prompt (prompt-templates.ts's renderWorkerSystemPrompt, not an inline string)", () => {
+  let restorePath: string | undefined;
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("renders the agent's name and the untrusted-content nonce into the real template on disk", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain(
+      "You are Ralph, answering on behalf of the operator",
+    );
+    expect(sentArgv).toContain(
+      "Your own implementation is in the workspace you can read",
+    );
+    expect(sentArgv).not.toMatch(/\{\{\w+\}\}/); // no leftover unfilled placeholder
+    store.close();
+  });
+
+  test("includes the agent's persona, when it has one, right after the opening sentence", async () => {
+    const store = freshStore();
+    const cfg = baseConfig({
+      agents: {
+        ralph: {
+          name: "Ralph",
+          sigils: ["!ralph"],
+          workspace: "/tmp/ws",
+          persona: "You are terse and cite sources.",
+        },
+      },
+    });
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain(
+      "answering on behalf of the operator in their own Slack DM. You are terse and cite sources. You have no Slack connection",
+    );
+    store.close();
+  });
+});
+
 describe("listManualSessions", () => {
   test("lists sessions newest first with derived state and turn count", () => {
     const store = freshStore();
