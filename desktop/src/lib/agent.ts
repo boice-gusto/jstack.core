@@ -335,3 +335,17 @@ export interface Integration {
 export function listIntegrations(): Promise<{ integrations: Integration[] }> {
   return invoke("integrations_list");
 }
+
+export interface McpListResult {
+  ok: boolean;
+  claudeFound: boolean;
+  servers: string[];
+  raw: string;
+  error?: string;
+}
+
+/** Every MCP server `claude mcp list` reports, unconditionally -- distinct from
+ * Integration.mcpAvailable above, which only checks for a Slack-named one. */
+export function listMcpServers(): Promise<McpListResult> {
+  return invoke("mcp_list");
+}

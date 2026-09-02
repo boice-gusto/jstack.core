@@ -244,6 +244,9 @@ describe("SettingsDialog", () => {
             ],
           };
         }
+        if (cmd === "mcp_list") {
+          return { ok: true, claudeFound: true, servers: ["github: connected"], raw: "" };
+        }
         throw new Error(`unexpected command: ${cmd}`);
       }),
     );
@@ -274,6 +277,7 @@ describe("SettingsDialog", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Advanced" }));
     await screen.findByText("jstack-foo");
     expect(screen.getByText("Ralph")).toBeTruthy();
+    await screen.findByText("github: connected");
   });
 
   test("the Schedule tab shows daemon resident/uptime status and per-agent activity", async () => {

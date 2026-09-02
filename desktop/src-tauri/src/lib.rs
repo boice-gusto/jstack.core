@@ -189,6 +189,11 @@ async fn integrations_list() -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "integrations/list", json!({})).await
 }
 
+#[tauri::command]
+async fn mcp_list() -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "mcp/list", json!({})).await
+}
+
 #[derive(Deserialize)]
 struct TrayAgentPayload {
     id: String,
@@ -429,6 +434,7 @@ pub fn run() {
             schedule_delete,
             run_diagnostics,
             integrations_list,
+            mcp_list,
             update_tray_menu,
             set_tray_status,
         ])

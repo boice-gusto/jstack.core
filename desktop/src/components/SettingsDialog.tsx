@@ -4,6 +4,7 @@ import {
   daemonStatus,
   deleteSchedule,
   listIntegrations,
+  listMcpServers,
   listSchedules,
   recentLogs,
   runDiagnostics,
@@ -14,6 +15,7 @@ import {
   type DaemonStatus,
   type DiagnosticsReport,
   type Integration,
+  type McpListResult,
   type ScheduledPrompt,
   type SkillSummary,
 } from "../lib/agent";
@@ -168,6 +170,8 @@ export function SettingsDialog({
   const [agentsError, setAgentsError] = useState<string | null>(null);
   const [skills, setSkills] = useState<SkillSummary[] | null>(null);
   const [skillsError, setSkillsError] = useState<string | null>(null);
+  const [mcpServers, setMcpServers] = useState<McpListResult | null>(null);
+  const [mcpServersError, setMcpServersError] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<ScheduledPrompt[]>([]);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
@@ -244,6 +248,18 @@ export function SettingsDialog({
         setSkillsError(e instanceof Error ? e.message : String(e));
       });
   }, [open, skills]);
+
+  // Unlike skills (an instant local disk read), `claude mcp list` shells out and can be slow --
+  // fetched lazily once Advanced is actually the visible tab, not unconditionally on open.
+  useEffect(() => {
+    if (!(open && activeTab === "advanced" && mcpServers === null)) return;
+    listMcpServers()
+      .then(setMcpServers)
+      .catch((e) => {
+        console.error("[jstack] listMcpServers failed:", e);
+        setMcpServersError(e instanceof Error ? e.message : String(e));
+      });
+  }, [open, activeTab, mcpServers]);
 
   async function refreshStatus(): Promise<void> {
     try {
@@ -649,6 +665,32 @@ export function SettingsDialog({
                         {s.name}
                       </li>
                     ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="mb-1 text-xs font-semibold text-muted-foreground">
+                    MCP servers{mcpServers ? ` (${mcpServers.servers.length})` : ""}
+                  </h4>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    Whatever <code className="rounded bg-muted px-1 py-0.5">claude mcp list</code>{" "}
+                    reports -- not agent-specific; an agent only gets these if its MCP setting
+                    (General tab) is "inherit."
+                  </p>
+                  {mcpServersError && (
+                    <p className="mb-1 text-xs text-destructive">{mcpServersError}</p>
+                  )}
+                  {mcpServers && !mcpServers.ok && (
+                    <p className="mb-1 text-xs text-destructive">{mcpServers.error}</p>
+                  )}
+                  <ul className="max-h-32 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs">
+                    {(mcpServers?.servers ?? []).map((s) => (
+                      <li key={s} className="truncate py-0.5">
+                        {s}
+                      </li>
+                    ))}
+                    {mcpServers?.ok && mcpServers.servers.length === 0 && (
+                      <li className="text-muted-foreground">No MCP servers configured.</li>
+                    )}
                   </ul>
                 </div>
               </div>
