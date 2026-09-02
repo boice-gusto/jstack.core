@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createAgent } from "./agent-config.js";
+import { createAgent, initDefaultWorkspace } from "./agent-config.js";
 
 function mkFixtureRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "jstack-agent-config-"));
@@ -97,5 +97,28 @@ describe("createAgent", () => {
     );
     // The original ralph entry (from the fixture) must be untouched, not overwritten mid-mutate.
     expect(raw.crew.agents.ralph.name).toBe("Ralph");
+  });
+});
+
+describe("initDefaultWorkspace", () => {
+  test("creates the directory, git-inits it, and writes a README naming the agent", () => {
+    const workspace = join(
+      mkdtempSync(join(tmpdir(), "jstack-default-ws-")),
+      "scout",
+    );
+    initDefaultWorkspace(workspace, "Scout");
+    expect(existsSync(join(workspace, ".git"))).toBe(true);
+    const readme = readFileSync(join(workspace, "README.md"), "utf8");
+    expect(readme).toContain("Scout's workspace");
+  });
+
+  test("is idempotent -- re-running against an already-initialized workspace doesn't error or clobber an edited README", () => {
+    const workspace = mkdtempSync(join(tmpdir(), "jstack-default-ws-"));
+    initDefaultWorkspace(workspace, "Scout");
+    writeFileSync(join(workspace, "README.md"), "hand-edited notes");
+    expect(() => initDefaultWorkspace(workspace, "Scout")).not.toThrow();
+    expect(readFileSync(join(workspace, "README.md"), "utf8")).toBe(
+      "hand-edited notes",
+    );
   });
 });

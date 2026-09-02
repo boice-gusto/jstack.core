@@ -9,7 +9,11 @@ import {
   promptManualSession,
   rememberInSession,
 } from "./session.js";
-import { createAgent, updateAgent } from "./agent-config.js";
+import {
+  createAgent,
+  initDefaultWorkspace,
+  updateAgent,
+} from "./agent-config.js";
 import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
@@ -154,11 +158,19 @@ async function dispatch(
           throw new Error("agent/create requires { id: string, name: string }");
         }
         const mcp = p.mcp === "inherit" ? "inherit" : "none";
-        const workspace =
-          typeof p.workspace === "string" && p.workspace.length > 0
-            ? p.workspace
-            : join(expandHome(cfg.state_dir), "workspaces", p.id);
-        mkdirSync(workspace, { recursive: true });
+        const explicitWorkspace =
+          typeof p.workspace === "string" && p.workspace.length > 0;
+        const workspace = explicitWorkspace
+          ? (p.workspace as string)
+          : join(expandHome(cfg.state_dir), "workspaces", p.id);
+        if (explicitWorkspace) {
+          mkdirSync(workspace, { recursive: true });
+        } else {
+          // Only the auto-generated default path gets git-init + README -- an
+          // explicitly-chosen workspace is assumed to already be a real repo the agent is
+          // being pointed at (see initDefaultWorkspace's own doc comment for why).
+          initDefaultWorkspace(workspace, p.name);
+        }
         const created = createAgent({
           id: p.id,
           name: p.name,

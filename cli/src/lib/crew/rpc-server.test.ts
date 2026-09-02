@@ -1,5 +1,11 @@
 import { describe, expect, test, afterEach } from "bun:test";
-import { chmodSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CrewConfigSchema, type CrewConfig } from "./types.js";
@@ -233,6 +239,13 @@ describe("rpc-server", () => {
       id: string;
     }>;
     expect(agents.map((a) => a.id)).toContain("scout");
+
+    // No workspace was given, so the default path should have been git-init'd and README'd
+    // (initDefaultWorkspace) rather than left as a bare, untracked directory. The default
+    // path is derived from cfg.state_dir, not the rpc server's own stateDir param.
+    const workspace = join(cfg.state_dir!, "workspaces", "scout");
+    expect(existsSync(join(workspace, ".git"))).toBe(true);
+    expect(existsSync(join(workspace, "README.md"))).toBe(true);
   });
 
   test("agent/create rejects a duplicate id over the wire", async () => {

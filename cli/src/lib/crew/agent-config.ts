@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { findProjectRoot } from "../config.js";
 import { findSigilCollisions } from "./guards.js";
@@ -29,6 +29,48 @@ export function mutateAgents(
   const parsed = CrewConfigSchema.parse(crew); // never write a config that would not load
   writeFileSync(path, `${JSON.stringify(raw, null, 2)}\n`);
   return parsed;
+}
+
+/**
+ * Prepares a brand-new default workspace -- one the onboarding wizard generated because the
+ * user didn't point it at an existing repo -- so the agent has a safe, git-tracked place to
+ * work from its very first turn. Only ever called for that auto-created path: a workspace the
+ * user explicitly chose is assumed to already be a real repo the agent is being pointed at, and
+ * force-`git init`-ing it or overwriting its README would be destructive. `git init` and the
+ * README write are each individually idempotent (skipped if `.git`/`README.md` already exist),
+ * so re-running this against a workspace from a previously deleted-and-recreated agent is safe.
+ */
+export function initDefaultWorkspace(
+  workspace: string,
+  agentName: string,
+): void {
+  mkdirSync(workspace, { recursive: true });
+  if (!existsSync(join(workspace, ".git"))) {
+    Bun.spawnSync(["git", "init", "-q"], { cwd: workspace });
+  }
+  const readmePath = join(workspace, "README.md");
+  if (!existsSync(readmePath)) {
+    writeFileSync(readmePath, defaultWorkspaceReadme(agentName));
+  }
+}
+
+function defaultWorkspaceReadme(agentName: string): string {
+  return `# ${agentName}'s workspace
+
+This is ${agentName}'s own working directory, created automatically and git-initialized
+so every change made here is tracked and reviewable, the same as any other repo.
+
+## Keeping it organized
+
+- \`notes/\` — scratch notes, research, and working drafts that don't need to survive
+  long-term.
+- \`artifacts/\` — finished outputs worth keeping: reports, generated files, anything
+  produced for a specific request.
+- Commit as you go. A clean history here is what makes it possible to see what changed
+  and why, same as any other project.
+- Don't store secrets, credentials, or other sensitive data here — this workspace has no
+  protection beyond normal filesystem permissions.
+`;
 }
 
 export interface CreateAgentInput {
