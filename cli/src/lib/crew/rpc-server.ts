@@ -16,7 +16,7 @@ import {
 } from "./agent-config.js";
 import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
-import type { CrewConfig } from "./types.js";
+import type { AgentConfig, CrewConfig } from "./types.js";
 import type { SessionMode, ThinkingLevel } from "./tick.js";
 import { collectSkills } from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
@@ -86,6 +86,24 @@ function parseRequest(line: string): RpcRequest | { error: string } {
   const id = typeof r.id === "string" || typeof r.id === "number" ? r.id : null;
   if (typeof r.method !== "string") return { error: "missing method" };
   return { id, method: r.method, params: r.params };
+}
+
+/** The one shape `agent/list`, `agent/create`, and `agent/update` all return -- previously
+ * agent/create and agent/update handed back the raw parsed AgentConfig (snake_case
+ * `proactive_checks`, plus fields like `sigils`/`emoji`/`max_turns` the desktop app has no use
+ * for), which silently diverged from agent/list's camelCase shape the moment a consumer actually
+ * read `proactiveChecks` off a just-created/updated agent. */
+function toAgentSummary(id: string, a: AgentConfig) {
+  return {
+    id,
+    name: a.name,
+    enabled: a.enabled,
+    model: a.model,
+    persona: a.persona,
+    tools: a.tools,
+    mcp: a.mcp,
+    proactiveChecks: a.proactive_checks,
+  };
 }
 
 async function dispatch(
@@ -167,16 +185,9 @@ async function dispatch(
         });
       }
       case "agent/list": {
-        return Object.entries(cfg.agents).map(([id, a]) => ({
-          id,
-          name: a.name,
-          enabled: a.enabled,
-          model: a.model,
-          persona: a.persona,
-          tools: a.tools,
-          mcp: a.mcp,
-          proactiveChecks: a.proactive_checks,
-        }));
+        return Object.entries(cfg.agents).map(([id, a]) =>
+          toAgentSummary(id, a),
+        );
       }
       case "agent/create": {
         if (typeof p.id !== "string" || typeof p.name !== "string") {
@@ -210,7 +221,10 @@ async function dispatch(
         // runResident), so without this the agent onboarding just wrote would be invisible to
         // session/new for up to that whole interval.
         cfg.agents[created.id] = created.agent;
-        return created;
+        return {
+          id: created.id,
+          agent: toAgentSummary(created.id, created.agent),
+        };
       }
       case "agent/update": {
         if (typeof p.id !== "string") {
@@ -231,7 +245,10 @@ async function dispatch(
         // Same reasoning as agent/create above: splice into the running daemon's in-memory
         // config so the change is visible to session/prompt immediately, not next tick.
         cfg.agents[updated.id] = updated.agent;
-        return updated;
+        return {
+          id: updated.id,
+          agent: toAgentSummary(updated.id, updated.agent),
+        };
       }
       case "skills/index": {
         const overlay =

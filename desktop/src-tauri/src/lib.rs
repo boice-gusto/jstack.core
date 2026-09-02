@@ -139,6 +139,36 @@ async fn recent_logs(limit: Option<u32>) -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "logs/recent", json!({ "limit": limit })).await
 }
 
+#[tauri::command]
+async fn schedule_create(agent_id: String, prompt: String, cron: String) -> Result<Value, String> {
+    agent_client::call(
+        &resolve_socket()?,
+        "schedule/create",
+        json!({ "agentId": agent_id, "prompt": prompt, "cron": cron }),
+    )
+    .await
+}
+
+#[tauri::command]
+async fn schedule_list() -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "schedule/list", json!({})).await
+}
+
+#[tauri::command]
+async fn schedule_update(id: String, enabled: bool) -> Result<Value, String> {
+    agent_client::call(
+        &resolve_socket()?,
+        "schedule/update",
+        json!({ "id": id, "enabled": enabled }),
+    )
+    .await
+}
+
+#[tauri::command]
+async fn schedule_delete(id: String) -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "schedule/delete", json!({ "id": id })).await
+}
+
 #[derive(Deserialize)]
 struct TrayAgentPayload {
     id: String,
@@ -373,6 +403,10 @@ pub fn run() {
             daemon_status,
             recent_logs,
             skills_index,
+            schedule_create,
+            schedule_list,
+            schedule_update,
+            schedule_delete,
             update_tray_menu,
             set_tray_status,
         ])

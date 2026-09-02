@@ -48,6 +48,13 @@ export interface MemoryEntry {
   content: string;
 }
 
+export interface AgentTotals {
+  agentId: string;
+  tasks: number;
+  turns: number;
+  costUsd: number;
+}
+
 export interface DaemonStatus {
   tasks: number;
   outbox: number;
@@ -55,6 +62,11 @@ export interface DaemonStatus {
   watermarks: number;
   enabled: boolean;
   mode: string;
+  /** Always true if this resolves at all -- see rpc-server.ts's own note: only the resident
+   * daemon ever serves this socket, so a reachable status IS "resident." */
+  resident: boolean;
+  uptimeMs: number;
+  perAgent: AgentTotals[];
 }
 
 export interface SessionSummary {
@@ -130,6 +142,16 @@ export function daemonStatus(): Promise<DaemonStatus> {
   return invoke("daemon_status");
 }
 
+/** A Slack proactive check: fixed prompt + channel, cron-scheduled, CLI-managed
+ * (`jstackc crew agents edit --proactive-check`) -- shown read-only in the desktop app's
+ * Schedule tab, alongside the desktop-app-created ScheduledPrompts below. */
+export interface ProactiveCheckSummary {
+  id: string;
+  schedule: string;
+  prompt: string;
+  channel?: string;
+}
+
 export interface AgentSummary {
   id: string;
   name: string;
@@ -138,6 +160,7 @@ export interface AgentSummary {
   persona: string;
   tools: string[];
   mcp: "none" | "inherit";
+  proactiveChecks: ProactiveCheckSummary[];
 }
 
 /** Every agent configured in `jstack.config.json`'s `crew.agents` -- an empty list is the
@@ -179,6 +202,41 @@ export function updateAgent(
  * an interval rather than subscribing. */
 export function recentLogs(limit?: number): Promise<{ lines: string[] }> {
   return invoke("recent_logs", { limit });
+}
+
+/** A desktop-app-created scheduled prompt: re-runs a manual session's message on a cron
+ * interval, distinct from a Slack ProactiveCheckSummary above. `sessionId` is null until its
+ * first due run creates one. */
+export interface ScheduledPrompt {
+  id: string;
+  agentId: string;
+  sessionId: string | null;
+  prompt: string;
+  cron: string;
+  enabled: boolean;
+  createdAt: number;
+  lastRunAt: number | null;
+  lastRunOk: boolean | null;
+}
+
+export function createSchedule(
+  agentId: string,
+  prompt: string,
+  cron: string,
+): Promise<{ id: string }> {
+  return invoke("schedule_create", { agentId, prompt, cron });
+}
+
+export function listSchedules(): Promise<{ schedules: ScheduledPrompt[] }> {
+  return invoke("schedule_list");
+}
+
+export function setScheduleEnabled(id: string, enabled: boolean): Promise<{ ok: boolean }> {
+  return invoke("schedule_update", { id, enabled });
+}
+
+export function deleteSchedule(id: string): Promise<{ ok: boolean }> {
+  return invoke("schedule_delete", { id });
 }
 
 export interface SkillSummary {

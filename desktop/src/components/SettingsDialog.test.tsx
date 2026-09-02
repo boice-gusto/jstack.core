@@ -20,8 +20,19 @@ function withDefaults(
 ): (cmd: string, payload?: unknown) => unknown {
   return (cmd, payload) => {
     if (cmd === "daemon_status") {
-      return { tasks: 0, outbox: 0, spentToday: 0, watermarks: 0, enabled: true, mode: "dry_run" };
+      return {
+        tasks: 0,
+        outbox: 0,
+        spentToday: 0,
+        watermarks: 0,
+        enabled: true,
+        mode: "dry_run",
+        resident: true,
+        uptimeMs: 0,
+        perAgent: [],
+      };
     }
+    if (cmd === "schedule_list") return { schedules: [] };
     return handler(cmd, payload);
   };
 }
@@ -143,6 +154,7 @@ describe("SettingsDialog", () => {
             persona: "",
             tools: ["Read"],
             mcp: "none",
+            proactiveChecks: [],
           },
         ]}
         agentId="ralph"
@@ -200,6 +212,7 @@ describe("SettingsDialog", () => {
             persona: "",
             tools: ["Read"],
             mcp: "none",
+            proactiveChecks: [],
           },
         ]}
         agentId="ralph"
@@ -242,7 +255,16 @@ describe("SettingsDialog", () => {
         navigationLayout="vertical"
         onNavigationLayoutChange={() => {}}
         agents={[
-          { id: "ralph", name: "Ralph", enabled: true, model: "claude-sonnet-5", persona: "", tools: [], mcp: "none" },
+          {
+            id: "ralph",
+            name: "Ralph",
+            enabled: true,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: [],
+            mcp: "none",
+            proactiveChecks: [],
+          },
         ]}
       />,
     );
@@ -252,7 +274,54 @@ describe("SettingsDialog", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Advanced" }));
     await screen.findByText("jstack-foo");
     expect(screen.getByText("Ralph")).toBeTruthy();
-    await screen.findByText(/enabled/i);
+  });
+
+  test("the Schedule tab shows daemon resident/uptime status and per-agent activity", async () => {
+    // Deliberately not withDefaults here -- its blanket daemon_status stub would shadow the
+    // uptime/perAgent values this test needs to assert on.
+    mockIPC((cmd) => {
+      if (cmd === "daemon_status") {
+        return {
+          tasks: 3,
+          outbox: 0,
+          spentToday: 0.05,
+          watermarks: 0,
+          enabled: true,
+          mode: "dry_run",
+          resident: true,
+          uptimeMs: 65_000,
+          perAgent: [{ agentId: "ralph", tasks: 2, turns: 4, costUsd: 0.02 }],
+        };
+      }
+      if (cmd === "schedule_list") return { schedules: [] };
+      if (cmd === "skills_index") return { skills: [] };
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        agents={[
+          {
+            id: "ralph",
+            name: "Ralph",
+            enabled: true,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: [],
+            mcp: "none",
+            proactiveChecks: [],
+          },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Schedule" }));
+    await screen.findByText("Yes"); // Resident: Yes
+    expect(screen.getByText("1m 5s")).toBeTruthy(); // formatUptime(65_000)
+    expect(screen.getByText(/2 sessions · 4 turns · \$0\.0200/)).toBeTruthy();
   });
 
   test("the Agents tab lists every agent (including disabled ones) and can toggle enabled via agent/update", async () => {
@@ -284,8 +353,26 @@ describe("SettingsDialog", () => {
         navigationLayout="vertical"
         onNavigationLayoutChange={() => {}}
         agents={[
-          { id: "ralph", name: "Ralph", enabled: true, model: "claude-sonnet-5", persona: "", tools: [], mcp: "none" },
-          { id: "beta", name: "Beta", enabled: false, model: "claude-sonnet-5", persona: "", tools: [], mcp: "none" },
+          {
+            id: "ralph",
+            name: "Ralph",
+            enabled: true,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: [],
+            mcp: "none",
+            proactiveChecks: [],
+          },
+          {
+            id: "beta",
+            name: "Beta",
+            enabled: false,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: [],
+            mcp: "none",
+            proactiveChecks: [],
+          },
         ]}
       />,
     );

@@ -304,9 +304,16 @@ describe("rpc-server", () => {
       name: "Scout",
       persona: "Terse and cites sources.",
       mcp: "inherit",
-    })) as { id: string; agent: { name: string; mcp: string } };
+    })) as {
+      id: string;
+      agent: { name: string; mcp: string; proactiveChecks: unknown[] };
+    };
     expect(created.id).toBe("scout");
-    expect(created.agent).toMatchObject({ name: "Scout", mcp: "inherit" });
+    expect(created.agent).toMatchObject({
+      name: "Scout",
+      mcp: "inherit",
+      proactiveChecks: [],
+    });
 
     // No daemon reload happened -- this proves the in-memory cfg was spliced immediately,
     // not just the file on disk.

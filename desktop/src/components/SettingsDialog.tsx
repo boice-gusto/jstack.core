@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import {
+  createSchedule,
   daemonStatus,
+  deleteSchedule,
+  listSchedules,
   recentLogs,
+  setScheduleEnabled,
   skillsIndex,
   updateAgent,
   type AgentSummary,
   type DaemonStatus,
+  type ScheduledPrompt,
   type SkillSummary,
 } from "../lib/agent";
 import type { NavigationLayout } from "../lib/navigationLayout";
@@ -36,6 +41,7 @@ import {
   PanelTopIcon,
   SparkleIcon,
   SunIcon,
+  XIcon,
 } from "lucide-react";
 import {
   THEME_COLORS,
@@ -90,7 +96,27 @@ const SHORTCUTS: { keys: string[]; description: string }[] = [
  * push/streaming, so "live" here means "refreshed on this interval," not truly real-time. */
 const LOG_POLL_MS = 3000;
 
-export type SettingsTab = "general" | "agents" | "appearance" | "advanced" | "debug" | "info";
+export type SettingsTab =
+  | "general"
+  | "agents"
+  | "appearance"
+  | "advanced"
+  | "schedule"
+  | "debug"
+  | "info";
+
+/** "2h 14m" / "45m" / "12s" -- coarse on purpose, this is "has the daemon been up a while" not a
+ * stopwatch. Drops to the next-smaller unit rather than always showing two, so "12s" doesn't
+ * render as "0h 0m". */
+function formatUptime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
 
 /**
  * Controlled (open/onOpenChange from App.tsx) rather than self-triggering, same pattern as
@@ -135,6 +161,11 @@ export function SettingsDialog({
   const [agentsError, setAgentsError] = useState<string | null>(null);
   const [skills, setSkills] = useState<SkillSummary[] | null>(null);
   const [skillsError, setSkillsError] = useState<string | null>(null);
+  const [schedules, setSchedules] = useState<ScheduledPrompt[]>([]);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [newScheduleAgentId, setNewScheduleAgentId] = useState("");
+  const [newSchedulePrompt, setNewSchedulePrompt] = useState("");
+  const [newScheduleCron, setNewScheduleCron] = useState("");
   const activeAgent = agents?.find((a) => a.id === agentId);
 
   async function handleModelChange(model: string): Promise<void> {
@@ -215,6 +246,60 @@ export function SettingsDialog({
     if (open) refreshStatus();
   }, [open]);
 
+  async function refreshSchedules(): Promise<void> {
+    try {
+      const { schedules: fetched } = await listSchedules();
+      setSchedules(fetched);
+      setScheduleError(null);
+    } catch (e) {
+      console.error("[jstack] listSchedules failed:", e);
+      setScheduleError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  useEffect(() => {
+    if (open) refreshSchedules();
+  }, [open]);
+
+  async function handleCreateSchedule(): Promise<void> {
+    if (!newScheduleAgentId || !newSchedulePrompt.trim() || !newScheduleCron.trim()) {
+      setScheduleError("Pick an agent and fill in both the prompt and cron fields.");
+      return;
+    }
+    setScheduleError(null);
+    try {
+      await createSchedule(newScheduleAgentId, newSchedulePrompt.trim(), newScheduleCron.trim());
+      setNewSchedulePrompt("");
+      setNewScheduleCron("");
+      await refreshSchedules();
+    } catch (e) {
+      console.error("[jstack] createSchedule failed:", e);
+      setScheduleError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleToggleSchedule(id: string, enabled: boolean): Promise<void> {
+    setScheduleError(null);
+    try {
+      await setScheduleEnabled(id, enabled);
+      await refreshSchedules();
+    } catch (e) {
+      console.error(`[jstack] setScheduleEnabled(${id}) failed:`, e);
+      setScheduleError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleDeleteSchedule(id: string): Promise<void> {
+    setScheduleError(null);
+    try {
+      await deleteSchedule(id);
+      await refreshSchedules();
+    } catch (e) {
+      console.error(`[jstack] deleteSchedule(${id}) failed:`, e);
+      setScheduleError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   // Polls only while Debug is the actual visible tab -- no point hitting the socket every 3s for
   // a log tail nobody's looking at.
   useEffect(() => {
@@ -263,6 +348,9 @@ export function SettingsDialog({
             </TabsTrigger>
             <TabsTrigger value="advanced" className="flex-1">
               Advanced
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex-1">
+              Schedule
             </TabsTrigger>
             <TabsTrigger value="debug" className="flex-1">
               Debug
@@ -460,44 +548,6 @@ export function SettingsDialog({
           </TabsContent>
 
           <TabsContent value="advanced" className="flex flex-col gap-5 pt-2">
-            <div aria-label="daemon status">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-muted-foreground">Status</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    refreshStatus();
-                    onRefresh();
-                  }}
-                >
-                  Refresh
-                </Button>
-              </div>
-              {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
-              {status && (
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-md border bg-muted/30 p-3 text-sm">
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Enabled</dt>
-                    <dd className="font-medium">{String(status.enabled)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Mode</dt>
-                    <dd className="font-medium">{status.mode}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Tasks</dt>
-                    <dd className="font-medium">{status.tasks}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-muted-foreground">Spent today</dt>
-                    <dd className="font-medium">${status.spentToday.toFixed(4)}</dd>
-                  </div>
-                </dl>
-              )}
-            </div>
-
             <div aria-label="loaded">
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Agents &amp; skills
@@ -534,6 +584,197 @@ export function SettingsDialog({
                   </ul>
                 </div>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="schedule" className="flex flex-col gap-5 pt-2">
+            <div aria-label="daemon status">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground">Daemon</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    refreshStatus();
+                    refreshSchedules();
+                    onRefresh();
+                  }}
+                >
+                  Refresh
+                </Button>
+              </div>
+              {statusError && <p className="mb-2 text-sm text-destructive">{statusError}</p>}
+              {status && (
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-md border bg-muted/30 p-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Resident</dt>
+                    <dd className="font-medium">{status.resident ? "Yes" : "No"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Uptime</dt>
+                    <dd className="font-medium">{formatUptime(status.uptimeMs)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Mode</dt>
+                    <dd className="font-medium">{status.mode}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Spent today</dt>
+                    <dd className="font-medium">${status.spentToday.toFixed(4)}</dd>
+                  </div>
+                </dl>
+              )}
+            </div>
+
+            <div aria-label="per-agent stats">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                Per-agent activity
+              </h3>
+              {status && status.perAgent.length > 0 ? (
+                <ul className="flex flex-col gap-1 rounded-md border bg-muted/30 p-2 text-sm">
+                  {status.perAgent.map((a) => {
+                    const name = agents?.find((ag) => ag.id === a.agentId)?.name ?? a.agentId;
+                    return (
+                      <li key={a.agentId} className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">{name}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {a.tasks} session{a.tasks === 1 ? "" : "s"} · {a.turns} turn
+                          {a.turns === 1 ? "" : "s"} · ${a.costUsd.toFixed(4)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">No activity yet.</p>
+              )}
+            </div>
+
+            <div aria-label="slack proactive checks">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                Slack proactive checks
+              </h3>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Read-only -- these run on a cron against a fixed Slack channel and are managed via{" "}
+                <code className="rounded bg-muted px-1 py-0.5">
+                  jstackc crew agents edit --proactive-check
+                </code>
+                , not from this app.
+              </p>
+              {(() => {
+                const allChecks = (agents ?? []).flatMap((a) =>
+                  a.proactiveChecks.map((c) => ({ agent: a, check: c })),
+                );
+                return allChecks.length > 0 ? (
+                  <ul className="flex flex-col gap-1.5">
+                    {allChecks.map(({ agent, check }) => (
+                      <li
+                        key={`${agent.id}:${check.id}`}
+                        className="rounded-md border p-2 text-sm"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">
+                            {agent.name} · {check.id}
+                          </span>
+                          <code className="shrink-0 text-xs text-muted-foreground">
+                            {check.schedule}
+                          </code>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {check.prompt}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">None configured.</p>
+                );
+              })()}
+            </div>
+
+            <div aria-label="scheduled prompts">
+              <h3 className="mb-1 text-sm font-semibold text-muted-foreground">
+                Scheduled prompts
+              </h3>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Re-runs a message against an agent on a cron interval, resuming the same session
+                each time so it keeps context across runs.
+              </p>
+              {scheduleError && <p className="mb-2 text-sm text-destructive">{scheduleError}</p>}
+              <div className="mb-3 flex flex-col gap-2 rounded-md border p-2">
+                <select
+                  aria-label="schedule agent"
+                  value={newScheduleAgentId}
+                  onChange={(e) => setNewScheduleAgentId(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-sm"
+                >
+                  <option value="">Select an agent...</option>
+                  {(agents ?? []).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+                <textarea
+                  aria-label="schedule prompt"
+                  placeholder="Prompt to send each time..."
+                  value={newSchedulePrompt}
+                  onChange={(e) => setNewSchedulePrompt(e.target.value)}
+                  className="min-h-16 rounded-md border bg-background p-2 text-sm"
+                />
+                <input
+                  aria-label="schedule cron"
+                  placeholder="Cron expression, e.g. 0 9 * * *"
+                  value={newScheduleCron}
+                  onChange={(e) => setNewScheduleCron(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 font-mono text-sm"
+                />
+                <Button type="button" size="sm" onClick={handleCreateSchedule}>
+                  Add schedule
+                </Button>
+              </div>
+              <ul className="flex flex-col gap-1.5">
+                {schedules.map((s) => {
+                  const name = agents?.find((a) => a.id === s.agentId)?.name ?? s.agentId;
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate font-medium">{name}</span>
+                          <code className="shrink-0 text-xs text-muted-foreground">{s.cron}</code>
+                        </div>
+                        <p className="truncate text-xs text-muted-foreground">{s.prompt}</p>
+                        {s.lastRunAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Last ran {new Date(s.lastRunAt).toLocaleString()} ·{" "}
+                            {s.lastRunOk ? "ok" : "failed"}
+                          </p>
+                        )}
+                      </div>
+                      <Switch
+                        checked={s.enabled}
+                        onCheckedChange={(checked) => handleToggleSchedule(s.id, checked)}
+                      />
+                      <Button
+                        type="button"
+                        variant="icon"
+                        size="icon"
+                        title="Delete schedule"
+                        onClick={() => handleDeleteSchedule(s.id)}
+                      >
+                        <XIcon className="size-4" />
+                      </Button>
+                    </li>
+                  );
+                })}
+                {schedules.length === 0 && (
+                  <li className="text-sm text-muted-foreground">No scheduled prompts yet.</li>
+                )}
+              </ul>
             </div>
           </TabsContent>
 

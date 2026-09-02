@@ -46,6 +46,7 @@ const RALPH = {
   persona: "",
   tools: ["Read", "Grep", "Glob"],
   mcp: "none" as const,
+  proactiveChecks: [],
 };
 
 /**
@@ -60,8 +61,19 @@ function withDefaults(
   return (cmd, payload) => {
     if (cmd === "agent_list") return [RALPH];
     if (cmd === "daemon_status") {
-      return { tasks: 0, outbox: 0, spentToday: 0, watermarks: 0, enabled: true, mode: "dry_run" };
+      return {
+        tasks: 0,
+        outbox: 0,
+        spentToday: 0,
+        watermarks: 0,
+        enabled: true,
+        mode: "dry_run",
+        resident: true,
+        uptimeMs: 0,
+        perAgent: [],
+      };
     }
+    if (cmd === "schedule_list") return { schedules: [] };
     // Every mount syncs the tray icon/menu (see App.tsx's tray effects) -- none of that is under
     // test here, so it gets a blanket no-op rather than making every single test's handler
     // enumerate commands it doesn't care about. (Tray *event subscriptions* don't need a case
@@ -250,8 +262,20 @@ describe("App", () => {
       }
       if (cmd === "session_history") return [];
       if (cmd === "daemon_status") {
-        return { tasks: 0, outbox: 0, spentToday: 0, watermarks: 0, enabled: true, mode: "dry_run" };
+        return {
+          tasks: 0,
+          outbox: 0,
+          spentToday: 0,
+          watermarks: 0,
+          enabled: true,
+          mode: "dry_run",
+          resident: true,
+          uptimeMs: 0,
+          perAgent: [],
+        };
       }
+      if (cmd === "schedule_list") return { schedules: [] };
+      if (cmd === "skills_index") return { skills: [] };
       if (cmd === "set_tray_status" || cmd === "update_tray_menu") return null;
       throw new Error(`unexpected command: ${cmd}`);
     });
@@ -858,12 +882,23 @@ describe("App", () => {
             persona: "",
             tools: ["Read", "Grep", "Glob"],
             mcp: "none",
+            proactiveChecks: [],
           },
         };
       }
       if (cmd === "session_list") return [];
       if (cmd === "daemon_status") {
-        return { tasks: 0, outbox: 0, spentToday: 0, watermarks: 0, enabled: true, mode: "dry_run" };
+        return {
+          tasks: 0,
+          outbox: 0,
+          spentToday: 0,
+          watermarks: 0,
+          enabled: true,
+          mode: "dry_run",
+          resident: true,
+          uptimeMs: 0,
+          perAgent: [],
+        };
       }
       if (cmd === "set_tray_status" || cmd === "update_tray_menu") return null;
       throw new Error(`unexpected command: ${cmd}`);
