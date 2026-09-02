@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { chmodSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runDueScheduledPrompts } from "./scheduler.js";
@@ -43,6 +49,36 @@ function installFakeClaude(): { restorePath: string } {
   const restorePath = process.env.PATH ?? "";
   process.env.PATH = `${dir}:${restorePath}`;
   return { restorePath };
+}
+
+/** Same fake, but also answers a Slack-send call -- distinguished from a manual-session prompt
+ * turn by argv shape: runWorkerStreaming's `--output-format stream-json` vs slack.ts's
+ * runClaude's blocking `--output-format json` (used for the Slack MCP tool call integrations.ts
+ * makes). Records every Slack-send call's prompt text to a file so a test can assert on it. */
+function installFakeClaudeWithSlackSend(): {
+  restorePath: string;
+  slackSendLogFile: string;
+} {
+  const dir = mkdtempSync(join(tmpdir(), "fake-claude-bin-scheduler-slack-"));
+  const slackSendLogFile = join(dir, "slack-send.log");
+  writeFileSync(
+    join(dir, "claude"),
+    [
+      "#!/bin/sh",
+      'for arg in "$@"; do',
+      '  if [ "$arg" = "stream-json" ]; then',
+      '    echo \'{"type":"result","is_error":false,"result":"scheduled reply","total_cost_usd":0.001}\'',
+      "    exit 0",
+      "  fi",
+      "done",
+      `printf '%s\\n' "$@" >> ${slackSendLogFile}`,
+      'echo \'{"is_error":false,"result":"{\\"message_ts\\": \\"1700000000.123456\\"}","total_cost_usd":0.0005}\'',
+    ].join("\n"),
+  );
+  chmodSync(join(dir, "claude"), 0o755);
+  const restorePath = process.env.PATH ?? "";
+  process.env.PATH = `${dir}:${restorePath}`;
+  return { restorePath, slackSendLogFile };
 }
 
 // A cron that matches every minute, so "is this due right now" never depends on the wall clock.
@@ -112,6 +148,45 @@ describe("runDueScheduledPrompts", () => {
     await runDueScheduledPrompts(store, cfg, now + 60_000);
     const sessionAfterSecond = store.listScheduledPrompts()[0]!.sessionId;
     expect(sessionAfterSecond).toBe(sessionAfterFirst);
+  });
+
+  test("a schedule with notifyChannel pushes the result to Slack via the jstack notification template", async () => {
+    const fake = installFakeClaudeWithSlackSend();
+    restorePath = fake.restorePath;
+    const store = freshStore();
+    const cfg = baseConfig();
+    store.createScheduledPrompt({
+      id: "sch-a1",
+      agentId: "ralph",
+      prompt: "hi",
+      cron: EVERY_MINUTE,
+      notifyChannel: "D0MYDM001",
+    });
+
+    const results = await runDueScheduledPrompts(store, cfg, Date.now());
+    expect(results).toEqual([{ id: "sch-a1", ran: true, ok: true }]);
+
+    const slackSendArgv = readFileSync(fake.slackSendLogFile, "utf8");
+    expect(slackSendArgv).toContain("D0MYDM001");
+    expect(slackSendArgv).toContain(
+      ":robot_face: - scheduled reply - sent by jstack",
+    );
+  });
+
+  test("a schedule with no notifyChannel never calls Slack at all", async () => {
+    const fake = installFakeClaudeWithSlackSend();
+    restorePath = fake.restorePath;
+    const store = freshStore();
+    const cfg = baseConfig();
+    store.createScheduledPrompt({
+      id: "sch-a1",
+      agentId: "ralph",
+      prompt: "hi",
+      cron: EVERY_MINUTE,
+    });
+
+    await runDueScheduledPrompts(store, cfg, Date.now());
+    expect(existsSync(fake.slackSendLogFile)).toBe(false);
   });
 
   test("a disabled schedule is skipped even when due", async () => {

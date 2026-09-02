@@ -1,3 +1,4 @@
+import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -402,6 +403,7 @@ describe("scheduled prompts", () => {
       sessionId: null,
       prompt: "Summarize open PRs",
       cron: "0 9 * * *",
+      notifyChannel: null,
       enabled: true,
       lastEvaluatedMs: null,
       lastRunAt: null,
@@ -410,6 +412,49 @@ describe("scheduled prompts", () => {
     s.deleteScheduledPrompt("sch-abc1");
     expect(s.listScheduledPrompts()).toEqual([]);
     s.close();
+  });
+
+  test("stores an optional notifyChannel", () => {
+    const s = freshStore();
+    s.createScheduledPrompt({
+      id: "sch-abc1",
+      agentId: "ralph",
+      prompt: "hi",
+      cron: "* * * * *",
+      notifyChannel: "D0MYDM001",
+    });
+    expect(s.listScheduledPrompts()[0]!.notifyChannel).toBe("D0MYDM001");
+    s.close();
+  });
+
+  test("a scheduled_prompt table from before notify_channel existed is migrated in place, not left broken", () => {
+    const dir = mkdtempSync(join(tmpdir(), "crew-migrate-"));
+    // Writes the table in its pre-notify_channel shape directly, bypassing CrewStore's own
+    // migrate() entirely -- this is what a real crew.db on disk from before this column existed
+    // actually looks like.
+    const raw = new Database(join(dir, "crew.db"), { create: true });
+    raw.exec(`
+      CREATE TABLE scheduled_prompt (
+        id TEXT PRIMARY KEY, agent_id TEXT NOT NULL, session_id TEXT,
+        prompt TEXT NOT NULL, cron TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL,
+        last_evaluated_ms INTEGER, last_run_at INTEGER, last_run_ok INTEGER
+      );
+    `);
+    raw.close();
+
+    const migrated = new CrewStore(dir);
+    expect(() =>
+      migrated.createScheduledPrompt({
+        id: "sch-abc1",
+        agentId: "ralph",
+        prompt: "hi",
+        cron: "* * * * *",
+        notifyChannel: "D0MYDM001",
+      }),
+    ).not.toThrow();
+    expect(migrated.listScheduledPrompts()[0]!.notifyChannel).toBe("D0MYDM001");
+    migrated.close();
   });
 
   test("setScheduledPromptEnabled toggles enabled without touching other fields", () => {

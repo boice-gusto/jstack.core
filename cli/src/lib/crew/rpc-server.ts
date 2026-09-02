@@ -23,6 +23,7 @@ import { findPluginRoot } from "../config.js";
 import { parseCron } from "./proactive.js";
 import { scheduledPromptId } from "./scheduler.js";
 import { runDiagnostics } from "./diagnostics.js";
+import { listIntegrations } from "./integrations.js";
 
 const SESSION_MODES: readonly SessionMode[] = ["ask", "full-access"];
 const THINKING_LEVELS: readonly ThinkingLevel[] = [
@@ -295,6 +296,11 @@ async function dispatch(
           agentId: p.agentId,
           prompt: p.prompt,
           cron: p.cron,
+          notifyChannel:
+            typeof p.notifyChannel === "string" &&
+            p.notifyChannel.trim().length > 0
+              ? p.notifyChannel.trim()
+              : undefined,
         });
         return { id };
       }
@@ -323,6 +329,9 @@ async function dispatch(
       }
       case "diagnostics/run": {
         return runDiagnostics(cfg);
+      }
+      case "integrations/list": {
+        return { integrations: listIntegrations(cfg) };
       }
       default:
         throw new Error(`unknown method: ${method}`);

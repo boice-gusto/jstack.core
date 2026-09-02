@@ -1,3 +1,4 @@
+import { sendJstackSlackNotification } from "./integrations.js";
 import { isCheckDue } from "./proactive.js";
 import { createManualSession, promptManualSession } from "./session.js";
 import type { CrewStore } from "./store.js";
@@ -69,7 +70,28 @@ export async function runDueScheduledPrompts(
         ranAt: nowMs,
         ok: result.ok,
       });
-      results.push({ id: row.id, ran: true, ok: result.ok });
+
+      let notifyFailure: string | undefined;
+      if (result.ok && row.notifyChannel) {
+        // Best-effort, and deliberately doesn't affect the run's own ok/reason above -- the
+        // prompt itself succeeded whether or not the Slack push does. cfg.agents[row.agentId]
+        // is guaranteed present here: requireEnabledAgent (inside createManualSession/
+        // promptManualSession above) would already have thrown if it weren't.
+        const emoji = cfg.agents[row.agentId]?.emoji ?? ":robot_face:";
+        const sent = await sendJstackSlackNotification(
+          row.notifyChannel,
+          emoji,
+          result.text,
+        );
+        if (!sent.ok) notifyFailure = sent.error ?? "notify failed";
+      }
+
+      results.push({
+        id: row.id,
+        ran: true,
+        ok: result.ok,
+        ...(notifyFailure ? { reason: `notify failed: ${notifyFailure}` } : {}),
+      });
     } catch (e) {
       store.recordScheduledPromptRun(row.id, {
         lastEvaluatedMs: nowMs,

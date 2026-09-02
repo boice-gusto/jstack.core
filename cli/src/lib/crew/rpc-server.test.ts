@@ -663,4 +663,50 @@ describe("rpc-server", () => {
     ]);
     expect(typeof report.claudeCli.found).toBe("boolean");
   });
+
+  test("integrations/list reports the slack-dm integration", async () => {
+    // Not installFakeClaude() -- that only answers a plain `claude -p` turn.
+    // listIntegrations calls `claude mcp list` directly, which the real claude binary can hang
+    // on in a sandboxed test environment (no auth/terminal context), so it needs its own fake
+    // that answers that specific subcommand quickly.
+    const dir = mkdtempSync(join(tmpdir(), "fake-claude-rpc-integrations-"));
+    writeFileSync(
+      join(dir, "claude"),
+      '#!/bin/sh\nif [ "$1" = "mcp" ]; then echo "no servers"; exit 0; fi\nexit 1\n',
+    );
+    chmodSync(join(dir, "claude"), 0o755);
+    restorePath = process.env.PATH ?? "";
+    process.env.PATH = `${dir}:${restorePath}`;
+
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const { integrations } = (await rpcCall(
+      handle.sockPath,
+      "integrations/list",
+    )) as {
+      integrations: Array<{ id: string; configured: boolean }>;
+    };
+    expect(integrations).toEqual([
+      expect.objectContaining({ id: "slack-dm", configured: true }),
+    ]);
+  });
+
+  test("schedule/create accepts and stores an optional notifyChannel", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    await rpcCall(handle.sockPath, "schedule/create", {
+      agentId: "ralph",
+      prompt: "hi",
+      cron: "* * * * *",
+      notifyChannel: "D0MYDM001",
+    });
+    const { schedules } = (await rpcCall(handle.sockPath, "schedule/list")) as {
+      schedules: Array<{ notifyChannel: string | null }>;
+    };
+    expect(schedules[0]!.notifyChannel).toBe("D0MYDM001");
+  });
 });

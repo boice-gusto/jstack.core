@@ -105,6 +105,21 @@ export class CrewStore {
         last_run_at INTEGER, last_run_ok INTEGER
       );
     `);
+    // `CREATE TABLE IF NOT EXISTS` above is a no-op against a scheduled_prompt table that
+    // already existed before notify_channel was added (this ran in production before this
+    // column did) -- SQLite has no `ADD COLUMN IF NOT EXISTS`, so check pragma_table_info first
+    // rather than risk a "duplicate column" error on every future startup.
+    const hasNotifyChannel = this.db
+      .query<{ name: string }, []>(
+        "SELECT name FROM pragma_table_info('scheduled_prompt')",
+      )
+      .all()
+      .some((c) => c.name === "notify_channel");
+    if (!hasNotifyChannel) {
+      this.db.exec(
+        "ALTER TABLE scheduled_prompt ADD COLUMN notify_channel TEXT",
+      );
+    }
     const row = this.db
       .query<{ value: string }, []>(
         "SELECT value FROM meta WHERE key='schema_version'",
@@ -522,13 +537,24 @@ export class CrewStore {
     agentId: string;
     prompt: string;
     cron: string;
+    /** Slack channel id to push the result to via integrations.ts's
+     * sendJstackSlackNotification after each run -- optional, since not every scheduled prompt
+     * needs a Slack push (some are just "keep a session's context warm on a timer"). */
+    notifyChannel?: string;
   }): void {
     this.db
       .query(
-        "INSERT INTO scheduled_prompt (id, agent_id, prompt, cron, enabled, created_at) " +
-          "VALUES (?,?,?,?,1,?)",
+        "INSERT INTO scheduled_prompt (id, agent_id, prompt, cron, notify_channel, enabled, created_at) " +
+          "VALUES (?,?,?,?,?,1,?)",
       )
-      .run(row.id, row.agentId, row.prompt, row.cron, Date.now());
+      .run(
+        row.id,
+        row.agentId,
+        row.prompt,
+        row.cron,
+        row.notifyChannel ?? null,
+        Date.now(),
+      );
   }
 
   listScheduledPrompts(): Array<{
@@ -537,6 +563,7 @@ export class CrewStore {
     sessionId: string | null;
     prompt: string;
     cron: string;
+    notifyChannel: string | null;
     enabled: boolean;
     createdAt: number;
     lastEvaluatedMs: number | null;
@@ -551,6 +578,7 @@ export class CrewStore {
           session_id: string | null;
           prompt: string;
           cron: string;
+          notify_channel: string | null;
           enabled: number;
           created_at: number;
           last_evaluated_ms: number | null;
@@ -559,7 +587,7 @@ export class CrewStore {
         },
         []
       >(
-        "SELECT id, agent_id, session_id, prompt, cron, enabled, created_at, last_evaluated_ms, last_run_at, last_run_ok " +
+        "SELECT id, agent_id, session_id, prompt, cron, notify_channel, enabled, created_at, last_evaluated_ms, last_run_at, last_run_ok " +
           "FROM scheduled_prompt ORDER BY created_at DESC",
       )
       .all();
@@ -569,6 +597,7 @@ export class CrewStore {
       sessionId: r.session_id,
       prompt: r.prompt,
       cron: r.cron,
+      notifyChannel: r.notify_channel,
       enabled: r.enabled === 1,
       createdAt: r.created_at,
       lastEvaluatedMs: r.last_evaluated_ms,
