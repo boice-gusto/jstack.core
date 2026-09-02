@@ -166,7 +166,8 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
       }
       out.push({
         kind: "tool_result",
-        toolUseId: typeof block.tool_use_id === "string" ? block.tool_use_id : undefined,
+        toolUseId:
+          typeof block.tool_use_id === "string" ? block.tool_use_id : undefined,
         content: text,
         isError: block.is_error === true,
       });

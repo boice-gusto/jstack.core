@@ -183,7 +183,12 @@ async function dispatch(
         const updated = updateAgent(p.id, {
           model: typeof p.model === "string" ? p.model : undefined,
           tools: Array.isArray(p.tools) ? (p.tools as string[]) : undefined,
-          mcp: p.mcp === "inherit" ? "inherit" : p.mcp === "none" ? "none" : undefined,
+          mcp:
+            p.mcp === "inherit"
+              ? "inherit"
+              : p.mcp === "none"
+                ? "none"
+                : undefined,
           enabled: typeof p.enabled === "boolean" ? p.enabled : undefined,
         });
         // Same reasoning as agent/create above: splice into the running daemon's in-memory

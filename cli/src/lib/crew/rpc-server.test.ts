@@ -335,7 +335,12 @@ describe("rpc-server", () => {
     handle = startRpcServer({ stateDir, getConfig: () => cfg });
 
     const result = (await rpcCall(handle.sockPath, "skills/index", {})) as {
-      skills: Array<{ name: string; description: string; rel: string; origin: string }>;
+      skills: Array<{
+        name: string;
+        description: string;
+        rel: string;
+        origin: string;
+      }>;
     };
     expect(Array.isArray(result.skills)).toBe(true);
     expect(result.skills.length).toBeGreaterThan(0);
