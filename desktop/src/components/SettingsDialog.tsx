@@ -663,8 +663,12 @@ export function SettingsDialog({
                 , not from this app.
               </p>
               {(() => {
+                // proactiveChecks can be missing at runtime if the desktop app was updated
+                // before the resident daemon was rebuilt to match (they're deployed
+                // separately) -- `?? []` keeps that version skew from crashing the whole
+                // app instead of just showing an empty list here.
                 const allChecks = (agents ?? []).flatMap((a) =>
-                  a.proactiveChecks.map((c) => ({ agent: a, check: c })),
+                  (a.proactiveChecks ?? []).map((c) => ({ agent: a, check: c })),
                 );
                 return allChecks.length > 0 ? (
                   <ul className="flex flex-col gap-1.5">

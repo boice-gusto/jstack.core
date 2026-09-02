@@ -1153,15 +1153,27 @@ function App() {
               onNewChat={() => handleNewSession()}
             />
           )}
-          {/* Same border token/radius as the composer below (InputGroup's border-input +
-              rounded-lg) -- the whole content pane reads as one consistently-framed panel
-              instead of the composer being the only bordered thing on the page. */}
-          <main className="m-2 flex flex-1 flex-col overflow-hidden rounded-lg border border-input p-4">
+          {/* No border here -- the composer below already has its own (InputGroup's
+              border-input + rounded-lg); framing the whole pane too just nested one box
+              inside another. */}
+          <main className="m-2 flex flex-1 flex-col overflow-hidden p-4">
         {sessionError && (
           <p className="mb-2 text-center text-sm text-destructive">{sessionError}</p>
         )}
 
-        <Conversation aria-label="messages">
+        <Conversation
+          aria-label="messages"
+          style={{
+            // Fades the top/bottom couple lines of the scroll area to transparent, so a message
+            // sliding under the edge reads as "fading out," not "getting clipped." WebKit prefix
+            // is required, not optional -- Tauri's macOS webview is WKWebView, which does not
+            // understand unprefixed mask-image.
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent)",
+            maskImage:
+              "linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent)",
+          }}
+        >
           {(sessionId === null || (!historyLoading && messages.length === 0)) && (
             <img
               src="/jstack-mark.png"
