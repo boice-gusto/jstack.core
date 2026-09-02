@@ -20,6 +20,8 @@ import type { CrewConfig } from "./types.js";
 import type { SessionMode, ThinkingLevel } from "./tick.js";
 import { collectSkills } from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
+import { parseCron } from "./proactive.js";
+import { scheduledPromptId } from "./scheduler.js";
 
 const SESSION_MODES: readonly SessionMode[] = ["ask", "full-access"];
 const THINKING_LEVELS: readonly ThinkingLevel[] = [
@@ -92,6 +94,7 @@ async function dispatch(
   method: string,
   params: unknown,
   getLogs: (limit?: number) => string[],
+  startedAt: number,
 ): Promise<unknown> {
   const p = (params ?? {}) as Record<string, unknown>;
   const store = new CrewStore(stateDir);
@@ -172,6 +175,7 @@ async function dispatch(
           persona: a.persona,
           tools: a.tools,
           mcp: a.mcp,
+          proactiveChecks: a.proactive_checks,
         }));
       }
       case "agent/create": {
@@ -238,7 +242,62 @@ async function dispatch(
       }
       case "status": {
         const stats = store.stats();
-        return { ...stats, enabled: cfg.enabled, mode: cfg.mode };
+        return {
+          ...stats,
+          enabled: cfg.enabled,
+          mode: cfg.mode,
+          // Always true when this handler runs at all: only the resident daemon (crewd.ts's
+          // runResident) ever calls startRpcServer, so the socket being reachable already
+          // implies resident mode -- included explicitly so the desktop app doesn't have to
+          // infer it from "the request didn't time out."
+          resident: true,
+          uptimeMs: Date.now() - startedAt,
+          perAgent: store.statsByAgent(),
+        };
+      }
+      case "schedule/create": {
+        if (
+          typeof p.agentId !== "string" ||
+          typeof p.prompt !== "string" ||
+          typeof p.cron !== "string"
+        ) {
+          throw new Error(
+            "schedule/create requires { agentId: string, prompt: string, cron: string }",
+          );
+        }
+        if (!cfg.agents[p.agentId]) {
+          throw new Error(`agent "${p.agentId}" not found`);
+        }
+        if (!parseCron(p.cron)) {
+          throw new Error(`unparseable cron expression: "${p.cron}"`);
+        }
+        const id = scheduledPromptId();
+        store.createScheduledPrompt({
+          id,
+          agentId: p.agentId,
+          prompt: p.prompt,
+          cron: p.cron,
+        });
+        return { id };
+      }
+      case "schedule/list": {
+        return { schedules: store.listScheduledPrompts() };
+      }
+      case "schedule/update": {
+        if (typeof p.id !== "string" || typeof p.enabled !== "boolean") {
+          throw new Error(
+            "schedule/update requires { id: string, enabled: boolean }",
+          );
+        }
+        store.setScheduledPromptEnabled(p.id, p.enabled);
+        return { ok: true };
+      }
+      case "schedule/delete": {
+        if (typeof p.id !== "string") {
+          throw new Error("schedule/delete requires { id: string }");
+        }
+        store.deleteScheduledPrompt(p.id);
+        return { ok: true };
       }
       case "logs/recent": {
         const limit = typeof p.limit === "number" ? p.limit : undefined;
@@ -262,8 +321,14 @@ export function startRpcServer(opts: {
   /** Defaults to always answering [] -- one-shot/interval installs have no daemon log buffer
    * to serve (see crewd.ts's runResident, the only caller that supplies a real one). */
   getLogs?: (limit?: number) => string[];
+  /** When this RPC server actually started listening, for "status"'s uptimeMs. Defaults to
+   * `Date.now()` at call time -- fine for tests/one-off callers that don't care about uptime;
+   * runResident passes its own loop-start timestamp so uptime survives across the loop's many
+   * iterations rather than resetting each one. */
+  startedAt?: number;
 }): RpcServerHandle {
   const getLogs = opts.getLogs ?? (() => []);
+  const startedAt = opts.startedAt ?? Date.now();
   const dir = expandHome(opts.stateDir);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const sockPath = socketPath(opts.stateDir);
@@ -316,6 +381,7 @@ export function startRpcServer(opts: {
       req.method,
       req.params,
       getLogs,
+      startedAt,
     ).then(
       (result) => respond(socket, req.id, { result }),
       (e: unknown) =>

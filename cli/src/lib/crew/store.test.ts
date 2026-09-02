@@ -360,3 +360,97 @@ describe("recentTasks — SQL row shape carries what deriveTaskDisplayStatus nee
     s.close();
   });
 });
+
+describe("statsByAgent", () => {
+  test("groups tasks by agent, summing turns and cost", () => {
+    const s = freshStore();
+    s.createTask("t1", "D1", "1.1", "1.1", "sess-1", "ralph");
+    s.bumpTurn("t1", 0.01);
+    s.createTask("t2", "D1", "2.2", "2.2", "sess-2", "ralph");
+    s.createTask("t3", "D1", "3.3", "3.3", "sess-3", "scout");
+    const byAgent = s
+      .statsByAgent()
+      .sort((a, b) => a.agentId.localeCompare(b.agentId));
+    expect(byAgent).toEqual([
+      { agentId: "ralph", tasks: 2, turns: 3, costUsd: 0.01 },
+      { agentId: "scout", tasks: 1, turns: 1, costUsd: 0 },
+    ]);
+    s.close();
+  });
+
+  test("excludes tasks with no agent_id (the default empty string)", () => {
+    const s = freshStore();
+    s.createTask("t1", "D1", "1.1", "1.1", "sess-1");
+    expect(s.statsByAgent()).toEqual([]);
+    s.close();
+  });
+});
+
+describe("scheduled prompts", () => {
+  test("creates, lists, and deletes a scheduled prompt", () => {
+    const s = freshStore();
+    s.createScheduledPrompt({
+      id: "sch-abc1",
+      agentId: "ralph",
+      prompt: "Summarize open PRs",
+      cron: "0 9 * * *",
+    });
+    const [row] = s.listScheduledPrompts();
+    expect(row).toMatchObject({
+      id: "sch-abc1",
+      agentId: "ralph",
+      sessionId: null,
+      prompt: "Summarize open PRs",
+      cron: "0 9 * * *",
+      enabled: true,
+      lastEvaluatedMs: null,
+      lastRunAt: null,
+      lastRunOk: null,
+    });
+    s.deleteScheduledPrompt("sch-abc1");
+    expect(s.listScheduledPrompts()).toEqual([]);
+    s.close();
+  });
+
+  test("setScheduledPromptEnabled toggles enabled without touching other fields", () => {
+    const s = freshStore();
+    s.createScheduledPrompt({
+      id: "sch-abc1",
+      agentId: "ralph",
+      prompt: "hi",
+      cron: "* * * * *",
+    });
+    s.setScheduledPromptEnabled("sch-abc1", false);
+    expect(s.listScheduledPrompts()[0]!.enabled).toBe(false);
+    s.close();
+  });
+
+  test("recordScheduledPromptRun records the lazily-created session id separately from the run outcome", () => {
+    const s = freshStore();
+    s.createScheduledPrompt({
+      id: "sch-abc1",
+      agentId: "ralph",
+      prompt: "hi",
+      cron: "* * * * *",
+    });
+    s.recordScheduledPromptRun("sch-abc1", {
+      sessionId: "ral-xxxx",
+      lastEvaluatedMs: 1000,
+    });
+    let row = s.listScheduledPrompts()[0]!;
+    expect(row.sessionId).toBe("ral-xxxx");
+    expect(row.lastRunAt).toBeNull();
+
+    s.recordScheduledPromptRun("sch-abc1", {
+      lastEvaluatedMs: 2000,
+      ranAt: 2000,
+      ok: true,
+    });
+    row = s.listScheduledPrompts()[0]!;
+    expect(row.sessionId).toBe("ral-xxxx"); // untouched by the second call
+    expect(row.lastEvaluatedMs).toBe(2000);
+    expect(row.lastRunAt).toBe(2000);
+    expect(row.lastRunOk).toBe(true);
+    s.close();
+  });
+});

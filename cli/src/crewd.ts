@@ -22,10 +22,11 @@ import {
 import { join } from "node:path";
 import { CrewConfigSchema, type CrewConfig } from "./lib/crew/types.js";
 import { tick } from "./lib/crew/tick.js";
-import { expandHome, snapshotPath } from "./lib/crew/store.js";
+import { CrewStore, expandHome, snapshotPath } from "./lib/crew/store.js";
 import { isTccProtected } from "./lib/crew/launchd.js";
 import { startRpcServer, type RpcServerHandle } from "./lib/crew/rpc-server.js";
 import { LogBuffer } from "./lib/crew/log-buffer.js";
+import { runDueScheduledPrompts } from "./lib/crew/scheduler.js";
 
 /**
  * DESIGN NOTE -- why this daemon needs no Full Disk Access grant.
@@ -340,6 +341,7 @@ export async function runResident(opts: {
   const logBuffer = new LogBuffer();
   const cycle =
     opts.runCycle ?? (() => runOneCycle((line) => logBuffer.push(line)));
+  const startedAt = Date.now();
   let lastGoodConfig: CrewConfig | undefined;
   let rpc: RpcServerHandle | undefined;
   const getConfig = (): CrewConfig => {
@@ -362,8 +364,25 @@ export async function runResident(opts: {
             stateDir,
             getConfig,
             getLogs: (limit) => logBuffer.recent(limit),
+            startedAt,
           });
           console.log(`${stamp()} crewd: rpc listening at ${rpc.sockPath}`);
+        }
+      }
+      // Desktop-app-created scheduled prompts (see scheduler.ts) are evaluated every loop
+      // iteration regardless of whether this iteration's Slack cycle produced a config change --
+      // `lastGoodConfig` already holds the most recent good one from an earlier iteration in
+      // that case, so schedules keep running even on a tick where Slack itself had nothing new.
+      if (lastGoodConfig) {
+        const store = new CrewStore(expandHome(lastGoodConfig.state_dir));
+        try {
+          await runDueScheduledPrompts(store, lastGoodConfig, Date.now());
+        } catch (e) {
+          console.error(
+            `${stamp()} crewd: scheduled-prompt evaluation failed: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        } finally {
+          store.close();
         }
       }
       const isLast =

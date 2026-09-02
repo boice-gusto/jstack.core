@@ -279,9 +279,15 @@ describe("rpc-server", () => {
       id: string;
       name: string;
       enabled: boolean;
+      proactiveChecks: unknown[];
     }>;
     expect(agents).toEqual([
-      expect.objectContaining({ id: "ralph", name: "Ralph", enabled: true }),
+      expect.objectContaining({
+        id: "ralph",
+        name: "Ralph",
+        enabled: true,
+        proactiveChecks: [],
+      }),
     ]);
   });
 
@@ -541,5 +547,90 @@ describe("rpc-server", () => {
     // The server itself must still be alive for a subsequent, valid call.
     const status = await rpcCall(handle!.sockPath, "status");
     expect(status).toBeTruthy();
+  });
+
+  test("status reports resident: true, a growing uptimeMs, and a per-agent breakdown", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const startedAt = Date.now() - 5_000;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg, startedAt });
+
+    const status = (await rpcCall(handle.sockPath, "status")) as {
+      resident: boolean;
+      uptimeMs: number;
+      perAgent: Array<{ agentId: string }>;
+    };
+    expect(status.resident).toBe(true);
+    expect(status.uptimeMs).toBeGreaterThanOrEqual(5_000);
+    expect(status.perAgent).toEqual([]);
+  });
+
+  describe("schedule/* (desktop-app-created scheduled prompts)", () => {
+    test("create -> list -> update -> delete", async () => {
+      const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+      const cfg = baseConfig();
+      handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+      const created = (await rpcCall(handle.sockPath, "schedule/create", {
+        agentId: "ralph",
+        prompt: "Summarize open PRs",
+        cron: "0 9 * * *",
+      })) as { id: string };
+      expect(created.id).toMatch(/^sch-/);
+
+      const listed = (await rpcCall(handle.sockPath, "schedule/list")) as {
+        schedules: Array<{ id: string; prompt: string; enabled: boolean }>;
+      };
+      expect(listed.schedules).toEqual([
+        expect.objectContaining({
+          id: created.id,
+          prompt: "Summarize open PRs",
+          enabled: true,
+        }),
+      ]);
+
+      await rpcCall(handle.sockPath, "schedule/update", {
+        id: created.id,
+        enabled: false,
+      });
+      const afterUpdate = (await rpcCall(handle.sockPath, "schedule/list")) as {
+        schedules: Array<{ id: string; enabled: boolean }>;
+      };
+      expect(afterUpdate.schedules[0]!.enabled).toBe(false);
+
+      await rpcCall(handle.sockPath, "schedule/delete", { id: created.id });
+      const afterDelete = (await rpcCall(handle.sockPath, "schedule/list")) as {
+        schedules: unknown[];
+      };
+      expect(afterDelete.schedules).toEqual([]);
+    });
+
+    test("rejects an unknown agent", async () => {
+      const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+      const cfg = baseConfig();
+      handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+      await expect(
+        rpcCall(handle.sockPath, "schedule/create", {
+          agentId: "nobody",
+          prompt: "hi",
+          cron: "* * * * *",
+        }),
+      ).rejects.toThrow(/not found/);
+    });
+
+    test("rejects an unparseable cron expression", async () => {
+      const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+      const cfg = baseConfig();
+      handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+      await expect(
+        rpcCall(handle.sockPath, "schedule/create", {
+          agentId: "ralph",
+          prompt: "hi",
+          cron: "not a cron",
+        }),
+      ).rejects.toThrow(/unparseable/);
+    });
   });
 });

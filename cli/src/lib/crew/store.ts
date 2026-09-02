@@ -95,6 +95,15 @@ export class CrewStore {
         channel_id TEXT, msg_ts TEXT, kind TEXT NOT NULL, rule_id TEXT, detail TEXT
       );
       CREATE INDEX IF NOT EXISTS event_msg ON event(channel_id, msg_ts);
+      CREATE TABLE IF NOT EXISTS scheduled_prompt (
+        id TEXT PRIMARY KEY, agent_id TEXT NOT NULL,
+        session_id TEXT,          -- lazily created (createManualSession) on first due run
+        prompt TEXT NOT NULL, cron TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL,
+        last_evaluated_ms INTEGER,  -- isCheckDue's lastEvaluatedThroughMs, so a restart doesn't
+                                    -- replay every missed slot as a backlog
+        last_run_at INTEGER, last_run_ok INTEGER
+      );
     `);
     const row = this.db
       .query<{ value: string }, []>(
@@ -473,6 +482,140 @@ export class CrewStore {
       spentToday: this.spentToday(),
       watermarks: one("SELECT COUNT(*) n FROM watermark"),
     };
+  }
+
+  /** Per-agent totals across every task this agent has ever had (Slack-triggered and manual
+   * sessions alike, since both live in the same `task` table) -- what the desktop app's
+   * Schedule/Status tab shows as "how much has each agent actually done." */
+  statsByAgent(): Array<{
+    agentId: string;
+    tasks: number;
+    turns: number;
+    costUsd: number;
+  }> {
+    const rows = this.db
+      .query<
+        { agent_id: string; tasks: number; turns: number; cost_usd: number },
+        []
+      >(
+        "SELECT agent_id, COUNT(*) tasks, SUM(turns) turns, SUM(cost_usd) cost_usd FROM task " +
+          "WHERE agent_id != '' GROUP BY agent_id",
+      )
+      .all();
+    return rows.map((r) => ({
+      agentId: r.agent_id,
+      tasks: r.tasks,
+      turns: r.turns,
+      costUsd: r.cost_usd,
+    }));
+  }
+
+  // -- scheduled prompts -------------------------------------------------------
+  //
+  // A desktop-app-only concept: unlike Slack proactive checks (Slack-bound, CLI-managed, one
+  // fixed prompt+channel forever), a scheduled prompt is a manual session's message re-run on a
+  // cron interval, created and managed entirely from the desktop app. scheduler.ts is what
+  // actually evaluates/runs these; this class only stores them.
+
+  createScheduledPrompt(row: {
+    id: string;
+    agentId: string;
+    prompt: string;
+    cron: string;
+  }): void {
+    this.db
+      .query(
+        "INSERT INTO scheduled_prompt (id, agent_id, prompt, cron, enabled, created_at) " +
+          "VALUES (?,?,?,?,1,?)",
+      )
+      .run(row.id, row.agentId, row.prompt, row.cron, Date.now());
+  }
+
+  listScheduledPrompts(): Array<{
+    id: string;
+    agentId: string;
+    sessionId: string | null;
+    prompt: string;
+    cron: string;
+    enabled: boolean;
+    createdAt: number;
+    lastEvaluatedMs: number | null;
+    lastRunAt: number | null;
+    lastRunOk: boolean | null;
+  }> {
+    const rows = this.db
+      .query<
+        {
+          id: string;
+          agent_id: string;
+          session_id: string | null;
+          prompt: string;
+          cron: string;
+          enabled: number;
+          created_at: number;
+          last_evaluated_ms: number | null;
+          last_run_at: number | null;
+          last_run_ok: number | null;
+        },
+        []
+      >(
+        "SELECT id, agent_id, session_id, prompt, cron, enabled, created_at, last_evaluated_ms, last_run_at, last_run_ok " +
+          "FROM scheduled_prompt ORDER BY created_at DESC",
+      )
+      .all();
+    return rows.map((r) => ({
+      id: r.id,
+      agentId: r.agent_id,
+      sessionId: r.session_id,
+      prompt: r.prompt,
+      cron: r.cron,
+      enabled: r.enabled === 1,
+      createdAt: r.created_at,
+      lastEvaluatedMs: r.last_evaluated_ms,
+      lastRunAt: r.last_run_at,
+      lastRunOk: r.last_run_ok === null ? null : r.last_run_ok === 1,
+    }));
+  }
+
+  setScheduledPromptEnabled(id: string, enabled: boolean): void {
+    this.db
+      .query("UPDATE scheduled_prompt SET enabled=? WHERE id=?")
+      .run(enabled ? 1 : 0, id);
+  }
+
+  deleteScheduledPrompt(id: string): void {
+    this.db.query("DELETE FROM scheduled_prompt WHERE id=?").run(id);
+  }
+
+  /** scheduler.ts calls this after every evaluation (due or not) so `isCheckDue` never re-scans
+   * a slot twice, and after every actual run to record when/whether it succeeded. */
+  recordScheduledPromptRun(
+    id: string,
+    fields: {
+      sessionId?: string;
+      lastEvaluatedMs: number;
+      ranAt?: number;
+      ok?: boolean;
+    },
+  ): void {
+    if (fields.sessionId !== undefined) {
+      this.db
+        .query(
+          "UPDATE scheduled_prompt SET session_id=?, last_evaluated_ms=? WHERE id=?",
+        )
+        .run(fields.sessionId, fields.lastEvaluatedMs, id);
+    } else {
+      this.db
+        .query("UPDATE scheduled_prompt SET last_evaluated_ms=? WHERE id=?")
+        .run(fields.lastEvaluatedMs, id);
+    }
+    if (fields.ranAt !== undefined) {
+      this.db
+        .query(
+          "UPDATE scheduled_prompt SET last_run_at=?, last_run_ok=? WHERE id=?",
+        )
+        .run(fields.ranAt, fields.ok ? 1 : 0, id);
+    }
   }
 
   close(): void {
