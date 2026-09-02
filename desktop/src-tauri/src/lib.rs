@@ -35,11 +35,21 @@ async fn session_history(id: String) -> Result<Value, String> {
 }
 
 #[tauri::command]
-async fn session_prompt(id: String, message: String) -> Result<Value, String> {
+async fn session_prompt(
+    id: String,
+    message: String,
+    mode: Option<String>,
+    thinking_level: Option<String>,
+) -> Result<Value, String> {
     agent_client::call(
         &resolve_socket()?,
         "session/prompt",
-        json!({ "id": id, "message": message }),
+        json!({
+            "id": id,
+            "message": message,
+            "mode": mode,
+            "thinkingLevel": thinking_level,
+        }),
     )
     .await
 }

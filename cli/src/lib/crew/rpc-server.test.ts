@@ -3,6 +3,7 @@ import {
   chmodSync,
   existsSync,
   mkdtempSync,
+  readFileSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -47,6 +48,29 @@ function installFakeClaude(): { restorePath: string } {
   const restorePath = process.env.PATH ?? "";
   process.env.PATH = `${dir}:${restorePath}`;
   return { restorePath };
+}
+
+/** Same technique as installFakeClaude, but also dumps argv to a file so a test can inspect
+ * what session/prompt's mode/thinkingLevel params actually produced (see session.test.ts's
+ * installArgvCapturingFakeClaude, the original of this pattern). */
+function installArgvCapturingFakeClaude(): {
+  restorePath: string;
+  argvFile: string;
+} {
+  const dir = mkdtempSync(join(tmpdir(), "fake-claude-bin-rpc-argv-"));
+  const argvFile = join(dir, "argv.txt");
+  writeFileSync(
+    join(dir, "claude"),
+    [
+      "#!/bin/sh",
+      `printf '%s\\n' "$@" > ${argvFile}`,
+      'echo \'{"type":"result","is_error":false,"result":"rpc reply","total_cost_usd":0.002}\'',
+    ].join("\n"),
+  );
+  chmodSync(join(dir, "claude"), 0o755);
+  const restorePath = process.env.PATH ?? "";
+  process.env.PATH = `${dir}:${restorePath}`;
+  return { restorePath, argvFile };
 }
 
 /** Minimal NDJSON request/response client over the raw Unix socket. */
@@ -194,6 +218,56 @@ describe("rpc-server", () => {
       id: created.id,
     })) as { ok: boolean };
     expect(cancelled.ok).toBe(true);
+  });
+
+  test("session/prompt forwards mode and thinkingLevel through to the worker invocation", async () => {
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const created = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+
+    await rpcCall(handle.sockPath, "session/prompt", {
+      id: created.id,
+      message: "hello",
+      mode: "ask",
+      thinkingLevel: "think-harder",
+    });
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("default");
+    expect(sentArgv).not.toContain("dontAsk");
+    expect(sentArgv).toContain(
+      "Think harder about this turn before answering.",
+    );
+  });
+
+  test("session/prompt ignores an invalid mode/thinkingLevel value rather than erroring", async () => {
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const created = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+
+    const result = (await rpcCall(handle.sockPath, "session/prompt", {
+      id: created.id,
+      message: "hello",
+      mode: "sudo",
+      thinkingLevel: "maximum-overdrive",
+    })) as { ok: boolean };
+    expect(result.ok).toBe(true);
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("dontAsk");
+    expect(sentArgv).not.toContain("Think");
   });
 
   test("agent/list returns the configured agents", async () => {

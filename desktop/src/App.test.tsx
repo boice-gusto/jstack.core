@@ -86,7 +86,12 @@ describe("App", () => {
           return { id: "ral-abcd", sessionId: "11111111-1111-1111-1111-111111111111" };
         }
         if (cmd === "session_prompt") {
-          expect(payload).toEqual({ id: "ral-abcd", message: "hello there" });
+          expect(payload).toEqual({
+            id: "ral-abcd",
+            message: "hello there",
+            mode: "full-access",
+            thinkingLevel: "none",
+          });
           return { ok: true, text: "hi! how can I help?", costUsd: 0.0042, toolEvents: [] };
         }
         throw new Error(`unexpected command: ${cmd}`);
@@ -112,6 +117,13 @@ describe("App", () => {
     // covered here instead.
     expect(screen.getByText(/^\ds$/)).toBeTruthy();
   });
+
+  // No DOM-interaction test covers actually picking a thinking level/mode from the composer's
+  // two new DropdownMenus -- Base UI's Menu hangs indefinitely under fireEvent.click in a full
+  // App render (the same pre-existing jsdom limitation documented on the agent-picker and "..."
+  // menu elsewhere in this file; confirmed here too via a 5s timeout with the menu content never
+  // appearing). promptControls.test.ts covers the persistence logic directly, and the first test
+  // above already proves the default ("full-access"/"none") values reach session_prompt.
 
   test("sending a message in one session and switching away before the reply arrives doesn't show 'Thinking...' or block the composer in the other session, and doesn't leak the reply into it", async () => {
     let resolvePromptA: (result: unknown) => void;

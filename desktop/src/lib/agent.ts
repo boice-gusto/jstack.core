@@ -81,8 +81,26 @@ export function getSessionHistory(id: string): Promise<TranscriptEntry[]> {
   return invoke("session_history", { id });
 }
 
-export function promptSession(id: string, message: string): Promise<PromptResult> {
-  return invoke("session_prompt", { id, message });
+/** "ask" vs "full-access" mirrors claude's real permission modes (see tick.ts's
+ * SessionMode for what each actually does in this daemon's non-interactive invocation).
+ * "full-access" is the default -- the mode every session ran in before this existed. */
+export type SessionMode = "ask" | "full-access";
+
+/** Raises how much extended-thinking budget the model gives itself for one turn -- see
+ * tick.ts's ThinkingLevel for the underlying magic-word mechanism. "none" is the default. */
+export type ThinkingLevel = "none" | "think" | "think-hard" | "think-harder" | "ultrathink";
+
+export function promptSession(
+  id: string,
+  message: string,
+  opts: { mode?: SessionMode; thinkingLevel?: ThinkingLevel } = {},
+): Promise<PromptResult> {
+  return invoke("session_prompt", {
+    id,
+    message,
+    mode: opts.mode,
+    thinkingLevel: opts.thinkingLevel,
+  });
 }
 
 export interface SelfRetroResult {

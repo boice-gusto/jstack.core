@@ -296,6 +296,74 @@ describe("agent.mcp controls MCP passthrough", () => {
   });
 });
 
+describe("promptManualSession opts (mode, thinkingLevel)", () => {
+  let restorePath: string | undefined;
+
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("with no opts, permission mode is dontAsk and no thinking directive is appended -- unchanged historical behavior", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("dontAsk");
+    expect(sentArgv).not.toContain("Think");
+    store.close();
+  });
+
+  test('mode: "ask" switches --permission-mode to default instead of dontAsk', async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi", { mode: "ask" });
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("default");
+    expect(sentArgv).not.toContain("dontAsk");
+    store.close();
+  });
+
+  test("thinkingLevel appends the matching magic-word directive to the system prompt", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi", {
+      thinkingLevel: "ultrathink",
+    });
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("Ultrathink about this turn before answering.");
+    store.close();
+  });
+
+  test('thinkingLevel: "none" is a no-op, same as omitting it', async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await promptManualSession(store, cfg, id, "hi", { thinkingLevel: "none" });
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).not.toContain("Think");
+    store.close();
+  });
+});
+
 describe("listManualSessions", () => {
   test("lists sessions newest first with derived state and turn count", () => {
     const store = freshStore();

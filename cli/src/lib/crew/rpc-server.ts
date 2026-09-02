@@ -17,8 +17,18 @@ import {
 import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
+import type { SessionMode, ThinkingLevel } from "./tick.js";
 import { collectSkills } from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
+
+const SESSION_MODES: readonly SessionMode[] = ["ask", "full-access"];
+const THINKING_LEVELS: readonly ThinkingLevel[] = [
+  "none",
+  "think",
+  "think-hard",
+  "think-harder",
+  "ultrathink",
+];
 
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
@@ -109,7 +119,18 @@ async function dispatch(
             "session/prompt requires { id: string, message: string }",
           );
         }
-        return await promptManualSession(store, cfg, p.id, p.message);
+        const mode = SESSION_MODES.includes(p.mode as SessionMode)
+          ? (p.mode as SessionMode)
+          : undefined;
+        const thinkingLevel = THINKING_LEVELS.includes(
+          p.thinkingLevel as ThinkingLevel,
+        )
+          ? (p.thinkingLevel as ThinkingLevel)
+          : undefined;
+        return await promptManualSession(store, cfg, p.id, p.message, {
+          mode,
+          thinkingLevel,
+        });
       }
       case "session/cancel": {
         if (typeof p.id !== "string") {

@@ -1,4 +1,9 @@
-import { taskId, runWorkerStreaming } from "./tick.js";
+import {
+  taskId,
+  runWorkerStreaming,
+  type SessionMode,
+  type ThinkingLevel,
+} from "./tick.js";
 import { CrewStore, deriveTaskDisplayStatus, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
 import type { ToolCallEvent } from "./slack.js";
@@ -113,12 +118,17 @@ export type ManualPromptResult = {
  * later (or switched back to) had nothing to show but "2 turns, $0.04," not what was actually
  * said. Uses `runWorkerStreaming` (not `runWorker`) so the transcript -- and the caller -- also
  * get the tool calls the turn made, not just the final text.
+ *
+ * `opts` (mode/thinkingLevel) is entirely optional and per-prompt -- the desktop composer lets a
+ * user pick these per message, so nothing about the session itself remembers a choice from one
+ * turn to the next.
  */
 export async function promptManualSession(
   store: CrewStore,
   cfg: CrewConfig,
   id: string,
   message: string,
+  opts: { mode?: SessionMode; thinkingLevel?: ThinkingLevel } = {},
 ): Promise<ManualPromptResult> {
   const task = store.findTaskById(id);
   if (!task) throw new UnknownSessionError(`no such session: ${id}`);
@@ -139,10 +149,14 @@ export async function promptManualSession(
   const hasRunTurn = task.turns > 1 || task.endedAt !== null;
   const nonce = Math.random().toString(36).slice(2, 10);
   const messageWithMemory = withRecalledMemory(cfg, task.agentId, message);
-  const w = await runWorkerStreaming(cfg, agent, messageWithMemory, nonce, {
-    id: task.sessionId,
-    resume: hasRunTurn,
-  });
+  const w = await runWorkerStreaming(
+    cfg,
+    agent,
+    messageWithMemory,
+    nonce,
+    { id: task.sessionId, resume: hasRunTurn },
+    opts,
+  );
 
   store.settle(cfg.budget.per_task_usd, w.cost);
   // Defensive, mirroring tick.ts's Slack path: claude is asked to use `task.sessionId` via

@@ -11,10 +11,20 @@ import {
   updateTrayMenu,
   type AgentSummary,
   type PromptResult,
+  type SessionMode,
   type SessionSummary,
+  type ThinkingLevel,
   type ToolCallEvent,
   type TrayStatus,
 } from "./lib/agent";
+import {
+  loadSessionMode,
+  loadThinkingLevel,
+  SESSION_MODE_LABEL,
+  storeSessionMode,
+  storeThinkingLevel,
+  THINKING_LEVEL_LABEL,
+} from "./lib/promptControls";
 import { Onboarding } from "./components/Onboarding";
 import { CreateAgentDialog } from "./components/CreateAgentDialog";
 import { CommandPalette } from "./components/CommandPalette";
@@ -90,6 +100,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/tooltip";
 import { Skeleton } from "./components/ui/skeleton";
 import {
+  BrainIcon,
   ChevronRightIcon,
   MessageCircleIcon,
   PanelLeftCloseIcon,
@@ -99,6 +110,8 @@ import {
   PlusIcon,
   SearchIcon,
   SettingsIcon,
+  ShieldCheckIcon,
+  ShieldIcon,
   Volume2Icon,
   VolumeXIcon,
 } from "lucide-react";
@@ -283,6 +296,16 @@ function App() {
   function setNavigationLayout(next: NavigationLayout): void {
     setNavigationLayoutState(next);
     storeNavigationLayout(next);
+  }
+  const [sessionMode, setSessionModeState] = useState<SessionMode>(loadSessionMode);
+  function setSessionMode(next: SessionMode): void {
+    setSessionModeState(next);
+    storeSessionMode(next);
+  }
+  const [thinkingLevel, setThinkingLevelState] = useState<ThinkingLevel>(loadThinkingLevel);
+  function setThinkingLevel(next: ThinkingLevel): void {
+    setThinkingLevelState(next);
+    storeThinkingLevel(next);
   }
   const [sidebarWidth, setSidebarWidth] = useState(loadStoredSidebarWidth);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
@@ -742,7 +765,10 @@ function App() {
     markSessionBusy(targetSessionId);
     const startedAt = Date.now();
     try {
-      const result: PromptResult = await promptSession(targetSessionId, text);
+      const result: PromptResult = await promptSession(targetSessionId, text, {
+        mode: sessionMode,
+        thinkingLevel,
+      });
       if (!result.ok) {
         console.error(`[jstack] promptSession(${targetSessionId}) returned ok:false:`, result.text);
       }
@@ -1296,6 +1322,64 @@ function App() {
                 title="Dictate"
                 disabled={sessionId === null || currentSessionBusy}
               />
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="icon"
+                      size="icon"
+                      title={`Thinking level: ${THINKING_LEVEL_LABEL[thinkingLevel]}`}
+                      aria-label="Thinking level"
+                      className={thinkingLevel !== "none" ? "text-primary" : undefined}
+                    >
+                      <BrainIcon className="size-4" />
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="start">
+                  {(Object.keys(THINKING_LEVEL_LABEL) as ThinkingLevel[]).map((level) => (
+                    <DropdownMenuItem
+                      key={level}
+                      onClick={() => setThinkingLevel(level)}
+                      className={level === thinkingLevel ? "font-semibold" : undefined}
+                    >
+                      {THINKING_LEVEL_LABEL[level]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="icon"
+                      size="icon"
+                      title={`Mode: ${SESSION_MODE_LABEL[sessionMode]}`}
+                      aria-label="Session mode"
+                      className={sessionMode === "ask" ? "text-primary" : undefined}
+                    >
+                      {sessionMode === "ask" ? (
+                        <ShieldIcon className="size-4" />
+                      ) : (
+                        <ShieldCheckIcon className="size-4" />
+                      )}
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="start">
+                  {(Object.keys(SESSION_MODE_LABEL) as SessionMode[]).map((mode) => (
+                    <DropdownMenuItem
+                      key={mode}
+                      onClick={() => setSessionMode(mode)}
+                      className={mode === sessionMode ? "font-semibold" : undefined}
+                    >
+                      {SESSION_MODE_LABEL[mode]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </PromptInputTools>
             <PromptInputSubmit
               aria-label="Send"
