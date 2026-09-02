@@ -280,6 +280,64 @@ describe("SettingsDialog", () => {
     await screen.findByText("github: connected");
   });
 
+  test("the skills list is grouped by category, with uncategorized skills grouped last", async () => {
+    mockIPC(
+      withDefaults((cmd) => {
+        if (cmd === "skills_index") {
+          return {
+            skills: [
+              {
+                path: "/a",
+                rel: "skills/a/SKILL.md",
+                name: "jstack-jira-create",
+                description: "d",
+                category: "engineering",
+                origin: "core",
+              },
+              {
+                path: "/b",
+                rel: "skills/b/SKILL.md",
+                name: "jstack-sprint-report",
+                description: "d",
+                category: "pm",
+                origin: "core",
+              },
+              {
+                path: "/c",
+                rel: "skills/c/SKILL.md",
+                name: "jstack-no-category",
+                description: "d",
+                category: "",
+                origin: "core",
+              },
+            ],
+          };
+        }
+        if (cmd === "mcp_list") {
+          return { ok: true, claudeFound: true, servers: [], raw: "" };
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        initialTab="advanced"
+      />,
+    );
+
+    await screen.findByText("jstack-jira-create");
+    expect(screen.getByText("jstack-no-category")).toBeTruthy();
+
+    // "Uncategorized" is the fallback bucket, not a real grouping choice -- it always sorts last.
+    const headers = screen.getAllByTestId("skill-category").map((el) => el.textContent);
+    expect(headers).toEqual(["engineering", "pm", "Uncategorized"]);
+  });
+
   test("the Schedule tab shows daemon resident/uptime status and per-agent activity", async () => {
     // Deliberately not withDefaults here -- its blanket daemon_status stub would shadow the
     // uptime/perAgent values this test needs to assert on.

@@ -248,6 +248,9 @@ export interface SkillSummary {
   rel: string;
   name: string;
   description: string;
+  /** "" when the skill has no category frontmatter field, not undefined -- see
+   * collectSkills/SkillIndexEntry's own note on why. */
+  category: string;
   origin: "core" | "overlay";
 }
 

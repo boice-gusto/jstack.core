@@ -659,13 +659,39 @@ export function SettingsDialog({
                     security boundary), so this is "what's on disk," not "what an agent can use."
                   </p>
                   {skillsError && <p className="mb-1 text-xs text-destructive">{skillsError}</p>}
-                  <ul className="max-h-40 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs">
-                    {(skills ?? []).map((s) => (
-                      <li key={s.rel} title={s.description} className="truncate py-0.5">
-                        {s.name}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="max-h-40 overflow-y-auto rounded-md bg-muted p-2 font-mono text-xs">
+                    {(() => {
+                      // Grouped by category (skills index/skills.ts's own frontmatter field) so
+                      // "which skills exist for engineers vs. PMs vs. QA" is browsable here
+                      // instead of one flat alphabetical list -- "Uncategorized" sorts last since
+                      // it's the fallback bucket, not a real grouping choice.
+                      const groups = new Map<string, SkillSummary[]>();
+                      for (const s of skills ?? []) {
+                        const key = s.category || "Uncategorized";
+                        (groups.get(key) ?? groups.set(key, []).get(key)!).push(s);
+                      }
+                      const sortedKeys = [...groups.keys()].sort((a, b) =>
+                        a === "Uncategorized" ? 1 : b === "Uncategorized" ? -1 : a.localeCompare(b),
+                      );
+                      return sortedKeys.map((category) => (
+                        <div key={category} className="mb-2 last:mb-0">
+                          <p
+                            data-testid="skill-category"
+                            className="text-[11px] font-semibold text-muted-foreground"
+                          >
+                            {category}
+                          </p>
+                          <ul>
+                            {groups.get(category)!.map((s) => (
+                              <li key={s.rel} title={s.description} className="truncate py-0.5">
+                                {s.name}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ));
+                    })()}
+                  </div>
                 </div>
                 <div>
                   <h4 className="mb-1 text-xs font-semibold text-muted-foreground">
