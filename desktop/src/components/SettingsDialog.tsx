@@ -3,6 +3,7 @@ import {
   createSchedule,
   daemonStatus,
   deleteSchedule,
+  listIntegrations,
   listSchedules,
   recentLogs,
   runDiagnostics,
@@ -12,10 +13,12 @@ import {
   type AgentSummary,
   type DaemonStatus,
   type DiagnosticsReport,
+  type Integration,
   type ScheduledPrompt,
   type SkillSummary,
 } from "../lib/agent";
 import type { NavigationLayout } from "../lib/navigationLayout";
+import { IntegrationCard } from "./IntegrationCard";
 import { AVAILABLE_TOOLS, MODELS } from "./Onboarding";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 import { Button } from "./ui/button";
@@ -104,6 +107,7 @@ export type SettingsTab =
   | "appearance"
   | "advanced"
   | "schedule"
+  | "integrations"
   | "diagnostics"
   | "debug"
   | "info";
@@ -172,6 +176,9 @@ export function SettingsDialog({
   const [newScheduleAgentId, setNewScheduleAgentId] = useState("");
   const [newSchedulePrompt, setNewSchedulePrompt] = useState("");
   const [newScheduleCron, setNewScheduleCron] = useState("");
+  const [newScheduleNotifyChannel, setNewScheduleNotifyChannel] = useState("");
+  const [integrations, setIntegrations] = useState<Integration[] | null>(null);
+  const [integrationsError, setIntegrationsError] = useState<string | null>(null);
   const activeAgent = agents?.find((a) => a.id === agentId);
 
   async function handleModelChange(model: string): Promise<void> {
@@ -274,9 +281,15 @@ export function SettingsDialog({
     }
     setScheduleError(null);
     try {
-      await createSchedule(newScheduleAgentId, newSchedulePrompt.trim(), newScheduleCron.trim());
+      await createSchedule(
+        newScheduleAgentId,
+        newSchedulePrompt.trim(),
+        newScheduleCron.trim(),
+        newScheduleNotifyChannel.trim() || undefined,
+      );
       setNewSchedulePrompt("");
       setNewScheduleCron("");
+      setNewScheduleNotifyChannel("");
       await refreshSchedules();
     } catch (e) {
       console.error("[jstack] createSchedule failed:", e);
@@ -355,6 +368,21 @@ export function SettingsDialog({
     }
   }, [open, activeTab]);
 
+  // Same "fetch once when the tab becomes visible" reasoning as Diagnostics -- checking MCP
+  // availability shells out to `claude mcp list`, not worth doing on every dialog open.
+  useEffect(() => {
+    if (!(open && activeTab === "integrations" && integrations === null)) return;
+    listIntegrations()
+      .then((r) => {
+        setIntegrations(r.integrations);
+        setIntegrationsError(null);
+      })
+      .catch((e) => {
+        console.error("[jstack] listIntegrations failed:", e);
+        setIntegrationsError(e instanceof Error ? e.message : String(e));
+      });
+  }, [open, activeTab]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Fixed size regardless of which tab is active -- Schedule's content is much taller than
@@ -385,6 +413,9 @@ export function SettingsDialog({
             </TabsTrigger>
             <TabsTrigger value="schedule" className="flex-1">
               Schedule
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="flex-1">
+              Integrations
             </TabsTrigger>
             <TabsTrigger value="diagnostics" className="flex-1">
               Diagnostics
@@ -771,6 +802,13 @@ export function SettingsDialog({
                   onChange={(e) => setNewScheduleCron(e.target.value)}
                   className="h-8 rounded-md border bg-background px-2 font-mono text-sm"
                 />
+                <input
+                  aria-label="schedule notify channel"
+                  placeholder="Notify via Slack DM (channel id, optional)"
+                  value={newScheduleNotifyChannel}
+                  onChange={(e) => setNewScheduleNotifyChannel(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 font-mono text-sm"
+                />
                 <Button type="button" size="sm" onClick={handleCreateSchedule}>
                   Add schedule
                 </Button>
@@ -795,6 +833,11 @@ export function SettingsDialog({
                             {s.lastRunOk ? "ok" : "failed"}
                           </p>
                         )}
+                        {s.notifyChannel && (
+                          <p className="text-xs text-muted-foreground">
+                            Notifies Slack: <code>{s.notifyChannel}</code>
+                          </p>
+                        )}
                       </div>
                       <Switch
                         checked={s.enabled}
@@ -817,6 +860,31 @@ export function SettingsDialog({
                 )}
               </ul>
             </div>
+          </TabsContent>
+
+          <TabsContent
+            value="integrations"
+            className="flex h-full flex-col gap-3 overflow-y-auto pt-2"
+          >
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground">Integrations</h3>
+              <p className="text-xs text-muted-foreground">
+                External things jstack can push to or read from, beyond an agent's own tools.
+              </p>
+            </div>
+            {integrationsError && (
+              <p className="text-sm text-destructive">{integrationsError}</p>
+            )}
+            {integrations?.map((i) => (
+              <IntegrationCard key={i.id} integration={i}>
+                {i.id === "slack-dm" && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Set a channel id when creating a scheduled prompt (Schedule tab) to have its
+                    result pushed here automatically.
+                  </p>
+                )}
+              </IntegrationCard>
+            ))}
           </TabsContent>
 
           <TabsContent

@@ -140,11 +140,21 @@ async fn recent_logs(limit: Option<u32>) -> Result<Value, String> {
 }
 
 #[tauri::command]
-async fn schedule_create(agent_id: String, prompt: String, cron: String) -> Result<Value, String> {
+async fn schedule_create(
+    agent_id: String,
+    prompt: String,
+    cron: String,
+    notify_channel: Option<String>,
+) -> Result<Value, String> {
     agent_client::call(
         &resolve_socket()?,
         "schedule/create",
-        json!({ "agentId": agent_id, "prompt": prompt, "cron": cron }),
+        json!({
+            "agentId": agent_id,
+            "prompt": prompt,
+            "cron": cron,
+            "notifyChannel": notify_channel,
+        }),
     )
     .await
 }
@@ -172,6 +182,11 @@ async fn schedule_delete(id: String) -> Result<Value, String> {
 #[tauri::command]
 async fn run_diagnostics() -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "diagnostics/run", json!({})).await
+}
+
+#[tauri::command]
+async fn integrations_list() -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "integrations/list", json!({})).await
 }
 
 #[derive(Deserialize)]
@@ -413,6 +428,7 @@ pub fn run() {
             schedule_update,
             schedule_delete,
             run_diagnostics,
+            integrations_list,
             update_tray_menu,
             set_tray_status,
         ])

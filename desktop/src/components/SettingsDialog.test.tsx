@@ -513,4 +513,142 @@ describe("SettingsDialog", () => {
 
     await screen.findByText(/Not found on PATH/);
   });
+
+  test("the Integrations tab fetches and renders the slack-dm card", async () => {
+    mockIPC(
+      withDefaults((cmd) => {
+        if (cmd === "integrations_list") {
+          return {
+            integrations: [
+              {
+                id: "slack-dm",
+                name: "Slack DM",
+                description: "Agents can monitor your personal Slack DM...",
+                configured: true,
+                mcpAvailable: false,
+                mcpDetail: "no servers configured",
+              },
+            ],
+          };
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        initialTab="integrations"
+      />,
+    );
+
+    await screen.findByText("Slack DM");
+    expect(screen.getByText("Configured")).toBeTruthy();
+    expect(screen.getByText(/isn't available to claude/)).toBeTruthy();
+    expect(screen.getByText("no servers configured")).toBeTruthy();
+  });
+
+  test("creating a scheduled prompt with a notify channel sends it through and shows it in the list", async () => {
+    let createPayload: unknown;
+    let schedules: Array<{
+      id: string;
+      agentId: string;
+      sessionId: string | null;
+      prompt: string;
+      cron: string;
+      notifyChannel: string | null;
+      enabled: boolean;
+      createdAt: number;
+      lastRunAt: number | null;
+      lastRunOk: boolean | null;
+    }> = [];
+    // Deliberately not withDefaults here -- its blanket schedule_list stub (always `[]`) would
+    // shadow the mutable `schedules` this test needs schedule_create to actually affect.
+    mockIPC((cmd, payload) => {
+      if (cmd === "daemon_status") {
+        return {
+          tasks: 0,
+          outbox: 0,
+          spentToday: 0,
+          watermarks: 0,
+          enabled: true,
+          mode: "dry_run",
+          resident: true,
+          uptimeMs: 0,
+          perAgent: [],
+        };
+      }
+      if (cmd === "skills_index") return { skills: [] };
+      if (cmd === "schedule_list") return { schedules };
+      if (cmd === "schedule_create") {
+        createPayload = payload;
+        schedules = [
+          {
+            id: "sch-abc1",
+            agentId: "ralph",
+            sessionId: null,
+            prompt: "Summarize open PRs",
+            cron: "0 9 * * *",
+            notifyChannel: "D0MYDM001",
+            enabled: true,
+            createdAt: Date.now(),
+            lastRunAt: null,
+            lastRunOk: null,
+          },
+        ];
+        return { id: "sch-abc1" };
+      }
+      throw new Error(`unexpected command: ${cmd}`);
+    });
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        agents={[
+          {
+            id: "ralph",
+            name: "Ralph",
+            enabled: true,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: [],
+            mcp: "none",
+            proactiveChecks: [],
+          },
+        ]}
+        initialTab="schedule"
+      />,
+    );
+    await screen.findByText("No scheduled prompts yet.");
+
+    fireEvent.change(screen.getByLabelText("schedule agent"), {
+      target: { value: "ralph" },
+    });
+    fireEvent.change(screen.getByLabelText("schedule prompt"), {
+      target: { value: "Summarize open PRs" },
+    });
+    fireEvent.change(screen.getByLabelText("schedule cron"), {
+      target: { value: "0 9 * * *" },
+    });
+    fireEvent.change(screen.getByLabelText("schedule notify channel"), {
+      target: { value: "D0MYDM001" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add schedule" }));
+
+    await waitFor(() =>
+      expect(createPayload).toEqual({
+        agentId: "ralph",
+        prompt: "Summarize open PRs",
+        cron: "0 9 * * *",
+        notifyChannel: "D0MYDM001",
+      }),
+    );
+    await screen.findByText("D0MYDM001");
+  });
 });

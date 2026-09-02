@@ -213,6 +213,9 @@ export interface ScheduledPrompt {
   sessionId: string | null;
   prompt: string;
   cron: string;
+  /** Slack channel id the result gets pushed to after each run, via the "[emoji] - message -
+   * sent by jstack" template (see integrations.ts) -- null if this schedule doesn't notify. */
+  notifyChannel: string | null;
   enabled: boolean;
   createdAt: number;
   lastRunAt: number | null;
@@ -223,8 +226,9 @@ export function createSchedule(
   agentId: string,
   prompt: string,
   cron: string,
+  notifyChannel?: string,
 ): Promise<{ id: string }> {
-  return invoke("schedule_create", { agentId, prompt, cron });
+  return invoke("schedule_create", { agentId, prompt, cron, notifyChannel });
 }
 
 export function listSchedules(): Promise<{ schedules: ScheduledPrompt[] }> {
@@ -314,4 +318,20 @@ export interface DiagnosticsReport {
  * diagnostics.ts's own note on how this differs from `jstackc crew doctor`. */
 export function runDiagnostics(): Promise<DiagnosticsReport> {
   return invoke("run_diagnostics");
+}
+
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  configured: boolean;
+  mcpAvailable: boolean;
+  mcpDetail?: string;
+}
+
+/** See integrations.ts's own note on what "integration" means here -- today just Slack DM, but
+ * the shape (a status card: configured?, external dependency available?) is meant to generalize
+ * to whatever gets added next. */
+export function listIntegrations(): Promise<{ integrations: Integration[] }> {
+  return invoke("integrations_list");
 }
