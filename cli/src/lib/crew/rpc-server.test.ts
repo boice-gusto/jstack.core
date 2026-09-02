@@ -250,6 +250,102 @@ describe("rpc-server", () => {
     ).rejects.toThrow(/already exists/);
   });
 
+  test("agent/update changes an existing agent's model and it's visible immediately, without a daemon reload", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const project = withProjectRoot(cfg);
+    restoreProjectRoot = project.restore;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const updated = (await rpcCall(handle.sockPath, "agent/update", {
+      id: "ralph",
+      model: "claude-opus-5",
+    })) as { id: string; agent: { model: string } };
+    expect(updated.id).toBe("ralph");
+    expect(updated.agent.model).toBe("claude-opus-5");
+    // In-memory cfg (not just the on-disk config) is what session/prompt actually reads --
+    // spliced the same way agent/create is, so this needs no daemon reload to take effect.
+    expect(cfg.agents.ralph!.model).toBe("claude-opus-5");
+
+    const agents = (await rpcCall(handle.sockPath, "agent/list")) as Array<{
+      id: string;
+      model: string;
+    }>;
+    expect(agents.find((a) => a.id === "ralph")?.model).toBe("claude-opus-5");
+  });
+
+  test("agent/update also changes tools and mcp, independent of model", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const project = withProjectRoot(cfg);
+    restoreProjectRoot = project.restore;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const updated = (await rpcCall(handle.sockPath, "agent/update", {
+      id: "ralph",
+      tools: ["Read", "Write"],
+      mcp: "inherit",
+    })) as { id: string; agent: { tools: string[]; mcp: string } };
+    expect(updated.agent.tools).toEqual(["Read", "Write"]);
+    expect(updated.agent.mcp).toBe("inherit");
+    expect(cfg.agents.ralph!.tools).toEqual(["Read", "Write"]);
+    expect(cfg.agents.ralph!.mcp).toBe("inherit");
+  });
+
+  test("agent/update also toggles enabled, independent of model/tools/mcp", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const project = withProjectRoot(cfg);
+    restoreProjectRoot = project.restore;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    expect(cfg.agents.ralph!.enabled).toBe(true);
+    const updated = (await rpcCall(handle.sockPath, "agent/update", {
+      id: "ralph",
+      enabled: false,
+    })) as { id: string; agent: { enabled: boolean } };
+    expect(updated.agent.enabled).toBe(false);
+    expect(cfg.agents.ralph!.enabled).toBe(false);
+
+    const agents = (await rpcCall(handle.sockPath, "agent/list")) as Array<{
+      id: string;
+      enabled: boolean;
+    }>;
+    expect(agents.find((a) => a.id === "ralph")?.enabled).toBe(false);
+  });
+
+  test("agent/update rejects an unknown agent id", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    const project = withProjectRoot(cfg);
+    restoreProjectRoot = project.restore;
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    await expect(
+      rpcCall(handle.sockPath, "agent/update", {
+        id: "nope",
+        model: "claude-opus-5",
+      }),
+    ).rejects.toThrow(/not found/);
+  });
+
+  test("skills/index returns the real plugin's skill catalog shape", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const result = (await rpcCall(handle.sockPath, "skills/index", {})) as {
+      skills: Array<{ name: string; description: string; rel: string; origin: string }>;
+    };
+    expect(Array.isArray(result.skills)).toBe(true);
+    expect(result.skills.length).toBeGreaterThan(0);
+    for (const s of result.skills) {
+      expect(typeof s.name).toBe("string");
+      expect(typeof s.rel).toBe("string");
+      expect(["core", "overlay"]).toContain(s.origin);
+    }
+  });
+
   test("session/history returns the transcript from a prior session/prompt", async () => {
     restorePath = installFakeClaude().restorePath;
     const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));

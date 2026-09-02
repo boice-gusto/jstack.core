@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "desktop",
+  "productName": "jstack",
   "version": "0.1.0",
   "identifier": "com.jstack.desktop",
   "build": {
@@ -12,9 +12,10 @@
   "app": {
     "windows": [
       {
-        "title": "desktop",
+        "title": "",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "titleBarStyle": "Overlay"
       }
     ],
     "security": {

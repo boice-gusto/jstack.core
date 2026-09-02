@@ -146,9 +146,70 @@ export function createAgent(
   return invoke("agent_create", { ...input });
 }
 
+/** Counterpart to `createAgent` -- model, tool access, and MCP inheritance are all editable from
+ * the desktop app's Settings dialog post-creation; same immediate-splice-into-running-daemon
+ * behavior. Persona/sigils still require `jstackc crew agents edit`. */
+export function updateAgent(
+  id: string,
+  patch: { model?: string; tools?: string[]; mcp?: "none" | "inherit"; enabled?: boolean },
+): Promise<{ id: string; agent: Omit<AgentSummary, "id"> }> {
+  return invoke("agent_update", { id, ...patch });
+}
+
 /** Poll-based, not push/streamed -- see rpc-server.ts's own note on why (one request/response
  * per socket connection, no server-initiated messages). A UI wanting "live" logs polls this on
  * an interval rather than subscribing. */
 export function recentLogs(limit?: number): Promise<{ lines: string[] }> {
   return invoke("recent_logs", { limit });
+}
+
+export interface SkillSummary {
+  path: string;
+  rel: string;
+  name: string;
+  description: string;
+  origin: "core" | "overlay";
+}
+
+/** Read-only view into jstack.core's skill catalog (`jstackc skills index`, served over the same
+ * RPC socket rather than shelling out from Rust -- see rpc-server.ts's "skills/index" case). This
+ * does NOT mean skills are runnable by crew agents: they remain fully disabled for every agent
+ * turn (`--disable-slash-commands`, a deliberate security boundary) -- this is purely "here's
+ * what's installed," the same way `jstackc skills index` is for a human at the CLI. */
+export function skillsIndex(): Promise<{ skills: SkillSummary[] }> {
+  return invoke("skills_index");
+}
+
+/** "green-dim" is only ever set by the pulsing interval in App.tsx (see useTrayPulse) -- the
+ * alternate frame it flips to and from "green" every ~600ms while at least one session is
+ * actively thinking, faking an animation since macOS tray icons can't actually animate. */
+export type TrayStatus = "none" | "green" | "green-dim" | "yellow" | "red";
+
+/** Swaps the menu-bar icon: every status, including "none", is a full-color icon composited
+ * onto a status-colored circle (see src-tauri/icons/tray-icon-<color>.png and lib.rs's
+ * set_tray_status) -- never the flat monochrome template. Cheap to call often -- it's just an
+ * icon swap, no menu rebuild -- so callers don't need to debounce it beyond React's own render
+ * batching. */
+export function setTrayStatus(status: TrayStatus): Promise<void> {
+  return invoke("set_tray_status", { status });
+}
+
+export interface TrayAgent {
+  id: string;
+  name: string;
+}
+
+export interface TraySession {
+  id: string;
+  agentId: string;
+  label: string;
+}
+
+/** Rebuilds the tray's whole dropdown (Agents submenu, Recent sessions submenu, Settings, Quit)
+ * from the given lists -- see lib.rs's build_tray_menu. Clicking an agent or session in the tray
+ * doesn't call back into this module directly; it round-trips through a Tauri event
+ * ("tray-agent-selected" / "tray-session-selected" / "tray-open-settings") that App.tsx listens
+ * for, since the click happens in the Rust menu-event handler, not in this webview's JS. */
+export function updateTrayMenu(agents: TrayAgent[], sessions: TraySession[]): Promise<void> {
+  return invoke("update_tray_menu", { agents, sessions });
 }

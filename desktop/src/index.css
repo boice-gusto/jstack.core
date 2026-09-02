@@ -81,6 +81,12 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+    /* Code/file identity color -- deliberately independent of the user's chosen accent color
+       (THEME_COLORS in lib/theme.ts): code should look like code regardless of whether someone's
+       picked orange or pink as their accent, the same way it would in an editor. */
+    --code-bg: oklch(0.96 0.015 250);
+    --code-border: oklch(0.75 0.06 250);
+    --code-accent: oklch(0.55 0.18 260);
 }
 
 .dark {
@@ -115,6 +121,54 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+    --code-bg: oklch(0.2 0.025 250);
+    --code-border: oklch(0.4 0.07 250);
+    --code-accent: oklch(0.7 0.15 260);
+}
+
+/* Launch splash -- see components/Splash.tsx */
+@keyframes jstack-splash-reveal {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+@keyframes jstack-splash-glow {
+    0%, 100% { text-shadow: 0 0 8px currentColor, 0 0 24px currentColor; }
+    50% { text-shadow: 0 0 18px currentColor, 0 0 44px currentColor; }
+}
+@keyframes jstack-splash-caret {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+.jstack-splash-text {
+    animation:
+        jstack-splash-reveal 900ms steps(7, end) forwards,
+        jstack-splash-glow 2.4s ease-in-out 900ms infinite;
+}
+.jstack-splash-caret {
+    animation: jstack-splash-caret 1s steps(1, end) infinite;
+}
+
+/* Markdown code blocks/inline code (rendered by Streamdown -- a third-party package, so this
+   targets its own stable `data-streamdown` attributes rather than fighting its bundled Tailwind
+   classes) and the "open file" chip in tool.tsx's ToolHeader all deliberately look distinct from
+   surrounding chat text: a fixed blue-tinted identity color independent of the user's chosen
+   accent, plus bolder weight, so code/file references stand out instead of blending into prose. */
+[data-streamdown="code-block"] {
+    background-color: var(--code-bg) !important;
+    border-color: var(--code-border) !important;
+    border-left-width: 3px !important;
+    border-left-color: var(--code-accent) !important;
+}
+[data-streamdown="code-block-header"] {
+    font-weight: 600;
+}
+[data-streamdown="inline-code"] {
+    background-color: var(--code-bg);
+    border: 1px solid var(--code-border);
+    color: var(--code-accent);
+    font-weight: 600;
+    border-radius: 0.25rem;
+    padding: 0.05em 0.35em;
 }
 
 @layer base {

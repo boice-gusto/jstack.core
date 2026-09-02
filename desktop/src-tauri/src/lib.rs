@@ -1,8 +1,11 @@
 pub mod agent_client;
 
+use serde::Deserialize;
 use serde_json::{json, Value};
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::TrayIconBuilder;
+use tauri::image::Image;
+use tauri::menu::{AboutMetadata, IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::tray::{TrayIcon, TrayIconBuilder};
+use tauri::{Emitter, Manager};
 
 /// Every command resolves the socket path fresh per call rather than caching it once at
 /// startup, so changing `JSTACK_AGENT_SOCK` (or the daemon coming up after the app started)
@@ -96,6 +99,27 @@ async fn agent_create(
 }
 
 #[tauri::command]
+async fn agent_update(
+    id: String,
+    model: Option<String>,
+    tools: Option<Vec<String>>,
+    mcp: Option<String>,
+    enabled: Option<bool>,
+) -> Result<Value, String> {
+    agent_client::call(
+        &resolve_socket()?,
+        "agent/update",
+        json!({ "id": id, "model": model, "tools": tools, "mcp": mcp, "enabled": enabled }),
+    )
+    .await
+}
+
+#[tauri::command]
+async fn skills_index() -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "skills/index", json!({})).await
+}
+
+#[tauri::command]
 async fn daemon_status() -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "status", json!({})).await
 }
@@ -103,6 +127,109 @@ async fn daemon_status() -> Result<Value, String> {
 #[tauri::command]
 async fn recent_logs(limit: Option<u32>) -> Result<Value, String> {
     agent_client::call(&resolve_socket()?, "logs/recent", json!({ "limit": limit })).await
+}
+
+#[derive(Deserialize)]
+struct TrayAgentPayload {
+    id: String,
+    name: String,
+}
+
+#[derive(Deserialize)]
+struct TraySessionPayload {
+    id: String,
+    #[serde(rename = "agentId")]
+    agent_id: String,
+    label: String,
+}
+
+/// Rebuilds the tray's whole menu from scratch every call rather than diffing -- the frontend
+/// already recomputes `agents`/top-5-sessions on every relevant state change and calls
+/// `update_tray_menu` wholesale (see App.tsx), so there's no separate "menu already matches this
+/// data" tracking to get out of sync. Dynamic item ids (`tray-agent:<id>`, `tray-session:<id>:
+/// <agentId>`) are parsed back apart in `on_menu_event` below to route a click to the right
+/// frontend action via an emitted event -- the menu itself has no other way to carry that data.
+fn build_tray_menu(
+    app: &tauri::AppHandle,
+    agents: &[TrayAgentPayload],
+    sessions: &[TraySessionPayload],
+) -> tauri::Result<Menu<tauri::Wry>> {
+    let show = MenuItem::with_id(app, "show", "Show jstack", true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "tray-settings", "Settings", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit jstack", true, None::<&str>)?;
+
+    let mut items: Vec<Box<dyn IsMenuItem<tauri::Wry>>> = vec![Box::new(show)];
+    items.push(Box::new(PredefinedMenuItem::separator(app)?));
+
+    if !agents.is_empty() {
+        let agent_items = agents
+            .iter()
+            .map(|a| {
+                MenuItem::with_id(app, format!("tray-agent:{}", a.id), &a.name, true, None::<&str>)
+            })
+            .collect::<tauri::Result<Vec<_>>>()?;
+        let agent_refs: Vec<&dyn IsMenuItem<tauri::Wry>> =
+            agent_items.iter().map(|i| i as &dyn IsMenuItem<tauri::Wry>).collect();
+        items.push(Box::new(Submenu::with_items(app, "Agents", true, &agent_refs)?));
+    }
+
+    if !sessions.is_empty() {
+        let session_items = sessions
+            .iter()
+            .map(|s| {
+                MenuItem::with_id(
+                    app,
+                    format!("tray-session:{}:{}", s.id, s.agent_id),
+                    &s.label,
+                    true,
+                    None::<&str>,
+                )
+            })
+            .collect::<tauri::Result<Vec<_>>>()?;
+        let session_refs: Vec<&dyn IsMenuItem<tauri::Wry>> =
+            session_items.iter().map(|i| i as &dyn IsMenuItem<tauri::Wry>).collect();
+        items.push(Box::new(Submenu::with_items(app, "Sessions", true, &session_refs)?));
+    }
+
+    items.push(Box::new(PredefinedMenuItem::separator(app)?));
+    items.push(Box::new(settings));
+    items.push(Box::new(quit));
+
+    let item_refs: Vec<&dyn IsMenuItem<tauri::Wry>> = items.iter().map(|i| i.as_ref()).collect();
+    Menu::with_items(app, &item_refs)
+}
+
+#[tauri::command]
+fn update_tray_menu(
+    app: tauri::AppHandle,
+    tray: tauri::State<'_, TrayIcon<tauri::Wry>>,
+    agents: Vec<TrayAgentPayload>,
+    sessions: Vec<TraySessionPayload>,
+) -> Result<(), String> {
+    let menu = build_tray_menu(&app, &agents, &sessions).map_err(|e| e.to_string())?;
+    tray.set_menu(Some(menu)).map_err(|e| e.to_string())
+}
+
+/// Every status (including "none") is a full-color, non-template icon -- the logo composited
+/// onto a solid status-color circle (see icons/tray-icon-<color>.png) -- never the flat
+/// monochrome template. "none" uses a white circle + black logo instead of a color, since white
+/// still needs to read clearly against both light and dark menu bars without macOS's
+/// auto-invert (which only applies to template icons, and would fight a deliberately-white
+/// circle). "green-dim" is the alternate frame the frontend flips to every ~600ms to fake a
+/// pulse for "a chat is actively thinking" -- Tauri/macOS have no native animated tray icon, so
+/// this is a two-frame flipbook rather than a real animation.
+#[tauri::command]
+fn set_tray_status(tray: tauri::State<'_, TrayIcon<tauri::Wry>>, status: String) -> Result<(), String> {
+    let bytes: &[u8] = match status.as_str() {
+        "red" => include_bytes!("../icons/tray-icon-red@2x.png"),
+        "yellow" => include_bytes!("../icons/tray-icon-yellow@2x.png"),
+        "green" => include_bytes!("../icons/tray-icon-green@2x.png"),
+        "green-dim" => include_bytes!("../icons/tray-icon-green-dim@2x.png"),
+        _ => include_bytes!("../icons/tray-icon-none@2x.png"),
+    };
+    let icon = Image::from_bytes(bytes).map_err(|e| e.to_string())?;
+    tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
+    tray.set_icon_as_template(false).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -113,24 +240,114 @@ pub fn run() {
             // A quit item is required: Tauri's default window-close behavior on macOS hides
             // rather than terminates, so without an explicit way out the app can only be killed
             // from Activity Monitor -- exactly the kind of thing a menu-bar tool must not do.
-            let quit = MenuItem::with_id(app, "quit", "Quit jstack", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&quit])?;
-            // PLACEHOLDER: default_window_icon() is Tauri's stock color icon, not real jstack
-            // branding (pending an asset from the user) and not yet the flat, monochrome
-            // "template" image macOS menu-bar icons are supposed to be. Once a real monochrome
-            // tray asset exists, load it here AND call `.icon_as_template(true)` so macOS can
-            // auto-invert it for light/dark menu bars -- turning that on now, against a full-
-            // color placeholder, would just look broken.
-            TrayIconBuilder::new()
+            // "Show jstack" is the way back in after that hide, since the tray icon itself has
+            // no title/text on macOS (only left-click-to-open-menu), so there'd otherwise be no
+            // discoverable way to reopen a hidden window short of relaunching the app.
+            // Empty at startup -- the frontend populates the real agent/session submenus via
+            // `update_tray_menu` once it has loaded them (see App.tsx), same "app pushes its own
+            // state to the tray" pattern as `set_tray_status`.
+            let menu = build_tray_menu(app.handle(), &[], &[])?;
+            // The logo on a white circle (see set_tray_status's doc comment) -- the same "none"
+            // icon the frontend sets once it's loaded, so there's no flash of a different icon
+            // between window creation and the first real status push.
+            let tray_icon = Image::from_bytes(include_bytes!("../icons/tray-icon-none@2x.png"))?;
+            let tray = TrayIconBuilder::new()
                 .menu(&menu)
                 .show_menu_on_left_click(true)
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(tray_icon)
+                .icon_as_template(false)
                 .on_menu_event(|app, event| {
-                    if event.id.as_ref() == "quit" {
+                    let id = event.id.as_ref();
+                    let focus_main = |app: &tauri::AppHandle| {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    };
+                    if id == "quit" {
                         app.exit(0);
+                    } else if id == "show" {
+                        focus_main(app);
+                    } else if id == "tray-settings" {
+                        focus_main(app);
+                        let _ = app.emit("tray-open-settings", ());
+                    } else if let Some(agent_id) = id.strip_prefix("tray-agent:") {
+                        focus_main(app);
+                        let _ = app.emit("tray-agent-selected", agent_id);
+                    } else if let Some(rest) = id.strip_prefix("tray-session:") {
+                        if let Some((session_id, agent_id)) = rest.split_once(':') {
+                            focus_main(app);
+                            let _ = app.emit(
+                                "tray-session-selected",
+                                json!({ "id": session_id, "agentId": agent_id }),
+                            );
+                        }
                     }
                 })
                 .build(app)?;
+            app.manage(tray);
+
+            // Tauri's auto-generated default macOS app menu shows a generic "About jstack" with
+            // no icon/credits -- this rebuilds that same default structure (see tauri's own
+            // `Menu::default`) but with our own icon and a `credits` line, since macOS's native
+            // About panel ignores AboutMetadata's `authors`/`comments`/`website` fields entirely
+            // (platform limitation, not a bug here) and `credits` is the one free-text field it
+            // actually renders.
+            #[cfg(target_os = "macos")]
+            {
+                let about_metadata = AboutMetadata {
+                    name: Some("jstack".into()),
+                    version: Some(app.package_info().version.to_string()),
+                    icon: Image::from_bytes(include_bytes!("../icons/about-logo.png")).ok(),
+                    credits: Some(
+                        "by @skinnnyJay\nhttps://github.com/boice-gusto/jstack.core".into(),
+                    ),
+                    ..Default::default()
+                };
+                let app_menu = Submenu::with_items(
+                    app,
+                    "jstack",
+                    true,
+                    &[
+                        &PredefinedMenuItem::about(app, Some("About jstack"), Some(about_metadata))?,
+                        &PredefinedMenuItem::separator(app)?,
+                        &PredefinedMenuItem::services(app, None)?,
+                        &PredefinedMenuItem::separator(app)?,
+                        &PredefinedMenuItem::hide(app, None)?,
+                        &PredefinedMenuItem::hide_others(app, None)?,
+                        &PredefinedMenuItem::separator(app)?,
+                        &PredefinedMenuItem::quit(app, None)?,
+                    ],
+                )?;
+                let edit_menu = Submenu::with_items(
+                    app,
+                    "Edit",
+                    true,
+                    &[
+                        &PredefinedMenuItem::undo(app, None)?,
+                        &PredefinedMenuItem::redo(app, None)?,
+                        &PredefinedMenuItem::separator(app)?,
+                        &PredefinedMenuItem::cut(app, None)?,
+                        &PredefinedMenuItem::copy(app, None)?,
+                        &PredefinedMenuItem::paste(app, None)?,
+                        &PredefinedMenuItem::select_all(app, None)?,
+                    ],
+                )?;
+                let window_menu = Submenu::with_items(
+                    app,
+                    "Window",
+                    true,
+                    &[
+                        &PredefinedMenuItem::minimize(app, None)?,
+                        &PredefinedMenuItem::maximize(app, None)?,
+                        &PredefinedMenuItem::separator(app)?,
+                        &PredefinedMenuItem::close_window(app, None)?,
+                    ],
+                )?;
+                let native_menu = Menu::with_items(app, &[&app_menu, &edit_menu, &window_menu])?;
+                app.set_menu(native_menu)?;
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -142,8 +359,12 @@ pub fn run() {
             session_remember,
             agent_list,
             agent_create,
+            agent_update,
             daemon_status,
             recent_logs,
+            skills_index,
+            update_tray_menu,
+            set_tray_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,10 +9,12 @@ import {
   promptManualSession,
   rememberInSession,
 } from "./session.js";
-import { createAgent } from "./agent-config.js";
+import { createAgent, updateAgent } from "./agent-config.js";
 import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
+import { collectSkills } from "../../commands/skills.js";
+import { findPluginRoot } from "../config.js";
 
 /**
  * The resident daemon's local control surface: a Unix domain socket, newline-delimited JSON-RPC
@@ -42,7 +44,7 @@ import type { CrewConfig } from "./types.js";
  * response says what (if anything) got saved to the agent's memory.
  */
 
-type SocketData = { buffer: string };
+type SocketData = { buffer: string; pendingWrite?: Buffer };
 
 export interface RpcServerHandle {
   sockPath: string;
@@ -173,6 +175,29 @@ async function dispatch(
         cfg.agents[created.id] = created.agent;
         return created;
       }
+      case "agent/update": {
+        if (typeof p.id !== "string") {
+          throw new Error("agent/update requires { id: string }");
+        }
+        if (!cfg.agents[p.id]) throw new Error(`agent "${p.id}" not found`);
+        const updated = updateAgent(p.id, {
+          model: typeof p.model === "string" ? p.model : undefined,
+          tools: Array.isArray(p.tools) ? (p.tools as string[]) : undefined,
+          mcp: p.mcp === "inherit" ? "inherit" : p.mcp === "none" ? "none" : undefined,
+          enabled: typeof p.enabled === "boolean" ? p.enabled : undefined,
+        });
+        // Same reasoning as agent/create above: splice into the running daemon's in-memory
+        // config so the change is visible to session/prompt immediately, not next tick.
+        cfg.agents[updated.id] = updated.agent;
+        return updated;
+      }
+      case "skills/index": {
+        const overlay =
+          typeof p.overlay === "string" && p.overlay.trim().length > 0
+            ? p.overlay.trim()
+            : process.env.JSTACK_GUSTO_ROOT?.trim() || undefined;
+        return { skills: collectSkills(findPluginRoot(), overlay) };
+      }
       case "status": {
         const stats = store.stats();
         return { ...stats, enabled: cfg.enabled, mode: cfg.mode };
@@ -214,6 +239,21 @@ export function startRpcServer(opts: {
     }
   }
 
+  /** `socket.write()` can perform a short write when the payload exceeds the kernel socket
+   * buffer -- fine for the small responses (session lists, single-agent objects) every other
+   * method here returns, but `skills/index`'s full catalog is tens of KB and was silently
+   * truncated before the trailing newline, hanging every caller waiting for a line that would
+   * never arrive. Queues whatever didn't fit and flushes it on the `drain` event below instead
+   * of assuming one `write()` call always finishes the message. */
+  function writeAll(socket: Socket<SocketData>, text: string): void {
+    const chunk = Buffer.from(text, "utf8");
+    const pending = socket.data.pendingWrite;
+    const toWrite = pending ? Buffer.concat([pending, chunk]) : chunk;
+    const written = socket.write(toWrite);
+    socket.data.pendingWrite =
+      written < toWrite.length ? toWrite.subarray(written) : undefined;
+  }
+
   function respond(
     socket: Socket<SocketData>,
     id: string | number | null,
@@ -223,7 +263,7 @@ export function startRpcServer(opts: {
       "error" in payload
         ? { id, error: { message: payload.error } }
         : { id, result: payload.result };
-    socket.write(`${JSON.stringify(body)}\n`);
+    writeAll(socket, `${JSON.stringify(body)}\n`);
   }
 
   function handleLine(socket: Socket<SocketData>, line: string): void {
@@ -260,6 +300,13 @@ export function startRpcServer(opts: {
         for (const line of lines) {
           if (line.trim().length > 0) handleLine(socket, line);
         }
+      },
+      drain(socket) {
+        const pending = socket.data.pendingWrite;
+        if (!pending) return;
+        const written = socket.write(pending);
+        socket.data.pendingWrite =
+          written < pending.length ? pending.subarray(written) : undefined;
       },
     },
   });

@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, test } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   SKIP_SENTINEL,
+  findPluginRoot,
   findProjectRoot,
   isSkipSentinel,
   mergeDeep,
@@ -134,5 +135,42 @@ describe("findProjectRoot honours JSTACK_PROJECT_ROOT", () => {
     delete process.env.JSTACK_PROJECT_ROOT;
     const d = mkdtempSync(join(tmpdir(), "jstack-nocfg-"));
     expect(findProjectRoot(d)).toBe(d);
+  });
+});
+
+describe("findPluginRoot honours JSTACK_PROJECT_ROOT", () => {
+  /**
+   * Same launchd-gives-crewd-no-useful-cwd reason as findProjectRoot above, but this one is
+   * what fed a real bug: `skills/index`'s resident-daemon RPC handler called findPluginRoot()
+   * with no override, walked up from `/` (launchd's default cwd, no `WorkingDirectory` in the
+   * plist), never found `config/defaults.json` + `skills/`, and silently fell back to `/` --
+   * so the desktop app's Settings dialog showed "0 skills" instead of an error, which made the
+   * wrong-root bug look like "no skills installed."
+   */
+  const saved = process.env.JSTACK_PROJECT_ROOT;
+  afterEach(() => {
+    if (saved === undefined) delete process.env.JSTACK_PROJECT_ROOT;
+    else process.env.JSTACK_PROJECT_ROOT = saved;
+  });
+
+  test("a pinned root containing config/defaults.json + skills/ wins over the cwd walk", () => {
+    const root = mkdtempSync(join(tmpdir(), "jstack-plugin-pinned-"));
+    mkdirSync(join(root, "config"), { recursive: true });
+    writeFileSync(join(root, "config", "defaults.json"), "{}");
+    mkdirSync(join(root, "skills"), { recursive: true });
+    process.env.JSTACK_PROJECT_ROOT = root;
+    expect(findPluginRoot(tmpdir())).toBe(root);
+  });
+
+  test("a pinned root missing skills/ or config/defaults.json is ignored, so a bad env var cannot break skills/index", () => {
+    const empty = mkdtempSync(join(tmpdir(), "jstack-plugin-empty-"));
+    process.env.JSTACK_PROJECT_ROOT = empty;
+    expect(findPluginRoot(empty)).toBe(empty); // falls through to the normal walk
+  });
+
+  test("unset behaves exactly as before", () => {
+    delete process.env.JSTACK_PROJECT_ROOT;
+    const d = mkdtempSync(join(tmpdir(), "jstack-plugin-nocfg-"));
+    expect(findPluginRoot(d)).toBe(d);
   });
 });

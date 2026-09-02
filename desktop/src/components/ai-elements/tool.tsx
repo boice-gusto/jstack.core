@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -13,13 +14,14 @@ import {
   ChevronDownIcon,
   CircleIcon,
   ClockIcon,
+  FileIcon,
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 
-import { CodeBlock } from "./code-block";
+import { CodeBlock, type CodeBlockLanguage } from "./code-block";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -35,6 +37,11 @@ export type ToolPart = ToolUIPart | DynamicToolUIPart;
 export type ToolHeaderProps = {
   title?: string;
   className?: string;
+  /** File path pulled out of the tool's input (Read/Write/Edit's `file_path`, Grep/Glob's
+   * `path`), if any -- shown as an inline "open" affordance so a path a tool touched can be
+   * opened directly instead of only ever appearing as inert text inside a JSON blob. */
+  filePath?: string;
+  onOpenFile?: (path: string) => void;
 } & (
   | { type: ToolUIPart["type"]; state: ToolUIPart["state"]; toolName?: never }
   | {
@@ -43,6 +50,19 @@ export type ToolHeaderProps = {
       toolName: string;
     }
 );
+
+/** Best-effort extraction of a file path from a tool call's input, for the "open file" button in
+ * ToolHeader. Only recognizes the key names jstack's own crew agents actually use (Read/Write/
+ * Edit's `file_path`, Grep/Glob's `path`) and only when the value looks like a real filesystem
+ * path (absolute or home-relative) -- a bare relative string like "src" from some other tool
+ * shape isn't safe to hand to the OS opener without a working-directory to resolve it against. */
+export function extractFilePath(input: unknown): string | undefined {
+  if (typeof input !== "object" || input === null) return undefined;
+  const obj = input as Record<string, unknown>;
+  const candidate = obj.file_path ?? obj.path ?? obj.notebook_path;
+  if (typeof candidate !== "string") return undefined;
+  return candidate.startsWith("/") || candidate.startsWith("~/") ? candidate : undefined;
+}
 
 const statusLabels: Record<ToolPart["state"], string> = {
   "approval-requested": "Awaiting Approval",
@@ -77,6 +97,8 @@ export const ToolHeader = ({
   type,
   state,
   toolName,
+  filePath,
+  onOpenFile,
   ...props
 }: ToolHeaderProps) => {
   const derivedName =
@@ -90,12 +112,35 @@ export const ToolHeader = ({
       )}
       {...props}
     >
-      <div className="flex items-center gap-2">
-        <WrenchIcon className="size-4 text-muted-foreground" />
+      <div className="flex min-w-0 items-center gap-2">
+        <WrenchIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="font-medium text-sm">{title ?? derivedName}</span>
         {getStatusBadge(state)}
+        {filePath && onOpenFile && (
+          // Rendered as a <span>, not a real <button> -- CollapsibleTrigger (this component's
+          // parent) is itself a native <button>, and nesting interactive elements inside a
+          // <button> is invalid HTML that browsers silently un-nest, breaking click handling.
+          <Button
+            variant="ghost"
+            size="sm"
+            // Same blue-tinted "this is code/a file, not prose" identity as markdown code blocks
+            // (see index.css's --code-bg/--code-border/--code-accent) -- bold + a distinct color
+            // so a file reference reads as a real affordance, not muted inert text.
+            className="min-w-0 gap-1 border border-[var(--code-border)] bg-[var(--code-bg)] font-mono text-xs font-semibold text-[var(--code-accent)] hover:bg-[var(--code-bg)]"
+            title={`Open ${filePath}`}
+            render={<span />}
+            nativeButton={false}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenFile(filePath);
+            }}
+          >
+            <FileIcon className="size-3 shrink-0" />
+            <span className="truncate">{filePath.split("/").pop()}</span>
+          </Button>
+        )}
       </div>
-      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[open]:rotate-180" />
     </CollapsibleTrigger>
   );
 };
@@ -105,7 +150,7 @@ export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 export const ToolContent = ({ className, ...props }: ToolContentProps) => (
   <CollapsibleContent
     className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 space-y-4 p-4 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+      "data-[closed]:fade-out-0 data-[closed]:slide-out-to-top-2 data-[open]:slide-in-from-top-2 space-y-4 p-4 text-popover-foreground outline-none data-[closed]:animate-out data-[open]:animate-in",
       className
     )}
     {...props}
@@ -130,12 +175,17 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolPart["output"];
   errorText: ToolPart["errorText"];
+  /** Language for syntax-highlighting a *string* output (object outputs are always
+   * JSON-stringified and highlighted as json). Defaults to "text" -- most tool output here
+   * (Bash stdout, grep matches, file contents) isn't JSON, so that was the wrong default. */
+  language?: CodeBlockLanguage;
 };
 
 export const ToolOutput = ({
   className,
   output,
   errorText,
+  language = "plaintext",
   ...props
 }: ToolOutputProps) => {
   if (!(output || errorText)) {
@@ -149,7 +199,7 @@ export const ToolOutput = ({
       <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
     );
   } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />;
+    Output = <CodeBlock code={output} language={language} />;
   }
 
   return (

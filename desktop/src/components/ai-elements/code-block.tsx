@@ -25,9 +25,15 @@ import type {
   BundledLanguage,
   BundledTheme,
   HighlighterGeneric,
+  SpecialLanguage,
   ThemedToken,
 } from "shiki";
 import { createHighlighter } from "shiki";
+
+// Shiki treats "text"/"plaintext"/"ansi"/etc. as special no-grammar passthroughs rather than
+// real bundled languages -- ToolOutput (tool.tsx) needs one of these for tool output that isn't
+// actually code (Bash stdout, grep matches), so the language prop has to accept both.
+export type CodeBlockLanguage = BundledLanguage | SpecialLanguage;
 
 // Shiki uses bitflags for font styles: 1=italic, 2=bold, 4=underline
 // oxlint-disable-next-line eslint(no-bitwise)
@@ -110,7 +116,7 @@ const LineSpan = ({
 // Types
 type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   code: string;
-  language: BundledLanguage;
+  language: CodeBlockLanguage;
   showLineNumbers?: boolean;
 };
 
@@ -141,22 +147,25 @@ const tokensCache = new Map<string, TokenizedCode>();
 // Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
 
-const getTokensCacheKey = (code: string, language: BundledLanguage) => {
+const getTokensCacheKey = (code: string, language: CodeBlockLanguage) => {
   const start = code.slice(0, 100);
   const end = code.length > 100 ? code.slice(-100) : "";
   return `${language}:${code.length}:${start}:${end}`;
 };
 
 const getHighlighter = (
-  language: BundledLanguage
+  language: CodeBlockLanguage
 ): Promise<HighlighterGeneric<BundledLanguage, BundledTheme>> => {
   const cached = highlighterCache.get(language);
   if (cached) {
     return cached;
   }
 
+  // Shiki accepts "text"/"plain"/etc. here at runtime (verified: it just loads zero grammars
+  // and falls through to an unhighlighted passthrough) even though createHighlighter's own
+  // types only advertise real bundled languages for `langs`.
   const highlighterPromise = createHighlighter({
-    langs: [language],
+    langs: [language as BundledLanguage],
     themes: ["github-light", "github-dark"],
   });
 
@@ -183,7 +192,7 @@ const createRawTokens = (code: string): TokenizedCode => ({
 // Synchronous highlight with callback for async results
 export const highlightCode = (
   code: string,
-  language: BundledLanguage,
+  language: CodeBlockLanguage,
   // oxlint-disable-next-line eslint-plugin-promise(prefer-await-to-callbacks)
   callback?: (result: TokenizedCode) => void
 ): TokenizedCode | null => {
@@ -309,7 +318,10 @@ export const CodeBlockContainer = ({
 }: HTMLAttributes<HTMLDivElement> & { language: string }) => (
   <div
     className={cn(
-      "group relative w-full overflow-hidden rounded-md border bg-background text-foreground",
+      // Same blue-tinted code identity as Streamdown's markdown code blocks (index.css's
+      // --code-bg/--code-border/--code-accent) -- this is the tool-call ToolInput/ToolOutput
+      // variant of the same "code, not prose" concept, so it should look like the same thing.
+      "group relative w-full overflow-hidden rounded-md border border-[var(--code-border)] border-l-[3px] border-l-[var(--code-accent)] bg-[var(--code-bg)] text-foreground",
       className
     )}
     data-language={language}
@@ -329,7 +341,7 @@ export const CodeBlockHeader = ({
 }: HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex items-center justify-between border-b bg-muted/80 px-3 py-2 text-muted-foreground text-xs",
+      "flex items-center justify-between border-b border-[var(--code-border)] bg-[var(--code-bg)] px-3 py-2 font-semibold text-muted-foreground text-xs",
       className
     )}
     {...props}
@@ -377,7 +389,7 @@ export const CodeBlockContent = ({
   showLineNumbers = false,
 }: {
   code: string;
-  language: BundledLanguage;
+  language: CodeBlockLanguage;
   showLineNumbers?: boolean;
 }) => {
   // Memoized raw tokens for immediate display

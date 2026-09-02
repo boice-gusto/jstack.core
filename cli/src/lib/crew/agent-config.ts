@@ -83,3 +83,28 @@ export function createAgent(input: CreateAgentInput) {
   });
   return { id, agent: cfg.agents[id]! };
 }
+
+export interface UpdateAgentInput {
+  model?: string;
+  tools?: string[];
+  mcp?: "none" | "inherit";
+  enabled?: boolean;
+}
+
+/**
+ * Narrow, additive counterpart to `createAgent` -- only the fields the desktop app's Settings
+ * dialog needs to change post-creation (model, tool/MCP access, and now enabled/disabled).
+ * Anything else (persona, sigils) still goes through `jstackc crew agents edit`, same as before
+ * this existed.
+ */
+export function updateAgent(id: string, patch: UpdateAgentInput) {
+  const cfg = mutateAgents((agents) => {
+    const agent = agents[id];
+    if (!agent) throw new Error(`agent "${id}" not found`);
+    if (patch.model !== undefined) agent.model = patch.model;
+    if (patch.tools !== undefined) agent.tools = patch.tools;
+    if (patch.mcp !== undefined) agent.mcp = patch.mcp;
+    if (patch.enabled !== undefined) agent.enabled = patch.enabled;
+  });
+  return { id, agent: cfg.agents[id]! };
+}

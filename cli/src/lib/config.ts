@@ -165,11 +165,27 @@ export function pruneSkipped<T>(value: T): T {
   return value;
 }
 
-/** Resolve plugin root: env CLAUDE_PLUGIN_ROOT or walk up for config/defaults.json */
+/** Resolve plugin root: env CLAUDE_PLUGIN_ROOT or JSTACK_PROJECT_ROOT, or walk up for
+ * config/defaults.json.
+ *
+ * `JSTACK_PROJECT_ROOT` matters here for the same reason `findProjectRoot` honours it: launchd
+ * starts the resident crew daemon with no meaningful cwd (no `WorkingDirectory` in the generated
+ * plist), so `collectSkills(findPluginRoot(), ...)` silently walked from `/`, never found
+ * `config/defaults.json` + `skills/`, and fell back to returning `/` itself -- `skills/index`
+ * then answered with an empty list instead of erroring, which made the bug look like "0 skills
+ * installed" rather than "wrong root". */
 export function findPluginRoot(cwd = process.cwd()): string {
   const envRoot = process.env[ENV.CLAUDE_PLUGIN_ROOT];
   if (envRoot && existsSync(envRoot)) {
     return resolve(envRoot);
+  }
+  const pinned = process.env.JSTACK_PROJECT_ROOT;
+  if (
+    pinned &&
+    existsSync(join(pinned, CONFIG_DIR, DEFAULTS_FILE)) &&
+    existsSync(join(pinned, SKILLS_DIR))
+  ) {
+    return resolve(pinned);
   }
   let dir = cwd;
   for (let i = 0; i < WALK_LIMITS.PLUGIN_ROOT_MAX_STEPS; i++) {
