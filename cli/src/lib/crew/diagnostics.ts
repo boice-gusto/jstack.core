@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { collectSkills } from "../../commands/skills.js";
 import { findPluginRoot, findProjectRoot } from "../config.js";
+import { listMcpServersRaw } from "./mcp.js";
 import { expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
 
@@ -46,6 +47,7 @@ export function runDiagnostics(cfg: CrewConfig): DiagnosticsReport {
   // process start, not the live process.env -- fine for the real long-running daemon (its PATH
   // never changes after launchd starts it), but it means a test that mutates process.env.PATH
   // to install a fake `claude` gets silently ignored without passing it explicitly here.
+  // (mcp.ts's listMcpServersRaw, used below for the MCP check, already does this itself.)
   const claudePath = Bun.which("claude", { PATH: process.env.PATH ?? "" });
   let claudeVersion: string | undefined;
   let claudeError: string | undefined;
@@ -92,19 +94,9 @@ export function runDiagnostics(cfg: CrewConfig): DiagnosticsReport {
   let claudeMcpListOk: boolean | undefined;
   let claudeMcpListDetail: string | undefined;
   if (claudePath && anyAgentInherits) {
-    try {
-      const r = Bun.spawnSync(["claude", "mcp", "list"], {
-        env: { ...process.env },
-        timeout: CLAUDE_TIMEOUT_MS,
-      });
-      claudeMcpListOk = r.exitCode === 0;
-      claudeMcpListDetail = claudeMcpListOk
-        ? new TextDecoder().decode(r.stdout).trim().slice(0, 500)
-        : new TextDecoder().decode(r.stderr).trim().slice(0, 200);
-    } catch (e) {
-      claudeMcpListOk = false;
-      claudeMcpListDetail = e instanceof Error ? e.message : String(e);
-    }
+    const mcp = listMcpServersRaw();
+    claudeMcpListOk = mcp.ok;
+    claudeMcpListDetail = mcp.ok ? mcp.raw.slice(0, 500) : mcp.error;
   }
 
   return {

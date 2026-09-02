@@ -24,6 +24,7 @@ import { parseCron } from "./proactive.js";
 import { scheduledPromptId } from "./scheduler.js";
 import { runDiagnostics } from "./diagnostics.js";
 import { listIntegrations } from "./integrations.js";
+import { listMcpServersRaw } from "./mcp.js";
 
 const SESSION_MODES: readonly SessionMode[] = ["ask", "full-access"];
 const THINKING_LEVELS: readonly ThinkingLevel[] = [
@@ -332,6 +333,9 @@ async function dispatch(
       }
       case "integrations/list": {
         return { integrations: listIntegrations(cfg) };
+      }
+      case "mcp/list": {
+        return listMcpServersRaw();
       }
       default:
         throw new Error(`unknown method: ${method}`);

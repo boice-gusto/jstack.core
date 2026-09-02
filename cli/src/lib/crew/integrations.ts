@@ -1,3 +1,4 @@
+import { listMcpServersRaw } from "./mcp.js";
 import { sendMessage } from "./slack.js";
 import type { CrewConfig } from "./types.js";
 
@@ -11,8 +12,6 @@ import type { CrewConfig } from "./types.js";
  * Integrations tab can show, since "is this even wired up" was previously answerable only by
  * reading jstack.config.json and running `claude mcp list` by hand.
  */
-
-const CLAUDE_MCP_TIMEOUT_MS = 5000;
 
 /** "🤖 - Here's your update - sent by jstack" -- a single-line, agent-initiated push, distinct
  * from `identityPrefix()`'s multi-line threaded-reply format (name, body, cost footer). Reusable
@@ -50,28 +49,9 @@ export interface IntegrationSummary {
 }
 
 export function listIntegrations(cfg: CrewConfig): IntegrationSummary[] {
-  const claudePath = Bun.which("claude", { PATH: process.env.PATH ?? "" });
-  let mcpAvailable = false;
-  let mcpDetail: string | undefined;
-  if (claudePath) {
-    try {
-      const r = Bun.spawnSync(["claude", "mcp", "list"], {
-        env: { ...process.env },
-        timeout: CLAUDE_MCP_TIMEOUT_MS,
-      });
-      if (r.exitCode === 0) {
-        const out = new TextDecoder().decode(r.stdout);
-        mcpAvailable = /slack/i.test(out);
-        mcpDetail = out.trim().slice(0, 500);
-      } else {
-        mcpDetail = new TextDecoder().decode(r.stderr).trim().slice(0, 200);
-      }
-    } catch (e) {
-      mcpDetail = e instanceof Error ? e.message : String(e);
-    }
-  } else {
-    mcpDetail = "claude CLI not found on PATH";
-  }
+  const mcp = listMcpServersRaw();
+  const mcpAvailable = mcp.ok && mcp.servers.some((s) => /slack/i.test(s));
+  const mcpDetail = mcp.ok ? mcp.raw.slice(0, 500) : mcp.error;
 
   const configured =
     cfg.enabled &&

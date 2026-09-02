@@ -693,6 +693,28 @@ describe("rpc-server", () => {
     ]);
   });
 
+  test("mcp/list reports the servers claude mcp list finds", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fake-claude-rpc-mcp-"));
+    writeFileSync(
+      join(dir, "claude"),
+      '#!/bin/sh\nif [ "$1" = "mcp" ]; then printf \'%s\\n\' "slack: connected" "github: connected"; exit 0; fi\nexit 1\n',
+    );
+    chmodSync(join(dir, "claude"), 0o755);
+    restorePath = process.env.PATH ?? "";
+    process.env.PATH = `${dir}:${restorePath}`;
+
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const result = (await rpcCall(handle.sockPath, "mcp/list")) as {
+      ok: boolean;
+      servers: string[];
+    };
+    expect(result.ok).toBe(true);
+    expect(result.servers).toEqual(["slack: connected", "github: connected"]);
+  });
+
   test("schedule/create accepts and stores an optional notifyChannel", async () => {
     const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
     const cfg = baseConfig();
