@@ -404,7 +404,7 @@ export function SettingsDialog({
       {/* Fixed size regardless of which tab is active -- Schedule's content is much taller than
           General's, and letting the dialog grow/shrink per tab made switching tabs visually jump
           around. Each TabsContent scrolls internally (overflow-y-auto) instead. */}
-      <DialogContent className="flex h-[640px] max-h-[85vh] w-[640px] max-w-[90vw] flex-col overflow-hidden">
+      <DialogContent className="flex h-[640px] max-h-[85vh] w-[704px] max-w-[90vw] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
