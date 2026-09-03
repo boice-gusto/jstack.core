@@ -21,6 +21,7 @@ import {
 } from "../lib/agent";
 import type { NavigationLayout } from "../lib/navigationLayout";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { describeCron, validateCron } from "../lib/cron";
 import { IntegrationCard } from "./IntegrationCard";
 import { AVAILABLE_TOOLS, MODELS } from "./Onboarding";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
@@ -294,9 +295,17 @@ export function SettingsDialog({
     if (open) refreshSchedules();
   }, [open]);
 
+  const cronFieldIssue = validateCron(newScheduleCron.trim());
+  const cronFieldPreview = describeCron(newScheduleCron.trim());
+
   async function handleCreateSchedule(): Promise<void> {
     if (!newScheduleAgentId || !newSchedulePrompt.trim() || !newScheduleCron.trim()) {
       setScheduleError("Pick an agent and fill in both the prompt and cron fields.");
+      return;
+    }
+    const cronIssue = validateCron(newScheduleCron.trim());
+    if (cronIssue) {
+      setScheduleError(cronIssue);
       return;
     }
     setScheduleError(null);
@@ -870,13 +879,28 @@ export function SettingsDialog({
                   onChange={(e) => setNewSchedulePrompt(e.target.value)}
                   className="min-h-16 rounded-md border bg-background p-2 text-sm"
                 />
-                <input
-                  aria-label="schedule cron"
-                  placeholder="Cron expression, e.g. 0 9 * * *"
-                  value={newScheduleCron}
-                  onChange={(e) => setNewScheduleCron(e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 font-mono text-sm"
-                />
+                <div className="space-y-1">
+                  <input
+                    aria-label="schedule cron"
+                    aria-invalid={newScheduleCron.trim().length > 0 && cronFieldIssue !== null}
+                    placeholder="Cron expression, e.g. 0 9 * * *"
+                    value={newScheduleCron}
+                    onChange={(e) => setNewScheduleCron(e.target.value)}
+                    className={`h-8 w-full rounded-md border bg-background px-2 font-mono text-sm ${
+                      newScheduleCron.trim().length > 0 && cronFieldIssue
+                        ? "border-destructive"
+                        : ""
+                    }`}
+                  />
+                  {newScheduleCron.trim().length > 0 &&
+                    (cronFieldIssue ? (
+                      <p className="text-xs text-destructive">{cronFieldIssue}</p>
+                    ) : (
+                      cronFieldPreview && (
+                        <p className="text-xs text-muted-foreground">Runs {cronFieldPreview}</p>
+                      )
+                    ))}
+                </div>
                 <input
                   aria-label="schedule notify channel"
                   placeholder="Notify via Slack DM (channel id, optional)"
@@ -884,7 +908,12 @@ export function SettingsDialog({
                   onChange={(e) => setNewScheduleNotifyChannel(e.target.value)}
                   className="h-8 rounded-md border bg-background px-2 font-mono text-sm"
                 />
-                <Button type="button" size="sm" onClick={handleCreateSchedule}>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={newScheduleCron.trim().length > 0 && cronFieldIssue !== null}
+                  onClick={handleCreateSchedule}
+                >
                   Add schedule
                 </Button>
               </div>
