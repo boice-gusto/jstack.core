@@ -833,6 +833,7 @@ describe("App", () => {
     await waitFor(() => screen.getByText("ral-close"));
 
     fireEvent.click(screen.getByTitle("Close"));
+    fireEvent.click(await screen.findByRole("button", { name: "Close session" }));
 
     await waitFor(() => screen.getByText(/Session closed\. Learned:/));
     expect(screen.getByText(/Prefers terse replies\./)).toBeTruthy();

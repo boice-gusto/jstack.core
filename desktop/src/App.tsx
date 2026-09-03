@@ -33,6 +33,7 @@ import { AgentAvatar } from "./components/AgentAvatar";
 import { NewSessionControls } from "./components/NewSessionControls";
 import { SessionTabStrip } from "./components/SessionTabStrip";
 import { AvatarPickerDialog } from "./components/AvatarPickerDialog";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { loadAllAgentAvatars } from "./lib/avatars";
 import {
   loadNavigationLayout,
@@ -320,6 +321,9 @@ function App() {
   const [avatarPickerAgent, setAvatarPickerAgent] = useState<{ id: string; name: string } | null>(
     null,
   );
+  // Session id awaiting a confirm-before-close prompt -- closing used to fire immediately on a
+  // single click with no undo (flagged by /impeccable critique's P1s).
+  const [confirmCloseSessionId, setConfirmCloseSessionId] = useState<string | null>(null);
   // AvatarPickerDialog writes straight to localStorage (see lib/avatars.ts); mirrored into real
   // state here, same pattern as groupOpen, so a change actually triggers a re-render instead of
   // silently going stale until something unrelated happens to re-render this component.
@@ -892,7 +896,7 @@ function App() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
-                  onClick={() => handleCloseSessionById(s.id)}
+                  onClick={() => setConfirmCloseSessionId(s.id)}
                 >
                   Close
                 </DropdownMenuItem>
@@ -1146,7 +1150,7 @@ function App() {
               sessionNames={sessionNames}
               lastSeenTurns={lastSeenTurns}
               onSelect={handleSwitchSession}
-              onClose={handleCloseSessionById}
+              onClose={setConfirmCloseSessionId}
               busy={busy}
               agentId={agentId}
               onSelectAgent={handleSelectAgentFromPicker}
@@ -1424,6 +1428,21 @@ function App() {
         onNavigationLayoutChange={setNavigationLayout}
         activeTab={settingsTab}
         onActiveTabChange={setSettingsTab}
+      />
+
+      <ConfirmDialog
+        open={confirmCloseSessionId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmCloseSessionId(null);
+        }}
+        title="Close session?"
+        description={`This ends "${
+          confirmCloseSessionId ? (sessionNames[confirmCloseSessionId] ?? confirmCloseSessionId) : ""
+        }". Anything worth remembering is saved to the agent's notes first, but the conversation itself can't be reopened.`}
+        confirmLabel="Close session"
+        onConfirm={() => {
+          if (confirmCloseSessionId) void handleCloseSessionById(confirmCloseSessionId);
+        }}
       />
 
       {avatarPickerAgent && (

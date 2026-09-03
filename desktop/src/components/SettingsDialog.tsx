@@ -20,6 +20,7 @@ import {
   type SkillSummary,
 } from "../lib/agent";
 import type { NavigationLayout } from "../lib/navigationLayout";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { IntegrationCard } from "./IntegrationCard";
 import { AVAILABLE_TOOLS, MODELS } from "./Onboarding";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
@@ -174,6 +175,9 @@ export function SettingsDialog({
   const [mcpServersError, setMcpServersError] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<ScheduledPrompt[]>([]);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  // Schedule id awaiting a confirm-before-delete prompt -- deleting used to fire immediately on a
+  // single click with no undo (flagged by /impeccable critique's P1s).
+  const [confirmDeleteScheduleId, setConfirmDeleteScheduleId] = useState<string | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
@@ -399,7 +403,10 @@ export function SettingsDialog({
       });
   }, [open, activeTab]);
 
+  const scheduleToDelete = schedules.find((s) => s.id === confirmDeleteScheduleId);
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Fixed size regardless of which tab is active -- Schedule's content is much taller than
           General's, and letting the dialog grow/shrink per tab made switching tabs visually jump
@@ -916,7 +923,7 @@ export function SettingsDialog({
                         variant="icon"
                         size="icon"
                         title="Delete schedule"
-                        onClick={() => handleDeleteSchedule(s.id)}
+                        onClick={() => setConfirmDeleteScheduleId(s.id)}
                       >
                         <XIcon className="size-4" />
                       </Button>
@@ -1199,5 +1206,23 @@ export function SettingsDialog({
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    <ConfirmDialog
+      open={confirmDeleteScheduleId !== null}
+      onOpenChange={(open) => {
+        if (!open) setConfirmDeleteScheduleId(null);
+      }}
+      title="Delete scheduled prompt?"
+      description={
+        scheduleToDelete
+          ? `"${scheduleToDelete.prompt}" (${scheduleToDelete.cron}) will stop running and can't be recovered.`
+          : "This scheduled prompt will stop running and can't be recovered."
+      }
+      confirmLabel="Delete"
+      onConfirm={() => {
+        if (confirmDeleteScheduleId) void handleDeleteSchedule(confirmDeleteScheduleId);
+      }}
+    />
+    </>
   );
 }
