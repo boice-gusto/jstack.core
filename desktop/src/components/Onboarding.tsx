@@ -1,3 +1,4 @@
+import { ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
 import { createAgent, type AgentSummary } from "../lib/agent";
 import { AVATAR_EMOJIS, pickRandomUnusedEmoji, setAgentAvatar } from "../lib/avatars";
@@ -7,6 +8,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Checkbox } from "./ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -37,6 +39,7 @@ export function CreateAgentForm({
   const [model, setModel] = useState(MODELS[0]!);
   const [tools, setTools] = useState<string[]>(DEFAULT_TOOLS);
   const [mcpInherit, setMcpInherit] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   // Required in the sense that it's never blank -- pre-filled with a random emoji no other agent
   // is currently using (see pickRandomUnusedEmoji) the moment this form mounts, so an agent
   // created without touching this field still gets a real, persisted avatar rather than falling
@@ -143,18 +146,6 @@ export function CreateAgentForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="agent-persona">Persona / soul</Label>
-        <Textarea
-          id="agent-persona"
-          value={persona}
-          onChange={(e) => setPersona(e.currentTarget.value)}
-          placeholder="Extra guidance appended to this agent's system prompt -- tone, priorities, how it should answer."
-          disabled={busy}
-          rows={4}
-        />
-      </div>
-
-      <div className="space-y-1.5">
         <Label htmlFor="agent-model">Model</Label>
         <Select value={model} onValueChange={(v) => v && setModel(v)}>
           <SelectTrigger id="agent-model" className="w-full">
@@ -170,33 +161,60 @@ export function CreateAgentForm({
         </Select>
       </div>
 
-      <div className="space-y-1.5">
-        <Label>Access (tools)</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {AVAILABLE_TOOLS.map((tool) => (
-            <label key={tool} className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={tools.includes(tool)}
-                onCheckedChange={() => toggleTool(tool)}
-                disabled={busy}
-              />
-              {tool}
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* Persona/Access/MCP are real settings a first agent doesn't need touched -- Read/Grep/Glob
+          and no MCP are already sane defaults. Collapsed so the default path to "Create agent" is
+          just Name + Model, with the rest available a click away for anyone who wants it. */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced} className="group/advanced">
+        <CollapsibleTrigger
+          type="button"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronRightIcon className="size-3.5 shrink-0 transition-transform group-data-[open]/advanced:rotate-90" />
+          Advanced options
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-5 pt-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="agent-persona">Persona / soul</Label>
+            <Textarea
+              id="agent-persona"
+              value={persona}
+              onChange={(e) => setPersona(e.currentTarget.value)}
+              placeholder="Extra guidance appended to this agent's system prompt -- tone, priorities, how it should answer."
+              disabled={busy}
+              rows={4}
+            />
+          </div>
 
-      <label className="flex items-start gap-2 text-sm">
-        <Checkbox
-          checked={mcpInherit}
-          onCheckedChange={(c) => setMcpInherit(c === true)}
-          disabled={busy}
-        />
-        <span>
-          Give this agent the same MCP servers configured for the <code>claude</code> CLI (e.g.
-          Glean). Off by default -- only turn this on for an agent you trust with that access.
-        </span>
-      </label>
+          <div className="space-y-1.5">
+            <Label>Access (tools)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {AVAILABLE_TOOLS.map((tool) => (
+                <label key={tool} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={tools.includes(tool)}
+                    onCheckedChange={() => toggleTool(tool)}
+                    disabled={busy}
+                  />
+                  {tool}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2 text-sm">
+            <Checkbox
+              checked={mcpInherit}
+              onCheckedChange={(c) => setMcpInherit(c === true)}
+              disabled={busy}
+            />
+            <span>
+              Give this agent the same MCP servers configured for the <code>claude</code> CLI
+              (e.g. Glean). Off by default -- only turn this on for an agent you trust with that
+              access.
+            </span>
+          </label>
+        </CollapsibleContent>
+      </Collapsible>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -219,7 +237,8 @@ export function Onboarding({ onCreated }: { onCreated: (agent: AgentSummary) => 
         <div className="space-y-1 text-center">
           <h1 className="text-xl font-semibold">Create your first agent</h1>
           <p className="text-sm text-muted-foreground">
-            No agents are configured yet -- set one up to start chatting.
+            jstack chats with AI agents that can read, write, and run code in their own
+            workspace. Give one a name and a model to start your first conversation.
           </p>
         </div>
         <CreateAgentForm onCreated={onCreated} />
