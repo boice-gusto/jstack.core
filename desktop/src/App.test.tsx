@@ -779,8 +779,10 @@ describe("App", () => {
     expect(screen.getByText(/earlier answer/)).toBeTruthy();
     expect(screen.getByText("Read")).toBeTruthy();
     // The tool's real output must render, not just its name/input -- this is the fix for
-    // "the grep command isn't showing really anything."
+    // "the grep command isn't showing really anything." Tool calls render collapsed by
+    // default (/impeccable critique), so expand it first via its header.
     expect(screen.getByText("Completed")).toBeTruthy();
+    fireEvent.click(screen.getByText("Read"));
     expect(await screen.findByText(/hello world/)).toBeTruthy();
 
     // The Read tool's file_path shows up as a clickable "open file" affordance in the tool

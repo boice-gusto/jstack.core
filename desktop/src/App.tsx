@@ -1237,7 +1237,7 @@ function App() {
               return (
                 <Message key={i} from="assistant" data-role="assistant">
                   {m.toolEvents.map((t, j) => (
-                    <Tool key={j} defaultOpen>
+                    <Tool key={j}>
                       <ToolHeader
                         type="dynamic-tool"
                         toolName={t.name}
