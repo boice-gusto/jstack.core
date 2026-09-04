@@ -6,7 +6,7 @@ import {
 } from "./tick.js";
 import { CrewStore, deriveTaskDisplayStatus, expandHome } from "./store.js";
 import type { CrewConfig } from "./types.js";
-import type { ToolCallEvent } from "./slack.js";
+import type { LiveSessionEvent, ToolCallEvent } from "./slack.js";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import {
@@ -129,6 +129,7 @@ export async function promptManualSession(
   id: string,
   message: string,
   opts: { mode?: SessionMode; thinkingLevel?: ThinkingLevel } = {},
+  onEvent?: (event: LiveSessionEvent) => void,
 ): Promise<ManualPromptResult> {
   const task = store.findTaskById(id);
   if (!task) throw new UnknownSessionError(`no such session: ${id}`);
@@ -161,6 +162,7 @@ export async function promptManualSession(
     nonce,
     { id: task.sessionId, resume: hasRunTurn },
     opts,
+    onEvent,
   );
 
   store.settle(cfg.budget.per_task_usd, w.cost);

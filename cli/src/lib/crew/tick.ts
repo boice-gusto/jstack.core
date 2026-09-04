@@ -28,6 +28,7 @@ import {
   stripServerSuffix,
   runClaude,
   runClaudeStreaming,
+  type LiveSessionEvent,
   type ToolCallEvent,
 } from "./slack.js";
 import {
@@ -355,6 +356,10 @@ function buildWorkerInvocation(
     system,
     "--add-dir",
     expandHome(agent.workspace),
+    // Harmless if the agent's `--tools` never includes Task (it just never fires): forwards a
+    // sub-agent's own text/thinking, tagged with parent_tool_use_id, so a stream-json consumer
+    // (runClaudeStreaming's onEvent) can show sub-agent activity instead of it being invisible.
+    "--forward-subagent-text",
   ];
   return { args, prompt };
 }
@@ -396,6 +401,7 @@ export async function runWorkerStreaming(
   nonce: string,
   session: { id: string; resume: boolean },
   opts: WorkerInvocationOpts = {},
+  onEvent?: (event: LiveSessionEvent) => void,
 ): Promise<{
   ok: boolean;
   text: string;
@@ -411,7 +417,12 @@ export async function runWorkerStreaming(
     session,
     opts,
   );
-  const r = await runClaudeStreaming(args, prompt, agent.task_timeout_ms);
+  const r = await runClaudeStreaming(
+    args,
+    prompt,
+    agent.task_timeout_ms,
+    onEvent,
+  );
   return {
     ok: r.ok,
     text: r.text,

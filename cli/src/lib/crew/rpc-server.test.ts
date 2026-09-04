@@ -74,6 +74,78 @@ function installArgvCapturingFakeClaude(): {
   return { restorePath, argvFile };
 }
 
+/** A fake `claude` whose stream includes one sub-agent-forwarded `assistant_text` event
+ * (`parent_tool_use_id` set) before the final result -- for exercising `session/subscribe`'s
+ * live `session/update` push, not just the request/response `session/prompt` result. The sleep
+ * gives a test's watcher connection time to subscribe before any output exists to miss. */
+function installFakeSubagentClaude(): { restorePath: string } {
+  const dir = mkdtempSync(join(tmpdir(), "fake-claude-subagent-"));
+  writeFileSync(
+    join(dir, "claude"),
+    [
+      "#!/bin/sh",
+      "sleep 0.1",
+      'echo \'{"type":"assistant","parent_tool_use_id":"toolu_task1","message":{"content":[{"type":"text","text":"PONG"}]}}\'',
+      'echo \'{"type":"result","is_error":false,"result":"DONE","total_cost_usd":0.001}\'',
+    ].join("\n"),
+  );
+  chmodSync(join(dir, "claude"), 0o755);
+  const restorePath = process.env.PATH ?? "";
+  process.env.PATH = `${dir}:${restorePath}`;
+  return { restorePath };
+}
+
+/** Opens a persistent connection, sends `session/subscribe`, and collects every
+ * `session/update` notification (method, no id) that arrives afterward -- distinct from
+ * `rpcCall`, which closes after its first response and can't observe an unsolicited push. */
+async function watchSession(
+  sockPath: string,
+  sessionId: string,
+): Promise<{
+  updates: Array<{ id: string; event: unknown }>;
+  close: () => void;
+}> {
+  const updates: Array<{ id: string; event: unknown }> = [];
+  let buffer = "";
+  let subscribed = false;
+  return new Promise((resolve, reject) => {
+    Bun.connect({
+      unix: sockPath,
+      socket: {
+        open(socket) {
+          socket.write(
+            `${JSON.stringify({ id: "watch", method: "session/subscribe", params: { id: sessionId } })}\n`,
+          );
+        },
+        data(socket, chunk) {
+          buffer += chunk.toString("utf8");
+          let idx = buffer.indexOf("\n");
+          while (idx >= 0) {
+            const line = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 1);
+            idx = buffer.indexOf("\n");
+            if (line.trim().length === 0) continue;
+            const parsed = JSON.parse(line) as {
+              id?: unknown;
+              method?: string;
+              params?: { id: string; event: unknown };
+            };
+            if (parsed.method === "session/update" && parsed.params) {
+              updates.push(parsed.params);
+            } else if (!subscribed) {
+              subscribed = true;
+              resolve({ updates, close: () => socket.end() });
+            }
+          }
+        },
+        error(_socket, err) {
+          reject(err);
+        },
+      },
+    }).catch(reject);
+  });
+}
+
 /** Minimal NDJSON request/response client over the raw Unix socket. */
 async function rpcCall(
   sockPath: string,
@@ -219,6 +291,45 @@ describe("rpc-server", () => {
       id: created.id,
     })) as { ok: boolean };
     expect(cancelled.ok).toBe(true);
+  });
+
+  test("session/subscribe receives live session/update pushes while session/prompt is still in flight", async () => {
+    restorePath = installFakeSubagentClaude().restorePath;
+    const stateDir = mkdtempSync(join(tmpdir(), "crew-rpc-test-"));
+    const cfg = baseConfig();
+    handle = startRpcServer({ stateDir, getConfig: () => cfg });
+
+    const created = (await rpcCall(handle.sockPath, "session/new", {
+      agentId: "ralph",
+    })) as { id: string };
+
+    const watcher = await watchSession(handle.sockPath, created.id);
+    try {
+      const prompted = (await rpcCall(handle.sockPath, "session/prompt", {
+        id: created.id,
+        message: "launch a subagent",
+      })) as { ok: boolean; text: string };
+      expect(prompted.ok).toBe(true);
+      expect(prompted.text).toBe("DONE");
+
+      // The sub-agent's forwarded "PONG" must have arrived as a live push -- tagged with the
+      // Task tool_use id it belongs to -- distinct from (and never conflated with) the final
+      // "DONE" answer session/prompt's own response carries.
+      expect(watcher.updates.length).toBeGreaterThan(0);
+      const forwarded = watcher.updates.find(
+        (u) =>
+          u.id === created.id &&
+          (u.event as { kind?: string; text?: string }).kind ===
+            "assistant_text" &&
+          (u.event as { text?: string }).text === "PONG",
+      );
+      expect(forwarded).toBeDefined();
+      expect(
+        (forwarded!.event as { parentToolUseId?: string }).parentToolUseId,
+      ).toBe("toolu_task1");
+    } finally {
+      watcher.close();
+    }
   });
 
   test("session/prompt forwards mode and thinkingLevel through to the worker invocation", async () => {

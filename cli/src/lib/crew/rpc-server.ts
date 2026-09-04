@@ -18,6 +18,7 @@ import { MEMORY_KINDS, MEMORY_SOURCES } from "../memory-store.js";
 import { CrewStore, expandHome } from "./store.js";
 import type { AgentConfig, CrewConfig } from "./types.js";
 import type { SessionMode, ThinkingLevel } from "./tick.js";
+import type { LiveSessionEvent } from "./slack.js";
 import { collectSkills, type SkillIndexEntry } from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
 import { TtlCache, ttlMsFromEnv } from "../ttl-cache.js";
@@ -80,12 +81,13 @@ function cachedSkillsIndex(
  * this socket.
  *
  * `session/prompt` runs the real turn via `runWorkerStreaming` (stream-json, with tool-call
- * events collected) but still replies only once the whole turn is done, which can be up to
- * `task_timeout_ms` (minutes) -- session.ts collects the stream, it doesn't forward it live.
- * That's a real, current limitation: there is no `session/update` push notification, because
- * this transport is one request/response per connection, not a persistent one a server could
- * push updates over. A client wanting to watch a turn in progress would need a transport
- * redesign, not just a session.ts change.
+ * events collected) and still only REPLIES once the whole turn is done, which can be up to
+ * `task_timeout_ms` (minutes) -- but a connection can additionally send `session/subscribe`
+ * (`{ id: sessionId }`) to register itself for `session/update` notifications (no `id` field,
+ * so a client tells them apart from replies to its own requests) pushed live as each event
+ * comes off the stream, on ANY connection -- a session/prompt call and a session/subscribe
+ * watcher are normally different connections. A subscription is torn down when its connection
+ * closes; there is no explicit unsubscribe.
  *
  * `session/cancel` also runs a self-retro (retro.ts) over the closing session's transcript
  * before responding, so it can take as long as one more agent turn -- the `{ retro }` in its
@@ -145,6 +147,14 @@ async function dispatch(
   params: unknown,
   getLogs: (limit?: number) => string[],
   startedAt: number,
+  /** Registers the connection this request arrived on as a live listener for one session's
+   * updates -- bound to that socket by the caller (`startRpcServer`'s `handleLine`), which is
+   * the only place that knows which socket a request came in on. */
+  subscribe: (sessionId: string) => void,
+  /** Pushes one `session/update` notification to every socket subscribed to `sessionId`, if
+   * any. Not tied to the calling connection -- a prompt's own `onEvent` calls this to fan out
+   * to whichever OTHER connection (if any) is watching that session. */
+  broadcast: (sessionId: string, event: LiveSessionEvent) => void,
 ): Promise<unknown> {
   const p = (params ?? {}) as Record<string, unknown>;
   const store = new CrewStore(stateDir);
@@ -166,12 +176,20 @@ async function dispatch(
         }
         return getSessionHistory(store, cfg, p.id);
       }
+      case "session/subscribe": {
+        if (typeof p.id !== "string") {
+          throw new Error("session/subscribe requires { id: string }");
+        }
+        subscribe(p.id);
+        return { ok: true };
+      }
       case "session/prompt": {
         if (typeof p.id !== "string" || typeof p.message !== "string") {
           throw new Error(
             "session/prompt requires { id: string, message: string }",
           );
         }
+        const sessionId = p.id;
         const mode = SESSION_MODES.includes(p.mode as SessionMode)
           ? (p.mode as SessionMode)
           : undefined;
@@ -180,10 +198,14 @@ async function dispatch(
         )
           ? (p.thinkingLevel as ThinkingLevel)
           : undefined;
-        return await promptManualSession(store, cfg, p.id, p.message, {
-          mode,
-          thinkingLevel,
-        });
+        return await promptManualSession(
+          store,
+          cfg,
+          sessionId,
+          p.message,
+          { mode, thinkingLevel },
+          (event) => broadcast(sessionId, event),
+        );
       }
       case "session/cancel": {
         if (typeof p.id !== "string") {
@@ -432,6 +454,39 @@ export function startRpcServer(opts: {
     writeAll(socket, `${JSON.stringify(body)}\n`);
   }
 
+  /** Which connections are watching which session for live `session/update` pushes --
+   * `session/prompt` is still a normal request/response call; this is a SEPARATE, additive
+   * channel a connection opts into via `session/subscribe`. A session id can have zero, one, or
+   * (in principle) several watchers; a connection is dropped from every session it watched on
+   * close (see the `close` socket handler below), never left to leak. */
+  const subscribers = new Map<string, Set<Socket<SocketData>>>();
+
+  function subscribeToSession(
+    sessionId: string,
+    socket: Socket<SocketData>,
+  ): void {
+    let set = subscribers.get(sessionId);
+    if (!set) {
+      set = new Set();
+      subscribers.set(sessionId, set);
+    }
+    set.add(socket);
+  }
+
+  function unsubscribeSocket(socket: Socket<SocketData>): void {
+    for (const set of subscribers.values()) set.delete(socket);
+  }
+
+  function broadcastSessionUpdate(
+    sessionId: string,
+    event: LiveSessionEvent,
+  ): void {
+    const set = subscribers.get(sessionId);
+    if (!set || set.size === 0) return;
+    const line = `${JSON.stringify({ method: "session/update", params: { id: sessionId, event } })}\n`;
+    for (const socket of set) writeAll(socket, line);
+  }
+
   function handleLine(socket: Socket<SocketData>, line: string): void {
     const req = parseRequest(line);
     if ("error" in req) {
@@ -445,6 +500,8 @@ export function startRpcServer(opts: {
       req.params,
       getLogs,
       startedAt,
+      (sessionId) => subscribeToSession(sessionId, socket),
+      broadcastSessionUpdate,
     ).then(
       (result) => respond(socket, req.id, { result }),
       (e: unknown) =>
@@ -474,6 +531,12 @@ export function startRpcServer(opts: {
         const written = socket.write(pending);
         socket.data.pendingWrite =
           written < pending.length ? pending.subarray(written) : undefined;
+      },
+      // Without this, a connection that subscribed to a session and then disappeared (the
+      // desktop app closing a watch connection, or crashing) stays in `subscribers` forever --
+      // a slow leak, and every future broadcast would pay for a write() to a dead socket.
+      close(socket) {
+        unsubscribeSocket(socket);
       },
     },
   });
