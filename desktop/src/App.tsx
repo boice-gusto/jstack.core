@@ -8,11 +8,15 @@ import {
   newSession,
   promptSession,
   setTrayStatus,
+  unwatchSession,
   updateTrayMenu,
+  watchSession,
   type AgentSummary,
+  type LiveSessionEvent,
   type PromptResult,
   type SessionMode,
   type SessionSummary,
+  type SessionUpdatePayload,
   type ThinkingLevel,
   type ToolCallEvent,
   type TrayStatus,
@@ -195,7 +199,63 @@ type ChatMessage =
       toolEvents: ToolCallEvent[];
     }
   | { role: "error"; text: string }
-  | { role: "system"; text: string };
+  | { role: "system"; text: string }
+  /** A turn still in flight, filled in live from "session-update" events (see watchSession) --
+   * always the LAST message while present, replaced by the real "assistant"/"error" entry once
+   * promptSession resolves. Same shape as "assistant" minus the fields (costUsd/elapsedMs) that
+   * aren't known until the turn actually finishes. */
+  | { role: "assistant-pending"; text: string; toolEvents: ToolCallEvent[] };
+
+/** Applies one live "session-update" event to a pending message's accumulated text/toolEvents.
+ * Mirrors slack.ts's runClaudeStreaming reconciliation (match tool_result by id, else the most
+ * recent same-thread tool_use still missing output) closely enough for a live preview -- the
+ * authoritative toolEvents this gets replaced by come from promptSession's own response, not
+ * from reconciling this incrementally forever. A sub-agent's own forwarded text (parentToolUseId
+ * set) has no tool call of its own to attach to, so it renders as a synthetic nested "tool" call
+ * instead of being silently dropped -- the same Tool/ToolContent UI, labeled to be clearly not a
+ * real tool. */
+function applyLiveSessionEvent(
+  pending: { text: string; toolEvents: ToolCallEvent[] },
+  event: LiveSessionEvent,
+): { text: string; toolEvents: ToolCallEvent[] } {
+  if (event.kind === "tool_use") {
+    return { ...pending, toolEvents: [...pending.toolEvents, event.event] };
+  }
+  if (event.kind === "tool_result") {
+    const toolEvents = pending.toolEvents.map((t) => t);
+    const match = event.toolUseId
+      ? toolEvents.find((t) => t.id === event.toolUseId)
+      : [...toolEvents]
+          .reverse()
+          .find((t) => t.output === undefined && t.parentToolUseId === event.parentToolUseId);
+    if (match) {
+      match.output = event.output;
+      match.isError = event.isError;
+    }
+    return { ...pending, toolEvents };
+  }
+  // assistant_text
+  if (!event.parentToolUseId) {
+    return { ...pending, text: pending.text + event.text };
+  }
+  return {
+    ...pending,
+    toolEvents: [
+      ...pending.toolEvents,
+      {
+        name: "Subagent reply",
+        // {} not undefined: ToolInput unconditionally JSON.stringifies `input` for its
+        // Parameters panel, and CodeBlock crashes on `code={undefined}` (JSON.stringify(undefined)
+        // returns undefined, not the string "undefined") -- this pseudo-call has no real input to
+        // show, but must still hand it something stringifiable.
+        input: {},
+        output: event.text,
+        isError: false,
+        parentToolUseId: event.parentToolUseId,
+      },
+    ],
+  };
+}
 
 /** "12s" under a minute, "1:32" at or past it -- matches how the composer's live "Thinking..."
  * counter formats the same elapsed value while a turn is still in flight. */
@@ -220,6 +280,47 @@ function toolOutputLanguage(toolName: string): CodeBlockLanguage {
 function handleOpenFile(path: string): void {
   openPath(path).catch((e) => {
     console.error(`[jstack] openPath(${path}) failed:`, e);
+  });
+}
+
+function renderOneToolCall(t: ToolCallEvent, key: string, nested: ToolCallEvent[]) {
+  return (
+    <Tool key={key}>
+      <ToolHeader
+        type="dynamic-tool"
+        toolName={t.name}
+        state={
+          t.output === undefined ? "input-available" : t.isError ? "output-error" : "output-available"
+        }
+        filePath={extractFilePath(t.input)}
+        onOpenFile={handleOpenFile}
+      />
+      <ToolContent>
+        <ToolInput input={t.input} />
+        {t.output !== undefined && (
+          <ToolOutput
+            output={t.output}
+            errorText={t.isError ? t.output : undefined}
+            language={toolOutputLanguage(t.name)}
+          />
+        )}
+        {nested.map((child, j) => renderOneToolCall(child, `${key}.${j}`, []))}
+      </ToolContent>
+    </Tool>
+  );
+}
+
+/** Renders a turn's tool calls, nesting a sub-agent's own tool calls (and its forwarded text,
+ * synthesized as a "Subagent reply" pseudo-call by applyLiveSessionEvent) inside the Task call
+ * that spawned it -- flat parentToolUseId tagging, one level of nesting, matching how deep this
+ * app lets a sub-agent's activity actually go (a sub-agent spawning its own sub-agent renders
+ * flattened under the same parent rather than recursing further, which this codebase has no way
+ * to produce today anyway). */
+function renderToolEvents(toolEvents: ToolCallEvent[]) {
+  const topLevel = toolEvents.filter((t) => !t.parentToolUseId);
+  return topLevel.map((t, i) => {
+    const nested = t.id ? toolEvents.filter((c) => c.parentToolUseId === t.id) : [];
+    return renderOneToolCall(t, String(i), nested);
   });
 }
 
@@ -413,6 +514,19 @@ function App() {
         switchToSession(event.payload.id, event.payload.agentId);
       }),
       listen("tray-open-settings", () => setShowSettings(true)),
+      // Live progress for whichever session is both being watched (watchSession, in
+      // handlePromptInputSubmit) AND currently on screen -- a background session's own updates
+      // still arrive here, but there's no "assistant-pending" message in ITS transcript to
+      // apply them to unless the user is actually looking at it right now.
+      listen<SessionUpdatePayload>("session-update", (event) => {
+        if (event.payload.id !== sessionIdRef.current) return;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (!last || last.role !== "assistant-pending") return prev;
+          const updated = applyLiveSessionEvent(last, event.payload.event);
+          return [...prev.slice(0, -1), { role: "assistant-pending", ...updated }];
+        });
+      }),
     ];
     return () => {
       unlistenPromises.forEach((p) => p.then((unlisten) => unlisten()));
@@ -768,6 +882,17 @@ function App() {
     setMessages((prev) => [...prev, { role: "user", text }]);
     markSessionBusy(targetSessionId);
     const startedAt = Date.now();
+    // Best-effort: an older daemon without session/subscribe, or a watch that fails to
+    // connect, just means no live progress for this turn -- promptSession itself is unaffected
+    // either way, so a failure here must never block or fail the actual prompt.
+    try {
+      await watchSession(targetSessionId);
+      if (sessionIdRef.current === targetSessionId) {
+        setMessages((prev) => [...prev, { role: "assistant-pending", text: "", toolEvents: [] }]);
+      }
+    } catch (e) {
+      console.error(`[jstack] watchSession(${targetSessionId}) failed:`, e);
+    }
     try {
       const result: PromptResult = await promptSession(targetSessionId, text, {
         mode: sessionMode,
@@ -783,7 +908,9 @@ function App() {
       // this reply in the wrong transcript entirely.
       if (sessionIdRef.current === targetSessionId) {
         setMessages((prev) => [
-          ...prev,
+          // Drops the live "assistant-pending" placeholder (if any) -- this authoritative
+          // result replaces it, live or not.
+          ...prev.filter((m) => m.role !== "assistant-pending"),
           result.ok
             ? {
                 role: "assistant",
@@ -799,11 +926,14 @@ function App() {
       console.error(`[jstack] promptSession(${targetSessionId}) failed:`, e);
       if (sessionIdRef.current === targetSessionId) {
         setMessages((prev) => [
-          ...prev,
+          ...prev.filter((m) => m.role !== "assistant-pending"),
           { role: "error", text: e instanceof Error ? e.message : String(e) },
         ]);
       }
     } finally {
+      unwatchSession(targetSessionId).catch((e) => {
+        console.error(`[jstack] unwatchSession(${targetSessionId}) failed:`, e);
+      });
       markSessionIdle(targetSessionId);
       await refreshSessions();
     }
@@ -1234,35 +1364,21 @@ function App() {
                   </Message>
                 );
               }
+              if (m.role === "assistant-pending") {
+                return (
+                  <Message key={i} from="assistant" data-role="assistant-pending">
+                    {renderToolEvents(m.toolEvents)}
+                    {m.text.length > 0 && (
+                      <MessageContent>
+                        <MessageResponse>{m.text}</MessageResponse>
+                      </MessageContent>
+                    )}
+                  </Message>
+                );
+              }
               return (
                 <Message key={i} from="assistant" data-role="assistant">
-                  {m.toolEvents.map((t, j) => (
-                    <Tool key={j}>
-                      <ToolHeader
-                        type="dynamic-tool"
-                        toolName={t.name}
-                        state={
-                          t.output === undefined
-                            ? "input-available"
-                            : t.isError
-                              ? "output-error"
-                              : "output-available"
-                        }
-                        filePath={extractFilePath(t.input)}
-                        onOpenFile={handleOpenFile}
-                      />
-                      <ToolContent>
-                        <ToolInput input={t.input} />
-                        {t.output !== undefined && (
-                          <ToolOutput
-                            output={t.output}
-                            errorText={t.isError ? t.output : undefined}
-                            language={toolOutputLanguage(t.name)}
-                          />
-                        )}
-                      </ToolContent>
-                    </Tool>
-                  ))}
+                  {renderToolEvents(m.toolEvents)}
                   <MessageContent>
                     <MessageResponse>{m.text}</MessageResponse>
                     <div className="mt-1 flex items-center gap-1">

@@ -17,6 +17,43 @@ export interface ToolCallEvent {
   input: unknown;
   output?: string;
   isError?: boolean;
+  /** Set when this tool call was made by a sub-agent (a Task-tool invocation) rather than the
+   * main thread -- the `id` of that Task's own ToolCallEvent. Used to render it nested inside
+   * that Task's own ToolContent instead of as a flat top-level call. */
+  parentToolUseId?: string;
+}
+
+/** One incremental update pushed via the "session-update" Tauri event while a prompt is still
+ * in flight (see `watchSession` below) -- the live counterpart to the `toolEvents`/`text`
+ * `promptSession` still only returns once the whole turn is done. */
+export type LiveSessionEvent =
+  | { kind: "tool_use"; event: ToolCallEvent }
+  | {
+      kind: "tool_result";
+      toolUseId?: string;
+      output: string;
+      isError: boolean;
+      parentToolUseId?: string;
+    }
+  | { kind: "assistant_text"; text: string; parentToolUseId?: string };
+
+export interface SessionUpdatePayload {
+  id: string;
+  event: LiveSessionEvent;
+}
+
+/** Subscribes to live `session/update` pushes for `id` -- resolves once the daemon has
+ * acknowledged the subscription, so a caller can rely on not missing anything by firing
+ * `promptSession` right after. Listen for `"session-update"` Tauri events (payload:
+ * `SessionUpdatePayload`) to receive them; call `unwatchSession` when done (normally in a
+ * `finally` alongside the `promptSession` call this is watching). */
+export function watchSession(id: string): Promise<void> {
+  return invoke("session_watch_start", { id });
+}
+
+/** Stops watching `id`. Safe to call even if watching was never started or already stopped. */
+export function unwatchSession(id: string): Promise<void> {
+  return invoke("session_watch_stop", { id });
 }
 
 export interface PromptResult {

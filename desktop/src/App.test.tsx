@@ -245,6 +245,73 @@ describe("App", () => {
     }
   });
 
+  test("a sub-agent's live activity renders nested under its Task tool call while the turn is in flight, then reconciles with the final result", async () => {
+    let resolvePrompt: (result: unknown) => void;
+    const promptPromise = new Promise((resolve) => {
+      resolvePrompt = resolve;
+    });
+    const watchCalls: string[] = [];
+    mockIPC(
+      withDefaults((cmd, payload) => {
+        if (cmd === "session_list") {
+          return [{ id: "ral-a", agentId: "ralph", state: "idle", turns: 1, costUsd: 0 }];
+        }
+        if (cmd === "session_history") return [];
+        if (cmd === "session_watch_start") {
+          watchCalls.push((payload as { id: string }).id);
+          return null;
+        }
+        if (cmd === "session_watch_stop") return null;
+        if (cmd === "session_prompt") return promptPromise;
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    render(<App />);
+    await waitFor(() => screen.getByText("ral-a"));
+    fireEvent.click(screen.getByText("ral-a"));
+    await waitFor(() =>
+      expect(screen.getByText("ral-a").closest("div")?.className).toContain("border-primary"),
+    );
+    fireEvent.change(screen.getByLabelText("message"), {
+      target: { value: "launch a subagent" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(watchCalls).toEqual(["ral-a"]));
+
+    // Live: the Task ("Agent") tool call shows up as soon as its tool_use event arrives --
+    // well before session_prompt has resolved.
+    emitMockTauriEvent("session-update", {
+      id: "ral-a",
+      event: { kind: "tool_use", event: { id: "toolu_task1", name: "Agent", input: {} } },
+    });
+    await waitFor(() => screen.getByText("Agent"));
+    // Tool calls render collapsed by default -- the nested child lives inside this one's own
+    // ToolContent, so it isn't even mounted until this is expanded.
+    fireEvent.click(screen.getByText("Agent"));
+
+    // Live: the sub-agent's forwarded reply renders nested under it, as its own "Subagent
+    // reply" pseudo-call (also collapsed by default).
+    emitMockTauriEvent("session-update", {
+      id: "ral-a",
+      event: { kind: "assistant_text", text: "PONG", parentToolUseId: "toolu_task1" },
+    });
+    await waitFor(() => screen.getByText("Subagent reply"));
+    fireEvent.click(screen.getByText("Subagent reply"));
+    expect(await screen.findByText("PONG")).toBeTruthy();
+
+    // The final result replaces the live placeholder entirely -- "DONE" appears, and there's
+    // exactly one "Agent" tool call left (the authoritative one), not a duplicate leftover from
+    // the live preview.
+    resolvePrompt!({
+      ok: true,
+      text: "DONE",
+      costUsd: 0.001,
+      toolEvents: [{ id: "toolu_task1", name: "Agent", input: {}, output: "PONG" }],
+    });
+    await waitFor(() => screen.getByText("DONE"));
+    expect(screen.getAllByText("Agent")).toHaveLength(1);
+  });
+
   test("the window title reflects the active agent's name, never the literal word 'jstack'", async () => {
     mockIPC(withDefaults((cmd) => (cmd === "session_list" ? [] : Promise.reject())));
     render(<App />);

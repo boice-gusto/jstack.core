@@ -2,16 +2,115 @@ pub mod agent_client;
 
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::sync::Mutex;
 use tauri::image::Image;
 use tauri::menu::{AboutMetadata, IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{TrayIcon, TrayIconBuilder};
 use tauri::{Emitter, Manager};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::UnixStream;
+use tokio::task::JoinHandle;
 
 /// Every command resolves the socket path fresh per call rather than caching it once at
 /// startup, so changing `JSTACK_AGENT_SOCK` (or the daemon coming up after the app started)
 /// doesn't need an app restart to take effect.
 fn resolve_socket() -> Result<String, String> {
     agent_client::default_socket_path()
+}
+
+/// Live `session/update` watches currently running, keyed by session id -- at most one
+/// connection per session, since the frontend only ever watches whichever session(s) it's
+/// actively prompting (see `App.tsx`'s `busySessionIds`, which is exactly the same "more than
+/// one session can be in flight at once" set this mirrors). `session_watch_start` aborts and
+/// replaces any pre-existing entry for the same id defensively; the normal path is
+/// `session_watch_stop` (or a `close(socket)` on the daemon side once this task's connection
+/// drops) removing it once a prompt finishes.
+#[derive(Default)]
+struct WatchRegistry(Mutex<HashMap<String, JoinHandle<()>>>);
+
+/// Opens a SEPARATE, persistent connection from the one-shot request/response pattern
+/// `agent_client::call` uses everywhere else -- `session/subscribe` isn't a call-and-done RPC,
+/// it registers this connection to receive `session/update` pushes for as long as it stays
+/// open. Returns only once subscribed (so a caller can rely on the watch being live before it
+/// fires the actual `session/prompt`), then keeps reading and re-emitting every push as a
+/// `session-update` Tauri event (mirroring the existing `tray-open-settings` emit/listen
+/// pattern) until the connection closes or `session_watch_stop` aborts the task.
+#[tauri::command]
+async fn session_watch_start(
+    app: tauri::AppHandle,
+    registry: tauri::State<'_, WatchRegistry>,
+    id: String,
+) -> Result<(), String> {
+    if let Some(handle) = registry.0.lock().unwrap().remove(&id) {
+        handle.abort();
+    }
+
+    let sock_path = resolve_socket()?;
+    let stream = UnixStream::connect(&sock_path)
+        .await
+        .map_err(|e| format!("could not connect to {sock_path}: {e}"))?;
+    let (read_half, mut write_half) = stream.into_split();
+
+    let req = json!({ "id": "watch", "method": "session/subscribe", "params": { "id": id } });
+    let mut line = serde_json::to_string(&req).map_err(|e| e.to_string())?;
+    line.push('\n');
+    write_half
+        .write_all(line.as_bytes())
+        .await
+        .map_err(|e| format!("write failed: {e}"))?;
+    // write_half is intentionally dropped here (not moved into the spawned task below) --
+    // this connection never sends anything else, and dropping one half of a tokio
+    // UnixStream::into_split() pair does not close the shared underlying socket while the
+    // other half (the reader, moved into the task) is still alive.
+
+    let mut reader = BufReader::new(read_half);
+    let mut ack_line = String::new();
+    reader
+        .read_line(&mut ack_line)
+        .await
+        .map_err(|e| format!("read failed waiting for subscribe ack: {e}"))?;
+    if ack_line.is_empty() {
+        return Err("connection closed before subscribe was acknowledged".to_string());
+    }
+
+    let session_id = id.clone();
+    let task = tokio::spawn(async move {
+        loop {
+            let mut line = String::new();
+            match reader.read_line(&mut line).await {
+                Ok(0) => break, // daemon closed the connection
+                Err(_) => break,
+                Ok(_) => {
+                    let Ok(value) = serde_json::from_str::<Value>(line.trim()) else {
+                        continue;
+                    };
+                    if value.get("method").and_then(Value::as_str) != Some("session/update") {
+                        continue; // not a push we care about (shouldn't happen on this connection)
+                    }
+                    if let Some(params) = value.get("params") {
+                        let _ = app.emit("session-update", params.clone());
+                    }
+                }
+            }
+        }
+    });
+
+    registry.0.lock().unwrap().insert(session_id, task);
+    Ok(())
+}
+
+/// Aborts the watch task for `id`, if any -- dropping its connection, which the daemon's own
+/// `close(socket)` handler treats as "stop sending this connection updates." Idempotent: calling
+/// this for a session that was never watched (or already stopped) is a normal no-op, not an
+/// error, since callers stop unconditionally in a `finally` regardless of whether watching ever
+/// successfully started.
+#[tauri::command]
+fn session_watch_stop(registry: tauri::State<'_, WatchRegistry>, id: String) -> Result<(), String> {
+    if let Some(handle) = registry.0.lock().unwrap().remove(&id) {
+        handle.abort();
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -301,6 +400,7 @@ fn set_tray_status(tray: tauri::State<'_, TrayIcon<tauri::Wry>>, status: String)
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(WatchRegistry::default())
         .setup(|app| {
             // A quit item is required: Tauri's default window-close behavior on macOS hides
             // rather than terminates, so without an explicit way out the app can only be killed
@@ -435,6 +535,8 @@ pub fn run() {
             run_diagnostics,
             integrations_list,
             mcp_list,
+            session_watch_start,
+            session_watch_stop,
             update_tray_menu,
             set_tray_status,
         ])
