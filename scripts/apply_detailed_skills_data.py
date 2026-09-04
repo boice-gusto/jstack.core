@@ -55,7 +55,7 @@ DESCRIPTIONS: dict[str, str] = {
     "metrics/my-metrics": "Personal throughput and review latency from GitHub/Jira. No peer comparison unless user is a people manager.",
     "metrics/team-metrics": "Team DORA-style signals with caveats for sample size. Separate unplanned work % when labels exist.",
     # --- self ---
-    "self": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr).",
+    "self": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr, recall).",
     "self/diary": "Write a single journal entry to personal gbrain. Never auto-post to team channels.",
     "self/lookback": "Review last N days of personal gbrain + calendar and surface patterns. Gentle, not therapeutic.",
     "self/focus": "Synthesize 2-3 focus blocks from tasks + gbrain, one explicit non-goal, and a timebox suggestion.",
@@ -68,7 +68,7 @@ DESCRIPTIONS: dict[str, str] = {
     "session/init": "Start a jstack session: set gbrain target (personal vs team), load sprint/timezone context, confirm integrations.",
     "session/end": "End the current session: summarize, flush carryover items, optionally run eval hooks.",
     # --- knowledge ---
-    "knowledge": "Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder).",
+    "knowledge": "Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder, reflect).",
     "knowledge/intake": "Ingest raw text into a structured record (title, body, tags). Flag PII/secrets before storage.",
     "knowledge/search": "Answer questions using configured doc roots, URLs, and GitHub scope from jstack.config.json (knowledge_base) — not free-form web guesswork.",
     "knowledge/process": "Deduplicate, merge near-duplicates, and set canonical links across gbrain/Notion entries.",
@@ -77,7 +77,7 @@ DESCRIPTIONS: dict[str, str] = {
     # --- design ---
     "design": "Route a design request to the right sub-skill (figma-handoff, visual-single-page-html). Not for writing component code.",
     # --- review ---
-    "review": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review).",
+    "review": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas, maintainability-audit).",
     "review/project-review": "Review a project update for schedule, scope, risk, and stakeholder issues. Factual errors vs strategy issues.",
     "review/announcement-review": "Review an announcement for tone, accuracy, and channel fit. Flag legal/PR risks if external.",
     "review/counsel-review": "Multi-persona review (CEO/PM/eng/QA/design) with synthesis and tensions. Not vote-counting by title.",

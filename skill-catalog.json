@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T04:14:36.235Z",
+  "generatedAt": "2026-09-04T04:24:52.166Z",
   "count": 157,
   "skills": [
     {
@@ -497,7 +497,7 @@
       "name": "jstack-knowledge",
       "relPath": "skills/knowledge/SKILL.md",
       "gateId": "jstack:knowledge",
-      "description": "Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder). Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
+      "description": "Route knowledge requests to the right sub-skill (intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder, reflect). Also for wiki/runbook search, doc Q&A from repo URLs, gbrain or Notion knowledge, note ingestion, deduping entries, or team knowledge graph.",
       "whenToUse": "",
       "category": "Knowledge",
       "categoryKey": "knowledge"
@@ -1117,7 +1117,7 @@
       "name": "jstack-self",
       "relPath": "skills/self/SKILL.md",
       "gateId": "jstack:self",
-      "description": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr).",
+      "description": "Route personal productivity requests to the right sub-skill (diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr, recall).",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"
