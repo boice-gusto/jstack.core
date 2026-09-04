@@ -79,13 +79,13 @@ Identify the likeliest subject-matter expert for a system from configured histor
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Stabilize before diagnosing. Record the timeline as you go, not afterwards from memory. Do not state a cause until it is established — in anything customer-facing, "under investigation" is correct and a guess is a liability.
+This never pages or contacts anyone directly, so the safety question is evidence quality, not blast radius: confirm the configured project scope before searching, and don't let a fast reputation-based guess substitute for the actual commit/review/CODEOWNERS search in Step 3.
 
 ### Step 3 — Execute
 Search commit history, review/approval history, and CODEOWNERS-style mappings within the configured project scope for the system named in the incident, then rank candidates by recency-weighted evidence rather than raw commit count. Label each candidate with its evidence basis (recent commits/reviews vs. older activity vs. hearsay), and flag explicitly when two or fewer people have touched the relevant file or module recently. Before naming who to contact, check the top candidate's on-call status and order any suggested outreach primary → secondary/backup → team lead rather than routing straight to whoever wrote the code.
 
 ### Step 4 — Validate
-Confirm the timeline is ordered and sourced, that cause is labelled as established or under investigation, and that no customer-facing text asserts more than is known.
+Confirm every candidate is labeled with its evidence basis (recent commit/review vs. older activity vs. hearsay), that a bus-factor-of-two-or-fewer situation is flagged explicitly, and that any suggested outreach follows primary → secondary/backup → team lead rather than skipping straight to whoever wrote the code.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

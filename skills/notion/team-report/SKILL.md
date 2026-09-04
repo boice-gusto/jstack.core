@@ -43,7 +43,8 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
-Apply the `jstack-notion-team-report` workflow using config and any applicable templates under `templates/notion/`.
+Publish an already-drafted team report (from `jstack:reports-team-report`, or pasted content) into Notion as a dated page.
+- Do not draft the report's narrative here — this skill places content that already exists, the same boundary `team-note` holds for lighter notes.
 
 ### Step 4 — Validate
 Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not overwrite pre-existing content, and that it is still a draft unless the user asked to publish.

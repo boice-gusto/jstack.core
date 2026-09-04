@@ -65,12 +65,12 @@ Use a domain-appropriate heading, then:
 | Symptom | Recovery |
 |---------|----------|
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
-| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a run. |
-| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
-| `jstack workflow run` reports `ok: false` | Read the log for which step the agent stopped on; treat it as a real failure, not a stub artifact. |
+| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a recording. |
+| A captured step touched a credential or secret field | Scrub it before saving — never write a literal secret into the definition, even from a real recorded interaction. |
+| A recorded selector looks brittle or auto-generated | Add a stability note (or hand-label the step) before promoting the definition to CI use — an unlabeled generated selector is a known future flake. |
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
+| User asks to run or hand-tune the recording | Out of scope for this skill; hand off to `jstack:workflows-execute` (run) or `jstack:workflows-builder` (hand-tune). |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-execute`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

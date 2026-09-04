@@ -43,7 +43,8 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
-Apply the `jstack-notion-standup` workflow using config and any applicable templates under `templates/notion/`.
+Daily/async standup note: yesterday, today, blockers, one line each per attendee.
+- Link blockers to Jira ids when present in the source text; never invent a ticket number.
 
 ### Step 4 — Validate
 Re-fetch the page and confirm the target parent, the title, and the properties you set. Verify you did not overwrite pre-existing content, and that it is still a draft unless the user asked to publish.

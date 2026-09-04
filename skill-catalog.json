@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T03:57:53.520Z",
+  "generatedAt": "2026-09-04T04:14:36.235Z",
   "count": 157,
   "skills": [
     {
@@ -1027,7 +1027,7 @@
       "name": "jstack-review",
       "relPath": "skills/review/SKILL.md",
       "gateId": "jstack:review",
-      "description": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas).",
+      "description": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas, maintainability-audit).",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"
@@ -1567,7 +1567,7 @@
       "name": "jstack-writing-humanizer",
       "relPath": "skills/writing/humanizer/SKILL.md",
       "gateId": "jstack:writing/humanizer",
-      "description": "Rewrites AI-sounding text into natural human professional prose by stripping a concrete, categorized list of banned patterns — em-dashes used as comma/period substitutes, triadic \"X, Y, and Z\" rhythm, \"It's not just X — it's Y\" and \"Whether you're X or Y\" constructions, hedge/filler words (\"leverage\", \"delve into\", \"seamless\", \"cutting-edge\", \"at the end of the day\"), empty transitions (\"Let's dive in\"), and hollow closers (\"Let me know if you have any questions!\") — while preserving the source's exact meaning and facts. Use when asked to \"make this sound less like AI,\" \"remove AI writing patterns,\" \"humanize this text,\" \"this sounds robotic,\" or to edit the tone/style of an email, doc, Slack message, comment, or post. Do NOT use on source code, code comments, or config files — never touch those. Do NOT use on legal, medical, compliance, or other precision-critical text where an exact technical or legal term matters more than sounding conversational; flag that instead of rewriting it (see Out of scope).",
+      "description": "Rewrites AI-sounding text into natural human professional prose by stripping a concrete, categorized list of banned patterns, including em-dashes used as comma/period substitutes, triadic \"X, Y, and Z\" rhythm, \"It's not just X, it's Y\" and \"Whether you're X or Y\" constructions, hedge/filler words (\"leverage\", \"delve into\", \"seamless\", \"cutting-edge\", \"at the end of the day\"), empty transitions (\"Let's dive in\"), and hollow closers (\"Let me know if you have any questions!\"), while preserving the source's exact meaning and facts. Use when asked to \"make this sound less like AI,\" \"remove AI writing patterns,\" \"humanize this text,\" \"this sounds robotic,\" or to edit the tone/style of an email, doc, Slack message, comment, or post. Do NOT use on source code, code comments, or config files; never touch those. Do NOT use on legal, medical, compliance, or other precision-critical text where an exact technical or legal term matters more than sounding conversational; flag that instead of rewriting it (see Out of scope).",
       "whenToUse": "",
       "category": "Writing",
       "categoryKey": "writing"

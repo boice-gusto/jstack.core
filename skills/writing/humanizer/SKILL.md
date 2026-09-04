@@ -1,6 +1,6 @@
 ---
 name: jstack-writing-humanizer
-description: Rewrites AI-sounding text into natural human professional prose by stripping a concrete, categorized list of banned patterns — em-dashes used as comma/period substitutes, triadic "X, Y, and Z" rhythm, "It's not just X — it's Y" and "Whether you're X or Y" constructions, hedge/filler words ("leverage", "delve into", "seamless", "cutting-edge", "at the end of the day"), empty transitions ("Let's dive in"), and hollow closers ("Let me know if you have any questions!") — while preserving the source's exact meaning and facts. Use when asked to "make this sound less like AI," "remove AI writing patterns," "humanize this text," "this sounds robotic," or to edit the tone/style of an email, doc, Slack message, comment, or post. Do NOT use on source code, code comments, or config files — never touch those. Do NOT use on legal, medical, compliance, or other precision-critical text where an exact technical or legal term matters more than sounding conversational; flag that instead of rewriting it (see Out of scope).
+description: Rewrites AI-sounding text into natural human professional prose by stripping a concrete, categorized list of banned patterns, including em-dashes used as comma/period substitutes, triadic "X, Y, and Z" rhythm, "It's not just X, it's Y" and "Whether you're X or Y" constructions, hedge/filler words ("leverage", "delve into", "seamless", "cutting-edge", "at the end of the day"), empty transitions ("Let's dive in"), and hollow closers ("Let me know if you have any questions!"), while preserving the source's exact meaning and facts. Use when asked to "make this sound less like AI," "remove AI writing patterns," "humanize this text," "this sounds robotic," or to edit the tone/style of an email, doc, Slack message, comment, or post. Do NOT use on source code, code comments, or config files; never touch those. Do NOT use on legal, medical, compliance, or other precision-critical text where an exact technical or legal term matters more than sounding conversational; flag that instead of rewriting it (see Out of scope).
 category: writing
 effort: medium
 ---
@@ -53,7 +53,7 @@ Apply every rule below. A rewrite that still contains any of these has not done 
    content doesn't actually have three co-equal points. Use as many bullets as there are real
    points — two or four are both fine.
 
-### Filler and hedge words — strip or replace
+### Filler and hedge words: strip or replace
 
 7. Replace or cut on sight: "leverage" → "use"; "delve into" → "look at" / "cover" / "get into";
    "utilize" → "use"; "robust" (cut unless it is load-bearing technical language, e.g. "a robust
@@ -85,7 +85,7 @@ Apply every rule below. A rewrite that still contains any of these has not done 
 
 ### Sentence rhythm
 
-11. **Actively vary sentence length — don't just "vary length" as a platitude.** AI text tends to
+11. **Actively vary sentence length. Don't just "vary length" as a platitude.** AI text tends to
     run a string of same-length sentences (usually medium-long, one clause plus a qualifier). When
     rewriting, deliberately mix in at least one short, punchy sentence (under 8 words) alongside
     longer ones, and don't let three consecutive sentences land within the same 5-word range of
@@ -149,7 +149,7 @@ Apply every rule below. A rewrite that still contains any of these has not done 
     or the actual number. "Significantly improves" → the measured delta. An adverb rescuing a weak
     verb usually means the verb is wrong, not that the adverb is needed.
 
-## Domain rule — preserve meaning exactly
+## Domain rule: preserve meaning exactly
 
 This is a **style and tone rewrite only.** The rewritten text must say exactly what the source
 said: same facts, same numbers, same claims, same scope, same level of certainty. Never invent a

@@ -15,8 +15,8 @@ Read the setup preamble first:
 !cat ${CLAUDE_PLUGIN_ROOT}/prompts/setup/preamble.md
 
 ## What this skill is for
-Summarize engineering health — CI status, PR queue, flaky tests, and revert risk — using only the repos configured for this team.
-- **Out of scope:** Fixing CI, merging PRs, or modifying repos — surface issues for humans to act on.
+Report the DORA four keys (deploy frequency, lead time for changes, change-failure rate, MTTR) as independent bands, each with its metric, measurement window, and threshold, plus leading indicators (PR review latency, CI flake trend) — using only the repos configured for this team.
+- **Out of scope:** Fixing CI, merging PRs, or modifying repos — surface issues for humans to act on. A quick composite snapshot without DORA bands or trend context — that's `jstack:engineering` instead.
 
 ## Domain rules — engineering health
 

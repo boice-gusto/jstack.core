@@ -73,12 +73,10 @@ Use a domain-appropriate heading, then:
 | Symptom | Recovery |
 |---------|----------|
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
-| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a run. |
-| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
-| `jstack workflow run` reports `ok: false` | Read the log for which step the agent stopped on; treat it as a real failure, not a stub artifact. |
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
+| A `click`/`fill` step has no preceding `wait` on its own selector | Add the missing `wait` before shipping the definition — this is the exact race-condition defect that only ever reproduces in CI, per Step 2 above. |
+| User asks to run the definition or verify it works | Out of scope for this skill; hand off to `jstack:workflows-execute` — nothing here executes anything. |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-execute`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

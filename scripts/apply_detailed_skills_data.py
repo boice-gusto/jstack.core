@@ -540,6 +540,8 @@ def _notion(seg: str) -> str:
         "adr": "ADR numbering + Superseded links. If decision is rejected, keep status honest and point to the winning ADR.\n- Template: `templates/notion` + best-practices for ADR text.",
         "article": "Article (blog/eng journal): title, summary, audience (internal|external) at top.\n- Do not mark Published without user go-ahead.",
         "team-note": "Light note on team space. Not a substitute for a decision doc — suggest ADR for binding choices.",
+        "standup": "Daily/async standup note: yesterday, today, blockers, one line each per attendee.\n- Link blockers to Jira ids when present in the source text; never invent a ticket number.",
+        "team-report": "Publish an already-drafted team report (from `jstack:reports-team-report`, or pasted content) into Notion as a dated page.\n- Do not draft the report's narrative here — this skill places content that already exists, the same boundary `team-note` holds for lighter notes.",
     }
     return b.get(seg, "")
 

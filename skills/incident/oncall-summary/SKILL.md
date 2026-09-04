@@ -77,13 +77,13 @@ Summarize the on-call period: what fired, what was actionable, what was noise, a
 Read relevant keys from `jstack.config.json`. If the integration is missing or unhealthy, say so and point to `jstack setup` / `jstack doctor` instead of faking data.
 
 ### Step 2 — Plan the safe path
-Stabilize before diagnosing. Record the timeline as you go, not afterwards from memory. Do not state a cause until it is established — in anything customer-facing, "under investigation" is correct and a guess is a liability.
+This never acknowledges, resolves, or retunes anything — the safety question is completeness of the handoff, not blast radius. Confirm which of the required fields (active incidents, silenced alerts + expiration, in-flight mitigations, escalation state) the configured sources can actually supply before writing the summary, so a gap is named explicitly rather than silently omitted.
 
 ### Step 3 — Execute
 Compile the window's alerts and incidents from the Slack channel, incident tool, and on-call schedule, grouping related alerts by cause rather than listing each firing separately. Write the handoff to cover, at minimum, active incidents with status and severity, silenced alerts with reason and expiration, in-flight mitigations, and current escalation state (who's paged, who's next), with every timestamp in UTC or an explicit offset. State each item as mitigated or resolved precisely — never interchangeably — and flag alerts that fired but weren't actionable as tuning candidates. Investigate a specific alert further only if the user asks for it.
 
 ### Step 4 — Validate
-Confirm the timeline is ordered and sourced, that cause is labelled as established or under investigation, and that no customer-facing text asserts more than is known.
+Confirm every required handoff field is present or its absence is stated explicitly, that "mitigated" and "resolved" are never used interchangeably, that every silenced alert carries a reason and expiration, and that every timestamp is UTC or carries an explicit offset.
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.

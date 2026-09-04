@@ -63,12 +63,10 @@ Use a domain-appropriate heading, then:
 | Symptom | Recovery |
 |---------|----------|
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
-| Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
-| Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Browser driver not available | The spawned agent has no browser-automation tool configured (e.g. no Playwright MCP); it must say so and stop, not fabricate a run. |
-| Step fails or a `wait` selector never appears | Abort at that step, name it, and suggest the selector fix — do not continue and report the later steps as passing. |
-| `jstack workflow run` reports `ok: false` | Read the log for which step the agent stopped on; treat it as a real failure, not a stub artifact. |
-| Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
+| Run id not found, or no log exists for it | Say so plainly; do not summarize a definition file as if it were a completed run. |
+| Log exists but is empty, truncated, or malformed | Report exactly what's readable and name the gap; never reconstruct a missing step or outcome from the workflow's definition. |
+| Ambiguous goal (which run, which detail) | One clarifying question; if still unclear, present options A/B. |
+| User asks to re-run or edit the workflow | Out of scope for this skill; hand off to `jstack:workflows-execute` (re-run) or `jstack:workflows-builder` (edit). |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-execute`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

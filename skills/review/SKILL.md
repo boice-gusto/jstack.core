@@ -1,6 +1,6 @@
 ---
 name: jstack-review
-description: Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas).
+description: Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas, maintainability-audit).
 category: review
 effort: low
 ---

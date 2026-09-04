@@ -20,11 +20,11 @@ Read the setup preamble first:
 Given a described need, name the skill that fits and say why the near-misses do not.
 - **Out of scope:** Doing the work of the skill it recommends, and inventing a skill that does not exist — if nothing fits, say so plainly.
 
-## Domain rules — knowledge
-- **Lookup vs store:** `jstack:knowledge-search` answers from configured sources (`knowledge_base` in config). Intake/process store into gbrain/Notion. See `skills/knowledge/references/gbrain-patterns.md`.
-- Intake raw notes → process (tag, dedupe, link) → route to gbrain/Notion per config.
-- No invented hierarchy: if a page id is missing, return markdown the user can paste.
-- Deduplication: merge duplicates; keep the oldest decision link as canonical.
+## Domain rules — skill recommendation
+- **Lookup vs "which skill":** `jstack:knowledge-search` answers a content question from configured sources. This skill answers "which jstack skill handles X" — never blend the two; see the worked example below for the exact disambiguating signal.
+- Never invent a skill name. If nothing in the catalog fits, say so plainly rather than naming something that doesn't exist.
+- Prefer the most specific real skill over a domain router when the need is already unambiguous; prefer the router when the need is close to a domain boundary and the exact child isn't yet clear.
+- Name every rejected near-miss and the one distinguishing fact that ruled it out — a bare "not X" without the reason is not a real recommendation.
 
 ## Config and references
 - `jstack.config.json` — team ids, integrations, `skill_defaults`, `jira_rules`, `notion`, `gbrain`. Never hardcode.
@@ -46,7 +46,7 @@ For the portable discovery flow (restate intent, propose 1-3 candidates, prefer 
 !cat ${CLAUDE_PLUGIN_ROOT}/skills/_core/references/skill-discovery.md
 
 ### Step 2 — Plan the safe path
-Search for near-duplicates before writing anything new — unresolved duplicates make later retrieval untrustworthy. Carry source and as-of time on every entry. Ask before persisting, and honour the session's team-vs-personal target rather than defaulting to shared.
+This never writes anything — the only risk is a wrong or invented recommendation. Check the CLI skills index and domain routers before naming anything from memory; if the described need is genuinely ambiguous between two skills, ask one clarifying question rather than picking one and hoping.
 
 ### Step 3 — Execute
 Check the CLI skills index and domain routers first for candidates matching the described need, then narrow against each candidate's `description` in the catalog. Also check whether the need matches a named composite alias (persona + tone + target skill, e.g. `jstack:ceo-brainstorm`, `jstack:executive-research-brief`) — those are the canonical list of aliases and external-pack bridges:
@@ -74,7 +74,7 @@ User: "Find out if we already documented our on-call rotation somewhere."
   always `search`.
 
 ### Step 4 — Validate
-Confirm the entry is findable by the query a future reader would actually use, that provenance is attached, and that no duplicate was left unresolved. Confirm it went to the intended team-vs-personal target.
+Confirm every named skill actually exists in the catalog (no invented name), that the count is 1-3, and that each rejected near-miss has a stated reason, not a bare "no."
 
 ### Step 5 — Summarize and hand off
 State what changed, what to verify, and suggest **one** next jstack skill if the work naturally continues.
@@ -94,7 +94,7 @@ Use a domain-appropriate heading, then:
 | Missing config / integration | Point to `jstack setup` or `jstack doctor`; do not continue with invented ids. |
 | Auth / 403 / expired token | Stop; tell user to refresh credentials. Never print secrets. |
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
-| Duplicate entry detected | Show the existing canonical and ask: merge, update, or skip. |
+| Nothing in the catalog fits | Say so plainly; never invent a skill name to fill the answer. |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-knowledge-intake` then `jstack-knowledge-process`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.
