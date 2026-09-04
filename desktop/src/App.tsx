@@ -1428,6 +1428,10 @@ function App() {
         onNavigationLayoutChange={setNavigationLayout}
         activeTab={settingsTab}
         onActiveTabChange={setSettingsTab}
+        onResumeSession={(id, agent) => {
+          setShowSettings(false);
+          void switchToSession(id, agent);
+        }}
       />
 
       <ConfirmDialog

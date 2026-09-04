@@ -25,8 +25,8 @@ async fn session_new(agent_id: String) -> Result<Value, String> {
 }
 
 #[tauri::command]
-async fn session_list() -> Result<Value, String> {
-    agent_client::call(&resolve_socket()?, "session/list", json!({})).await
+async fn session_list(limit: Option<u32>) -> Result<Value, String> {
+    agent_client::call(&resolve_socket()?, "session/list", json!({ "limit": limit })).await
 }
 
 #[tauri::command]

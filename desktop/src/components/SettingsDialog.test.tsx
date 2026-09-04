@@ -39,12 +39,25 @@ function withDefaults(
 
 /** `activeTab` is controlled from App.tsx in the real app -- this stands in for that, defaulting
  * to whatever tab a test needs to start on. */
-function Wrapper(props: Omit<Parameters<typeof SettingsDialog>[0], "activeTab" | "onActiveTabChange"> & {
-  initialTab?: SettingsTab;
-}) {
-  const { initialTab = "general", ...rest } = props;
+function Wrapper(
+  props: Omit<
+    Parameters<typeof SettingsDialog>[0],
+    "activeTab" | "onActiveTabChange" | "onResumeSession"
+  > & {
+    initialTab?: SettingsTab;
+    onResumeSession?: Parameters<typeof SettingsDialog>[0]["onResumeSession"];
+  },
+) {
+  const { initialTab = "general", onResumeSession = () => {}, ...rest } = props;
   const [tab, setTab] = useState<SettingsTab>(initialTab);
-  return <SettingsDialog {...rest} activeTab={tab} onActiveTabChange={setTab} />;
+  return (
+    <SettingsDialog
+      {...rest}
+      activeTab={tab}
+      onActiveTabChange={setTab}
+      onResumeSession={onResumeSession}
+    />
+  );
 }
 
 describe("SettingsDialog", () => {
@@ -574,6 +587,55 @@ describe("SettingsDialog", () => {
     );
 
     await screen.findByText(/Not found on PATH/);
+  });
+
+  test("the Sessions tab groups by agent, includes closed sessions, and Resume calls onResumeSession", async () => {
+    mockIPC(
+      withDefaults((cmd) => {
+        if (cmd === "session_list") {
+          return [
+            { id: "ral-old1", agentId: "ralph", state: "cancelled", turns: 3, costUsd: 0.05 },
+            { id: "sco-abc1", agentId: "scout", state: "idle", turns: 1, costUsd: 0.01 },
+          ];
+        }
+        throw new Error(`unexpected command: ${cmd}`);
+      }),
+    );
+    const resumed: Array<{ id: string; agentId: string }> = [];
+    render(
+      <Wrapper
+        open
+        onOpenChange={() => {}}
+        onRefresh={() => {}}
+        navigationLayout="vertical"
+        onNavigationLayoutChange={() => {}}
+        agents={[
+          {
+            id: "ralph",
+            name: "Ralph",
+            enabled: true,
+            model: "claude-sonnet-5",
+            persona: "",
+            tools: [],
+            mcp: "none",
+            proactiveChecks: [],
+          },
+        ]}
+        initialTab="sessions"
+        onResumeSession={(id, agentId) => resumed.push({ id, agentId })}
+      />,
+    );
+
+    await screen.findByText("ral-old1");
+    // Grouped under the agent's real name where known ("Ralph"), falling back to the raw id
+    // for an agent this test didn't declare ("scout").
+    expect(screen.getByText("Ralph")).toBeTruthy();
+    expect(screen.getByText("scout")).toBeTruthy();
+    expect(screen.getByText(/cancelled/)).toBeTruthy();
+
+    const resumeButtons = screen.getAllByText("Resume");
+    fireEvent.click(resumeButtons[0]!);
+    expect(resumed).toEqual([{ id: "ral-old1", agentId: "ralph" }]);
   });
 
   test("the Integrations tab fetches and renders the slack-dm card", async () => {

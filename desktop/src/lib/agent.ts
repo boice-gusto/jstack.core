@@ -82,9 +82,12 @@ export function newSession(agentId: string): Promise<NewSessionResult> {
 }
 
 /** Newest first (matches session.ts's listManualSessions). Metadata only (state, turns, cost) --
- * call getSessionHistory for the actual message transcript. */
-export function listSessions(): Promise<SessionSummary[]> {
-  return invoke("session_list");
+ * call getSessionHistory for the actual message transcript. Includes cancelled/closed sessions
+ * -- the daemon's ledger never deletes a row, it only marks one `cancelled`; hiding those is a
+ * client-side choice (see App.tsx's sidebar filter), not something this RPC does. The Settings
+ * dialog's Sessions tab relies on that to show closed sessions as resumable. */
+export function listSessions(limit?: number): Promise<SessionSummary[]> {
+  return invoke("session_list", limit === undefined ? {} : { limit });
 }
 
 /** A session's full message history, oldest first -- what the UI renders as the chat log when a

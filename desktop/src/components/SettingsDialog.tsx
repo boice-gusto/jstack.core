@@ -6,6 +6,7 @@ import {
   listIntegrations,
   listMcpServers,
   listSchedules,
+  listSessions,
   recentLogs,
   runDiagnostics,
   setScheduleEnabled,
@@ -17,6 +18,7 @@ import {
   type Integration,
   type McpListResult,
   type ScheduledPrompt,
+  type SessionSummary,
   type SkillSummary,
 } from "../lib/agent";
 import type { NavigationLayout } from "../lib/navigationLayout";
@@ -111,6 +113,7 @@ export type SettingsTab =
   | "appearance"
   | "advanced"
   | "schedule"
+  | "sessions"
   | "integrations"
   | "diagnostics"
   | "debug"
@@ -146,6 +149,7 @@ export function SettingsDialog({
   onNavigationLayoutChange,
   activeTab,
   onActiveTabChange,
+  onResumeSession,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -159,6 +163,11 @@ export function SettingsDialog({
   onNavigationLayoutChange: (layout: NavigationLayout) => void;
   activeTab: SettingsTab;
   onActiveTabChange: (tab: SettingsTab) => void;
+  /** Closes Settings and switches the main chat view to this session -- same
+   * `switchToSession` App.tsx's sidebar already uses, so this works identically whether the
+   * session is still open or was closed (the daemon never deletes a row; a closed session's
+   * next prompt is a real `--resume`, see session.ts's `promptManualSession`). */
+  onResumeSession: (id: string, agentId: string) => void;
 }) {
   const [status, setStatus] = useState<DaemonStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -176,6 +185,8 @@ export function SettingsDialog({
   const [mcpServersError, setMcpServersError] = useState<string | null>(null);
   const [schedules, setSchedules] = useState<ScheduledPrompt[]>([]);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [allSessions, setAllSessions] = useState<SessionSummary[] | null>(null);
+  const [allSessionsError, setAllSessionsError] = useState<string | null>(null);
   // Schedule id awaiting a confirm-before-delete prompt -- deleting used to fire immediately on a
   // single click with no undo (flagged by /impeccable critique's P1s).
   const [confirmDeleteScheduleId, setConfirmDeleteScheduleId] = useState<string | null>(null);
@@ -397,6 +408,22 @@ export function SettingsDialog({
     }
   }, [open, activeTab]);
 
+  // Re-fetched every time this tab becomes visible (not cached like Diagnostics/MCP above) --
+  // it's the same cheap session_list RPC the sidebar already polls, and this view is only
+  // useful if it reflects sessions closed or created since the dialog opened.
+  useEffect(() => {
+    if (!(open && activeTab === "sessions")) return;
+    listSessions(200)
+      .then((sessions) => {
+        setAllSessions(sessions);
+        setAllSessionsError(null);
+      })
+      .catch((e) => {
+        console.error("[jstack] listSessions failed:", e);
+        setAllSessionsError(e instanceof Error ? e.message : String(e));
+      });
+  }, [open, activeTab]);
+
   // Same "fetch once when the tab becomes visible" reasoning as Diagnostics -- checking MCP
   // availability shells out to `claude mcp list`, not worth doing on every dialog open.
   useEffect(() => {
@@ -445,6 +472,9 @@ export function SettingsDialog({
             </TabsTrigger>
             <TabsTrigger value="schedule" className="flex-1">
               Schedule
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="flex-1">
+              Sessions
             </TabsTrigger>
             <TabsTrigger value="integrations" className="flex-1">
               Integrations
@@ -964,6 +994,61 @@ export function SettingsDialog({
                 )}
               </ul>
             </div>
+          </TabsContent>
+
+          <TabsContent
+            value="sessions"
+            className="flex h-full flex-col gap-2 overflow-y-auto pt-2"
+          >
+            <p className="text-xs text-muted-foreground">
+              Every session the daemon has ever run for this project, including ones you've
+              closed -- closing a session never deletes it. Resume picks up right where it left
+              off, via the same underlying claude session.
+            </p>
+            {allSessionsError && (
+              <p className="text-sm text-destructive">{allSessionsError}</p>
+            )}
+            {(() => {
+              if (allSessions === null) return null;
+              if (allSessions.length === 0) {
+                return <p className="text-sm text-muted-foreground">No sessions yet.</p>;
+              }
+              const byAgent = new Map<string, SessionSummary[]>();
+              for (const s of allSessions) {
+                const list = byAgent.get(s.agentId) ?? [];
+                list.push(s);
+                byAgent.set(s.agentId, list);
+              }
+              return Array.from(byAgent.entries()).map(([aId, sessions]) => {
+                const name = agents?.find((a) => a.id === aId)?.name ?? aId;
+                return (
+                  <div key={aId} aria-label={`sessions for ${aId}`}>
+                    <h3 className="mb-1 text-sm font-semibold text-muted-foreground">{name}</h3>
+                    <ul className="flex flex-col gap-1 rounded-md border bg-muted/30 p-2 text-sm">
+                      {sessions.map((s) => (
+                        <li key={s.id} className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="truncate font-medium">{s.id}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">
+                              {s.state} · {s.turns} turn{s.turns === 1 ? "" : "s"} · $
+                              {s.costUsd.toFixed(4)}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="xs"
+                            onClick={() => onResumeSession(s.id, s.agentId)}
+                          >
+                            Resume
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              });
+            })()}
           </TabsContent>
 
           <TabsContent
