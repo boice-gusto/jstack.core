@@ -264,7 +264,7 @@ ORCH_CHILDREN = {
     "reports": "team-report, engineer-report, manager-report, project-report, eval-report, report-design, share-html-publish",
     "self": "diary, lookback, focus, eval, remember, tasks, explain, brag, impact-prep, draft-messages, tldr",
     "knowledge": "intake, process, search, self-knowledge, team-knowledge, ingest-all, skill-finder, reflect",
-    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate",
+    "review": "code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas",
     "session": "init, end",
     "metrics": "my-metrics, team-metrics",
     "routines": "standup, weekly-digest, sprint-close, health-check, custom, morning-kickoff",

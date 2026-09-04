@@ -1,0 +1,36 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-pr-review-canvas** (path: `review/pr-review-canvas`).
+
+  Category: review.
+
+  Skill description: Generate an interactive HTML walkthrough of a GitHub PR — categorized file
+  cards (core vs mechanical), reviewer annotations, rendered diffs with moved-code detection, and a
+  review checklist — served locally so a reviewer can click through it instead of reading a raw
+  diff. Use when the user pastes a GitHub PR URL/number and asks for a review, walkthrough, or
+  visual summary, or says "review this PR," "make this easy to review," or "walk me through this
+  diff." Do NOT use for the deep-read line-level defect hunt itself — `jstack:review-code-review`
+  (or `jstack:thermonuclear-review` for a high-stakes pass) does the actual finding; this skill is
+  the presentation layer on top of that reading, not a substitute for it. Do NOT use to publish or
+  share the generated HTML anywhere outside this machine — it can contain proprietary diffs and
+  stays local. Inspired by Cursor's `cursor-team-kit` plugin's `pr-review-canvas` skill, adapted to
+  jstack conventions.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Finding defects without
+  reading the diff (that is fabrication, not review, and.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Finding
+    defects without reading the diff (that is fabrication, not review, and
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:review-code-review)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

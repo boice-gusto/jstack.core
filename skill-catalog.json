@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T04:20:17.849Z",
-  "count": 147,
+  "generatedAt": "2026-09-04T03:10:54.599Z",
+  "count": 148,
   "skills": [
     {
       "id": "adr",
@@ -813,6 +813,16 @@
       "categoryKey": "plugin"
     },
     {
+      "id": "review-pr-review-canvas",
+      "name": "jstack-pr-review-canvas",
+      "relPath": "skills/review/pr-review-canvas/SKILL.md",
+      "gateId": "jstack:review/pr-review-canvas",
+      "description": "Generate an interactive HTML walkthrough of a GitHub PR — categorized file cards (core vs mechanical), reviewer annotations, rendered diffs with moved-code detection, and a review checklist — served locally so a reviewer can click through it instead of reading a raw diff. Use when the user pastes a GitHub PR URL/number and asks for a review, walkthrough, or visual summary, or says \"review this PR,\" \"make this easy to review,\" or \"walk me through this diff.\" Do NOT use for the deep-read line-level defect hunt itself — `jstack:review-code-review` (or `jstack:thermonuclear-review` for a high-stakes pass) does the actual finding; this skill is the presentation layer on top of that reading, not a substitute for it. Do NOT use to publish or share the generated HTML anywhere outside this machine — it can contain proprietary diffs and stays local. Inspired by Cursor's `cursor-team-kit` plugin's `pr-review-canvas` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
       "id": "prioritize",
       "name": "jstack-prioritize",
       "relPath": "skills/prioritize/SKILL.md",
@@ -947,7 +957,7 @@
       "name": "jstack-review",
       "relPath": "skills/review/SKILL.md",
       "gateId": "jstack:review",
-      "description": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review).",
+      "description": "Route review requests to the right sub-skill (code-review, project-review, announcement-review, counsel-review, codex-bridge, codex-review, thermonuclear-review, interrogate, pr-review-canvas).",
       "whenToUse": "",
       "category": "Review",
       "categoryKey": "review"
