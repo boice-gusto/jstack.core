@@ -206,6 +206,20 @@ export async function POST(request: NextRequest): Promise<Response> {
               total_cost_usd: ev.total_cost_usd,
               result: ev.result,
             });
+          } else if (ev.kind === "tool_result") {
+            // No dedicated frontend handling for this event kind yet (chat-store.ts /
+            // agent-run-shared.ts only understand text/tool_use/result/session/error/stderr) --
+            // forwarded through the existing "raw" wire shape so the real tool output isn't
+            // silently dropped, rather than inventing new frontend UI here.
+            send({
+              type: "raw",
+              event: {
+                kind: "tool_result",
+                toolUseId: ev.toolUseId,
+                content: ev.content,
+                isError: ev.isError,
+              },
+            });
           } else {
             send({ type: "raw", event: ev.event });
           }

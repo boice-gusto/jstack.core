@@ -27,7 +27,12 @@ const root =
   join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Prompt files that are deliberately not `!cat`'d, each with a reason. */
-const EXEMPT: Record<string, string> = {};
+const EXEMPT: Record<string, string> = {
+  "prompts/crew/worker-system.md":
+    "Loaded programmatically by cli/src/lib/crew/prompt-templates.ts's loadTemplate() for the " +
+    "crew daemon's worker system prompt, not by a skill's !cat injection -- this checker only " +
+    "recognizes the latter mechanism. Covered by cli/src/lib/crew/prompt-templates.test.ts.",
+};
 
 // Collect every `!cat`'d prompt path from skills and agents.
 const loaded = new Map<string, Set<string>>();
