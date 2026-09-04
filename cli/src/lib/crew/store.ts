@@ -349,6 +349,7 @@ export class CrewStore {
     threadTs: string;
     turns: number;
     endedAt: number | null;
+    state: string;
   } | null {
     const r = this.db
       .query<
@@ -359,10 +360,11 @@ export class CrewStore {
           thread_ts: string;
           turns: number;
           ended_at: number | null;
+          state: string;
         },
         [string]
       >(
-        "SELECT id, agent_id, session_id, thread_ts, turns, ended_at FROM task WHERE id = ?",
+        "SELECT id, agent_id, session_id, thread_ts, turns, ended_at, state FROM task WHERE id = ?",
       )
       .get(id);
     if (!r) return null;
@@ -373,6 +375,7 @@ export class CrewStore {
       threadTs: r.thread_ts ?? "",
       turns: r.turns,
       endedAt: r.ended_at,
+      state: r.state,
     };
   }
 
@@ -406,6 +409,19 @@ export class CrewStore {
         "UPDATE task SET state=?, cost_usd=?, ended_at=?, error=? WHERE id=?",
       )
       .run(state, costUsd, Date.now(), error ?? null, id);
+  }
+
+  /** Undoes `finishTask`'s terminal state -- called when a manual session that was closed
+   * (`ended_at` set, e.g. `state='cancelled'`) gets prompted again. `deriveTaskDisplayStatus`
+   * treats any row with `ended_at` set as terminal regardless of new activity, so without this
+   * a resumed session would keep reporting as "cancelled" (and stay hidden from the sidebar's
+   * `state !== "cancelled"` filter) even after it's genuinely running again. */
+  reopenTask(id: string): void {
+    this.db
+      .query(
+        "UPDATE task SET state='running', ended_at=NULL, error=NULL WHERE id=?",
+      )
+      .run(id);
   }
 
   // -- events ----------------------------------------------------------------

@@ -263,6 +263,30 @@ describe("findTaskById makes the printed handle resolvable", () => {
   });
 });
 
+describe("reopenTask undoes a cancelled session's terminal state", () => {
+  test("clears ended_at and state so the task looks freshly active again", () => {
+    const s = freshStore();
+    s.createTask(
+      "ral-cccc",
+      "D0TESTDM001",
+      "1785141298.000000",
+      "1785141298.000000",
+      "sess-uuid-3",
+      "ralph",
+    );
+    s.finishTask("ral-cccc", "cancelled", 0.01);
+    expect(s.findTaskById("ral-cccc")!.state).toBe("cancelled");
+    expect(s.findTaskById("ral-cccc")!.endedAt).not.toBeNull();
+
+    s.reopenTask("ral-cccc");
+
+    const reopened = s.findTaskById("ral-cccc")!;
+    expect(reopened.state).toBe("running");
+    expect(reopened.endedAt).toBeNull();
+    s.close();
+  });
+});
+
 /**
  * `task.state` is written 'running' by `createTask` and only ever moved to a terminal value by
  * `finishTask` -- `bumpTurn` (the follow-up path) never touches it. A task that receives a

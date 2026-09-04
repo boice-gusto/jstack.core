@@ -134,6 +134,11 @@ export async function promptManualSession(
   if (!task) throw new UnknownSessionError(`no such session: ${id}`);
   const agent = requireEnabledAgent(cfg, task.agentId);
 
+  // A closed session (state: "cancelled") is still fully resumable -- `--resume` doesn't care --
+  // but without this it would keep reporting "cancelled" (and stay hidden from the sidebar's
+  // `state !== "cancelled"` filter) even after this new turn succeeds.
+  if (task.state === "cancelled") store.reopenTask(id);
+
   if (!store.reserve(cfg.budget.per_task_usd, cfg.budget.daily_usd)) {
     throw new BudgetExceededError(
       `daily budget cap ($${cfg.budget.daily_usd}) reached`,

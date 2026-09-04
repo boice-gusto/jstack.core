@@ -147,6 +147,36 @@ describe("cancelManualSession", () => {
   });
 });
 
+describe("promptManualSession resumes a cancelled session", () => {
+  let restorePath: string | undefined;
+
+  afterEach(() => {
+    if (restorePath !== undefined) process.env.PATH = restorePath;
+  });
+
+  test("prompting a cancelled session --resumes it and un-cancels the task row", async () => {
+    const store = freshStore();
+    const cfg = baseConfig();
+    const fake = installArgvCapturingFakeClaude();
+    restorePath = fake.restorePath;
+
+    const { id } = createManualSession(store, cfg, "ralph");
+    await cancelManualSession(store, cfg, id);
+    expect(store.recentTasks(50).find((r) => r.id === id)?.state).toBe(
+      "cancelled",
+    );
+
+    await promptManualSession(store, cfg, id, "still there?");
+
+    const sentArgv = readFileSync(fake.argvFile, "utf8");
+    expect(sentArgv).toContain("--resume");
+
+    const row = store.recentTasks(50).find((r) => r.id === id);
+    expect(row?.state).not.toBe("cancelled");
+    store.close();
+  });
+});
+
 /** Fake `claude` that dumps its own argv (which ends in the prompt, per the CLI's own `-- prompt`
  * convention) to a file, so a test can inspect what was actually sent instead of only what the
  * fake chose to answer. Emits a stream-json "result" line -- promptManualSession runs turns
