@@ -1,0 +1,38 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-verify-this** (path:
+  `engineering/verify-this`).
+
+  Category: engineering.
+
+  Skill description: Prove or disprove a specific claim about running system behavior with fresh,
+  repeatable local evidence: restate the claim falsifiably (condition, metric, threshold), capture a
+  baseline artifact from the old state and a treatment artifact from the new state with the same
+  command and environment, compare the raw artifacts, and return exactly one verdict — VERIFIED, NOT
+  VERIFIED, or INCONCLUSIVE. Use when the user asks "verify this," "prove it works," "did this fix
+  it," "show me the evidence," or a bug-fix/perf/behavior claim needs a real before/after, not a
+  read of the diff. Do NOT use for a vague, unmeasurable claim ("the code is cleaner") — ask for a
+  falsifiable claim first. Do NOT use for skill/agent regression testing — that is `evals/a2a/`
+  (this repo's own fixed-case harness), not a one-off runtime claim. Do NOT use for jstack's own
+  fixed structural gates (schema drift, chain integrity, name collisions) — that is
+  `jstack:engineering-compatibility-check`. Inspired by Cursor's `cursor-team-kit` plugin's
+  `verify-this` skill, adapted to jstack conventions.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Vague or unmeasurable
+  claims ("this is cleaner," "this feels faster").
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Vague
+    or unmeasurable claims ("this is cleaner," "this feels faster")
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:review-code-review)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

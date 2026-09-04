@@ -1,0 +1,56 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-verify-this** (path:
+  `engineering/verify-this`).
+
+  Category: engineering.
+
+  Skill description: Prove or disprove a specific claim about running system behavior with fresh,
+  repeatable local evidence: restate the claim falsifiably (condition, metric, threshold), capture a
+  baseline artifact from the old state and a treatment artifact from the new state with the same
+  command and environment, compare the raw artifacts, and return exactly one verdict — VERIFIED, NOT
+  VERIFIED, or INCONCLUSIVE. Use when the user asks "verify this," "prove it works," "did this fix
+  it," "show me the evidence," or a bug-fix/perf/behavior claim needs a real before/after, not a
+  read of the diff. Do NOT use for a vague, unmeasurable claim ("the code is cleaner") — ask for a
+  falsifiable claim first. Do NOT use for skill/agent regression testing — that is `evals/a2a/`
+  (this repo's own fixed-case harness), not a one-off runtime claim. Do NOT use for jstack's own
+  fixed structural gates (schema drift, chain integrity, name collisions) — that is
+  `jstack:engineering-compatibility-check`. Inspired by Cursor's `cursor-team-kit` plugin's
+  `verify-this` skill, adapted to jstack conventions.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Prove or disprove a specific claim about running system behavior with fresh, repeatable
+    local evidence: restate the claim falsifiably (condition, metric, threshold), capture a baseline
+    artifact from the old state and a treatment artifact from the new state with the same command
+    and environment, compare the raw artifacts, and return exactly one verdict — VERIFIED, NOT
+    VERIFIED, or INCONCLUSIVE. Use when the user asks "verify this," "prove it works," "did this fix
+    it," "show me the evidence," or a bug-fix/perf/behavior claim needs a real before/after, not a
+    read of the diff. Do NOT use for a vague, unmeasurable claim ("the code is cleaner") — ask for a
+    falsifiable claim first. Do NOT use for skill/agent regression testing — that is `evals/a2a/`
+    (this repo's own fixed-case harness), not a one-off runtime claim. Do NOT use for jstack's own
+    fixed structural gates (schema drift, chain integrity, name collisions) — that is
+    `jstack:engineering-compatibility-check`. Inspired by Cursor's `cursor-team-kit` plugin's
+    `verify-this` skill, adapted to jstack conventions.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

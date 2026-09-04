@@ -1,0 +1,53 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-loop-on-ci** (path:
+  `engineering/loop-on-ci`).
+
+  Category: engineering.
+
+  Skill description: Watch a branch or pull request's CI checks and iterate — inspect each failure,
+  delegate the actual diagnose-and-patch work to `jstack:engineering-fix-ci`, re-check, and repeat
+  until every check is green or a stopping condition is hit. Use when the user says "loop on CI,"
+  "keep fixing this until it's green," "watch this PR and fix failures," or pastes a PR/branch and
+  asks you to babysit it through to a passing build. Do NOT use for a single diagnose-and-patch pass
+  on one already-known failure — that unit of work is `jstack:engineering-fix-ci`, which this skill
+  calls repeatedly; if the user only wants that one pass, invoke it directly instead. Do NOT use for
+  a read-only health snapshot across all configured repos (CI status, PR queue, flaky tests, revert
+  risk) — that is `jstack:engineering`, which never actively loops on or fixes one specific PR.
+  Inspired by Cursor's `cursor-team-kit` plugin's `loop-on-ci` skill, adapted to jstack conventions.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Watch a branch or pull request's CI checks and iterate — inspect each failure, delegate
+    the actual diagnose-and-patch work to `jstack:engineering-fix-ci`, re-check, and repeat until
+    every check is green or a stopping condition is hit. Use when the user says "loop on CI," "keep
+    fixing this until it's green," "watch this PR and fix failures," or pastes a PR/branch and asks
+    you to babysit it through to a passing build. Do NOT use for a single diagnose-and-patch pass on
+    one already-known failure — that unit of work is `jstack:engineering-fix-ci`, which this skill
+    calls repeatedly; if the user only wants that one pass, invoke it directly instead. Do NOT use
+    for a read-only health snapshot across all configured repos (CI status, PR queue, flaky tests,
+    revert risk) — that is `jstack:engineering`, which never actively loops on or fixes one specific
+    PR. Inspired by Cursor's `cursor-team-kit` plugin's `loop-on-ci` skill, adapted to jstack
+    conventions.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

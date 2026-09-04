@@ -1,0 +1,50 @@
+name: Graded rubric — self-description checked against declared scope and failure modes
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-fix-merge-conflicts** (path:
+  `engineering/fix-merge-conflicts`).
+
+  Category: engineering.
+
+  Skill description: Resolve merge/rebase/cherry-pick conflicts non-interactively where the correct
+  resolution is genuinely unambiguous — reading every conflicting hunk with real git commands (`git
+  status`, `git diff`, `git log --merge`, conflict-marker greps) before choosing a side — regenerate
+  lockfiles with the package manager rather than hand-editing them, then validate by actually
+  running the target repo's build/typecheck/test command before calling it done. Use when a branch
+  has unresolved conflicts and needs a reliable path to a buildable state. Do NOT use to guess
+  through a real semantic conflict — when both sides made substantively different logical changes to
+  the same code, stop and ask rather than picking a side. Do NOT use for the deep line-level
+  correctness/security read of the merged result — that is `jstack:review-code-review` (single deep
+  read) or `jstack:thermonuclear-review` (high-stakes, six-lens); this skill's job stops at a clean,
+  buildable, non-conflicted state. Do NOT use to force-push or discard uncommitted/unpushed work as
+  a shortcut — check what's actually there before touching anything, and never run a destructive git
+  operation without explicit human confirmation. Inspired by Cursor's `cursor-team-kit` plugin's
+  `fix-merge-conflicts` skill, adapted to jstack conventions.
+
+
+  User: In 3–5 short bullet points, say what this skill is for, one thing it explicitly does
+
+  *not* do, and what it does when it is missing config or required input. Under ~200 words.
+
+  Do not claim to have run external tools or APIs.
+grading:
+  rubric:
+    - description: Identifies this skill's specific purpose, not a generic description of an assistant
+      pass_if: >-
+        response states what jstack-engineering-fix-merge-conflicts is for and when to use it, in
+        terms specific to engineering
+    - description: Names the boundary this skill actually declares
+      pass_if: >-
+        response identifies that the skill does not do the following, or says something equivalent:
+        Guessing through a real semantic conflict
+    - description: Describes what it does when a declared failure mode occurs
+      pass_if: >-
+        response explains how it behaves in this situation, or that it stops and asks: A hunk has
+        real logic changes on both sides
+  pass_threshold: 3
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 120
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

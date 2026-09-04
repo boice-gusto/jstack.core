@@ -1,0 +1,64 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-create-verification-skill** (path:
+  `engineering/create-verification-skill`).
+
+  Category: engineering.
+
+  Skill description: Generate a durable, project-local skill that drives a real app the way a user
+  does — CLI, TUI, web UI, desktop, or service, any language or framework — and captures real proof
+  artifacts (exit codes, screenshots, response bodies, logs) instead of a plausible narrative. Use
+  for "make a verify skill for this repo," "give me a scripted way to prove this app works," or when
+  a project has no repeatable way to demonstrate UI/CLI/service behavior. Do NOT use to prove a
+  single one-off claim right now — that is `jstack:engineering-verify-this`; this skill's output is
+  a reusable artifact for every future run, not a one-time verdict. Do NOT use to build or run a
+  fixed browser-automation JSON definition against known selectors — that is
+  `jstack:workflows-builder`/`jstack:workflows-execute`; this skill's job is discovering what to
+  verify and how in the first place, on any interaction surface, not replaying a known script. Do
+  NOT use this skill for the mechanics of what makes a well-formed SKILL.md itself (frontmatter,
+  chain contract, procedure shape, catalog entry) — that is `jstack:skill-creator`; this skill only
+  figures out the verification CONTENT (which surfaces exist, how to drive each for real, what
+  counts as proof) and then hands that content to `jstack:skill-creator`'s conventions to become the
+  actual file. Inspired by Cursor's `pstack` plugin's `create-verification-skill` skill, adapted to
+  jstack conventions and Claude Code's `.claude/skills/` project-local layout.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Generate a durable, project-local skill that drives a real app the way a user does — CLI,
+    TUI, web UI, desktop, or service, any language or framework — and captures real proof artifacts
+    (exit codes, screenshots, response bodies, logs) instead of a plausible narrative. Use for "make
+    a verify skill for this repo," "give me a scripted way to prove this app works," or when a
+    project has no repeatable way to demonstrate UI/CLI/service behavior. Do NOT use to prove a
+    single one-off claim right now — that is `jstack:engineering-verify-this`; this skill's output
+    is a reusable artifact for every future run, not a one-time verdict. Do NOT use to build or run
+    a fixed browser-automation JSON definition against known selectors — that is
+    `jstack:workflows-builder`/`jstack:workflows-execute`; this skill's job is discovering what to
+    verify and how in the first place, on any interaction surface, not replaying a known script. Do
+    NOT use this skill for the mechanics of what makes a well-formed SKILL.md itself (frontmatter,
+    chain contract, procedure shape, catalog entry) — that is `jstack:skill-creator`; this skill
+    only figures out the verification CONTENT (which surfaces exist, how to drive each for real,
+    what counts as proof) and then hands that content to `jstack:skill-creator`'s conventions to
+    become the actual file. Inspired by Cursor's `pstack` plugin's `create-verification-skill`
+    skill, adapted to jstack conventions and Claude Code's `.claude/skills/` project-local layout.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

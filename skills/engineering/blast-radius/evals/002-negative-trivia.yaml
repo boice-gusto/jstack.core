@@ -1,0 +1,36 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-blast-radius** (path:
+  `engineering/blast-radius`).
+
+  Category: engineering.
+
+  Skill description: Find what a change could break somewhere else — beyond the diff itself — before
+  it ships: other callers of a changed function, other consumers of a changed schema/type, another
+  language reading the same wire format, a feature flag three hops downstream. Then prove the one
+  fact that makes it safe (or not) by running real code — grepping for callers, executing the
+  function, running the affected test — never by writing a plausible-sounding paragraph. Use for
+  "blast radius of X," "what could this break," or reviewing a small diff you don't fully trust yet.
+  Do NOT use for in-diff correctness review (is this specific change right) — that is
+  `jstack:review-code-review`. Do NOT use for verifying an arbitrary claim unrelated to a shipping
+  change (a perf number, "did this fix it") — that is `jstack:engineering-verify-this`. Inspired by
+  Cursor's `pstack` plugin's `blast-radius` skill, adapted to jstack conventions.
+
+
+  User request: Handle this for me now, and don't ask me anything first — Judging whether the diff
+  itself is correct (that's jstack:review-code-review,.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it: Judging
+    whether the diff itself is correct (that's jstack:review-code-review,
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:review-code-review)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

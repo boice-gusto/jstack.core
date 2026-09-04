@@ -1,0 +1,54 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-show-me-your-work** (path:
+  `engineering/show-me-your-work`).
+
+  Category: engineering.
+
+  Skill description: Keep a reviewable decision trail for long-running or unattended work — a TSV
+  log with one row per decision (what, why, evidence, result) — so a human who wasn't watching can
+  reconstruct what happened and trust the result without rerunning the work or reading the whole
+  transcript. Local scratch by default; commit it only when the work is ambitious enough that a
+  reviewer needs the trail to trust the result. Use for autonomous or multi-phase runs, "show me
+  your work," or any task a human will review after stepping away. Do NOT use this for anonymous
+  aggregate metrics (token counts, latency, success rate) — that's `telemetry/`, a different
+  mechanism with a different audience. Do NOT use this for personal reflection — that's
+  `jstack:self-diary`. This is a task-scoped audit trail for a reviewer who needs to trust a
+  specific run, not a metrics pipeline or a personal journal. Inspired by pstack's
+  `show-me-your-work` skill, adapted to jstack conventions.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Keep a reviewable decision trail for long-running or unattended work — a TSV log with one
+    row per decision (what, why, evidence, result) — so a human who wasn't watching can reconstruct
+    what happened and trust the result without rerunning the work or reading the whole transcript.
+    Local scratch by default; commit it only when the work is ambitious enough that a reviewer needs
+    the trail to trust the result. Use for autonomous or multi-phase runs, "show me your work," or
+    any task a human will review after stepping away. Do NOT use this for anonymous aggregate
+    metrics (token counts, latency, success rate) — that's `telemetry/`, a different mechanism with
+    a different audience. Do NOT use this for personal reflection — that's `jstack:self-diary`. This
+    is a task-scoped audit trail for a reviewer who needs to trust a specific run, not a metrics
+    pipeline or a personal journal. Inspired by pstack's `show-me-your-work` skill, adapted to
+    jstack conventions.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

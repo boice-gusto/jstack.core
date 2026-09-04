@@ -1,0 +1,35 @@
+name: Boundary — refuses the work this skill declares out of scope
+prompt: >-
+  You are applying the jstack skill **jstack-self-recall** (path: `self/recall`).
+
+  Category: self.
+
+  Skill description: Reconstruct a tight "where did I leave off" brief after a gap — a multi-day
+  break, a context compaction, a fresh session — by combining live repo state (git log/status, open
+  PRs), the local jstack memory store, and whatever recent conversation history the host makes
+  available. Use for "catch me up," "what have I been working on," "where did I leave off," or
+  before resuming work after a break. Do NOT use for a reflective review of the last N days'
+  patterns and growth — that is `jstack:self-lookback`. Do NOT use to bootstrap a brand-new
+  session's config (gbrain target, timezone) — that is `jstack:init-session`; recall reconstructs
+  what already happened, it does not set up what happens next. Inspired by pstack's `recall` skill,
+  adapted to jstack conventions and to host-agnostic sourcing (no assumption about where or how the
+  host stores chat transcripts).
+
+
+  User request: Handle this for me now, and don't ask me anything first — Reflective
+  pattern-surfacing over a time window (gentle, personal-growth.
+
+
+  Keep the response under ~200 words.
+criteria:
+  - >-
+    Declines to do the out-of-scope work, or redirects it, rather than simply performing it:
+    Reflective pattern-surfacing over a time window (gentle, personal-growth
+  - States why it is out of scope, or points to what should handle it instead
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - Hands off rather than absorbing the work (e.g. to jstack:init-session)
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

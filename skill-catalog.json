@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-04T03:10:54.599Z",
-  "count": 148,
+  "generatedAt": "2026-09-04T03:57:53.520Z",
+  "count": 157,
   "skills": [
     {
       "id": "adr",
@@ -153,12 +153,52 @@
       "categoryKey": "engineering"
     },
     {
+      "id": "engineering-blast-radius",
+      "name": "jstack-engineering-blast-radius",
+      "relPath": "skills/engineering/blast-radius/SKILL.md",
+      "gateId": "jstack:engineering/blast-radius",
+      "description": "Find what a change could break somewhere else — beyond the diff itself — before it ships: other callers of a changed function, other consumers of a changed schema/type, another language reading the same wire format, a feature flag three hops downstream. Then prove the one fact that makes it safe (or not) by running real code — grepping for callers, executing the function, running the affected test — never by writing a plausible-sounding paragraph. Use for \"blast radius of X,\" \"what could this break,\" or reviewing a small diff you don't fully trust yet. Do NOT use for in-diff correctness review (is this specific change right) — that is `jstack:review-code-review`. Do NOT use for verifying an arbitrary claim unrelated to a shipping change (a perf number, \"did this fix it\") — that is `jstack:engineering-verify-this`. Inspired by Cursor's `pstack` plugin's `blast-radius` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
       "id": "engineering-compatibility-check",
       "name": "jstack-engineering-compatibility-check",
       "relPath": "skills/engineering/compatibility-check/SKILL.md",
       "gateId": "jstack:engineering/compatibility-check",
       "description": "Runs jstack.core's own sixteen structural/config gates (schema and config drift, write-gate and SRI security checks, agent/skill config-matrix and depth, chain and router integrity, description-reference, referenced-file, name-collision, prompt-wiring, and alias-drift checks) and blends the results into one weighted compatibility score plus a ranked \"fix these first\" list. Read-only — it only runs checks and reports; it never edits a file and never runs the slower legs of `bun run check` (typecheck, tests, format, evals, the a2a suite). For DORA-banded engineering health, use jstack:engineering-health instead; for bus-factor / knowledge-silo risk, use jstack:engineering-silo-scan instead; for the full CI chain including tests and typecheck, tell the user to run `bun run check` directly.",
       "whenToUse": "\"Also trigger on: 'is the skill catalog healthy', 'run the compatibility gates', 'score the repo's config/skill checks', 'what's broken across the gates', 'give me a fix-first list for the structural checks', or a request to summarize `bun run check` failures into one number.\"",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
+      "id": "engineering-create-verification-skill",
+      "name": "jstack-engineering-create-verification-skill",
+      "relPath": "skills/engineering/create-verification-skill/SKILL.md",
+      "gateId": "jstack:engineering/create-verification-skill",
+      "description": "Generate a project-local, checked-in skill that drives a project's real app, CLI, service, or TUI the way an actual user would — clicks, CLI invocations, API calls, or keystrokes — and defines what counts as proof for that mechanism (exit code + stdout, a screenshot/ARIA snapshot, a HAR file, a captured network log) so future work has a scripted, evidence-backed way to confirm behavior instead of \"looks right\" or a stub that always reports success. Use when a project has no scripted way to prove UI/CLI/service behavior, or the user says \"make a control skill for this repo,\" \"give this project a verification skill,\" \"generate a verify-skill for X,\" or \"/create-verification-skill\". Do NOT use to settle one specific claim right now — that is `jstack:engineering-verify-this` (a single ad hoc VERIFIED/NOT VERIFIED/INCONCLUSIVE call, run once and discarded); this skill instead produces a reusable, checked-in skill that can verify many future claims about the same project. Do NOT use to author the SKILL.md mechanics yourself (frontmatter fields, file placement, chain contract shape) — delegate that structure to `jstack:skill-creator`; this skill's own job is the interview and the proof-standard content that goes inside the generated file. Inspired by Cursor's `cursor-team-kit` plugin's `create-verification-skill` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
+      "id": "engineering-fix-ci",
+      "name": "jstack-engineering-fix-ci",
+      "relPath": "skills/engineering/fix-ci/SKILL.md",
+      "gateId": "jstack:engineering/fix-ci",
+      "description": "Diagnose why a specific, already-open PR's or branch's CI check is red: pull the actual failing log (not just the summary line) via `gh pr checks`, `gh run view --log-failed`, or a third-party check's own external details URL, root-cause it, and apply exactly one focused fix. This is the single-iteration diagnose-and-fix unit that `jstack:engineering-loop-on-ci` calls repeatedly until every check is green — use this skill directly for one failing check, one pass; use `jstack:engineering-loop-on-ci` when the ask is to drive every currently-failing check to green automatically, across however many rounds that takes. Do NOT use for a pre-merge correctness review of a diff whose CI hasn't run yet or is currently green — that is `jstack:review-code-review` (or `jstack:thermonuclear-review` for a high-stakes pass), which hunts for defects in a diff rather than diagnosing why an already-red check is red. Do NOT use to make a check pass by adding `continue-on-error`, disabling the check, or `--no-verify` — none of those are an acceptable outcome here, even when the underlying issue turns out to be flaky or environmental rather than a real defect. Inspired by Cursor's `cursor-team-kit` plugin's `fix-ci` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
+      "id": "engineering-fix-merge-conflicts",
+      "name": "jstack-engineering-fix-merge-conflicts",
+      "relPath": "skills/engineering/fix-merge-conflicts/SKILL.md",
+      "gateId": "jstack:engineering/fix-merge-conflicts",
+      "description": "Resolve merge/rebase/cherry-pick conflicts non-interactively where the correct resolution is genuinely unambiguous — reading every conflicting hunk with real git commands (`git status`, `git diff`, `git log --merge`, conflict-marker greps) before choosing a side — regenerate lockfiles with the package manager rather than hand-editing them, then validate by actually running the target repo's build/typecheck/test command before calling it done. Use when a branch has unresolved conflicts and needs a reliable path to a buildable state. Do NOT use to guess through a real semantic conflict — when both sides made substantively different logical changes to the same code, stop and ask rather than picking a side. Do NOT use for the deep line-level correctness/security read of the merged result — that is `jstack:review-code-review` (single deep read) or `jstack:thermonuclear-review` (high-stakes, six-lens); this skill's job stops at a clean, buildable, non-conflicted state. Do NOT use to force-push or discard uncommitted/unpushed work as a shortcut — check what's actually there before touching anything, and never run a destructive git operation without explicit human confirmation. Inspired by Cursor's `cursor-team-kit` plugin's `fix-merge-conflicts` skill, adapted to jstack conventions.",
+      "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"
     },
@@ -173,11 +213,41 @@
       "categoryKey": "engineering"
     },
     {
+      "id": "engineering-loop-on-ci",
+      "name": "jstack-engineering-loop-on-ci",
+      "relPath": "skills/engineering/loop-on-ci/SKILL.md",
+      "gateId": "jstack:engineering/loop-on-ci",
+      "description": "Watch a branch or pull request's CI checks and iterate — inspect each failure, delegate the actual diagnose-and-patch work to `jstack:engineering-fix-ci`, re-check, and repeat until every check is green or a stopping condition is hit. Use when the user says \"loop on CI,\" \"keep fixing this until it's green,\" \"watch this PR and fix failures,\" or pastes a PR/branch and asks you to babysit it through to a passing build. Do NOT use for a single diagnose-and-patch pass on one already-known failure — that unit of work is `jstack:engineering-fix-ci`, which this skill calls repeatedly; if the user only wants that one pass, invoke it directly instead. Do NOT use for a read-only health snapshot across all configured repos (CI status, PR queue, flaky tests, revert risk) — that is `jstack:engineering`, which never actively loops on or fixes one specific PR. Inspired by Cursor's `cursor-team-kit` plugin's `loop-on-ci` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
+      "id": "engineering-show-me-your-work",
+      "name": "jstack-engineering-show-me-your-work",
+      "relPath": "skills/engineering/show-me-your-work/SKILL.md",
+      "gateId": "jstack:engineering/show-me-your-work",
+      "description": "Keep a reviewable decision trail for long-running or unattended work — a TSV log with one row per decision (what, why, evidence, result) — so a human who wasn't watching can reconstruct what happened and trust the result without rerunning the work or reading the whole transcript. Local scratch by default; commit it only when the work is ambitious enough that a reviewer needs the trail to trust the result. Use for autonomous or multi-phase runs, \"show me your work,\" or any task a human will review after stepping away. Do NOT use this for anonymous aggregate metrics (token counts, latency, success rate) — that's `telemetry/`, a different mechanism with a different audience. Do NOT use this for personal reflection — that's `jstack:self-diary`. This is a task-scoped audit trail for a reviewer who needs to trust a specific run, not a metrics pipeline or a personal journal. Inspired by pstack's `show-me-your-work` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
       "id": "engineering-silo-scan",
       "name": "jstack-engineering-silo-scan",
       "relPath": "skills/engineering/silo-scan/SKILL.md",
       "gateId": "jstack:engineering/silo-scan",
       "description": "Bus-factor / knowledge-concentration scan — per-module bus factor and silo ratio from trailing commit and review-authorship spread, weighted by change frequency and fan-in. Read-only unless user approves comments. Not for detecting overlapping work on the same files or similar tickets/PRs.",
+      "whenToUse": "",
+      "category": "Engineering",
+      "categoryKey": "engineering"
+    },
+    {
+      "id": "engineering-verify-this",
+      "name": "jstack-engineering-verify-this",
+      "relPath": "skills/engineering/verify-this/SKILL.md",
+      "gateId": "jstack:engineering/verify-this",
+      "description": "Prove or disprove a specific claim about running system behavior with fresh, repeatable local evidence: restate the claim falsifiably (condition, metric, threshold), capture a baseline artifact from the old state and a treatment artifact from the new state with the same command and environment, compare the raw artifacts, and return exactly one verdict — VERIFIED, NOT VERIFIED, or INCONCLUSIVE. Use when the user asks \"verify this,\" \"prove it works,\" \"did this fix it,\" \"show me the evidence,\" or a bug-fix/perf/behavior claim needs a real before/after, not a read of the diff. Do NOT use for a vague, unmeasurable claim (\"the code is cleaner\") — ask for a falsifiable claim first. Do NOT use for skill/agent regression testing — that is `evals/a2a/` (this repo's own fixed-case harness), not a one-off runtime claim. Do NOT use for jstack's own fixed structural gates (schema drift, chain integrity, name collisions) — that is `jstack:engineering-compatibility-check`. Inspired by Cursor's `cursor-team-kit` plugin's `verify-this` skill, adapted to jstack conventions.",
       "whenToUse": "",
       "category": "Engineering",
       "categoryKey": "engineering"
@@ -1003,6 +1073,16 @@
       "categoryKey": "review"
     },
     {
+      "id": "review-maintainability-audit",
+      "name": "jstack-review-maintainability-audit",
+      "relPath": "skills/review/maintainability-audit/SKILL.md",
+      "gateId": "jstack:review/maintainability-audit",
+      "description": "Single-lens, deep structural-maintainability audit of a diff: hunts for a \"code-judo\" restructuring that deletes complexity rather than rearranging it, treats a file crossing the 1,000-line threshold as a presumptive blocker needing a stated reason, flags spaghetti-growth (ad-hoc conditionals bolted onto an unrelated flow) as a design problem rather than a style nit, is skeptical of thin/pass-through wrapper abstractions and cast-heavy type boundaries, and pushes on type/boundary cleanliness (unnecessary `any`/`unknown`/casts) when it affects maintainability. Use for \"how maintainable is this,\" \"is there a simpler way to structure this,\" \"audit this for code-judo opportunities,\" or \"is this file getting too big.\" `jstack:thermonuclear-review` can invoke this skill as its code-quality lens for extra structural depth beyond that lens's general complexity/debt pass; it can also run standalone on a diff/PR with no six-lens process at all. Do NOT use as a substitute for `jstack:thermonuclear-review`'s six-lens dispatch (security, compliance, performance, code quality, QA, AI-slop) when the ask is broader than structure — this is one deep structural lens, not a seventh lens in that roster, and does not touch security/compliance/performance/QA at all. Do NOT use for a routine PR with no structural-complexity question — `jstack:review-code-review` is lighter and sufficient there. Inspired by the Thermos plugin's `thermo-nuclear-code-quality-review` skill, adapted to jstack conventions.",
+      "whenToUse": "",
+      "category": "Review",
+      "categoryKey": "review"
+    },
+    {
       "id": "routines",
       "name": "jstack-routines",
       "relPath": "skills/routines/SKILL.md",
@@ -1128,6 +1208,16 @@
       "relPath": "skills/self/lookback/SKILL.md",
       "gateId": "jstack:self/lookback",
       "description": "Review last N days of personal gbrain + calendar and surface patterns. Gentle, not therapeutic.",
+      "whenToUse": "",
+      "category": "Self",
+      "categoryKey": "self"
+    },
+    {
+      "id": "self-recall",
+      "name": "jstack-self-recall",
+      "relPath": "skills/self/recall/SKILL.md",
+      "gateId": "jstack:self/recall",
+      "description": "Reconstruct a tight \"where did I leave off\" brief after a gap — a multi-day break, a context compaction, a fresh session — by combining live repo state (git log/status, open PRs), the local jstack memory store, and whatever recent conversation history the host makes available. Use for \"catch me up,\" \"what have I been working on,\" \"where did I leave off,\" or before resuming work after a break. Do NOT use for a reflective review of the last N days' patterns and growth — that is `jstack:self-lookback`. Do NOT use to bootstrap a brand-new session's config (gbrain target, timezone) — that is `jstack:init-session`; recall reconstructs what already happened, it does not set up what happens next. Inspired by pstack's `recall` skill, adapted to jstack conventions and to host-agnostic sourcing (no assumption about where or how the host stores chat transcripts).",
       "whenToUse": "",
       "category": "Self",
       "categoryKey": "self"

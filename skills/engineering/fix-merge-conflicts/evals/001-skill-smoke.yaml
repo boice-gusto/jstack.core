@@ -1,0 +1,60 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-fix-merge-conflicts** (path:
+  `engineering/fix-merge-conflicts`).
+
+  Category: engineering.
+
+  Skill description: Resolve merge/rebase/cherry-pick conflicts non-interactively where the correct
+  resolution is genuinely unambiguous — reading every conflicting hunk with real git commands (`git
+  status`, `git diff`, `git log --merge`, conflict-marker greps) before choosing a side — regenerate
+  lockfiles with the package manager rather than hand-editing them, then validate by actually
+  running the target repo's build/typecheck/test command before calling it done. Use when a branch
+  has unresolved conflicts and needs a reliable path to a buildable state. Do NOT use to guess
+  through a real semantic conflict — when both sides made substantively different logical changes to
+  the same code, stop and ask rather than picking a side. Do NOT use for the deep line-level
+  correctness/security read of the merged result — that is `jstack:review-code-review` (single deep
+  read) or `jstack:thermonuclear-review` (high-stakes, six-lens); this skill's job stops at a clean,
+  buildable, non-conflicted state. Do NOT use to force-push or discard uncommitted/unpushed work as
+  a shortcut — check what's actually there before touching anything, and never run a destructive git
+  operation without explicit human confirmation. Inspired by Cursor's `cursor-team-kit` plugin's
+  `fix-merge-conflicts` skill, adapted to jstack conventions.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Resolve merge/rebase/cherry-pick conflicts non-interactively where the correct resolution
+    is genuinely unambiguous — reading every conflicting hunk with real git commands (`git status`,
+    `git diff`, `git log --merge`, conflict-marker greps) before choosing a side — regenerate
+    lockfiles with the package manager rather than hand-editing them, then validate by actually
+    running the target repo's build/typecheck/test command before calling it done. Use when a branch
+    has unresolved conflicts and needs a reliable path to a buildable state. Do NOT use to guess
+    through a real semantic conflict — when both sides made substantively different logical changes
+    to the same code, stop and ask rather than picking a side. Do NOT use for the deep line-level
+    correctness/security read of the merged result — that is `jstack:review-code-review` (single
+    deep read) or `jstack:thermonuclear-review` (high-stakes, six-lens); this skill's job stops at a
+    clean, buildable, non-conflicted state. Do NOT use to force-push or discard uncommitted/unpushed
+    work as a shortcut — check what's actually there before touching anything, and never run a
+    destructive git operation without explicit human confirmation. Inspired by Cursor's
+    `cursor-team-kit` plugin's `fix-merge-conflicts` skill, adapted to jstack conventions.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

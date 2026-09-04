@@ -1,0 +1,52 @@
+name: Graded rubric — self-description checked against declared scope and failure modes
+prompt: >-
+  You are applying the jstack skill **jstack-engineering-create-verification-skill** (path:
+  `engineering/create-verification-skill`).
+
+  Category: engineering.
+
+  Skill description: Generate a durable, project-local skill that drives a real app the way a user
+  does — CLI, TUI, web UI, desktop, or service, any language or framework — and captures real proof
+  artifacts (exit codes, screenshots, response bodies, logs) instead of a plausible narrative. Use
+  for "make a verify skill for this repo," "give me a scripted way to prove this app works," or when
+  a project has no repeatable way to demonstrate UI/CLI/service behavior. Do NOT use to prove a
+  single one-off claim right now — that is `jstack:engineering-verify-this`; this skill's output is
+  a reusable artifact for every future run, not a one-time verdict. Do NOT use to build or run a
+  fixed browser-automation JSON definition against known selectors — that is
+  `jstack:workflows-builder`/`jstack:workflows-execute`; this skill's job is discovering what to
+  verify and how in the first place, on any interaction surface, not replaying a known script. Do
+  NOT use this skill for the mechanics of what makes a well-formed SKILL.md itself (frontmatter,
+  chain contract, procedure shape, catalog entry) — that is `jstack:skill-creator`; this skill only
+  figures out the verification CONTENT (which surfaces exist, how to drive each for real, what
+  counts as proof) and then hands that content to `jstack:skill-creator`'s conventions to become the
+  actual file. Inspired by Cursor's `pstack` plugin's `create-verification-skill` skill, adapted to
+  jstack conventions and Claude Code's `.claude/skills/` project-local layout.
+
+
+  User: In 3–5 short bullet points, say what this skill is for, one thing it explicitly does
+
+  *not* do, and what it does when it is missing config or required input. Under ~200 words.
+
+  Do not claim to have run external tools or APIs.
+grading:
+  rubric:
+    - description: Identifies this skill's specific purpose, not a generic description of an assistant
+      pass_if: >-
+        response states what jstack-engineering-create-verification-skill is for and when to use it,
+        in terms specific to engineering
+    - description: Names the boundary this skill actually declares
+      pass_if: >-
+        response identifies that the skill does not do the following, or says something equivalent:
+        Proving one specific claim right now without leaving behind a reusable
+    - description: Describes what it does when a declared failure mode occurs
+      pass_if: >-
+        response explains how it behaves in this situation, or that it stops and asks: Repo doesn't
+        build/start as-is
+  pass_threshold: 3
+assert:
+  response_not_contains:
+    - <script
+  response_min_length: 120
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

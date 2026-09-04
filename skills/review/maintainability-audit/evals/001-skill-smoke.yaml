@@ -1,0 +1,66 @@
+name: Skill smoke — produces a structured outline for its own job, without live integrations
+prompt: >-
+  You are applying the jstack skill **jstack-review-maintainability-audit** (path:
+  `review/maintainability-audit`).
+
+  Category: review.
+
+  Skill description: Single-lens, deep structural-maintainability audit of a diff: hunts for a
+  "code-judo" restructuring that deletes complexity rather than rearranging it, treats a file
+  crossing the 1,000-line threshold as a presumptive blocker needing a stated reason, flags
+  spaghetti-growth (ad-hoc conditionals bolted onto an unrelated flow) as a design problem rather
+  than a style nit, is skeptical of thin/pass-through wrapper abstractions and cast-heavy type
+  boundaries, and pushes on type/boundary cleanliness (unnecessary `any`/`unknown`/casts) when it
+  affects maintainability. Use for "how maintainable is this," "is there a simpler way to structure
+  this," "audit this for code-judo opportunities," or "is this file getting too big."
+  `jstack:thermonuclear-review` can invoke this skill as its code-quality lens for extra structural
+  depth beyond that lens's general complexity/debt pass; it can also run standalone on a diff/PR
+  with no six-lens process at all. Do NOT use as a substitute for `jstack:thermonuclear-review`'s
+  six-lens dispatch (security, compliance, performance, code quality, QA, AI-slop) when the ask is
+  broader than structure — this is one deep structural lens, not a seventh lens in that roster, and
+  does not touch security/compliance/performance/QA at all. Do NOT use for a routine PR with no
+  structural-complexity question — `jstack:review-code-review` is lighter and sufficient there.
+  Inspired by the Thermos plugin's `thermo-nuclear-code-quality-review` skill, adapted to jstack
+  conventions.
+
+
+  User request: Outline what you would produce for a **hypothetical** internal request. Include
+
+  section headings or a short numbered plan and **one example bullet** per section. Do **not**
+
+  claim to have called Slack, Jira, Notion, GitHub, or gbrain APIs; say what you would need from
+
+  config or the user if required.
+
+
+  Keep the response under ~400 words.
+criteria:
+  - Provides more than one section, step, or labeled part (not a single-sentence stub)
+  - >-
+    Does not present invented ticket IDs, channel IDs, page IDs, customer names, or URLs as verified
+    facts
+  - >-
+    Names the config keys, user input, or tool access it would need, OR states its assumptions
+    explicitly
+  - >-
+    Addresses the specific job this skill declares, not a generic plan — the outline is recognisably
+    about: Single-lens, deep structural-maintainability audit of a diff: hunts for a "code-judo"
+    restructuring that deletes complexity rather than rearranging it, treats a file crossing the
+    1,000-line threshold as a presumptive blocker needing a stated reason, flags spaghetti-growth
+    (ad-hoc conditionals bolted onto an unrelated flow) as a design problem rather than a style nit,
+    is skeptical of thin/pass-through wrapper abstractions and cast-heavy type boundaries, and
+    pushes on type/boundary cleanliness (unnecessary `any`/`unknown`/casts) when it affects
+    maintainability. Use for "how maintainable is this," "is there a simpler way to structure this,"
+    "audit this for code-judo opportunities," or "is this file getting too big."
+    `jstack:thermonuclear-review` can invoke this skill as its code-quality lens for extra
+    structural depth beyond that lens's general complexity/debt pass; it can also run standalone on
+    a diff/PR with no six-lens process at all. Do NOT use as a substitute for
+    `jstack:thermonuclear-review`'s six-lens dispatch (security, compliance, performance, code
+    quality, QA, AI-slop) when the ask is broader than structure — this is one deep structural lens,
+    not a seventh lens in that roster, and does not touch security/compliance/performance/QA at all.
+    Do NOT use for a routine PR with no structural-complexity question — `jstack:review-code-review`
+    is lighter and sufficient there. Inspired by the Thermos plugin's
+    `thermo-nuclear-code-quality-review` skill, adapted to jstack conventions.
+expect_skill: true
+timeout: 120
+generated-by: scripts/generate-skill-evals.ts

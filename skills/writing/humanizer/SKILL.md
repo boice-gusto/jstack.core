@@ -91,6 +91,64 @@ Apply every rule below. A rewrite that still contains any of these has not done 
     longer ones, and don't let three consecutive sentences land within the same 5-word range of
     each other.
 
+### Puffery, promotional language, and vague attribution
+
+12. Cut on sight: "pivotal moment," "testament to," "evolving landscape," "setting the stage for,"
+    "indelible mark," "deeply rooted," "renowned," "groundbreaking," "must-visit." State what
+    actually happened instead of the abstraction. Same for name-dropping without context ("covered
+    by major outlets") — name the one source and what it actually said, or cut the line.
+13. Cut vague attribution: "experts believe," "industry reports suggest," "some critics argue."
+    Name the actual source, or delete the claim — an unnamed authority is not evidence.
+14. **Broader AI-vocabulary list** beyond rule 7: additionally, crucial, enduring, enhance,
+    fostering, garner, interplay, intricate, landscape (used abstractly, not literally), showcase,
+    tapestry (used abstractly), testament, underscore, vibrant. Replace with the plain word a
+    person would actually say.
+15. **Fancy ways to say "is."** "serves as," "stands as," "boasts," "features" → "is" or "has."
+
+### Say what it does, not how it feels
+
+16. **Name the mechanism or the number, not the feeling.** "The database stays close at hand,"
+    "SQL you can read," "seamless integration" (see rule 7) all describe a feeling instead of a
+    fact. Ask what the sentence tells the reader to *do* or *know*, then write that: "`.toSQL()`
+    returns the exact string sent to the database," "a column rename fails the build." If a
+    sentence could appear unchanged in another project's docs with the noun swapped, it says
+    nothing about this one — cut it or make it specific.
+17. **Abstract metaphor nouns read as technical but usually have a plainer word.** Substrate,
+    wedge, vector, locus, vantage, nexus, primitive (as a noun), harness (as a metaphor), surface
+    (as in "API surface"), bedrock, scaffolding (as a metaphor), modality, paradigm, gold-plating,
+    ratchet (as a metaphor), evacuate (for moving code), endgame, north star, flywheel. "Substrate"
+    → "base." "Vector" → "way" or "method." "Gold-plating" → "more than the job needs." Name the
+    concrete thing instead.
+
+### Formatting tells
+
+18. **No decorative emoji** in headings or bullets. No curly/smart quotes — straight quotes only.
+    Sentence case for headings, not Title Case. Don't bold every proper noun or acronym — bolding
+    should mark the one thing in a paragraph worth scanning for, not everything.
+19. **No colon as a mid-sentence connector.** A colon before a list or a concrete example is fine.
+    "If you're coming from X: instead of Y, you do Z" adds nothing the words alone don't say —
+    rewrite so the point stands without the colon doing comparison work for you.
+20. **No inline-header-list pattern** — a bold label ending in a colon that just restates the
+    line ("**Performance:** Performance improved by 20%."). A bold lead-in that ends in a period
+    and is followed by genuinely new detail ("**Schema in TypeScript.** Tables live in one file.")
+    is fine; a colon that restates the bolded word is not.
+
+### Sycophancy and disclaimers
+
+21. Cut sycophantic openers: "Great question!," "You're absolutely right!," "Of course!,"
+    "Certainly!" Answer directly instead of complimenting the question first.
+22. Cut cutoff disclaimers used as filler ("While specific details are limited...") — either find
+    the specific detail or state plainly what's unknown, once, without the hedge-shaped preamble.
+
+### Voice
+
+23. **Prefer active voice.** Catch "is/are/was/were + past participle" and name the actor:
+    "queries are validated" → "the compiler validates queries." Passive is fine only when the
+    actor is genuinely unknown or doesn't matter.
+24. **Cut an adverb propping up a weak verb, or use a stronger verb.** "Runs quickly" → "is fast"
+    or the actual number. "Significantly improves" → the measured delta. An adverb rescuing a weak
+    verb usually means the verb is wrong, not that the adverb is needed.
+
 ## Domain rule — preserve meaning exactly
 
 This is a **style and tone rewrite only.** The rewritten text must say exactly what the source
