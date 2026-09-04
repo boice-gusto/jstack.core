@@ -102,7 +102,27 @@ export interface ToolCallEvent {
    * ended (or the stream was cut off) before the result came back. */
   output?: string;
   isError?: boolean;
+  /** Set when this tool call was made by a sub-agent (a Task-tool invocation) rather than the
+   * main thread -- the `id` of that Task's own ToolCallEvent. Only populated when `claude` was
+   * run with `--forward-subagent-text`; a consumer nests/groups these under their parent Task
+   * call instead of showing them as flat top-level tool calls. */
+  parentToolUseId?: string;
 }
+
+/** One incremental update out of an in-flight `runClaudeStreaming` call, pushed via its
+ * `onEvent` callback as each NDJSON line arrives -- the live counterpart to the accumulated
+ * `toolEvents`/`text` this function still returns once the whole turn finishes. A consumer
+ * (the RPC layer, eventually) can forward these to a subscriber without waiting for the result. */
+export type LiveSessionEvent =
+  | { kind: "tool_use"; event: ToolCallEvent }
+  | {
+      kind: "tool_result";
+      toolUseId?: string;
+      output: string;
+      isError: boolean;
+      parentToolUseId?: string;
+    }
+  | { kind: "assistant_text"; text: string; parentToolUseId?: string };
 
 export interface ClaudeStreamingResult extends ClaudeResult {
   toolEvents: ToolCallEvent[];
@@ -131,10 +151,32 @@ function spawnClaudeStreaming(argv: string[]) {
   });
 }
 
+/** Reads a `ReadableStream<Uint8Array>` incrementally and calls `onLine` for each complete
+ * `\n`-delimited line as soon as it's available, mirroring the exact buffer-and-split pattern
+ * `rpc-server.ts`'s socket handler already uses for the same reason: a chunk boundary from the
+ * underlying pipe has no relationship to a line boundary in the child's output. */
+async function readLines(
+  stream: ReadableStream<Uint8Array>,
+  onLine: (line: string) => void,
+): Promise<void> {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for await (const chunk of stream) {
+    buffer += decoder.decode(chunk, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (line.trim().length > 0) onLine(line);
+    }
+  }
+  if (buffer.trim().length > 0) onLine(buffer);
+}
+
 export async function runClaudeStreaming(
   args: string[],
   prompt: string,
   timeoutMs: number,
+  onEvent?: (event: LiveSessionEvent) => void,
 ): Promise<ClaudeStreamingResult> {
   let proc: ReturnType<typeof spawnClaudeStreaming>;
   try {
@@ -168,8 +210,79 @@ export async function runClaudeStreaming(
     proc.kill();
   }, timeoutMs);
 
-  const [out, err] = await Promise.all([
-    new Response(proc.stdout).text(),
+  let text = "";
+  let sessionId: string | undefined;
+  let costUsd = 0;
+  let isError = false;
+  let sawResult = false;
+  const toolEvents: ToolCallEvent[] = [];
+
+  function handleLine(line: string): void {
+    if (!sessionId) {
+      const sid = extractSessionId(line);
+      if (sid !== null) sessionId = sid;
+    }
+    for (const evt of mapStreamJsonLine(line)) {
+      if (evt.kind === "assistant_text") {
+        // A forwarded sub-agent's own reply must never be concatenated into the main answer --
+        // only main-thread text (no parentToolUseId) does that, exactly as before this function
+        // could see sub-agent events at all.
+        if (!evt.parentToolUseId) text += evt.text;
+        onEvent?.({
+          kind: "assistant_text",
+          text: evt.text,
+          parentToolUseId: evt.parentToolUseId,
+        });
+      } else if (evt.kind === "tool_use") {
+        const toolEvent: ToolCallEvent = {
+          id: evt.id,
+          name: evt.name,
+          input: evt.input,
+          parentToolUseId: evt.parentToolUseId,
+        };
+        toolEvents.push(toolEvent);
+        onEvent?.({ kind: "tool_use", event: toolEvent });
+      } else if (evt.kind === "tool_result") {
+        // Matched by id when the CLI provides one; otherwise falls back to the most recent tool
+        // call in the SAME thread (main vs. a specific sub-agent, via parentToolUseId) still
+        // missing output -- claude emits tool_use/tool_result in strict pairs per thread even
+        // for parallel calls, but forwarded sub-agent events can now interleave with the main
+        // thread's, so the fallback must not cross between them.
+        const match = evt.toolUseId
+          ? toolEvents.find((t) => t.id === evt.toolUseId)
+          : [...toolEvents]
+              .reverse()
+              .find(
+                (t) =>
+                  t.output === undefined &&
+                  t.parentToolUseId === evt.parentToolUseId,
+              );
+        if (match) {
+          match.output = evt.content;
+          match.isError = evt.isError;
+        }
+        onEvent?.({
+          kind: "tool_result",
+          toolUseId: evt.toolUseId,
+          output: evt.content,
+          isError: evt.isError,
+          parentToolUseId: evt.parentToolUseId,
+        });
+      } else if (evt.kind === "result") {
+        sawResult = true;
+        costUsd = evt.total_cost_usd;
+        isError = evt.isError;
+        // The result event's own text (when present) is the authoritative final answer -- prefer
+        // it over the accumulated assistant-message text, mirroring runClaude's `d.result` read.
+        if (evt.result !== undefined && evt.result.length > 0) {
+          text = evt.result;
+        }
+      }
+    }
+  }
+
+  const [, err] = await Promise.all([
+    readLines(proc.stdout, handleLine),
     new Response(proc.stderr).text(),
   ]);
   await proc.exited;
@@ -183,49 +296,6 @@ export async function runClaudeStreaming(
       isError: true,
       toolEvents: [],
     };
-  }
-
-  let text = "";
-  let sessionId: string | undefined;
-  let costUsd = 0;
-  let isError = false;
-  let sawResult = false;
-  const toolEvents: ToolCallEvent[] = [];
-
-  for (const line of out.split("\n")) {
-    if (line.trim().length === 0) continue;
-    if (!sessionId) {
-      const sid = extractSessionId(line);
-      if (sid !== null) sessionId = sid;
-    }
-    for (const evt of mapStreamJsonLine(line)) {
-      if (evt.kind === "assistant_text") {
-        text += evt.text;
-      } else if (evt.kind === "tool_use") {
-        toolEvents.push({ id: evt.id, name: evt.name, input: evt.input });
-      } else if (evt.kind === "tool_result") {
-        // Matched by id when the CLI provides one; otherwise falls back to the most recent
-        // tool call still missing output, which covers every real observed case (claude emits
-        // tool_use/tool_result in strict pairs even for parallel calls -- each pair completes
-        // before the next tool_use of the same turn appears).
-        const match = evt.toolUseId
-          ? toolEvents.find((t) => t.id === evt.toolUseId)
-          : [...toolEvents].reverse().find((t) => t.output === undefined);
-        if (match) {
-          match.output = evt.content;
-          match.isError = evt.isError;
-        }
-      } else if (evt.kind === "result") {
-        sawResult = true;
-        costUsd = evt.total_cost_usd;
-        isError = evt.isError;
-        // The result event's own text (when present) is the authoritative final answer -- prefer
-        // it over the accumulated assistant-message text, mirroring runClaude's `d.result` read.
-        if (evt.result !== undefined && evt.result.length > 0) {
-          text = evt.result;
-        }
-      }
-    }
   }
 
   if (!sawResult) {

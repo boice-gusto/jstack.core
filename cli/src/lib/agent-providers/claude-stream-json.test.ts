@@ -35,6 +35,80 @@ describe("mapStreamJsonLine", () => {
     });
   });
 
+  // Real shape captured from `claude -p --forward-subagent-text`: every event type gets a
+  // top-level `parent_tool_use_id` once it originated inside a Task-tool sub-agent's own
+  // conversation, set to the id of that Task's own tool_use event -- absent (undefined) for
+  // ordinary main-thread events.
+  it("tags assistant_text with parentToolUseId when the event came from a forwarded sub-agent", () => {
+    const line = JSON.stringify({
+      type: "assistant",
+      parent_tool_use_id: "toolu_01FgPUr59c6HoQNSc6P2SAPS",
+      message: { content: [{ type: "text", text: "PONG" }] },
+    });
+    expect(mapStreamJsonLine(line)).toEqual([
+      {
+        kind: "assistant_text",
+        text: "PONG",
+        parentToolUseId: "toolu_01FgPUr59c6HoQNSc6P2SAPS",
+      },
+    ]);
+  });
+
+  it("leaves parentToolUseId undefined for an ordinary main-thread event", () => {
+    const line = JSON.stringify({
+      type: "assistant",
+      message: { content: [{ type: "text", text: "hi" }] },
+    });
+    const out = mapStreamJsonLine(line)[0];
+    expect(
+      out && "parentToolUseId" in out ? out.parentToolUseId : undefined,
+    ).toBeUndefined();
+  });
+
+  it("tags a sub-agent's own tool_use and tool_result with parentToolUseId", () => {
+    const toolUse = mapStreamJsonLine(
+      JSON.stringify({
+        type: "assistant",
+        parent_tool_use_id: "toolu_parent",
+        message: {
+          content: [
+            { type: "tool_use", id: "toolu_child", name: "Read", input: {} },
+          ],
+        },
+      }),
+    );
+    expect(toolUse).toEqual([
+      {
+        kind: "tool_use",
+        id: "toolu_child",
+        name: "Read",
+        input: {},
+        parentToolUseId: "toolu_parent",
+      },
+    ]);
+
+    const toolResult = mapStreamJsonLine(
+      JSON.stringify({
+        type: "user",
+        parent_tool_use_id: "toolu_parent",
+        message: {
+          content: [
+            { type: "tool_result", tool_use_id: "toolu_child", content: "ok" },
+          ],
+        },
+      }),
+    );
+    expect(toolResult).toEqual([
+      {
+        kind: "tool_result",
+        toolUseId: "toolu_child",
+        content: "ok",
+        isError: false,
+        parentToolUseId: "toolu_parent",
+      },
+    ]);
+  });
+
   it("maps result events with usage and cost", () => {
     const line = JSON.stringify({
       type: "result",

@@ -348,6 +348,21 @@ const REAL_STREAM_WITH_TOOL_USE = `
 {"type":"assistant","message":{"model":"claude-sonnet-5","id":"msg_011Cea6o1VQjbchTj7NjrUJA","type":"message","role":"assistant","content":[{"type":"text","text":"The file \`/tmp/jd-tool-test.txt\` contains: \`hello world content\`"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":2,"cache_creation_input_tokens":125,"cache_read_input_tokens":11899,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":125},"output_tokens":1,"service_tier":"standard","inference_geo":"global"},"diagnostics":null,"context_management":null},"parent_tool_use_id":null,"session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","uuid":"3331c659-1a58-4078-b03e-c660878d4697","timestamp":"2026-08-31T03:16:33.878Z","request_id":"req_011Cea6nzQRW1fvnWbYKSpcB"}
 {"duration_api_ms":3940,"stop_reason":"end_turn","session_id":"6f59f83c-144a-4b8d-a3ca-548e83fe507f","total_cost_usd":0.030172,"usage":{"input_tokens":4,"cache_creation_input_tokens":6413,"cache_read_input_tokens":17510,"output_tokens":101,"output_tokens_details":{"thinking_tokens":0},"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":6413,"ephemeral_5m_input_tokens":0},"inference_geo":"global","iterations":[{"input_tokens":2,"output_tokens":30,"cache_read_input_tokens":11899,"cache_creation_input_tokens":125,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":125},"type":"message"}],"speed":"standard"},"modelUsage":{"claude-sonnet-5":{"inputTokens":4,"outputTokens":101,"cacheReadInputTokens":17510,"cacheCreationInputTokens":6413,"webSearchRequests":0,"costUSD":0.030172,"contextWindow":1000000,"maxOutputTokens":64000,"canonicalModel":"claude-sonnet-5","provider":"firstParty","costBasis":"list"}},"permission_denials":[],"terminal_reason":"completed","fast_mode_state":"off","fast_mode_disabled_reason":"sdk_opt_in_required","subagent_stats":{"spawned":0,"requested":{"background":0,"foreground":0,"unset":0},"started_in_background":0,"max_depth":0,"spawned_by_subagents":0,"completed":0,"failed":0,"killed":{"parent":0,"user":0,"system":0},"refused":{"depth_limit":0,"concurrency_limit":0,"budget":0},"by_type":{}},"is_error":false,"num_turns":2,"subtype":"success","api_error_status":null,"result":"The file \`/tmp/jd-tool-test.txt\` contains: \`hello world content\`","ttft_ms":2332,"type":"result","duration_ms":5046,"uuid":"f58cce24-8cf3-410e-a94f-e8f3c68048fb","ttft_stream_ms":1810,"time_to_request_ms":416,"queued_turn_count":0}`.trim();
 
+/**
+ * Real `claude -p --forward-subagent-text` capture (a "Agent"-named Task-tool call launching one
+ * general-purpose sub-agent whose whole job is to reply "PONG"), preamble/thinking-only lines
+ * dropped. Confirms the exact shape `--forward-subagent-text` actually produces: every event
+ * belonging to the sub-agent's own conversation carries `parent_tool_use_id` set to the id of the
+ * Task's own tool_use event, and the Task's own tool_result (reporting the sub-agent's summary
+ * back to the MAIN thread) carries no `parent_tool_use_id` at all.
+ */
+const REAL_STREAM_WITH_SUBAGENT = `
+{"type":"assistant","message":{"model":"claude-haiku-4-5-20251001","id":"msg_011CehiTPsDuPRGnkz4xiwkc","type":"message","role":"assistant","content":[{"type":"tool_use","id":"toolu_01FgPUr59c6HoQNSc6P2SAPS","name":"Agent","input":{"description":"Test agent reply","subagent_type":"general-purpose","prompt":"Reply with exactly the word PONG and nothing else.","run_in_background":false},"caller":{"type":"direct"}}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":10,"cache_creation_input_tokens":1044,"cache_read_input_tokens":21587,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":1044},"output_tokens":4,"service_tier":"standard","inference_geo":"not_available"},"diagnostics":null,"context_management":null},"parent_tool_use_id":null,"session_id":"abb0950c-65f9-49da-8a48-450f1ed3df9c","uuid":"18f38a85-65fb-40f0-9de3-8203464515f2","timestamp":"2026-09-04T03:48:26.390Z","request_id":"req_011CehiTNx9kMDP68WAW1FMk"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Reply with exactly the word PONG and nothing else."}]},"parent_tool_use_id":"toolu_01FgPUr59c6HoQNSc6P2SAPS","session_id":"abb0950c-65f9-49da-8a48-450f1ed3df9c","uuid":"8e3836a3-347d-44e4-beea-c33eccc67919","timestamp":"2026-09-04T03:48:27.020Z","subagent_type":"general-purpose","task_description":"Test agent reply"}
+{"type":"assistant","message":{"model":"claude-haiku-4-5-20251001","id":"msg_011CehiTpw6WVL88KKtaZPVT","type":"message","role":"assistant","content":[{"type":"text","text":"PONG"}],"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":10,"cache_creation_input_tokens":12733,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":12733,"ephemeral_1h_input_tokens":0},"output_tokens":8,"service_tier":"standard","inference_geo":"not_available"},"diagnostics":null,"context_management":null},"parent_tool_use_id":"toolu_01FgPUr59c6HoQNSc6P2SAPS","session_id":"abb0950c-65f9-49da-8a48-450f1ed3df9c","uuid":"62cca654-e465-401b-a202-78d8644b45b7","timestamp":"2026-09-04T03:48:31.392Z","request_id":"req_011CehiToz3cKFVMmT3GPNwj","subagent_type":"general-purpose","task_description":"Test agent reply"}
+{"type":"user","message":{"role":"user","content":[{"tool_use_id":"toolu_01FgPUr59c6HoQNSc6P2SAPS","type":"tool_result","content":[{"type":"text","text":"PONG"},{"type":"text","text":"agentId: aabf5fecca4452ae5 (use SendMessage with to: 'aabf5fecca4452ae5', summary: '<5-10 word recap>' to continue this agent)\\n<usage>subagent_tokens: 12796\\ntool_uses: 0\\nduration_ms: 4392</usage>"}]}]},"parent_tool_use_id":null,"session_id":"abb0950c-65f9-49da-8a48-450f1ed3df9c","uuid":"7361192e-7a58-4fb4-b2fc-e2306c776d93","timestamp":"2026-09-04T03:48:31.412Z","tool_use_result":{"status":"completed","prompt":"Reply with exactly the word PONG and nothing else.","agentId":"aabf5fecca4452ae5","agentType":"general-purpose"}}
+{"duration_api_ms":16184,"stop_reason":"end_turn","session_id":"abb0950c-65f9-49da-8a48-450f1ed3df9c","total_cost_usd":0.07152205,"usage":{"input_tokens":30,"output_tokens":855},"permission_denials":[],"terminal_reason":"completed","subagent_stats":{"spawned":1,"completed":1,"by_type":{"general-purpose":1}},"is_error":false,"num_turns":3,"subtype":"success","api_error_status":null,"result":"DONE","type":"result","uuid":"ff5b7c98-dc7e-4bab-80f6-a172d6c6065d"}`.trim();
+
 function installFakeStreamingClaude(fixture: string): { restorePath: string } {
   const dir = mkdtempSync(join(tmpdir(), "fake-claude-streaming-"));
   writeFileSync(
@@ -401,6 +416,81 @@ describe("runClaudeStreaming", () => {
       },
     ]);
     expect(result.costUsd).toBeCloseTo(0.030172, 6);
+  });
+
+  test("a sub-agent's forwarded text does not leak into the main answer, and its tool call is tagged with parentToolUseId", async () => {
+    restorePath = installFakeStreamingClaude(
+      REAL_STREAM_WITH_SUBAGENT,
+    ).restorePath;
+    const result = await runClaudeStreaming(
+      [],
+      "launch a subagent that replies PONG",
+      5000,
+    );
+    expect(result.ok).toBe(true);
+    // The main thread's own final answer is "DONE" (the result event's text) -- the sub-agent's
+    // forwarded "PONG" must not have been concatenated into it.
+    expect(result.text).toBe("DONE");
+    expect(result.toolEvents).toEqual([
+      {
+        id: "toolu_01FgPUr59c6HoQNSc6P2SAPS",
+        name: "Agent",
+        input: {
+          description: "Test agent reply",
+          subagent_type: "general-purpose",
+          prompt: "Reply with exactly the word PONG and nothing else.",
+          run_in_background: false,
+        },
+        output:
+          "PONG\nagentId: aabf5fecca4452ae5 (use SendMessage with to: 'aabf5fecca4452ae5', summary: '<5-10 word recap>' to continue this agent)\n<usage>subagent_tokens: 12796\ntool_uses: 0\nduration_ms: 4392</usage>",
+        isError: false,
+      },
+    ]);
+  });
+
+  test("onEvent fires live for the sub-agent's own forwarded text and tool call, tagged with parentToolUseId", async () => {
+    restorePath = installFakeStreamingClaude(
+      REAL_STREAM_WITH_SUBAGENT,
+    ).restorePath;
+    const events: Array<{
+      kind: string;
+      parentToolUseId?: string;
+      text?: string;
+    }> = [];
+    await runClaudeStreaming(
+      [],
+      "launch a subagent that replies PONG",
+      5000,
+      (e) => {
+        events.push(
+          e.kind === "assistant_text"
+            ? { kind: e.kind, parentToolUseId: e.parentToolUseId, text: e.text }
+            : {
+                kind: e.kind,
+                parentToolUseId:
+                  e.kind === "tool_use"
+                    ? e.event.parentToolUseId
+                    : e.parentToolUseId,
+              },
+        );
+      },
+    );
+
+    // The Task ("Agent") tool call itself is main-thread -- untagged.
+    const taskToolUse = events.find((e) => e.kind === "tool_use");
+    expect(taskToolUse?.parentToolUseId).toBeUndefined();
+
+    // The sub-agent's own forwarded reply is tagged with that Task tool_use's own id.
+    const forwardedText = events.find(
+      (e) => e.kind === "assistant_text" && e.text === "PONG",
+    );
+    expect(forwardedText?.parentToolUseId).toBe(
+      "toolu_01FgPUr59c6HoQNSc6P2SAPS",
+    );
+
+    // "DONE" (the main thread's real final answer) never shows up as a live assistant_text --
+    // it only ever arrives via the result event, once the whole turn is over.
+    expect(events.some((e) => e.text === "DONE")).toBe(false);
   });
 
   test("a spawn failure reports as an error result, not a throw", async () => {

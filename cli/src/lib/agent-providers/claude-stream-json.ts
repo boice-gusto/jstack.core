@@ -1,6 +1,15 @@
 export type StreamJsonEvent =
-  | { kind: "assistant_text"; text: string }
-  | { kind: "tool_use"; id?: string; name: string; input: unknown }
+  | { kind: "assistant_text"; text: string; parentToolUseId?: string }
+  | {
+      kind: "tool_use";
+      id?: string;
+      name: string;
+      input: unknown;
+      /** Set when this tool call was made by a sub-agent (a Task-tool invocation), not the main
+       * thread -- the id of that Task's own `tool_use` event. Only present with
+       * `--forward-subagent-text` passed to `claude`; absent (undefined) otherwise. */
+      parentToolUseId?: string;
+    }
   | {
       /** A tool's real output, reported back to claude as a "user" role message -- claude-code's
        * own convention for tool results, not something a human typed. `toolUseId` matches the
@@ -10,6 +19,7 @@ export type StreamJsonEvent =
       toolUseId?: string;
       content: string;
       isError: boolean;
+      parentToolUseId?: string;
     }
   | {
       kind: "result";
@@ -72,6 +82,14 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
   }
 
   const out: StreamJsonEvent[] = [];
+  // Present on every event type once `--forward-subagent-text` is passed and this line
+  // originated inside a Task-tool sub-agent's own conversation -- its value is the `id` of the
+  // `tool_use` event for that Task call, i.e. exactly the id already recorded on that Task's own
+  // `ToolCallEvent`, so a consumer can group sub-agent events under it with no extra bookkeeping.
+  const parentToolUseId =
+    typeof event.parent_tool_use_id === "string"
+      ? event.parent_tool_use_id
+      : undefined;
 
   if (event.type === "stream_event") {
     const inner = event.event;
@@ -87,7 +105,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
     if (delta.type === "text_delta") {
       const t = delta.text;
       if (typeof t === "string" && t.length > 0) {
-        out.push({ kind: "assistant_text", text: t });
+        out.push({ kind: "assistant_text", text: t, parentToolUseId });
       }
       return out;
     }
@@ -96,7 +114,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
       typeof delta.text === "string" &&
       delta.text.length > 0
     ) {
-      out.push({ kind: "assistant_text", text: delta.text });
+      out.push({ kind: "assistant_text", text: delta.text, parentToolUseId });
       return out;
     }
     out.push({ kind: "raw", event });
@@ -111,7 +129,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
     }
     const content = message.content;
     if (typeof content === "string" && content.length > 0) {
-      out.push({ kind: "assistant_text", text: content });
+      out.push({ kind: "assistant_text", text: content, parentToolUseId });
       return out;
     }
     if (!Array.isArray(content)) {
@@ -123,7 +141,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
       if (block.type === "text") {
         const t = block.text;
         if (typeof t === "string" && t.length > 0) {
-          out.push({ kind: "assistant_text", text: t });
+          out.push({ kind: "assistant_text", text: t, parentToolUseId });
         }
       } else if (block.type === "tool_use") {
         const name = block.name;
@@ -132,6 +150,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
           id: typeof block.id === "string" ? block.id : undefined,
           name: typeof name === "string" ? name : "tool",
           input: block.input,
+          parentToolUseId,
         });
       }
     }
@@ -170,6 +189,7 @@ export function mapStreamJsonLine(line: string): StreamJsonEvent[] {
           typeof block.tool_use_id === "string" ? block.tool_use_id : undefined,
         content: text,
         isError: block.is_error === true,
+        parentToolUseId,
       });
     }
     return out;
