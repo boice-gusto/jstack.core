@@ -1,6 +1,6 @@
 ---
 name: jstack-skill-finder
-description: Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers. User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale.
+description: Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers. User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale. Do NOT use to perform the recommended skill's work.
 category: knowledge
 agent: Explore
 context: fork

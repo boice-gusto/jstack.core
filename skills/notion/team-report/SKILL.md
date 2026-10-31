@@ -1,6 +1,6 @@
 ---
 name: jstack-notion-team-report
-description: Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack-team-report.
+description: Create or update a week-over-week team report page in Notion using templates/notion/team-report.json, from a draft produced by `jstack:team-report` or pasted content. Do NOT use to generate the underlying metrics; that is `jstack:team-report`.
 category: notion
 disable-model-invocation: true
 effort: medium
@@ -43,7 +43,7 @@ Read relevant keys from `jstack.config.json`. If the integration is missing or u
 Resolve the parent page or database from `notion_defaults` — never guess an id. Read a page before overwriting its body. Create as a draft and let the user promote it; do not publish on their behalf. If the target is unset in config, say so instead of writing somewhere plausible.
 
 ### Step 3 — Execute
-Publish an already-drafted team report (from `jstack:reports-team-report`, or pasted content) into Notion as a dated page.
+Publish an already-drafted team report (from `jstack:team-report`, or pasted content) into Notion as a dated page.
 - Do not draft the report's narrative here — this skill places content that already exists, the same boundary `team-note` holds for lighter notes.
 
 ### Step 4 — Validate

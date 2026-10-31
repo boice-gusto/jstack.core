@@ -15,7 +15,7 @@ Read the setup preamble first:
 
 ## What this skill is for
 Author a browser workflow definition — start URL and ordered steps — as JSON at `config/workflows/<id>.json`, so it can be executed unattended via `jstack:workflow-execute`. The schema has no assertion kind, so a check is a `wait` on a selector that only appears in the desired state.
-- **Out of scope:** Running the workflow (`jstack:workflows-execute`) and recording one from live interaction (`jstack:workflows-recorder`). Never place a credential in the definition file.
+- **Out of scope:** Running the workflow (`jstack:workflow-execute`) and recording one from live interaction (`jstack:workflow-recorder`). Never place a credential in the definition file.
 
 ## Domain rules — browser workflows
 - Build, record, run, and view `jstack workflow` CRUD. Preview/diff before production mutate.
@@ -76,7 +76,7 @@ Use a domain-appropriate heading, then:
 | Ambiguous goal | One clarifying question; if still unclear, present options A/B. |
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
 | A `click`/`fill` step has no preceding `wait` on its own selector | Add the missing `wait` before shipping the definition — this is the exact race-condition defect that only ever reproduces in CI, per Step 2 above. |
-| User asks to run the definition or verify it works | Out of scope for this skill; hand off to `jstack:workflows-execute` — nothing here executes anything. |
+| User asks to run the definition or verify it works | Out of scope for this skill; hand off to `jstack:workflow-execute` — nothing here executes anything. |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-execute`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

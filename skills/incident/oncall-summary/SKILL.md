@@ -1,6 +1,6 @@
 ---
 name: jstack-incident-oncall-summary
-description: Summarize on-call window from Slack channel + incident tool + schedule; group alerts; optional per-issue investigation; config-driven targets.
+description: Summarize an on-call window from the configured Slack channel, incident tool, and schedule, grouping alerts and optionally investigating individual issues. Use for on-call handoff or end-of-shift summaries. Do NOT use to acknowledge or resolve alerts or change alert thresholds.
 category: incident
 effort: medium
 ---

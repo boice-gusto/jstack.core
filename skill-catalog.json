@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T04:24:52.166Z",
+  "generatedAt": "2026-10-31T08:31:50.741Z",
   "count": 157,
   "skills": [
     {
@@ -357,7 +357,7 @@
       "name": "jstack-incident-find-sme",
       "relPath": "skills/incident/find-sme/SKILL.md",
       "gateId": "jstack:incident/find-sme",
-      "description": "Rank subject-matter experts from Jira history + Slack presence for an incident description or incident id; config project scope.",
+      "description": "Rank likely subject-matter experts for a system or incident from configured history (commits, review history, tickets, Slack presence), with evidence per candidate. Use when asked \"who knows this system\" or \"who should look at this incident.\" Do NOT use to page or message anyone, or to rank people by commit volume alone.",
       "whenToUse": "",
       "category": "Incident",
       "categoryKey": "incident"
@@ -367,7 +367,7 @@
       "name": "jstack-incident-oncall-summary",
       "relPath": "skills/incident/oncall-summary/SKILL.md",
       "gateId": "jstack:incident/oncall-summary",
-      "description": "Summarize on-call window from Slack channel + incident tool + schedule; group alerts; optional per-issue investigation; config-driven targets.",
+      "description": "Summarize an on-call window from the configured Slack channel, incident tool, and schedule, grouping alerts and optionally investigating individual issues. Use for on-call handoff or end-of-shift summaries. Do NOT use to acknowledge or resolve alerts or change alert thresholds.",
       "whenToUse": "",
       "category": "Incident",
       "categoryKey": "incident"
@@ -797,7 +797,7 @@
       "name": "jstack-notion-standup",
       "relPath": "skills/notion/standup/SKILL.md",
       "gateId": "jstack:notion/standup",
-      "description": "Create or update a standup page or database row in Notion using the configured standup template and optional gallery template page from config.",
+      "description": "Create or update a standup page or database row in Notion using the configured standup template and optional gallery template page. Use only when asked to write a standup into Notion. Do NOT use to post the standup to Slack (`jstack:meetings-post-slack`).",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -817,7 +817,7 @@
       "name": "jstack-notion-team-report",
       "relPath": "skills/notion/team-report/SKILL.md",
       "gateId": "jstack:notion/team-report",
-      "description": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json; hand off from jstack-team-report.",
+      "description": "Create or update a week-over-week team report page in Notion using templates/notion/team-report.json, from a draft produced by `jstack:team-report` or pasted content. Do NOT use to generate the underlying metrics; that is `jstack:team-report`.",
       "whenToUse": "",
       "category": "Notion",
       "categoryKey": "notion"
@@ -1317,7 +1317,7 @@
       "name": "jstack-skill-finder",
       "relPath": "skills/knowledge/skill-finder/SKILL.md",
       "gateId": "jstack:knowledge/skill-finder",
-      "description": "Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers. User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale.",
+      "description": "Map vague user goals to specific jstack skills; prefer CLI skills index and domain routers. User asks how to do something or which jstack skill to use; keep answers to 1–3 skills with rationale. Do NOT use to perform the recommended skill's work.",
       "whenToUse": "",
       "category": "Knowledge",
       "categoryKey": "knowledge"
@@ -1527,7 +1527,7 @@
       "name": "jstack-workflow-recorder",
       "relPath": "skills/workflows/recorder/SKILL.md",
       "gateId": "jstack:workflows/recorder",
-      "description": "Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.",
+      "description": "Record user browser actions into a workflow definition, scrubbing captured secrets before saving and adding stability notes for generated selectors before promoting to CI. Use when the user wants to capture a flow by demonstrating it. Do NOT use to run the recording (`jstack:workflow-execute`) or hand-author steps (`jstack:workflows-builder`).",
       "whenToUse": "",
       "category": "Workflows",
       "categoryKey": "workflows"
@@ -1537,7 +1537,7 @@
       "name": "jstack-workflow-viewer",
       "relPath": "skills/workflows/viewer/SKILL.md",
       "gateId": "jstack:workflows/viewer",
-      "description": "\"Summarize what a workflow run log contains: steps taken and artifacts produced. Never reconstruct a result for a run with no report.\"",
+      "description": "\"Summarize what a workflow run log contains: steps taken and artifacts produced. Use to inspect a finished run by run-id. Do NOT use to re-run or edit a workflow, and never reconstruct a result for a run with no report.\"",
       "whenToUse": "",
       "category": "Workflows",
       "categoryKey": "workflows"

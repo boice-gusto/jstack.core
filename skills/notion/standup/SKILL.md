@@ -1,6 +1,6 @@
 ---
 name: jstack-notion-standup
-description: Create or update a standup page or database row in Notion using the configured standup template and optional gallery template page from config.
+description: Create or update a standup page or database row in Notion using the configured standup template and optional gallery template page. Use only when asked to write a standup into Notion. Do NOT use to post the standup to Slack (`jstack:meetings-post-slack`).
 category: notion
 disable-model-invocation: true
 effort: low

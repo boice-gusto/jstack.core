@@ -13,7 +13,7 @@ prompt: >-
   single one-off claim right now — that is `jstack:engineering-verify-this`; this skill's output is
   a reusable artifact for every future run, not a one-time verdict. Do NOT use to build or run a
   fixed browser-automation JSON definition against known selectors — that is
-  `jstack:workflows-builder`/`jstack:workflows-execute`; this skill's job is discovering what to
+  `jstack:workflows-builder`/`jstack:workflow-execute`; this skill's job is discovering what to
   verify and how in the first place, on any interaction surface, not replaying a known script. Do
   NOT use this skill for the mechanics of what makes a well-formed SKILL.md itself (frontmatter,
   chain contract, procedure shape, catalog entry) — that is `jstack:skill-creator`; this skill only

@@ -1,6 +1,6 @@
 ---
 name: jstack-workflow-recorder
-description: Record user browser actions into a workflow definition. Scrub captured secrets before saving and add stability notes for generated selectors before promoting to CI.
+description: Record user browser actions into a workflow definition, scrubbing captured secrets before saving and adding stability notes for generated selectors before promoting to CI. Use when the user wants to capture a flow by demonstrating it. Do NOT use to run the recording (`jstack:workflow-execute`) or hand-author steps (`jstack:workflows-builder`).
 category: workflows
 data_class: internal
 disable-model-invocation: true
@@ -70,7 +70,7 @@ Use a domain-appropriate heading, then:
 | A captured step touched a credential or secret field | Scrub it before saving — never write a literal secret into the definition, even from a real recorded interaction. |
 | A recorded selector looks brittle or auto-generated | Add a stability note (or hand-label the step) before promoting the definition to CI use — an unlabeled generated selector is a known future flake. |
 | Definition rejected by `WorkflowDefinitionSchema` | Name the offending field — usually a `kind` outside the six allowed values, or an invented `assertions` block — and fix the definition, not the schema. |
-| User asks to run or hand-tune the recording | Out of scope for this skill; hand off to `jstack:workflows-execute` (run) or `jstack:workflows-builder` (hand-tune). |
+| User asks to run or hand-tune the recording | Out of scope for this skill; hand off to `jstack:workflow-execute` (run) or `jstack:workflows-builder` (hand-tune). |
 
 ## Chaining
 Complete the work here. If a natural follow-up exists (e.g. `jstack-workflows-builder` then `jstack-workflow-execute`), add one line: `suggested_next: <skill-name>` with a copy-paste handoff block. Do not auto-invoke without user intent or a defined chain in `prompts/chains/`.

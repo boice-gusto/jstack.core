@@ -22,8 +22,8 @@ grading:
     - description: Names the boundary this skill actually declares
       pass_if: >-
         response identifies that the skill does not do the following, or says something equivalent:
-        Running the workflow (jstack:workflows-execute) and recording one from live interaction
-        (jstack:workflows-recorder). Never place a credential in the definition file
+        Running the workflow (jstack:workflow-execute) and recording one from live interaction
+        (jstack:workflow-recorder). Never place a credential in the definition file
     - description: Describes what it does when a declared failure mode occurs
       pass_if: >-
         response explains how it behaves in this situation, or that it stops and asks: Missing

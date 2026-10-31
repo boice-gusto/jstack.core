@@ -1,6 +1,6 @@
 ---
 name: jstack-incident-find-sme
-description: Rank subject-matter experts from Jira history + Slack presence for an incident description or incident id; config project scope.
+description: Rank likely subject-matter experts for a system or incident from configured history (commits, review history, tickets, Slack presence), with evidence per candidate. Use when asked "who knows this system" or "who should look at this incident." Do NOT use to page or message anyone, or to rank people by commit volume alone.
 category: incident
 effort: medium
 gbrain_destination: none

@@ -56,7 +56,7 @@ question.
    than the mechanism actually supports.
 3. **Never let the generated skill claim success without a captured artifact.** This repo's own
    `runWorkflowStub` returned `ok: true` with no artifact for every run, no matter what actually
-   happened — `jstack:workflows-execute` has to explicitly translate that into `unverified` rather
+   happened — `jstack:workflow-execute` has to explicitly translate that into `unverified` rather
    than trust the stub's claimed success (see `skills/workflows/execute/SKILL.md`'s failure-modes
    table and the eval case `skill-workflows-execute-reports-unverified-not-pass` in
    `evals/a2a/cases/skills.yaml`). A generated verification skill that reports "passed" from a
@@ -98,7 +98,7 @@ question.
 |---|---|---|
 | Writing "run the command and check it works" with no real syntax | A cold-read agent, mid-task, has nothing executable to run — this is the exact gap a generated skill exists to close | Name the exact command/selector/endpoint from this repo, with real flags and the expected observable result |
 | Treating "no error was thrown" as sufficient proof for a UI or mutating action | Absence of an exception is not presence of the claimed behavior — a silently broken click handler also throws nothing | Capture the mechanism-appropriate artifact (table above) and assert the specific claimed outcome, not just that execution completed |
-| Wrapping a stub, mock, or test-only endpoint in the "Drive" step and calling its `ok: true` response proof | Identical failure mode to this repo's own `runWorkflowStub`, which returned `ok: true` with no artifact for every call until `jstack:workflows-execute` had to explicitly downgrade that into `unverified` | Drive the real user-facing path; if only a stub or mock currently exists, say so in the generated skill and refuse to call it verified |
+| Wrapping a stub, mock, or test-only endpoint in the "Drive" step and calling its `ok: true` response proof | Identical failure mode to this repo's own `runWorkflowStub`, which returned `ok: true` with no artifact for every call until `jstack:workflow-execute` had to explicitly downgrade that into `unverified` | Drive the real user-facing path; if only a stub or mock currently exists, say so in the generated skill and refuse to call it verified |
 | Reinventing SKILL.md frontmatter/structure rules inline instead of delegating | Duplicates and drifts from the canonical checklist `jstack:skill-creator` already maintains, and this skill's effort goes to the wrong layer | Delegate structure to `jstack:skill-creator`; spend this skill's effort on the interview content and proof standards |
 | Handing over a generated skill that was drafted but never executed | An unexecuted skill is a draft dressed as a deliverable — the first real user hits the first broken step, at the worst time | Run the generated skill's own instructions end-to-end once (Procedure Step 4) before calling it done |
 
