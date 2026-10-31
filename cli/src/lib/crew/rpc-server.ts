@@ -19,7 +19,11 @@ import { CrewStore, expandHome } from "./store.js";
 import type { AgentConfig, CrewConfig } from "./types.js";
 import type { SessionMode, ThinkingLevel } from "./tick.js";
 import type { LiveSessionEvent } from "./slack.js";
-import { collectSkills, type SkillIndexEntry } from "../../commands/skills.js";
+import {
+  collectSkills,
+  overlayRootFromEnv,
+  type SkillIndexEntry,
+} from "../../commands/skills.js";
 import { findPluginRoot } from "../config.js";
 import { TtlCache, ttlMsFromEnv } from "../ttl-cache.js";
 import { parseCron } from "./proactive.js";
@@ -308,7 +312,7 @@ async function dispatch(
         const overlay =
           typeof p.overlay === "string" && p.overlay.trim().length > 0
             ? p.overlay.trim()
-            : process.env.JSTACK_GUSTO_ROOT?.trim() || undefined;
+            : overlayRootFromEnv();
         return { skills: cachedSkillsIndex(findPluginRoot(), overlay) };
       }
       case "status": {

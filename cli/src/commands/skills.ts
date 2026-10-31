@@ -110,10 +110,19 @@ export function collectSkills(
   return entries;
 }
 
-/** Resolve `--overlay`/`JSTACK_GUSTO_ROOT` and collect skills -- the same 3 lines were duplicated at all 4 command entry points. */
+/** Overlay repo root from env. `JSTACK_GUSTO_ROOT` is the legacy name, still read so existing overlay setups keep working. */
+export function overlayRootFromEnv(): string | undefined {
+  return (
+    process.env.JSTACK_OVERLAY_ROOT?.trim() ||
+    process.env.JSTACK_GUSTO_ROOT?.trim() ||
+    undefined
+  );
+}
+
+/** Resolve `--overlay`/`JSTACK_OVERLAY_ROOT` and collect skills -- the same 3 lines were duplicated at all 4 command entry points. */
 function loadEntries(opts: { overlay?: string }): SkillIndexEntry[] {
   const pluginRoot = findPluginRoot();
-  const overlay = opts.overlay?.trim() || process.env.JSTACK_GUSTO_ROOT?.trim();
+  const overlay = opts.overlay?.trim() || overlayRootFromEnv();
   return collectSkills(
     pluginRoot,
     overlay && overlay.length > 0 ? overlay : undefined,

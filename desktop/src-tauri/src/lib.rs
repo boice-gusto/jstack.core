@@ -464,9 +464,7 @@ pub fn run() {
                     name: Some("jstack".into()),
                     version: Some(app.package_info().version.to_string()),
                     icon: Image::from_bytes(include_bytes!("../icons/about-logo.png")).ok(),
-                    credits: Some(
-                        "by @skinnnyJay\nhttps://github.com/boice-gusto/jstack.core".into(),
-                    ),
+                    credits: Some("by @skinnnyJay".into()),
                     ..Default::default()
                 };
                 let app_menu = Submenu::with_items(
