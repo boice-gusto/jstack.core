@@ -1,14 +1,6 @@
 import { z } from "zod";
 import { cronExpr } from "../../types/config.js";
 
-/**
- * Crew config, M1 scope: one agent, one self-DM, nothing else.
- *
- * Deliberately smaller than .tmp/ralph-design: no multi-agent routing, no shared
- * mind, no repo writes, no worktrees. Those are designed but not built, because
- * the goal here is a working DM loop rather than the full spec.
- */
-
 const CHANNEL_ID = z
   .string()
   .regex(

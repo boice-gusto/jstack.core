@@ -177,7 +177,7 @@ export type ToolOutputProps = ComponentProps<"div"> & {
   errorText: ToolPart["errorText"];
   /** Language for syntax-highlighting a *string* output (object outputs are always
    * JSON-stringified and highlighted as json). Defaults to "text" -- most tool output here
-   * (Bash stdout, grep matches, file contents) isn't JSON, so that was the wrong default. */
+   * (Bash stdout, grep matches, file contents) isn't JSON. */
   language?: CodeBlockLanguage;
 };
 

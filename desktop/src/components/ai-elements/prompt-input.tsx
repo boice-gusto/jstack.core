@@ -462,7 +462,6 @@ export const PromptInput = ({
   const controller = useOptionalPromptInputController();
   const usingProvider = !!controller;
 
-  // Refs
   const inputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
@@ -732,7 +731,6 @@ export const PromptInput = ({
         try {
           const result = onSubmit({ text, files: convertedFiles }, event);
 
-          // Handle both sync and async onSubmit
           if (result instanceof Promise) {
             result
               .then(() => {
@@ -760,7 +758,6 @@ export const PromptInput = ({
       });
   };
 
-  // Render with or without local provider
   const inner = (
     <>
       <input

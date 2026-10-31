@@ -3,12 +3,9 @@ import { describe, expect, test } from "vitest";
 import { MessageResponse } from "./message";
 
 /**
- * MessageResponse (Streamdown + the cjk/code/math/mermaid plugin set) had no test coverage at
- * all before this -- these exist to catch a dependency bump silently breaking the plugin wiring,
- * not to exercise Streamdown's own rendering logic. Mermaid in particular (backlog item: "Mermaid
- * diagrams showing") was already fully wired (streamdownPlugins includes it, package.json has
- * @streamdown/mermaid installed) by the time this test was written -- it locks in behavior that
- * already worked, not new functionality.
+ * MessageResponse (Streamdown + the cjk/code/math/mermaid plugin set): these tests exist to catch a
+ * dependency bump silently breaking the plugin wiring, not to exercise Streamdown's own rendering
+ * logic. Mermaid in particular is wired via streamdownPlugins and @streamdown/mermaid.
  */
 describe("MessageResponse", () => {
   test("renders plain markdown", async () => {

@@ -6,8 +6,7 @@ import { TtlCache, ttlMsFromEnv } from "../ttl-cache.js";
 /**
  * Loads system-prompt templates from `prompts/crew/*.md` (a sibling of `skills/`, same file
  * the rest of this repo already keeps prompt content in) instead of inline TypeScript string
- * literals -- "all prompts should be in a markdown file and not inline in code," from the
- * backlog. Cached per relative path with the same TtlCache/env-override pattern skills/index
+ * literals. Cached per relative path with the same TtlCache/env-override pattern skills/index
  * uses, since re-reading a static file off disk on every worker turn is exactly the kind of IO
  * that pattern exists to avoid.
  */

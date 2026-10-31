@@ -138,8 +138,7 @@ const SIDEBAR_DEFAULT_WIDTH = 192;
 const SIDEBAR_MIN_WIDTH = 160;
 const SIDEBAR_MAX_WIDTH = 360;
 // Dragging the sidebar narrower than this snaps it into the fully-collapsed icon rail instead
-// of letting it shrink to something too thin to read -- "draggable down to how thin you want it
-// before going into minimal," per the request that added this.
+// of letting it shrink to something too thin to read.
 const SIDEBAR_COLLAPSE_THRESHOLD = 130;
 
 function loadStoredSidebarWidth(): number {
@@ -342,10 +341,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   // Keyed by session id, not a single flag -- a session/prompt round-trip in flight for session A
-  // must stay scoped to A's own view. Before this was a single global value, switching to a
-  // different (idle) session B while A was still "Thinking..." incorrectly showed A's thinking
-  // indicator (and disabled composer) on B too, and A's eventual reply risked landing in whatever
-  // session happened to be on screen when it arrived instead of A's.
+  // must stay scoped to A's own view.
   const [busySessionIds, setBusySessionIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingSinceBySession, setPendingSinceBySession] = useState<Record<string, number>>({});
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -353,7 +349,7 @@ function App() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Mirrors `sessionId` for reading the CURRENT view from inside a promptSession callback that
   // was set up when a possibly-different session was active -- `sessionId` itself would be stale
-  // there (closed over at call time), which is exactly the bug this whole change fixes.
+  // there (closed over at call time).
   const sessionIdRef = useRef(sessionId);
   useEffect(() => {
     sessionIdRef.current = sessionId;
@@ -422,8 +418,8 @@ function App() {
   const [avatarPickerAgent, setAvatarPickerAgent] = useState<{ id: string; name: string } | null>(
     null,
   );
-  // Session id awaiting a confirm-before-close prompt -- closing used to fire immediately on a
-  // single click with no undo (flagged by /impeccable critique's P1s).
+  // Session id awaiting a confirm-before-close prompt -- closing is irreversible, so it never
+  // fires on a single click.
   const [confirmCloseSessionId, setConfirmCloseSessionId] = useState<string | null>(null);
   // AvatarPickerDialog writes straight to localStorage (see lib/avatars.ts); mirrored into real
   // state here, same pattern as groupOpen, so a change actually triggers a re-render instead of
@@ -454,8 +450,7 @@ function App() {
   // aren't currently looking at. "A chat is actively thinking" outranks everything else and
   // pulses (green/green-dim, alternating below) -- that's the one state that means "come back
   // in a second," as opposed to red/yellow (something's wrong or waiting, no rush implied by
-  // pulsing) or an unseen-but-already-arrived reply (doesn't need the tray's attention at all,
-  // per the request this replaced: "changes to white when all things are answered").
+  // pulsing) or an unseen-but-already-arrived reply (doesn't need the tray's attention at all).
   const anyThinking = busySessionIds.size > 0;
   useEffect(() => {
     if (anyThinking) return; // the pulse effect below owns the icon while this is true
@@ -611,8 +606,7 @@ function App() {
   }
 
   /** Below SIDEBAR_COLLAPSE_THRESHOLD it snaps straight to the icon rail rather than letting the
-   * panel shrink to something too narrow to read -- the requested "draggable down to how thin
-   * you want it before going into minimal" behavior. The width itself is only ever persisted at
+   * panel shrink to something too narrow to read. The width itself is only ever persisted at
    * drag-end (via liveSidebarWidthRef, since this effect doesn't re-subscribe on every pixel of
    * movement) so a mid-drag value never gets written on every mousemove. */
   useEffect(() => {
@@ -1085,7 +1079,7 @@ function App() {
             // macOS pins the traffic lights near the top of the titlebar regardless of how tall
             // this header is, so centering this button in the full h-10 header (like every other
             // header control) sits visibly lower than the dots -- self-start pins it to the same
-            // top edge instead, verified pixel-for-pixel against a real screenshot.
+            // top edge instead.
             className="self-start"
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={handleToggleSidebar}

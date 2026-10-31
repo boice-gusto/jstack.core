@@ -128,8 +128,8 @@ describe("SettingsDialog", () => {
   });
 
   // The ModelSelector is cmdk/Dialog-backed, same as the command palette -- both work fine in
-  // jsdom once wrapped in a real `<Command>` root (see App.test.tsx's command-palette tests and
-  // the bug that fix caught), so this is a real interaction test, not just a render check.
+  // jsdom once wrapped in a real `<Command>` root (see App.test.tsx's command-palette tests),
+  // so this is a real interaction test, not just a render check.
   test("the model picker shows the active agent's model and can change it via agent/update", async () => {
     mockIPC(
       withDefaults((cmd, payload) => {

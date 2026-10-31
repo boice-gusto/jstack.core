@@ -68,12 +68,10 @@ export function SessionTabStrip({
               className={`group/tab flex shrink-0 items-center gap-1.5 rounded-t-md border px-2 py-1.5 text-sm transition-colors ${
                 // Active reads as "lifted, connected to the content below": a bright bottom
                 // accent border (the classic tab-underline convention), a background that's
-                // *lighter* than the strip around it, and full-strength text -- the previous
-                // version used bg-background for the active tab, which in dark mode is actually
-                // darker than the strip's own bg-muted wash, so the "selected" tab visually
-                // receded instead of popping forward. Inactive tabs get a real (if subdued)
-                // border on every side instead of an invisible one, so they read as distinct
-                // connected squares rather than bare floating text.
+                // *lighter* than the strip around it, and full-strength text (bg-background would be
+                // darker than the strip's own bg-muted wash in dark mode, so the tab would recede).
+                // Inactive tabs get a real (if subdued) border on every side instead of an invisible
+                // one, so they read as distinct connected squares rather than bare floating text.
                 active
                   ? "border-border border-b-2 border-b-primary bg-accent font-semibold text-foreground"
                   : "border-border bg-transparent text-muted-foreground hover:border-foreground/20 hover:bg-accent/40 hover:text-foreground"

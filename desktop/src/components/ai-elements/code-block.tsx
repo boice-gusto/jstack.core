@@ -63,7 +63,6 @@ const addKeysToTokens = (lines: ThemedToken[][]): KeyedLine[] =>
     })),
   }));
 
-// Token rendering component
 const TokenSpan = ({ token }: { token: ThemedToken }) => (
   <span
     className="dark:!bg-[var(--shiki-dark-bg)] dark:!text-[var(--shiki-dark)]"
@@ -96,7 +95,6 @@ const LINE_NUMBER_CLASSES = cn(
   "before:select-none"
 );
 
-// Line rendering component
 const LineSpan = ({
   keyedLine,
   showLineNumbers,
@@ -113,7 +111,6 @@ const LineSpan = ({
   </span>
 );
 
-// Types
 type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   code: string;
   language: CodeBlockLanguage;
@@ -130,7 +127,6 @@ interface CodeBlockContextType {
   code: string;
 }
 
-// Context
 const CodeBlockContext = createContext<CodeBlockContextType>({
   code: "",
 });
@@ -198,7 +194,6 @@ export const highlightCode = (
 ): TokenizedCode | null => {
   const tokensCacheKey = getTokensCacheKey(code, language);
 
-  // Return cached result if available
   const cached = tokensCache.get(tokensCacheKey);
   if (cached) {
     return cached;
@@ -233,10 +228,8 @@ export const highlightCode = (
         tokens: result.tokens,
       };
 
-      // Cache the result
       tokensCache.set(tokensCacheKey, tokenized);
 
-      // Notify all subscribers
       const subs = subscribers.get(tokensCacheKey);
       if (subs) {
         for (const sub of subs) {
@@ -392,7 +385,6 @@ export const CodeBlockContent = ({
   language: CodeBlockLanguage;
   showLineNumbers?: boolean;
 }) => {
-  // Memoized raw tokens for immediate display
   const rawTokens = useMemo(() => createRawTokens(code), [code]);
 
   // Synchronous cache lookup — avoids setState in effect for cached results

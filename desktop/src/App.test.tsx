@@ -845,9 +845,8 @@ describe("App", () => {
     await waitFor(() => screen.getByText(/earlier question/));
     expect(screen.getByText(/earlier answer/)).toBeTruthy();
     expect(screen.getByText("Read")).toBeTruthy();
-    // The tool's real output must render, not just its name/input -- this is the fix for
-    // "the grep command isn't showing really anything." Tool calls render collapsed by
-    // default (/impeccable critique), so expand it first via its header.
+    // The tool's real output must render, not just its name/input. Tool calls render
+    // collapsed by default, so expand it first via its header.
     expect(screen.getByText("Completed")).toBeTruthy();
     fireEvent.click(screen.getByText("Read"));
     expect(await screen.findByText(/hello world/)).toBeTruthy();

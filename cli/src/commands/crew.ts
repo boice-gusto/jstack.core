@@ -1469,7 +1469,6 @@ export function runAgentsShow(id: string, json: boolean): void {
   }
 }
 
-/** Just the proactive checks, for when that is the whole question. */
 export function runAgentsListChecks(id: string, json: boolean): void {
   const cfg = loadCrewConfig();
   const a = cfg.agents[id];

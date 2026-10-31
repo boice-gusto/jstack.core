@@ -27,8 +27,7 @@ export function NewSessionControls({
   agents: AgentSummary[];
   agentId: string;
   /** Picking an agent here jumps to it -- its most recent open session if it has one, or a
-   * freshly created one if it doesn't (see App.tsx's handleSelectAgentFromPicker). Not just
-   * "set the default agent for the next New chat" anymore. */
+   * freshly created one if it doesn't (see App.tsx's handleSelectAgentFromPicker). */
   onSelectAgent: (id: string) => void;
   avatars: Record<string, AgentAvatarValue | undefined>;
   busy: boolean;

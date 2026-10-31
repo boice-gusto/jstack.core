@@ -10,8 +10,8 @@ import {
 } from "./ui/alert-dialog";
 
 /**
- * Shared confirm-before-destroying prompt -- session close and schedule delete both fired
- * irreversibly on a single click before this existed (flagged by /impeccable critique's P1s).
+ * Shared confirm-before-destroying prompt -- session close and schedule delete are irreversible,
+ * so neither fires on a single click.
  */
 export function ConfirmDialog({
   open,

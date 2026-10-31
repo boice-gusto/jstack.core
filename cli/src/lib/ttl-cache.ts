@@ -1,8 +1,7 @@
 /**
  * A small generic memoizer for expensive-but-static reads (skill-catalog walks today; any other
  * "re-read a tree of files on every call" spot could reuse it): caches `compute()`'s result for
- * `ttlMs`, then re-runs it on the next call after expiry -- "cache static prompts to save on IO
- * but still expire every Xmin and auto-refresh" from the backlog, generalized past just prompts.
+ * `ttlMs`, then re-runs it on the next call after expiry.
  *
  * Deliberately NOT a decorator/proxy over the original function -- `TtlCache.get()` is explicit
  * about when a cached value might be returned, which matters for a caller like `skills/index`
@@ -35,7 +34,7 @@ export class TtlCache<T> {
 
 /**
  * Reads an env-var TTL override in minutes, falling back to `defaultMinutes` when unset,
- * non-numeric, or non-positive -- the "(Env override, default: 5min)" half of the spec.
+ * non-numeric, or non-positive.
  */
 export function ttlMsFromEnv(envVar: string, defaultMinutes: number): number {
   const raw = process.env[envVar];

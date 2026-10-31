@@ -187,8 +187,8 @@ export function SettingsDialog({
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [allSessions, setAllSessions] = useState<SessionSummary[] | null>(null);
   const [allSessionsError, setAllSessionsError] = useState<string | null>(null);
-  // Schedule id awaiting a confirm-before-delete prompt -- deleting used to fire immediately on a
-  // single click with no undo (flagged by /impeccable critique's P1s).
+  // Schedule id awaiting a confirm-before-delete prompt -- deleting is irreversible, so it never
+  // fires on a single click.
   const [confirmDeleteScheduleId, setConfirmDeleteScheduleId] = useState<string | null>(null);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsReport | null>(null);
   const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
@@ -253,7 +253,7 @@ export function SettingsDialog({
     }
   }
 
-  // Agents & skills is always-expanded now (no toggle button) -- fetched once as soon as the
+  // Agents & skills is always-expanded (no toggle button) -- fetched once as soon as the
   // dialog opens, same trigger as refreshStatus below, rather than waiting for a click.
   useEffect(() => {
     if (!open || skills !== null) return;
