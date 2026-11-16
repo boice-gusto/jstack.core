@@ -70,3 +70,4 @@ evals/.reports/
 # jstack.config.json rule above matches by basename anywhere, which hid this fixture and made
 # those six cases impossible to pass in CI (the repo root config is, correctly, never committed).
 !evals/a2a/fixtures/project/jstack.config.json
+.impeccable/critique/
