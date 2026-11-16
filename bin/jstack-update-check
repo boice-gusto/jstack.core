@@ -11,7 +11,7 @@ CACHE_FILE="$STATE_DIR/last-update-check"
 MARKER_FILE="$STATE_DIR/just-upgraded-from"
 SNOOZE_FILE="$STATE_DIR/update-snoozed"
 VERSION_FILE="$JSTACK_DIR/VERSION"
-REMOTE_URL="${JSTACK_REMOTE_URL:-https://raw.githubusercontent.com/gusto/jstack.core/main/VERSION}"
+REMOTE_URL="${JSTACK_REMOTE_URL:-https://raw.githubusercontent.com/boice-gusto/jstack.core/main/VERSION}"
 
 if [ "${JSTACK_UPDATE_CHECK:-}" = "false" ]; then
   exit 0

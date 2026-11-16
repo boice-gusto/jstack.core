@@ -30,12 +30,12 @@ const REAL_READ = `Channel: DM (D0TESTDM001)
 Message TS: 1785141296.398489
 :robot_face: _Ralph_ · crew design self-test \`ral-selftest-7f3a9c\`
 
-Backticked URL: \`https://github.com/gusto/jstack.core\`
-Bare URL: <https://github.com/gusto/jstack.core|github.com/gusto/jstack.core>
+Backticked URL: \`https://github.com/boice-gusto/jstack.core\`
+Bare URL: <https://github.com/boice-gusto/jstack.core|github.com/boice-gusto/jstack.core>
 *Sent using* <@U0APPID0001|Slack MCP>
 Thread: 1 replies (latest: 2026-07-27 01:37:55 PDT)`;
 
-const REAL_SEND = `{"message_link":"https://gustohq.slack.com/archives/D0TESTDM001/p1785141296398489","message_context":{"message_ts":"1785141296.398489","channel_id":"D0TESTDM001"}}`;
+const REAL_SEND = `{"message_link":"https://acme.slack.com/archives/D0TESTDM001/p1785141296398489","message_context":{"message_ts":"1785141296.398489","channel_id":"D0TESTDM001"}}`;
 
 describe("parseReadResponse against the real recorded read-back", () => {
   const msgs = parseReadResponse(REAL_READ, "D0TESTDM001");
@@ -167,8 +167,8 @@ describe("a read that did not happen must be retryable, whatever its length", ()
    */
   const REAL_FAILURE =
     "Understood. Additional tools from multiple MCP servers are now available, including " +
-    "DX_Gusto, Gcal_Gusto, Gdocs_Gusto, Gdrive_Gusto, Gmail_Gusto, Jira_Confluence, " +
-    "Notion_Gusto, PagerDuty_Gusto, and Switchboard_Gusto. I am ready to assist with any " +
+    "DX_Acme, Gcal_Acme, Gdocs_Acme, Gdrive_Acme, Gmail_Acme, Jira_Confluence, " +
+    "Notion_Acme, PagerDuty_Acme, and Switchboard_Acme. I am ready to assist with any " +
     "tasks you have in mind, and can use these integrations to look things up, create " +
     "documents, check calendars, search email, manage tickets, or query dashboards as needed. " +
     "Just let me know what you would like me to do next and I will pick the right tool.";

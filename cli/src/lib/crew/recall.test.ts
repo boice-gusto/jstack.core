@@ -63,8 +63,8 @@ describe("finding a recall reference", () => {
 
 describe("stripping the marker before the worker sees it", () => {
   test("the request keeps its meaning and loses the plumbing", () => {
-    expect(stripRecallRef("#ral-qatq now do the gusto repo")).toBe(
-      "now do the gusto repo",
+    expect(stripRecallRef("#ral-qatq now do the overlay repo")).toBe(
+      "now do the overlay repo",
     );
     expect(stripRecallRef("do it #ral-qatq please")).toBe("do it please");
   });

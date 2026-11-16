@@ -503,7 +503,7 @@ export function looksLikeNoToolOutput(text: string): boolean {
    * reminder instead of calling the tool --
    *
    *   "Understood. Additional tools from multiple MCP servers are now available, including
-   *    DX_Gusto, Gcal_Gusto, Gdocs_Gusto, Gdrive_Gusto, Gmail_Gusto, Jira_Confluence, ..."
+   *    DX_Acme, Gcal_Acme, Gdocs_Acme, Gdrive_Acme, Gmail_Acme, Jira_Confluence, ..."
    *
    * -- which is long, so the read was NOT classified as retryable and the tick gave up after
    * one attempt, logging `read=0` as though the DM were simply quiet. Since every parser here
