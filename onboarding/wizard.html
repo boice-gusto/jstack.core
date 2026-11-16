@@ -114,7 +114,7 @@
         <div class="steps" id="pips"></div>
 
         <!-- Step 1 -->
-        <section class="card step" data-step="0">
+        <section class="card step" data-step="0" data-pip="Install">
           <h2>1 · Install and verify</h2>
           <p class="hint">
             This page can't run commands, so it gives you exact ones to paste. jstack is
@@ -130,7 +130,7 @@
         </section>
 
         <!-- Step 2 -->
-        <section class="card step hide" data-step="1">
+        <section class="card step hide" data-step="1" data-pip="Team">
           <h2>2 · Team basics</h2>
           <p class="hint">Written to <code>team.*</code> in your config.</p>
           <div class="row">
@@ -164,7 +164,7 @@
         </section>
 
         <!-- Step 3 -->
-        <section class="card step hide" data-step="2">
+        <section class="card step hide" data-step="2" data-pip="Integrations">
           <h2>3 · Integrations</h2>
           <p class="hint">
             Pick only what you actually use. Skipping one leaves the key out entirely rather than
@@ -180,7 +180,7 @@
         </section>
 
         <!-- Step 4 -->
-        <section class="card step hide" data-step="3">
+        <section class="card step hide" data-step="3" data-pip="Knowledge">
           <h2>4 · Knowledge base</h2>
           <p class="hint">
             Where durable notes get read from and written to. Local roots are globbed for markdown;
@@ -212,7 +212,7 @@
         </section>
 
         <!-- Step 5 -->
-        <section class="card step hide" data-step="4">
+        <section class="card step hide" data-step="4" data-pip="Routines">
           <h2>5 · Routines and telemetry</h2>
           <p class="hint">Recurring jobs are off unless you enable them.</p>
           <div id="routineChecks"></div>
@@ -234,7 +234,7 @@
         </section>
 
         <!-- Step 6 -->
-        <section class="card step hide" data-step="5">
+        <section class="card step hide" data-step="5" data-pip="Review">
           <h2>6 · Review and save</h2>
           <p class="hint">
             This is your <code>jstack.config.json</code>. Only keys you actually answered are
@@ -252,7 +252,7 @@
         </section>
 
         <!-- Step 7 -->
-        <section class="card step hide" data-step="6">
+        <section class="card step hide" data-step="6" data-pip="First task">
           <h2>7 · First real task</h2>
           <p class="hint">Onboarding isn't done until you've used it once. Pick whichever fits today.</p>
           <div id="firstTask"></div>
@@ -604,7 +604,11 @@
 
       let current = 0;
       const stepEls = () => Array.from(document.querySelectorAll('.step'));
-      const LAST = 6;
+      // The DOM step cards are the single source of truth for step count/order/labels —
+      // LAST and the progress pips are derived from them at runtime instead of being
+      // hardcoded separately, so the three can never drift out of sync.
+      const steps = stepEls();
+      const LAST = steps.length - 1;
 
       function render() {
         const { cfg, personal } = buildConfigs();
@@ -629,15 +633,19 @@
             ? 'Lead mode: you will likely also want routines and the team knowledge base URL in later steps.'
             : 'Individual mode: everything goes in one local config file.';
 
-        // step pips
+        // step pips — derived from the step <section> cards themselves (data-pip),
+        // ordered by data-step, so this can't drift from the actual step registry.
         const pips = $('pips');
         pips.innerHTML = '';
-        ['Install', 'Team', 'Integrations', 'Knowledge', 'Routines', 'Review', 'First task'].forEach((label, i) => {
-          pips.append(el('span', {
-            className: 'pip ' + (i === current ? 'cur' : i < current ? 'done' : ''),
-            textContent: `${i + 1}. ${label}`,
-          }));
-        });
+        steps
+          .slice()
+          .sort((a, b) => Number(a.dataset.step) - Number(b.dataset.step))
+          .forEach((s, i) => {
+            pips.append(el('span', {
+              className: 'pip ' + (i === current ? 'cur' : i < current ? 'done' : ''),
+              textContent: `${i + 1}. ${s.dataset.pip}`,
+            }));
+          });
 
         // first-task suggestions reflect what they actually enabled
         const ft = $('firstTask');

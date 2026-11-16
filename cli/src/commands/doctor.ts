@@ -50,6 +50,49 @@ export async function runDoctor(opts: {
   saveRepairs?: string;
   applyRepairs?: string;
 }): Promise<void> {
+  // Validate flag combinations before any branching below. `fix`, `apply`, `json`,
+  // `saveRepairs`, and `applyRepairs` are independently readable from commander, so
+  // nonsensical combinations used to silently drop part of the request instead of
+  // erroring: the `--json` branch returns before fix/apply/saveRepairs/applyRepairs are
+  // ever read; `--apply` and `--save-repairs` were only read inside the `if (opts.fix)`
+  // block, so without `--fix` they silently no-op; and `--apply-repairs` hit its own
+  // `return` before the `--fix` block was ever reached, silently dropping `--fix`.
+  // Reject these loudly instead.
+  const fixFamilyRequested =
+    opts.fix || opts.apply || opts.saveRepairs || opts.applyRepairs;
+  if (opts.json && fixFamilyRequested) {
+    console.log(
+      chalk.red(
+        "--json cannot be combined with --fix/--apply/--save-repairs/--apply-repairs: --json prints a machine-readable report and returns before those run. Re-run `doctor --json` and `doctor --fix` separately.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (opts.apply && !opts.fix) {
+    console.log(chalk.red("--apply requires --fix. Re-run with --fix --apply."));
+    process.exitCode = 1;
+    return;
+  }
+  if (opts.saveRepairs && !opts.fix) {
+    console.log(
+      chalk.red(
+        "--save-repairs requires --fix. Re-run with --fix --save-repairs <path>.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+  if (opts.applyRepairs && opts.fix) {
+    console.log(
+      chalk.red(
+        "--apply-repairs replays a saved repair file and cannot be combined with --fix, which computes fresh repairs instead. Run them separately.",
+      ),
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const root = findProjectRoot();
   const pluginRoot = findPluginRoot();
   let ok = true;

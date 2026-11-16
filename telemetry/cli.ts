@@ -31,6 +31,19 @@ function loadTelemetryCfg(root: string): TelemetryCfg {
 
 const action = process.argv[2] ?? TELEMETRY_CLI.ACTIONS.STATUS;
 
+// The in-memory buffer in ./collector.ts has no callers of recordEvent() anywhere in
+// this codebase, and each `status`/`flush` invocation runs in its own fresh `bun`
+// process (spawned by cli/src/commands/telemetry.ts), so the buffer is always empty —
+// not because telemetry ran and captured nothing, but because nothing wires events
+// into it in the first place. Report that explicitly so an operator reading `buffer: 0`
+// can't mistake "unused pipeline" for "broken pipeline". Update RECORDING_WIRED_UP (and
+// the message below) if a real caller of recordEvent() is ever added.
+const RECORDING_WIRED_UP = false;
+const NOT_WIRED_UP_MESSAGE =
+  "Telemetry recording is not currently wired up in this process — no code path calls " +
+  "recordEvent(), so the buffer is always empty. This reflects an unused pipeline, not " +
+  "a broken one.";
+
 if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
   const root = findProjectRoot(import.meta.dir);
   const cfg = loadTelemetryCfg(root);
@@ -38,6 +51,8 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
     JSON.stringify(
       {
         buffer: bufferSize(),
+        recording_wired_up: RECORDING_WIRED_UP,
+        message: NOT_WIRED_UP_MESSAGE,
         cwd: root,
         telemetry_config: {
           enabled: cfg.enabled,
@@ -59,7 +74,18 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
   const events = snapshotBuffer();
   clearBuffer();
   const ok = await sendBatch(endpoint, events);
-  console.log(JSON.stringify({ sent: events.length, ok }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        sent: events.length,
+        ok,
+        recording_wired_up: RECORDING_WIRED_UP,
+        message: NOT_WIRED_UP_MESSAGE,
+      },
+      null,
+      2,
+    ),
+  );
 } else if (action === TELEMETRY_CLI.ACTIONS.TEST) {
   const root = findProjectRoot(import.meta.dir);
   const cfg = loadTelemetryCfg(root);

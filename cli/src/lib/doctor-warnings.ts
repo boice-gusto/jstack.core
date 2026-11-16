@@ -1,22 +1,18 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+import type { JstackConfig } from "../types/config.js";
 import { resolveMachineReadableSettings } from "./machine-readable.js";
 
-export function gbrainTeamUrl(cfg: Record<string, unknown>): string {
-  const g = cfg.gbrain as Record<string, unknown> | undefined;
-  const team = g?.team as Record<string, unknown> | undefined;
-  return String(team?.url ?? "").trim();
+export function gbrainTeamUrl(cfg: JstackConfig): string {
+  return String(cfg.gbrain?.team?.url ?? "").trim();
 }
 
-export function gbrainPersonalUrl(cfg: Record<string, unknown>): string {
-  const g = cfg.gbrain as Record<string, unknown> | undefined;
-  const personal = g?.personal as Record<string, unknown> | undefined;
-  return String(personal?.url ?? "").trim();
+export function gbrainPersonalUrl(cfg: JstackConfig): string {
+  return String(cfg.gbrain?.personal?.url ?? "").trim();
 }
 
-export function sessionTarget(cfg: Record<string, unknown>): string {
-  const s = cfg.session as Record<string, unknown> | undefined;
-  return String(s?.default_gbrain_target ?? "team")
+export function sessionTarget(cfg: JstackConfig): string {
+  return String(cfg.session?.default_gbrain_target ?? "team")
     .trim()
     .toLowerCase();
 }
@@ -24,12 +20,12 @@ export function sessionTarget(cfg: Record<string, unknown>): string {
 /** Config-shape warnings (knowledge_base roots, knowledge_storage, optional GBrain when merged search is on). */
 export function collectDoctorConfigWarnings(
   projectRoot: string,
-  cfg: Record<string, unknown>,
-  defaultsCfg?: Record<string, unknown>,
+  cfg: JstackConfig,
+  defaultsCfg?: JstackConfig,
 ): string[] {
   const warnings: string[] = [];
-  const kb = cfg.knowledge_base as Record<string, unknown> | undefined;
-  const roots = kb?.roots as unknown as string[] | undefined;
+  const kb = cfg.knowledge_base;
+  const roots = kb?.roots;
   if (Array.isArray(roots) && roots.length > 0) {
     for (const r of roots) {
       const rel = String(r).trim();
@@ -43,9 +39,9 @@ export function collectDoctorConfigWarnings(
     }
   }
 
-  const ks = cfg.knowledge_storage as Record<string, unknown> | undefined;
-  const ksTeam = ks?.team as Record<string, unknown> | undefined;
-  const ksPersonal = ks?.personal as Record<string, unknown> | undefined;
+  const ks = cfg.knowledge_storage;
+  const ksTeam = ks?.team;
+  const ksPersonal = ks?.personal;
   const ksTeamCo = String(ksTeam?.local_checkout ?? "").trim();
   const ksPersonalCo = String(ksPersonal?.local_checkout ?? "").trim();
   const ksTeamRem = String(ksTeam?.git_remote ?? "").trim();
@@ -77,8 +73,7 @@ export function collectDoctorConfigWarnings(
 
   const teamU = gbrainTeamUrl(cfg);
   const personalU = gbrainPersonalUrl(cfg);
-  const kbGbrainInclude =
-    (kb?.gbrain as Record<string, unknown> | undefined)?.include === true;
+  const kbGbrainInclude = kb?.gbrain?.include === true;
   if (kbGbrainInclude && !teamU && !personalU) {
     warnings.push(
       "knowledge_base.gbrain.include is true but neither gbrain.team.url nor gbrain.personal.url is set — set URLs or turn off gbrain.include.",
@@ -99,17 +94,16 @@ export function collectDoctorConfigWarnings(
     }
   }
 
-  const pe = cfg.pe as Record<string, unknown> | undefined;
+  const pe = cfg.pe;
   if (pe && pe.configured === false) {
     warnings.push(
       "pe.configured is false — run `jstack setup --pe` or set pe.* in jstack.config.json before PE/team management reports.",
     );
   }
 
-  const cross = cfg.cross_plugins as Record<string, unknown> | undefined;
-  const gb = cross?.gbrain as Record<string, unknown> | undefined;
+  const gb = cfg.cross_plugins?.gbrain;
   if (gb?.enabled === true) {
-    const skills = gb.skills as unknown;
+    const skills = gb.skills;
     if (!Array.isArray(skills) || skills.length === 0) {
       warnings.push(
         "cross_plugins.gbrain.enabled but skills[] is empty — list expected gbrain:* skill ids.",
@@ -167,9 +161,9 @@ function readMcpFixtureRootFromDisk(projectRoot: string): string | null {
 export function collectMockMcpDoctorWarnings(
   projectRoot: string,
   pluginRoot: string,
-  cfg: Record<string, unknown>,
+  cfg: JstackConfig,
 ): string[] {
-  const dbg = cfg.debug as Record<string, unknown> | undefined;
+  const dbg = cfg.debug;
   if (dbg?.mock_mcp !== true) return [];
 
   const warnings: string[] = [];

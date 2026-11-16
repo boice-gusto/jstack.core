@@ -109,6 +109,28 @@ function clearContent(el) {
 }
 
 /**
+ * Single source of truth for the sheet body's loading/error/content
+ * visibility. Every transition in `openPreview` goes through this so the
+ * three regions never get toggled independently and drift out of sync.
+ * @param {{ loadingEl: HTMLElement, errorEl: HTMLElement, errorMsgEl: HTMLElement, contentEl: HTMLElement }} els
+ * @param {"loading" | "error" | "ready"} state
+ * @param {{ message?: string, frag?: DocumentFragment }} [opts]
+ */
+function setSheetState(els, state, opts = {}) {
+  const { loadingEl, errorEl, errorMsgEl, contentEl } = els;
+
+  loadingEl.hidden = state !== "loading";
+  errorEl.hidden = state !== "error";
+  errorMsgEl.textContent = state === "error" ? (opts.message ?? "") : "";
+
+  if (state === "ready" && opts.frag) {
+    contentEl.replaceChildren(opts.frag);
+  } else {
+    clearContent(contentEl);
+  }
+}
+
+/**
  * @param {MouseEvent} ev
  * @returns {void}
  */
@@ -183,13 +205,12 @@ async function openPreview(absoluteUrl, linkLabel) {
     // keep linkLabel
   }
 
+  const sheetEls = { loadingEl, errorEl, errorMsgEl, contentEl };
+
   titleEl.textContent = pathLabel;
   rawEl.setAttribute("href", absoluteUrl);
   errorLinkEl.setAttribute("href", absoluteUrl);
-  clearContent(contentEl);
-  errorEl.hidden = true;
-  errorMsgEl.textContent = "";
-  loadingEl.hidden = false;
+  setSheetState(sheetEls, "loading");
   setSheetOpen(root, true);
   closeBtn.focus();
 
@@ -197,7 +218,7 @@ async function openPreview(absoluteUrl, linkLabel) {
     const embedded = resolveEmbeddedMarkdown(absoluteUrl);
     if (embedded !== null) {
       const frag = await markdownToSafeFragment(embedded);
-      contentEl.replaceChildren(frag);
+      setSheetState(sheetEls, "ready", { frag });
       return;
     }
 
@@ -207,15 +228,11 @@ async function openPreview(absoluteUrl, linkLabel) {
     }
     const text = await res.text();
     const frag = await markdownToSafeFragment(text);
-    contentEl.replaceChildren(frag);
+    setSheetState(sheetEls, "ready", { frag });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    errorMsgEl.textContent = msg;
     errorLinkEl.setAttribute("href", absoluteUrl);
-    errorEl.hidden = false;
-    clearContent(contentEl);
-  } finally {
-    loadingEl.hidden = true;
+    setSheetState(sheetEls, "error", { message: msg });
   }
 }
 

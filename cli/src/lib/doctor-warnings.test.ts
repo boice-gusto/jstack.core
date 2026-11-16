@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { JstackConfig } from "../types/config.js";
 import {
   collectDoctorConfigWarnings,
   collectMockMcpDoctorWarnings,
@@ -10,8 +11,9 @@ import {
 /** jstack.core package root (cli/src/lib → ../../../). */
 const PLUGIN_ROOT = join(import.meta.dir, "..", "..", "..");
 
-function baseCfg(over: Record<string, unknown> = {}): Record<string, unknown> {
+function baseCfg(over: Partial<JstackConfig> = {}): JstackConfig {
   return {
+    mcp_servers: {},
     team: { name: "t" },
     knowledge_base: { roots: ["docs"], gbrain: { include: false } },
     knowledge_storage: {

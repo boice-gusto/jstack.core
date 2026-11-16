@@ -21,7 +21,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import yaml from "js-yaml";
+import { parseYamlFrontmatter } from "./lib/parse-frontmatter.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const skillsRoot = join(root, "skills");
@@ -189,8 +189,9 @@ const skillDirs = findSkills(skillsRoot).sort();
 for (const dir of skillDirs) {
   const rel = relative(skillsRoot, dir);
   const raw = readFileSync(join(dir, "SKILL.md"), "utf8");
-  const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!fmMatch) {
+  const parsed = parseYamlFrontmatter(raw);
+  if (parsed.error && parsed.frontmatterText === undefined) {
+    // No `---` delimiters at all — there is no frontmatter text to fall back to parsing.
     findings.push({
       skill: rel,
       kind: "correctness",
@@ -199,12 +200,10 @@ for (const dir of skillDirs) {
     });
     continue;
   }
-  const body = raw.slice(fmMatch[0].length);
+  const body = parsed.body;
 
-  let meta: Record<string, unknown> = {};
-  try {
-    meta = (yaml.load(fmMatch[1]) ?? {}) as Record<string, unknown>;
-  } catch (e) {
+  let meta: Record<string, unknown> = parsed.meta;
+  if (parsed.error) {
     // Frontmatter MUST be valid YAML. 27 of 137 files once failed `yaml.safe_load` — usually a
     // colon-space inside an unquoted description — and every consumer using a real YAML parser saw an
     // EMPTY mapping for them, so `name`, `effort`, and `disable-model-invocation` all read as absent.
@@ -216,12 +215,15 @@ for (const dir of skillDirs) {
       kind: "correctness",
       id: "invalid-yaml-frontmatter",
       message:
-        `frontmatter is not valid YAML (${String(e).split("\n")[0].slice(0, 90)}). ` +
+        `frontmatter is not valid YAML (${parsed.error.split("\n")[0].slice(0, 90)}). ` +
         `Quote any value containing ": " — a consumer using a real YAML parser reads this file's ` +
         `frontmatter as empty, losing name/effort/disable-model-invocation.`,
     });
-    // Still parse line-based so the remaining rules can report on this file too.
-    for (const line of fmMatch[1].split("\n")) {
+    // Still parse line-based so the remaining rules can report on this file too. This is a
+    // deliberate, already-fixed regression guard (see comment above) — preserve it, don't
+    // remove it even though the initial attempt now goes through the shared parser.
+    meta = {};
+    for (const line of (parsed.frontmatterText ?? "").split("\n")) {
       const i = line.indexOf(":");
       if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
     }

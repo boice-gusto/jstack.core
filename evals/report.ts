@@ -34,12 +34,17 @@ export interface SemanticSummary {
   results: CaseReport[];
 }
 
+/** A single case's execution + grading + gate-check outcome, produced in one pass. */
+export interface SemanticCaseRecord {
+  case: EvalCase;
+  exec: ExecuteResult;
+  grading: GradingResult;
+  gateFailures: string[];
+}
+
 export function buildSemanticSummary(
   skillName: string,
-  cases: EvalCase[],
-  execResults: ExecuteResult[],
-  gradings: GradingResult[],
-  gateFailuresPerCase: string[][],
+  records: SemanticCaseRecord[],
 ): SemanticSummary {
   let totalPassed = 0;
   let totalCriteria = 0;
@@ -48,18 +53,15 @@ export function buildSemanticSummary(
   let totalCost = 0;
   const results: CaseReport[] = [];
 
-  for (let i = 0; i < cases.length; i++) {
-    const gr = gradings[i];
-    const er = execResults[i];
+  for (const { case: c, exec: er, grading: gr, gateFailures: gf } of records) {
     const s = gr?.summary ?? { passed: 0, total: 0 };
     totalPassed += s.passed ?? 0;
     totalCriteria += s.total ?? 0;
     totalTime += er?.elapsed ?? 0;
     totalTokens += er?.tokens ?? 0;
     totalCost += er?.cost_usd ?? 0;
-    const gf = gateFailuresPerCase[i] ?? [];
     results.push({
-      name: cases[i].name,
+      name: c.name,
       status: er.status,
       elapsed: er.elapsed,
       tokens: er.tokens,
@@ -75,7 +77,7 @@ export function buildSemanticSummary(
   return {
     skill_name: skillName,
     timestamp: new Date().toISOString(),
-    total_cases: cases.length,
+    total_cases: records.length,
     total_passed: totalPassed,
     total_criteria: totalCriteria,
     pass_rate: Math.round(passRate * 10) / 10,
