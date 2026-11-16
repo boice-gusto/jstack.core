@@ -4,7 +4,12 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { configPath, findProjectRoot } from "../cli/src/lib/config.js";
 import { ENCODING_UTF8, TELEMETRY_CLI } from "../constants/paths.js";
-import { clearPersisted, readPersisted, recordEvent } from "./collector.js";
+import {
+  claimPersisted,
+  clearPersisted,
+  readPersisted,
+  recordEvent,
+} from "./collector.js";
 import { telemetryInstanceHash16 } from "./instance-id.js";
 import { sendBatch } from "./sender.js";
 
@@ -83,9 +88,12 @@ if (action === TELEMETRY_CLI.ACTIONS.STATUS) {
   const cfg = loadTelemetryCfg(root);
   let endpoint: string | undefined;
   if (cfg.enabled && cfg.endpoint.length > 0) endpoint = cfg.endpoint;
-  const events = readPersisted();
+  // claimPersisted (not readPersisted+clearPersisted) so a concurrent appendPersisted from
+  // another process during the sendBatch round trip lands in a fresh file, not the one this
+  // flush is about to delete -- see claimPersisted's own comment for the race it closes.
+  const { events, commit } = claimPersisted();
   const ok = await sendBatch(endpoint, events);
-  clearPersisted();
+  commit();
   console.log(
     JSON.stringify(
       {

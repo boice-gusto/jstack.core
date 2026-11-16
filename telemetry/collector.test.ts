@@ -18,6 +18,7 @@ import { join } from "node:path";
 import {
   appendPersisted,
   bufferSize,
+  claimPersisted,
   clearBuffer,
   clearPersisted,
   readPersisted,
@@ -138,6 +139,46 @@ describe("collector.ts — persisted buffer", () => {
       "good",
       "also-good",
     ]);
+  });
+
+  test("claimPersisted returns empty with a no-op commit when there's nothing to claim", () => {
+    const claimed = claimPersisted();
+    expect(claimed.events).toEqual([]);
+    expect(() => claimed.commit()).not.toThrow();
+  });
+
+  test("claimPersisted reads what was there and commit() removes only the claimed file, not the live path", () => {
+    appendPersisted(fakeEvent({ event_id: "c1" }) as TelemetryEvent);
+    const claimed = claimPersisted();
+    expect(claimed.events.map((e) => e.event_id)).toEqual(["c1"]);
+    claimed.commit();
+    // The live path is free again immediately -- a fresh append after the claim works normally.
+    appendPersisted(fakeEvent({ event_id: "c2" }) as TelemetryEvent);
+    expect(readPersisted().map((e) => e.event_id)).toEqual(["c2"]);
+  });
+
+  test("the race readPersisted+clearPersisted had: an append that lands between read and clear is lost", () => {
+    appendPersisted(fakeEvent({ event_id: "before" }) as TelemetryEvent);
+    const events = readPersisted();
+    // Simulates a concurrent writer landing in the window between the read above and the
+    // clear below -- this is the exact race claimPersisted exists to close.
+    appendPersisted(fakeEvent({ event_id: "concurrent" }) as TelemetryEvent);
+    clearPersisted();
+    expect(events.map((e) => e.event_id)).toEqual(["before"]);
+    // "concurrent" was never sent (not in `events`) AND is now gone from disk -- silently lost.
+    expect(readPersisted()).toEqual([]);
+  });
+
+  test("claimPersisted closes that race: a concurrent append after the claim survives the commit", () => {
+    appendPersisted(fakeEvent({ event_id: "before" }) as TelemetryEvent);
+    const claimed = claimPersisted();
+    // Same concurrent-writer timing as the race test above, but against claimPersisted instead.
+    appendPersisted(fakeEvent({ event_id: "concurrent" }) as TelemetryEvent);
+    claimed.commit();
+    expect(claimed.events.map((e) => e.event_id)).toEqual(["before"]);
+    // "concurrent" landed in a fresh file the rename created -- commit() only deleted the
+    // claimed one, so it's still readable, unlike the plain readPersisted+clearPersisted case.
+    expect(readPersisted().map((e) => e.event_id)).toEqual(["concurrent"]);
   });
 });
 

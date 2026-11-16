@@ -4,8 +4,11 @@ import { clearBuffer, recordEvent, snapshotBuffer } from "@jstack/telemetry/coll
 
 import { flushIfConfigured, recordDashboardAgentRun } from "@/lib/dashboard-telemetry";
 
+const readJstackConfigMock = vi.fn(() => ({
+  telemetry: { enabled: true, endpoint: "https://example.invalid/ingest" },
+}));
 vi.mock("@/lib/config-reader", () => ({
-  readJstackConfig: () => ({ telemetry: { enabled: true, endpoint: "https://example.invalid/ingest" } }),
+  readJstackConfig: () => readJstackConfigMock(),
 }));
 
 /**
@@ -18,10 +21,39 @@ vi.mock("@/lib/config-reader", () => ({
 describe("recordDashboardAgentRun", () => {
   beforeEach(() => {
     clearBuffer();
+    readJstackConfigMock.mockReturnValue({
+      telemetry: { enabled: true, endpoint: "https://example.invalid/ingest" },
+    });
   });
 
   afterEach(() => {
     clearBuffer();
+  });
+
+  it("records nothing at all -- not even to the local buffer -- when telemetry is disabled", () => {
+    readJstackConfigMock.mockReturnValue({ telemetry: { enabled: false, endpoint: "" } });
+    recordDashboardAgentRun({
+      surface: "agent",
+      skillId: null,
+      startedAt: Date.now(),
+      success: true,
+      usage: null,
+    });
+    expect(snapshotBuffer()).toHaveLength(0);
+  });
+
+  it("records nothing when config is unreadable (undefined telemetry block)", () => {
+    readJstackConfigMock.mockReturnValue(undefined as never);
+    expect(() =>
+      recordDashboardAgentRun({
+        surface: "agent",
+        skillId: null,
+        startedAt: Date.now(),
+        success: true,
+        usage: null,
+      }),
+    ).not.toThrow();
+    expect(snapshotBuffer()).toHaveLength(0);
   });
 
   it("records token totals summed from usage, including cache fields", () => {
@@ -95,6 +127,9 @@ describe("flushIfConfigured", () => {
 
   beforeEach(() => {
     clearBuffer();
+    readJstackConfigMock.mockReturnValue({
+      telemetry: { enabled: true, endpoint: "https://example.invalid/ingest" },
+    });
     recordEvent({
       timestamp: new Date().toISOString(),
       plugin_version: "test",

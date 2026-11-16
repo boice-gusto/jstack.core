@@ -83,6 +83,13 @@ export interface DashboardRunTelemetryInput {
  */
 export function recordDashboardAgentRun(input: DashboardRunTelemetryInput): void {
   try {
+    // `recordEvent()` persists to disk unconditionally (see telemetry/collector.ts's
+    // `appendPersisted`) -- disabled must mean nothing is written at all, not just nothing sent
+    // over the network. Mirrors telemetry/cli.ts's own RECORD action, which checks this before
+    // calling recordEvent for the same reason.
+    const cfg = readJstackConfig();
+    if (cfg?.telemetry?.enabled !== true) return;
+
     const tokenInput =
       (input.usage?.input_tokens ?? 0) +
       (input.usage?.cache_creation_input_tokens ?? 0) +

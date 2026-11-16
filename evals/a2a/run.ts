@@ -387,6 +387,11 @@ interface ModelReport {
   results: CaseResult[];
   /** Set when a prior dated baseline existed to compare against; human-readable, printed once. */
   baselineDelta?: string;
+  /** ISO timestamp of this report's own run, not the case results' timestamps -- lets a consumer
+   * (`eval:compare`, `eval:report`) detect a stale report left behind because this model's binary
+   * was unavailable on a later run (see the unavailable-backend branch below, which never calls
+   * `writeModelReport` and so leaves whatever `generatedAt` an older real run wrote in place). */
+  generatedAt: string;
 }
 
 /** Writes one model's report to its own file under `.tmp/a2a/<model>/latest.json` -- kept
@@ -459,11 +464,16 @@ function writeBaselineSnapshot(report: ModelReport, today: string): void {
 
 const todayIso = new Date().toISOString().slice(0, 10);
 const modelReports: ModelReport[] = [];
+/** Requested models whose binary wasn't found -- these must fail the run (see the exit-code
+ * block below), not just log a warning. A `--models claude,codex` invocation where codex silently
+ * never ran is "the suite could not run as requested," not a clean pass. */
+const unavailableModels: ModelBackend[] = [];
 for (const model of models) {
   if (!backendAvailable(model)) {
     console.error(
       `✗ ${model}: binary not found or not runnable on PATH -- skipping this model's run entirely`,
     );
+    unavailableModels.push(model);
     modelReports.push({
       model,
       total: 0,
@@ -472,6 +482,7 @@ for (const model of models) {
       skipped: 0,
       judge_available: canJudge,
       results: [],
+      generatedAt: new Date().toISOString(),
     });
     continue;
   }
@@ -487,6 +498,7 @@ for (const model of models) {
     skipped: results.filter((r) => r.status === "skipped").length,
     judge_available: canJudge,
     results,
+    generatedAt: new Date().toISOString(),
   };
   const prior = readPriorBaseline(model, todayIso);
   if (prior) {
@@ -547,6 +559,12 @@ if (asJson) {
 const totalFailed = modelReports.reduce((sum, r) => sum + r.failed, 0);
 const totalSkipped = modelReports.reduce((sum, r) => sum + r.skipped, 0);
 
+if (unavailableModels.length > 0) {
+  console.error(
+    `\n${unavailableModels.join(", ")} requested via --models but not runnable -- the suite did not run as requested.`,
+  );
+  process.exit(2);
+}
 if (totalFailed > 0) process.exit(1);
 if (totalSkipped > 0 && requireJudge) {
   console.error(

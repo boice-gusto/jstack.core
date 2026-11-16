@@ -44,14 +44,25 @@ const generated = zodToJsonSchema(ReportPayloadSchema, {
 }) as {
   properties?: {
     sections?: {
-      items?: { anyOf?: { properties?: Record<string, unknown> }[] };
+      items?: {
+        anyOf?: {
+          properties?: Record<string, unknown>;
+          required?: string[];
+        }[];
+      };
     };
   };
 };
 
 // Patch the one refine-derived constraint zod-to-json-schema can't see (see file comment).
+// Both ReportSectionSchema union variants have a `body_markdown` property (one plain-optional
+// when `chart` is required, one refined-non-empty when `chart` is optional) -- matching on mere
+// property presence picked whichever variant `anyOf` happened to list first, silently patching
+// `minLength` onto the WRONG variant (the plain-optional one) while leaving the refined one, the
+// only one `nonEmptyBodyMarkdown`'s `.refine()` actually constrains, unpatched. The refined
+// variant is the one where `body_markdown` (not `chart`) is in `required`.
 const nonEmptyBodyVariant = generated.properties?.sections?.items?.anyOf?.find(
-  (variant) => "body_markdown" in (variant.properties ?? {}),
+  (variant) => variant.required?.includes("body_markdown") ?? false,
 );
 const bodyMarkdownProp = nonEmptyBodyVariant?.properties?.body_markdown as
   | Record<string, unknown>

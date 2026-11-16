@@ -58,4 +58,30 @@ describe("AgentStreamBodySchema", () => {
     });
     expect(r.success).toBe(false);
   });
+
+  it("accepts a real-shaped resumeSessionId (uuid)", () => {
+    const r = AgentStreamBodySchema.safeParse({
+      messages: [{ role: "user", content: "hi" }],
+      resumeSessionId: "550e8400-e29b-41d4-a716-446655440000",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects a resumeSessionId shaped like a CLI flag, which route.ts would pass as a bare argv token to a spawned child", () => {
+    const r = AgentStreamBodySchema.safeParse({
+      messages: [{ role: "user", content: "hi" }],
+      resumeSessionId: "--dangerously-bypass-approvals-and-sandbox",
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects a resumeSessionId containing a space or shell metacharacter", () => {
+    for (const bad of ["abc def", "abc;rm -rf /", "abc$(whoami)"]) {
+      const r = AgentStreamBodySchema.safeParse({
+        messages: [{ role: "user", content: "hi" }],
+        resumeSessionId: bad,
+      });
+      expect(r.success).toBe(false);
+    }
+  });
 });

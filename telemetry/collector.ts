@@ -4,6 +4,8 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -63,6 +65,50 @@ export function readPersisted(): TelemetryEvent[] {
 export function clearPersisted(): void {
   const path = persistedBufferPath();
   if (existsSync(path)) writeFileSync(path, "", "utf8");
+}
+
+/**
+ * Atomically claims whatever is currently in the persisted buffer for a flush, closing the race
+ * `readPersisted()` + `clearPersisted()` had: a concurrent `appendPersisted()` landing between
+ * the read and the truncate was silently wiped by the truncate without ever being read or sent.
+ * `renameSync` is atomic at the filesystem level, so any `appendPersisted()` call that happens
+ * after this returns necessarily creates a fresh file at the live path -- it physically cannot
+ * land in the file this call is now holding under a private name. Returns the events already
+ * read out of the claimed file, plus `commit()` to delete that file once the caller is done with
+ * it (called unconditionally by `flush`, mirroring the old unconditional `clearPersisted()` --
+ * this only removes the race, it doesn't change when the buffer gets cleared).
+ */
+export function claimPersisted(): {
+  events: TelemetryEvent[];
+  commit: () => void;
+} {
+  const path = persistedBufferPath();
+  const claimedPath = `${path}.flushing-${randomUUID()}`;
+  try {
+    renameSync(path, claimedPath);
+  } catch {
+    // Nothing to claim (file doesn't exist), or another flush already claimed it.
+    return { events: [], commit: () => {} };
+  }
+  const lines = readFileSync(claimedPath, "utf8").split("\n").filter(Boolean);
+  const events: TelemetryEvent[] = [];
+  for (const line of lines) {
+    try {
+      events.push(JSON.parse(line) as TelemetryEvent);
+    } catch {
+      // Skip a malformed line rather than losing the rest of the claimed buffer.
+    }
+  }
+  return {
+    events,
+    commit: () => {
+      try {
+        unlinkSync(claimedPath);
+      } catch {
+        // Best-effort cleanup of the claimed temp file; nothing downstream depends on it existing.
+      }
+    },
+  };
 }
 
 /**
